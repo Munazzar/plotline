@@ -366,7 +366,7 @@ input[type=checkbox]{width:auto}
 @keyframes flgrow{from{transform:scaleY(0)}}
 @keyframes flpill{from{opacity:0;transform:translate(-50%,8px) scale(.6)}}
 .road.single{margin:0}
-.road.single .fl-chip{display:none}
+.road.single:not(.multi) .fl-chip{display:none}
 .spl{position:absolute;top:50%;z-index:3;width:0;height:0;padding:0;border:0;background:none;cursor:pointer;color:var(--text);z-index:1;animation:pop .6s var(--spring) both}
 @keyframes pop{from{opacity:0;transform:scale(.3)}}
 .spl b{position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--c);background:var(--bg-2);box-shadow:0 0 10px -2px var(--c);transition:transform .45s var(--spring)}
@@ -1015,6 +1015,10 @@ html,body{overscroll-behavior-y:contain}
 .breath span{position:relative;font:700 17px var(--f-body)}
 .hwhy{margin-top:12px;padding:12px 16px;border-left:3px solid var(--c,var(--accent));background:var(--surface);border-radius:4px 14px 14px 4px;font-size:14.5px}
 .hwhy .data{display:block;margin-bottom:2px}
+.node.sub{border-style:dashed}
+.node.sub i{display:block;width:16px;height:16px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--p)*1%),color-mix(in srgb,var(--c) 18%,transparent) 0)}
+.subc .sc-front .nbadge small{font-size:.5em}
+.add-step{gap:10px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -1056,10 +1060,16 @@ const AREA_IDS=AREAS.map(a=>a.id);
 const HORIZONS=[['week','This week'],['month','This month'],['quarter','3 months'],['year','This year'],['multi','1–5 years'],['life','Lifetime']];
 const HZ_IDS=HORIZONS.map(h=>h[0]);const SHORT=['week','month','quarter'];
 const HZ_SHORT={week:'Week',month:'Month',quarter:'3 mo',year:'Year',multi:'1–5 yr',life:'Life'};
-const areaOf=id=>AREAS.find(a=>a.id===id)||AREAS[6];
+/* life areas: the seven built-in ones, or any name you (or the AI) give. A custom area borrows one of the seven colors, picked from its name. */
+AREAS.forEach(a=>a.k=a.id);
+function areaKey(v){if(typeof v!=='string')return'';const t=v.trim().replace(/\s+/g,' ').slice(0,24);if(!t)return'';const l=t.toLowerCase();const a=AREAS.find(a=>a.id===l||a.name.toLowerCase()===l);return a?a.id:t}
+const hashN=s=>{let h=7;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return Math.abs(h)};
+const areaOf=id=>{const k=areaKey(id);return AREAS.find(a=>a.id===k)||(k?{id:k,name:cap(k),custom:true,k:AREA_IDS[hashN(k.toLowerCase())%7]}:AREAS[6])};
+function allAreas(){const out=[...AREAS],seen=new Set(AREA_IDS);[...S.goals,...S.habits].forEach(x=>{const a=areaOf(x.area);if(!seen.has(a.id)){seen.add(a.id);out.push(a)}});return out}
+function areaInput(name,val,extra=''){const id='al'+uid();return`<input name="${name}" list="${id}" value="${esc(areaName(val||'personal'))}" maxlength="24" autocomplete="off" placeholder="Health, Home, Community…" ${extra}><datalist id="${id}">${allAreas().map(a=>`<option value="${esc(a.name)}"></option>`).join('')}</datalist>`}
 const areaName=id=>areaOf(id).name;
 const hzName=id=>(HORIZONS.find(h=>h[0]===id)||HORIZONS[1])[1];
-const cvar=g=>{const i=AREA_IDS.indexOf(areaOf(g.area).id);return`--c:var(--c-${AREA_IDS[i]});--c2:var(--c-${AREA_IDS[(i+2)%7]});--c3:var(--c-${AREA_IDS[(i+5)%7]});--gk:gk-${g.id}`};
+const cvar=g=>{const i=AREA_IDS.indexOf(areaOf(g.area).k);return`--c:var(--c-${AREA_IDS[i]});--c2:var(--c-${AREA_IDS[(i+2)%7]});--c3:var(--c-${AREA_IDS[(i+5)%7]});--gk:gk-${g.id}`};
 const BGS=[['plain','Plain'],['soft','Soft light'],['grid','Grid'],['dots','Dots'],['lines','Lines'],['waves','Waves'],['topo','Contours'],['plus','Plus'],['image','Your image']];
 const IMGV='--t-fg:#fff !important;--t-mut:rgba(255,255,255,.8) !important;--t-bar:#fff !important;--t-barbg:rgba(255,255,255,.28) !important;--t-barsh:none !important;--t-num:#fff !important;--t-numsh:none !important;--t-stroke:0 transparent !important;--t-inv:#111 !important;--t-bd:transparent !important';
 const IMGOV=u=>`linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.66)),url(${u})`;
@@ -1068,7 +1078,7 @@ const haloOn=(g,curStep=false)=>{const m=S.settings.halo;return m==='all'||(m===
 let IMGSIG='';function imgCSS(){let el=$('#imgcss');if(!el){el=document.createElement('style');el.id='imgcss';document.head.appendChild(el)}const sig=S.goals.map(g=>g.img?g.id+g.img.length:'').join();if(sig===IMGSIG)return;IMGSIG=sig;el.textContent=S.goals.filter(g=>g.img).map(g=>`[style*="gk-${g.id}"].tint.tint.tint,[style*="gk-${g.id}"] .tint.tint.tint{--img:${IMGOV(g.img)} !important;${IMGV}}`).join('\n')}
 let COVER;
 const CARD_STYLES=[['solid','Solid'],['glow','Glow'],['neon','Neon'],['aurora','Aurora'],['glass','Glass'],['index','Index card']];const CARD_IDS=CARD_STYLES.map(c=>c[0]);
-const cById=id=>`var(--c-${areaOf(id).id})`;
+const cById=id=>`var(--c-${areaOf(id).k})`;
 const PRIO=['','High','Medium','Low'];
 const THEMES=[['night','Midnight','#0A0F1F','#1B2340','#FFB547',1],['space','Black','#000000','#141720','#9EE6D0',1],['dusk','Plum','#160E21','#2B1F42','#FF9E7A',.65],['graphite','Graphite','#151719','#272A2F','#E8E9EB',0],['daylight','Daylight','#EDF0F6','#FFFFFF','#2E5BFF',0]];
 const THEME_IDS=THEMES.map(t=>t[0]);
@@ -1193,7 +1203,7 @@ const descendants=g=>{const out=[],q=[g];while(q.length&&out.length<500){const x
 function treeOrder(list){const ids=new Set(list.map(g=>g.id)),out=[],seen=new Set();const walk=(g,d)=>{if(seen.has(g.id))return;seen.add(g.id);out.push({g,d});list.filter(x=>x.parent===g.id).forEach(x=>walk(x,d+1))};list.filter(g=>!g.parent||!ids.has(g.parent)).forEach(g=>walk(g,0));list.forEach(g=>walk(g,0));return out}
 const pct=g=>Math.round(prog(g)*100);
 const nextStep=g=>g.status==='active'?g.steps.find(s=>!s.done):null;
-function newGoal(o={}){return{img:o.img||'',parent:typeof o.parent==='string'?o.parent:'',id:uid(),title:String(o.title||'Untitled goal').trim(),why:String(o.why||'').trim(),area:AREA_IDS.includes(o.area)?o.area:'personal',horizon:HZ_IDS.includes(o.horizon)?o.horizon:'month',priority:[1,2,3].includes(+o.priority)?+o.priority:2,pinned:!!o.pinned,startDate:validDate(o.startDate)||ymd(),targetDate:validDate(o.targetDate),checkin:o.checkin||'',checkinTime:o.checkinTime||'19:00',checkinDay:o.checkinDay!=null?+o.checkinDay:1,lastCheckin:ymd(),status:'active',steps:(o.steps||[]).map(s=>({id:uid(),title:String(s.title||'Step').trim(),due:validDate(s.due),time:s.time||'',remind:s.remind??'',reminded:false,note:s.note||'',done:false,doneAt:null})),links:[],createdAt:Date.now(),completedAt:null}}
+function newGoal(o={}){return{img:o.img||'',parent:typeof o.parent==='string'?o.parent:'',id:uid(),title:String(o.title||'Untitled goal').trim(),why:String(o.why||'').trim(),area:areaKey(o.area)||'personal',horizon:HZ_IDS.includes(o.horizon)?o.horizon:'month',priority:[1,2,3].includes(+o.priority)?+o.priority:2,pinned:!!o.pinned,startDate:validDate(o.startDate)||ymd(),targetDate:validDate(o.targetDate),checkin:o.checkin||'',checkinTime:o.checkinTime||'19:00',checkinDay:o.checkinDay!=null?+o.checkinDay:1,lastCheckin:ymd(),status:'active',steps:(o.steps||[]).map(s=>({id:uid(),title:String(s.title||'Step').trim(),due:validDate(s.due),time:s.time||'',remind:s.remind??'',reminded:false,note:s.note||'',done:false,doneAt:null})),links:[],createdAt:Date.now(),completedAt:null}}
 function log(type,goalId,text,t=Date.now(),sid=null,img=null){S.entries.push({id:uid(),t,type,goalId,text,sid,img})}
 function linkGoals(a,b){if(!a.links.includes(b.id))a.links.push(b.id);if(!b.links.includes(a.id))b.links.push(a.id)}
 function unlinkGoals(a,b){a.links=a.links.filter(x=>x!==b.id);b.links=b.links.filter(x=>x!==a.id)}
@@ -1234,7 +1244,7 @@ function vToday(){const h=new Date().getHours();const gr=h<5?'Still up':h<12?'Go
 /* ================= TODAY GOALS ================= */
 const dayName=ds=>{const n=daysUntil(ds);if(n===0)return'Today';if(n===1)return'Tomorrow';if(n===-1)return'Yesterday';const[y,m,d]=ds.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})};
 const byTime=(a,b)=>(a.time||'99')<(b.time||'99')?-1:(a.time||'99')>(b.time||'99')?1:(a.createdAt||0)-(b.createdAt||0);
-const colOf=g=>g?`var(--c-${areaOf(g.area).id})`:'var(--accent)';
+const colOf=g=>g?`var(--c-${areaOf(g.area).k})`:'var(--accent)';
 function dayRow(x,carry){const g=x.goalId&&G(x.goalId);const sub=[g?`<i></i><span class="ell">${esc(g.title)}</span>`:'',carry?`<span>${esc(dayName(x.date))}</span>`:''].join('');
  return`<div class="li${x.done?' done':''}" style="--c:${colOf(g)}" data-act="editDay" data-id="${x.id}"><button class="chk${x.done?' on':''}" data-act="toggleDay" data-id="${x.id}" aria-label="${x.done?'Mark not done':'Mark done'}: ${esc(x.title)}">${ic('check')}</button><div style="flex:1;min-width:0"><div class="t ell">${esc(x.title)}</div>${sub?`<div class="s">${sub}</div>`:''}</div>${x.time?`<span class="data">${fmtTime(x.time)}</span>`:''}${carry?`<button class="chip sm" data-act="dayMove" data-id="${x.id}">Move to today</button>`:''}</div>`}
 function todayGoals(){const td=ymd();const items=S.days.filter(x=>x.date===td).sort(byTime);const carry=S.days.filter(x=>!x.done&&x.date<td&&daysUntil(x.date)>=-14).sort((a,b)=>a.date<b.date?1:-1);const dn=items.filter(x=>x.done).length;const r=8,C=2*Math.PI*r;
@@ -1323,7 +1333,7 @@ function flipCard(g,n){const p=pct(g),nx=nextStep(g),dn=g.steps.filter(s=>s.done
 function goalsList(){const gs=treeOrder(filteredGoals()).map(x=>x.g);if(!gs.length)return`<div class="empty" style="grid-column:1/-1"><p>${S.goals.length?(F.q?'No goals match that search.':'Nothing here yet.'):'No goals yet.'}</p><div class="actions"><button class="btn pri" data-act="newGoal">${ic('plus')}New goal</button></div></div>`;return gs.map((g,i)=>`<div class="rv">${flipCard(g,i+1)}</div>`).join('')}
 function vGoals(){const a=active().length,d=S.goals.filter(g=>g.status==='done').length;
  return`<header class="ph"><div><h1>Goals</h1><div class="data">${a} active · ${d} achieved · tap a card to flip it</div></div><div class="ph-r"><button class="ibtn ${F.search?'on':''}" data-act="toggleSearch" aria-label="Search">${ic('search')}</button><button class="ibtn" data-act="newGoal" aria-label="New goal">${ic('plus')}</button>${gear()}</div></header>
- <div class="bar">${segHTML('gf','filt',[['active','Active'],['short','Short-term'],['long','Long-term'],['done','Achieved']],F.v)}<div style="display:flex;gap:8px;align-items:center"><select class="sel" data-f="area" aria-label="Life area"><option value="all">All areas</option>${AREAS.map(x=>`<option value="${x.id}" ${F.area===x.id?'selected':''}>${x.name}</option>`).join('')}</select>${iconSeg('goals',[['grid','grid','Grid'],['h','horz','Carousel']],S.settings.layout.goals)}</div></div>
+ <div class="bar">${segHTML('gf','filt',[['active','Active'],['short','Short-term'],['long','Long-term'],['done','Achieved']],F.v)}<div style="display:flex;gap:8px;align-items:center"><select class="sel" data-f="area" aria-label="Life area"><option value="all">All areas</option>${allAreas().map(x=>`<option value="${x.id}" ${F.area===x.id?'selected':''}>${x.name}</option>`).join('')}</select>${iconSeg('goals',[['grid','grid','Grid'],['h','horz','Carousel']],S.settings.layout.goals)}</div></div>
  ${F.search?`<input class="rv in" data-q placeholder="Search goals and steps" value="${esc(F.q)}" style="margin-bottom:18px" aria-label="Search">`:''}
  ${S.settings.layout.goals==='h'&&filteredGoals().length?goalsCarousel():`<div class="fgrid" id="glist">${goalsList()}</div>`}`}
 function goalsCarousel(){const gs=treeOrder(filteredGoals()).map(x=>x.g);return hsShell('goals-'+F.v+F.area+F.q,gs.map((g,i)=>hsItem(cvar(g),flipCard(g,i+1),g.status==='done'?'done':'',`<span class="node static" aria-hidden="true">${g.status==='done'?ic('check'):''}</span>`,g.targetDate?'Target '+fmtDate(g.targetDate):hzName(g.horizon))).join(''),0)}
@@ -1340,21 +1350,26 @@ function bigStepCard(g,s,i,N){const a=`data-g="${g.id}" data-s="${s.id}"`;const 
  <div class="sc-act">${s.done?`<button class="btn inkline sm" data-act="toggleStep" ${a}>Mark not done</button>`:`<button class="btn ink sm" data-act="toggleStep" ${a}>${ic('check')}Mark done</button><button class="btn inkline sm" data-act="timerPick" ${a}>${ic('timer')}Focus timer</button>`}<button class="btn inkline sm" data-act="editStep" ${a}>${ic('edit')}Edit step</button></div></div></div></div>`}
 function stepsCarousel(g){const n=nextStep(g),N=g.steps.length;
  const items=g.steps.map((s,i)=>hsItem(cvar(g),bigStepCard(g,s,i,N),`${s.done?'done':''} ${s===n?'cur':''}`,`<button class="node" data-act="toggleStep" data-g="${g.id}" data-s="${s.id}" aria-label="${s.done?'Mark not done':'Mark done'}: ${esc(s.title)}">${s.done?ic('check'):''}</button>`,s.done?'Done':(s.due?dueShort(s):'No date'))).join('')
-  +`<div class="hs-item add"><button class="hs-card" data-act="addStepSheet" data-id="${g.id}"><span style="display:grid;justify-items:center;gap:10px">${ic('plus')}<span style="font-weight:600">Add a step</span></span></button></div>`;
+  +subTree(g).map(({x,d})=>hsItem(cvar(x),subCard(x,d,true),`sub ${x.status==='done'?'done':''} d${Math.min(d,3)}`,`<button class="node sub" data-act="open" data-id="${x.id}" aria-label="Open sub-goal: ${esc(x.title)}">${x.status==='done'?ic('check'):`<i style="--p:${pct(x)}"></i>`}</button>`,x.targetDate?(d>1?'↳ ':'')+'Target '+fmtDate(x.targetDate):(d>1?'↳ sub-goal':'Sub-goal'))).join('')
+  +`<div class="hs-item add"><button class="hs-card" data-act="addStepSheet" data-id="${g.id}"><span style="display:grid;justify-items:center;gap:10px">${ic('plus')}<span style="font-weight:600">Add a step</span></span></button></div><div class="hs-item add"><button class="hs-card" data-act="newGoal" data-parent="${g.id}"><span style="display:grid;justify-items:center;gap:10px">${ic('plus')}<span style="font-weight:600">Add a sub-goal</span></span></button></div>`;
  return hsShell('st-'+g.id,items,n?g.steps.indexOf(n):Math.max(0,N-1),cvar(g))}
-function spineSteps(g){if(!g.steps.length)return`<div class="empty rv"><h3>Plot the path</h3><p>Break this goal into steps you can finish in a day or a week.</p><div class="actions"><button class="btn pri" data-act="addStepSheet" data-id="${g.id}">${ic('plus')}Add the first step</button></div></div>`;const n=nextStep(g);
- return`<div class="spine" data-fill style="${cvar(g)}"><div class="spine-fill"></div>${g.steps.map((s,i)=>`<div class="sp-item ${i%2?'r':'l'} ${s.done?'done':''} ${s===n?'cur':''} rv"><div class="sp-card">${stepCard(g,s,i)}</div><button class="node" data-act="toggleStep" data-g="${g.id}" data-s="${s.id}" aria-label="${s.done?'Mark not done':'Mark done'}: ${esc(s.title)}">${s.done?ic('check'):''}</button></div>`).join('')}<div class="add-step"><button class="btn" data-act="addStepSheet" data-id="${g.id}">${ic('plus')}Add step</button></div></div>`}
-function subGoals(g){const k=kids(g);if(!k.length)return`<div class="subadd rv"><button class="link" data-act="newGoal" data-parent="${g.id}">${ic('plus')}Add a sub-goal</button></div>`;
- return`<section class="rv" style="margin-bottom:26px"><div class="st-h" style="margin-top:0"><h3>Sub-goals</h3><button class="link" data-act="newGoal" data-parent="${g.id}">Add</button></div><div class="list">${k.sort((a,b)=>(a.status==='done')-(b.status==='done')||a.priority-b.priority).map(x=>{const nx=nextStep(x),kk=kids(x).length;return`<div class="li sub${x.status==='done'?' done':''}" style="${cvar(x)}" data-act="open" data-id="${x.id}" data-vt="${x.id}"><span class="sring" style="--p:${pct(x)}">${x.status==='done'?ic('check'):pct(x)+'%'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(x.title)}</div><div class="s"><i></i><span class="ell">${x.status==='done'?'Achieved':nx?'Next: '+esc(nx.title):kk?kk+' sub-goal'+(kk>1?'s':''):'No steps yet'}</span></div></div>${ic('next','ico-s')}</div>`}).join('')}</div></section>`}
+function spineSteps(g){const ST=subTree(g);if(!g.steps.length&&!ST.length)return`<div class="empty rv"><h3>Plot the path</h3><p>Break this goal into steps you can finish in a day or a week.</p><div class="actions"><button class="btn pri" data-act="addStepSheet" data-id="${g.id}">${ic('plus')}Add the first step</button></div></div>`;const n=nextStep(g);
+ return`<div class="spine" data-fill style="${cvar(g)}"><div class="spine-fill"></div>${g.steps.map((s,i)=>`<div class="sp-item ${i%2?'r':'l'} ${s.done?'done':''} ${s===n?'cur':''} rv"><div class="sp-card">${stepCard(g,s,i)}</div><button class="node" data-act="toggleStep" data-g="${g.id}" data-s="${s.id}" aria-label="${s.done?'Mark not done':'Mark done'}: ${esc(s.title)}">${s.done?ic('check'):''}</button></div>`).join('')}${ST.map(({x,d},j)=>`<div class="sp-item ${(g.steps.length+j)%2?'r':'l'} sub d${Math.min(d,3)} ${x.status==='done'?'done':''} rv" style="${cvar(x)}"><div class="sp-card">${subCard(x,d,false)}</div><button class="node sub" data-act="open" data-id="${x.id}" aria-label="Open sub-goal: ${esc(x.title)}">${x.status==='done'?ic('check'):`<i style="--p:${pct(x)}"></i>`}</button></div>`).join('')}<div class="add-step"><button class="btn" data-act="addStepSheet" data-id="${g.id}">${ic('plus')}Add step</button><button class="btn" data-act="newGoal" data-parent="${g.id}">${ic('plus')}Add sub-goal</button></div></div>`}
+/* sub-goals (any depth) shown inside a goal's Cards / Path / Timeline, after its own steps */
+const subTree=g=>treeOrder(descendants(g).sort((a,b)=>(gSpan(a).s-gSpan(b).s)||(a.priority-b.priority))).map(({g:x,d})=>({x,d:d+1}));
+function subCard(x,d,big){const nx=nextStep(x),kk=kids(x).length,p=pct(x),par=G(x.parent),lab=`${d>1?'Sub-goal of '+esc(trunc(par?par.title:'',24)):'Sub-goal'}`,foot=x.status==='done'?'Achieved':nx?'Next: '+esc(trunc(nx.title,44)):kk?kk+' sub-goal'+(kk>1?'s':''):'No steps yet';
+ return big?`<div class="sc big subc" data-act="open" data-id="${x.id}" data-vt="${x.id}" tabindex="0" role="button" aria-label="Open sub-goal ${esc(x.title)}"><div class="sc-in"><div class="sc-face sc-front tint${haloOn(x)?' halo':''}" style="${cvar(x)}"><div class="sc-top"><span class="data">${lab}</span><span class="nbadge">${x.status==='done'?'✓':p+'<small>%</small>'}</span></div><div class="sc-t">${esc(x.title)}</div><div class="pbar"><i style="width:${p}%"></i></div><div class="sc-foot"><span class="data">${foot}</span><span class="flip-hint">${ic('next')}</span></div></div></div></div>`
+ :`<div class="sc subc" data-act="open" data-id="${x.id}" data-vt="${x.id}" tabindex="0" role="button" aria-label="Open sub-goal ${esc(x.title)}"><div class="sc-in"><div class="sc-face sc-front tint${haloOn(x)?' halo':''}" style="${cvar(x)}"><span class="nbadge sm">${x.status==='done'?'✓':p+'%'}</span><div class="data">${lab}</div><div class="sc-t">${esc(x.title)}</div><div class="pbar"><i style="width:${p}%"></i></div><div class="data" style="margin-top:8px">${foot}</div></div></div></div>`}
+function subGoals(g){return kids(g).length?'':`<div class="subadd rv"><button class="link" data-act="newGoal" data-parent="${g.id}">${ic('plus')}Add a sub-goal</button></div>`}
 function vGoal(id){const g=G(id);if(!g)return`<header class="ph"><div><h1>Not found</h1></div></header><a class="btn" href="#/goals">Back to goals</a>`;
  const p=pct(g),dn=g.steps.filter(s=>s.done).length;const links=g.links.map(G).filter(Boolean);
  const ents=S.entries.filter(e=>e.goalId===g.id&&(e.type==='note'||e.type==='goal-done')).sort((a,b)=>b.t-a.t).slice(0,4);
- const md=S.settings.layout.goal;let body;if(md==='cards'&&g.steps.length)body=stepsCarousel(g);else if(md==='orbit'&&g.steps.length){const R=roadHTML([g],ppdFit(g),true,true);GV.x=R.firstX;body=`<div class="road single rv${RANIM&&!reduced()?' draw':''}" id="road">${R.html}</div><p class="small muted" style="margin-top:12px">Tap a planet to edit a step. Move the goal’s start date and the whole path moves with it.</p>`}else body=spineSteps(g);
+ const md=S.settings.layout.goal;const hasK=kids(g).length>0;let body;if(md==='cards'&&(g.steps.length||hasK))body=stepsCarousel(g);else if(md==='orbit'&&(g.steps.length||hasK)){const L=[g,...subTree(g).map(t=>t.x)],R=hasK?roadHTML(L,ppdFitMany(L),true,false):roadHTML([g],ppdFit(g),true,true);GV.x=R.firstX;body=`<div class="road single${hasK?' multi':''} rv${RANIM&&!reduced()?' draw':''}" id="road">${R.html}</div><p class="small muted" style="margin-top:12px">${hasK?'The goal and each sub-goal flow on their own path. Tap a planet to edit a step, or a name to open that sub-goal.':'Tap a planet to edit a step. Move the goal’s start date and the whole path moves with it.'}</p>`}else body=spineSteps(g);
  return`<div class="crumb"><a href="#/goals" class="ibtn" aria-label="Back to goals">${ic('back')}</a><div class="ph-r"><button class="ibtn ${g.pinned?'on':''}" data-act="pin" data-id="${g.id}" aria-label="${g.pinned?'Unpin':'Pin to Today'}">${ic('pin')}</button><button class="ibtn" data-act="editGoal" data-id="${g.id}" aria-label="Edit goal">${ic('edit')}</button><button class="ibtn" data-act="goalMenu" data-id="${g.id}" aria-label="More">${ic('more')}</button></div></div>
  ${ancestors(g).length?`<nav class="gcrumb rv" aria-label="Part of">${ancestors(g).reverse().map(a=>`<a href="#/goal/${a.id}" style="${cvar(a)}"><i></i>${esc(trunc(a.title,32))}</a>`).join(ic('next','ico-s'))}</nav>`:''}<section class="hero tint${haloOn(g)?' halo':''}" style="${cvar(g)};view-transition-name:hero"><div class="data">${areaName(g.area)} · ${hzName(g.horizon)} · ${PRIO[g.priority]} priority</div><h1>${esc(g.title)}</h1>${g.why?`<p class="why">${esc(g.why)}</p>`:''}<div class="hero-f"><div><div class="data">${fmtDate(g.startDate)} → ${g.targetDate?fmtDate(g.targetDate):'open-ended'} · ${kids(g).length?`${kids(g).length} sub-goal${kids(g).length>1?'s':''}${g.steps.length?' · ':''}`:''}${g.steps.length||!kids(g).length?`${dn} of ${g.steps.length} steps`:''}${g.checkin?' · '+checkinTxt(g):''}</div><div class="pbar"><i style="width:${p}%"></i></div></div><div class="hero-pct">${g.status==='done'?'✓':p}<small>${g.status==='done'?'':'%'}</small></div></div></section>
  ${subGoals(g)}
  <div class="bar">${segHTML('gv','gvMode',[['cards','Cards'],['path','Path'],['orbit','Timeline']],S.settings.layout.goal)}</div>
- ${kids(g).length&&!g.steps.length?`<p class="small muted rv">No steps of its own. Progress comes from the sub-goals above. <button class="link" data-act="addStepSheet" data-id="${g.id}">Add a step</button></p>`:body}
+ ${body}
  ${typeof goalHabits==='function'?goalHabits(g):''}
  <section class="rv"><div class="st-h"><h3>Connected goals</h3><button class="link" data-act="connect" data-id="${g.id}">${links.length?'Edit':'Connect'}</button></div>${links.length?links.map(l=>`<a class="gchip" style="${cvar(l)}" href="#/goal/${l.id}"><i></i>${esc(l.title)}<span>${pct(l)}%</span></a>`).join(''):`<p class="small muted">Link goals that feed each other. The links show up as lines on your life map.</p>`}</section>
  <section class="rv"><div class="st-h"><h3>Moments</h3><button class="link" data-act="addEntry" data-g="${g.id}">Add</button></div>${ents.length?`<div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">${ents.map(e=>journalCard(e,true)).join('')}</div>`:`<p class="small muted">Notes and photos about this goal. They also appear in your journal.</p>`}</section>`}
@@ -1403,6 +1418,7 @@ const PPD={month:24,quarter:7,year:2.2};
 const HZ_DAYS={week:7,month:30,quarter:90,year:365,multi:1095,life:3650};
 function gSpan(g){const s=dnum(g.startDate||ymd(new Date(g.createdAt)));const dues=g.steps.filter(x=>x.due).map(x=>dnum(x.due));let e=g.targetDate?dnum(g.targetDate):(dues.length?Math.max(...dues):s+HZ_DAYS[g.horizon]);if(dues.length)e=Math.max(e,...dues);return{s:Math.min(s,...dues),e:Math.max(e,s+1)}}
 function stepXs(g,sp){const n=g.steps.length;return g.steps.map((st,i)=>st.due?dnum(st.due):sp.s+(i+1)/(n+1)*(sp.e-sp.s))}
+function ppdFitMany(L){const tn=dnum(ymd());let lo=tn-14,hi=tn+45;L.forEach(g=>{const sp=gSpan(g);lo=Math.min(lo,sp.s-7);hi=Math.max(hi,sp.e+21)});return Math.min(30,Math.max(2.4,760/(hi-lo)))}
 function ppdFit(g){const sp=gSpan(g),tn=dnum(ymd());const lo=Math.min(tn-14,sp.s-7),hi=Math.max(tn+45,sp.e+21);return Math.min(30,Math.max(2.4,760/(hi-lo)))}
 const FLW=320;
 function flY(x,xs,xe,yc,A,ph){const env=Math.max(0,Math.min(1,(x-xs)/80,(xe-x)/80));return yc+A*env*Math.sin((x-xs)/FLW*2*Math.PI+ph)}
@@ -1434,7 +1450,7 @@ let T={x:0,y:0,k:1},MP=null,MSEL=null,ML=null;
 function vMap(){const n=S.goals.length;return`<header class="ph"><div><h1>Life map</h1><div class="data">${n?'Drag anything · tap to focus · pinch to zoom':'Your goals will appear here'}</div></div><div class="ph-r"><button class="ibtn" data-act="fit" aria-label="Fit everything">${ic('fit')}</button>${gear()}</div></header>
  <div class="mapwrap rv"><svg id="map" role="img" aria-label="Map of your goals"><g id="mapg"><g id="mstars"></g><g id="mcontent"></g></g></svg><div class="mapctl"><button class="ibtn" data-act="zoom" data-d="1.3" aria-label="Zoom in">${ic('plus')}</button><button class="ibtn" data-act="zoom" data-d="0.77" aria-label="Zoom out">${ic('minus')}</button></div><div class="mapdock"><span class="data">Spacing</span><input type="range" min="0.8" max="2" step="0.05" value="${S.settings.mapSpace||1}" data-map="space" aria-label="Spacing between goals"><button class="ibtn sm" data-act="mapReset" aria-label="Reset layout">${ic('reset')}</button></div><div id="mapcard"></div></div>`}
 const nodeR=g=>15+(4-g.priority)*5;
-function mapLayout(){const goals=S.goals,sp=S.settings.mapSpace||1;const areas=AREAS.filter(a=>goals.some(x=>x.area===a.id));const P={},AP={},ap=S.settings.areaPos||{};
+function mapLayout(){const goals=S.goals,sp=S.settings.mapSpace||1;const areas=allAreas().filter(a=>goals.some(x=>areaOf(x.area).id===a.id));const P={},AP={},ap=S.settings.areaPos||{};
  areas.forEach((a,i)=>{const ang=-Math.PI/2+i*2*Math.PI/areas.length;const A=ap[a.id]?{x:ap[a.id].x*sp,y:ap[a.id].y*sp}:{x:Math.cos(ang)*260*sp,y:Math.sin(ang)*260*sp};AP[a.id]=A;const gs=goals.filter(x=>x.area===a.id).sort((p,q)=>p.priority-q.priority);const n=gs.length,R2=(130+Math.max(0,n-4)*18)*sp,spread=Math.min(Math.PI*1.4,.62*(n-1));
   gs.forEach((x,j)=>{const t=n===1?0:(j/(n-1)-.5)*spread;const o=x.mapPos?{dx:x.mapPos.dx*sp,dy:x.mapPos.dy*sp}:{dx:Math.cos(ang+t)*R2,dy:Math.sin(ang+t)*R2};P[x.id]={x:A.x+o.dx,y:A.y+o.dy}})});
  return{areas,P,AP,sp}}
@@ -1500,7 +1516,7 @@ GOAL OBJECT — all keys required, in this order${up?' (for "keep" and "remove" 
   "parent":       ${up?'null for a main goal, or the id of the goal it sits under (an existing id or "new-N")':'null for the ONE main goal; for every other goal the id of the goal it sits under ("new-1", …)'}
   "title":        string, 3 to 80 characters
   "why":          string, one sentence, may be ""
-  "area":         "health" | "career" | "family" | "faith" | "finance" | "learning" | "personal"
+  "area":         "health" | "career" | "family" | "faith" | "finance" | "learning" | "personal" — or, when none of these fits, your own short area name (1 to 3 words, max 24 characters), e.g. "home", "community", "side business"
   "horizon":      "week" | "month" | "quarter" | "year" | "multi" | "life"   (multi = 1 to 5 years)
   "priority":     1 (high) | 2 (medium) | 3 (low) — integer
   "startInDays":  integer >= 0, days from today until the goal starts${up?' — or null to keep the current start date':''}
@@ -1519,6 +1535,7 @@ STEP OBJECT — all keys required, in this order
 STRUCTURE — goals nest like folders
 ${up?`- Keep my existing structure unless the change calls for it. New goals go under the goal they serve.
 - A goal's "parent" may be any goal at any depth, but never itself or one of its own sub-goals.`:`- The FIRST goal is the one main goal that sums up everything I describe. Its "parent" is null. No other goal has a null parent.
+- You name the main goal: a clear, specific title for the whole ambition in a few words (not "My plan" or "Life goals"). Pick its "area" and "horizon" to match the whole picture. Its "why" says in one sentence what ties everything together.
 - Every other goal sits under the main goal or under another goal through "parent". Nest as deep as it genuinely helps.
 - Put steps on the most specific goal. The main goal may have "steps": [].`}
 ${up?`
@@ -1572,6 +1589,7 @@ const EX_CREATE=`{
 const GUIDE=`How to plan:
 - I may be vague or unsure. Infer sensible goals and do not ask me questions.
 - Start with ONE main goal that captures the whole picture, then nest the specific goals under it (sub-goals may have their own sub-goals).
+- Choose the life area that fits each goal. If none of the seven fits, name your own area.
 - Mix short-term (week, month, quarter) and long-term (year, multi, life) goals where it fits.
 - 3 to 8 steps per goal, spaced realistically between start and target.
 - Priority 1 for at most 3 goals. Link goals that support each other.
@@ -1639,7 +1657,7 @@ function validatePlan(o,mode){const E=[],isInt=Number.isInteger,str=v=>typeof v=
   if('parent' in g&&g.parent!==null&&(typeof g.parent!=='string'||!known.has(g.parent)))E.push(`${q}: "parent" must be null or the id of another goal in the plan.`);else if(g.parent===g.id)E.push(`${q}: "parent" cannot be its own id.`);
   if(!str(g.title)||g.title.trim().length<3||g.title.length>80)E.push(`${q}: "title" must be 3 to 80 characters.`);
   if(!str(g.why))E.push(`${q}: "why" must be a string (may be "").`);
-  if(!AREA_IDS.includes(g.area))E.push(`${q}: "area" must be one of ${AREA_IDS.join(', ')}.`);
+  if(typeof g.area!=='string'||!areaKey(g.area)||g.area.trim().length>24)E.push(`${q}: "area" must be one of ${AREA_IDS.join(', ')}, or a short area name of your own (max 24 characters).`);
   if(!HZ_IDS.includes(g.horizon))E.push(`${q}: "horizon" must be one of ${HZ_IDS.join(', ')}.`);
   if(![1,2,3].includes(g.priority))E.push(`${q}: "priority" must be the integer 1, 2 or 3.`);
   const nullOk=mode==='update'&&g.action==='update';
@@ -1662,13 +1680,14 @@ function validatePlan(o,mode){const E=[],isInt=Number.isInteger,str=v=>typeof v=
 /* the main (umbrella) goal of a new plan: the single top goal, or a new wrapper when the AI sent several */
 function aiMain(o){const ids=new Set(o.goals.map(g=>g.id)),roots=o.goals.filter(g=>!g.parent||!ids.has(g.parent));
  if(roots.length===1){const r=roots[0];AI.main={rid:r.id,title:r.title,why:r.why||'',area:r.area,horizon:r.horizon,target:r.targetInDays!=null?addDays(r.targetInDays):'',img:'',wrap:false};AI.sel=new Set(o.goals.map((_,i)=>i).filter(i=>o.goals[i].id!==r.id));return}
- const cnt={};o.goals.forEach(g=>cnt[g.area]=(cnt[g.area]||0)+1);const area=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]||'personal';const hz=HZ_IDS[Math.max(...o.goals.map(g=>HZ_IDS.indexOf(g.horizon)))]||'year';const tg=Math.max(0,...o.goals.map(g=>g.targetInDays||0));
- AI.main={rid:null,title:'',why:'',area,horizon:hz,target:tg?addDays(tg):'',img:'',wrap:true}}
-function aiMainCard(){const m=AI.main,o=AI.plan,r=m.rid&&o.goals.find(x=>x.id===m.rid);const st=`--c:${cById(m.area)};--c2:var(--c-${AREA_IDS[(AREA_IDS.indexOf(m.area)+2)%7]});--c3:var(--c-${AREA_IDS[(AREA_IDS.indexOf(m.area)+5)%7]})${m.img?`;--img:${IMGOV(m.img)};${IMGV}`:''}`;
- return`<div class="aimain tint" style="${st}"><div class="data">Main goal · ${m.wrap?'the AI sent separate goals, so they’ll go under this one':'everything below sits under it'}</div>
+ const cnt={};o.goals.forEach(g=>{const k=areaKey(g.area);cnt[k]=(cnt[k]||0)+1});const area=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]||'personal';const hz=HZ_IDS[Math.max(...o.goals.map(g=>HZ_IDS.indexOf(g.horizon)))]||'year';const tg=Math.max(0,...o.goals.map(g=>g.targetInDays||0));
+ const top=roots.slice().sort((a,b)=>a.priority-b.priority).slice(0,2).map(g=>g.title.trim());const nm=Object.keys(cnt).length===1?`${areaName(area)}: ${top.join(' and ')}`:top.join(' and ')+(roots.length>2?` and ${roots.length-2} more`:'');
+ AI.main={rid:null,title:trunc(nm,80),why:'',area,horizon:hz,target:tg?addDays(tg):'',img:'',wrap:true}}
+function aiMainCard(){const m=AI.main,o=AI.plan,r=m.rid&&o.goals.find(x=>x.id===m.rid);const st=`${cvar({area:m.area,id:'aimain'})}${m.img?`;--img:${IMGOV(m.img)};${IMGV}`:''}`;
+ return`<div class="aimain tint" style="${st}"><div class="data">Main goal · ${m.wrap?'the AI sent separate goals, so they’ll go under this one. Rename it if you like':'everything below sits under it'}</div>
  <input class="aim-t" data-aim="title" maxlength="80" value="${esc(m.title)}" placeholder="Name your main goal" aria-label="Main goal title">
  <textarea class="aim-w" data-aim="why" maxlength="400" placeholder="Why it matters · optional" aria-label="Why it matters">${esc(m.why)}</textarea>
- <div class="aim-row"><select data-aim="area" aria-label="Life area">${AREAS.map(a=>`<option value="${a.id}" ${a.id===m.area?'selected':''}>${a.name}</option>`).join('')}</select><select data-aim="horizon" aria-label="Horizon">${HORIZONS.map(([k,n])=>`<option value="${k}" ${k===m.horizon?'selected':''}>${n}</option>`).join('')}</select><input type="date" data-aim="target" value="${m.target||''}" aria-label="Target date"></div>
+ <div class="aim-row">${areaInput('aimArea',m.area,'data-aim="area" aria-label="Life area"')}<select data-aim="horizon" aria-label="Horizon">${HORIZONS.map(([k,n])=>`<option value="${k}" ${k===m.horizon?'selected':''}>${n}</option>`).join('')}</select><input type="date" data-aim="target" value="${m.target||''}" aria-label="Target date"></div>
  <div class="aim-row"><label class="btn inkline sm">${ic('camera')}${m.img?'Change cover':'Add a cover image'}<input type="file" accept="image/*" data-file="aicover" hidden></label>${m.img?`<button class="btn inkline sm" data-act="aiCoverRm">Remove</button>`:''}</div>
  ${r&&r.steps.length?`<ol class="aim-s">${r.steps.map(s=>`<li>${esc(s.title)}${s.dueInDays!=null?` · ${fmtDate(addDays(s.dueInDays))}`:''}</li>`).join('')}</ol>`:''}</div>`}
 function diffGoal(ex,x){const out=[];[['title','title'],['why','why'],['area','area'],['horizon','horizon'],['priority','priority']].forEach(([k,n])=>{if(ex[k]!==x[k])out.push(n)});
@@ -1691,7 +1710,7 @@ function vAI(){const ch=AI.tab==='change',mode=ch?'update':'create';
 function previewHTML(){const o=AI.plan,up=o.mode==='update';const B={add:'New',update:'Update',remove:'Remove',keep:'No change'};const M=!up&&AI.main;
  const pm=new Map(o.goals.map(x=>[x.id,x.parent||null])),depth=x=>{let d=0,p=pm.get(x.id);while(p&&pm.has(p)&&d<12){d++;p=pm.get(p)}return d};
  const order=up?o.goals.map((x,i)=>i):treeOrder(o.goals.map((x,i)=>({id:x.id,parent:x.parent||'',i}))).map(t=>t.g.i).filter(i=>!(M&&o.goals[i].id===M.rid));
- const rows=(M?aiMainCard():'')+order.map(i=>{const x=o.goals[i];const dp=M?depth(x)-(M.wrap?0:1)+1:0;const ex=G(x.id);const edit=x.action==='add'||x.action==='update';const title=edit?x.title:(ex?ex.title:x.id);const area=x.area||(ex&&ex.area)||'personal';let det='';
+ const rows=(M?aiMainCard():'')+order.map(i=>{const x=o.goals[i];const dp=M?depth(x)-(M.wrap?0:1)+1:0;const ex=G(x.id);const edit=x.action==='add'||x.action==='update';const title=edit?x.title:(ex?ex.title:x.id);const area=areaKey(x.area)||(ex&&ex.area)||'personal';let det='';
   if(x.action==='update')det=`<div class="m">${diffGoal(ex,x)}</div>`;
   if(edit)det+=`<ol>${x.steps.map(s=>`<li>${esc(s.title)}${s.dueInDays!=null?` · ${fmtDate(addDays(s.dueInDays))}${s.dueTime?' '+fmtTime(s.dueTime):''}`:''}${s.reminder!=='none'?' '+ic('bell','ico-s'):''}${up&&s.id==='new'?' <span class="nb">new</span>':''}</li>`).join('')}</ol>`;
   if(x.action==='remove')det=`<p class="small muted" style="margin-top:6px">This goal will be deleted. Its history stays in your journal.</p>`;
@@ -1703,7 +1722,7 @@ function applyPlan(){const o=AI.plan;if(!o)return;const u=undoPoint();const idMa
  if(M){const r=M.rid&&o.goals.find(x=>x.id===M.rid);main=newGoal({title:trunc(M.title.trim()||(r&&r.title)||'My plan',80),why:M.why,area:M.area,horizon:M.horizon,priority:r?r.priority:1,startDate:r?addDays(r.startInDays):ymd(),targetDate:validDate(M.target),steps:r?r.steps.map(stepFrom):[],img:M.img||''});S.goals.push(main);log('goal-new',main.id,main.title);if(r)idMap[r.id]=main.id;cnt.add++}
  sel.forEach(x=>{
   if(x.action==='add'){const g=newGoal({title:trunc(x.title.trim()||'Goal',80),why:x.why,area:x.area,horizon:x.horizon,priority:x.priority,startDate:addDays(x.startInDays),targetDate:x.targetInDays!=null?addDays(x.targetInDays):'',steps:x.steps.map(stepFrom)});S.goals.push(g);log('goal-new',g.id,g.title);idMap[x.id]=g.id;cnt.add++}
-  else if(x.action==='update'){const g=G(x.id);if(!g)return;Object.assign(g,{title:x.title.trim(),why:x.why.trim(),area:x.area,horizon:x.horizon,priority:x.priority,targetDate:x.targetInDays!=null?addDays(x.targetInDays):''});if(x.startInDays!=null)g.startDate=addDays(x.startInDays);
+  else if(x.action==='update'){const g=G(x.id);if(!g)return;Object.assign(g,{title:x.title.trim(),why:x.why.trim(),area:areaKey(x.area)||g.area,horizon:x.horizon,priority:x.priority,targetDate:x.targetInDays!=null?addDays(x.targetInDays):''});if(x.startInDays!=null)g.startDate=addDays(x.startInDays);
    const done=g.steps.filter(s=>s.done);const open=x.steps.map(s=>{const v=stepFrom(s);const e=s.id!=='new'&&g.steps.find(y=>y.id===s.id&&!y.done);if(e){if(e.due!==v.due||(e.time||'')!==v.time||String(e.remind??'')!==v.remind)e.reminded=false;Object.assign(e,v);return e}return{id:uid(),...v,reminded:false,done:false,doneAt:null}});
    g.steps=[...done,...open];if(g.status==='done'&&open.length){g.status='active';g.completedAt=null}idMap[x.id]=g.id;cnt.update++}
   else if(x.action==='remove'){S.goals.forEach(y=>y.links=y.links.filter(l=>l!==x.id));S.goals=S.goals.filter(y=>y.id!==x.id);cnt.remove++}});
@@ -1767,7 +1786,7 @@ function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(
 function notify(title,body){toast(`${ic('bell','ico-s')} ${esc(title)}${body?` <span class="muted">· ${esc(body)}</span>`:''}`);vib();beep();try{if(!NATIVE&&'Notification'in window&&Notification.permission==='granted')new Notification(title,{body,tag:title})}catch(e){}}
 function reminderAt(s){if(!s.due||s.remind===''||s.remind==null)return null;const[y,m,d]=s.due.split('-').map(Number);const[hh,mm]=(s.time||'09:00').split(':').map(Number);return new Date(y,m-1,d,hh,mm).getTime()-(+s.remind)*6e4}
 /* hand upcoming reminders, check-ins and the focus timer to Android's alarm clock */
-function pushWidget(){if(!NATIVE||!NATIVE.widget)return;const COL={health:'#46C99B',career:'#6B9BFF',family:'#FF8C6B',faith:'#F0C862',finance:'#A9D14A',learning:'#AC93FF',personal:'#F585B8'};const cg=g=>g&&COL[areaOf(g.area).id]||'#FFB547';
+function pushWidget(){if(!NATIVE||!NATIVE.widget)return;const COL={health:'#46C99B',career:'#6B9BFF',family:'#FF8C6B',faith:'#F0C862',finance:'#A9D14A',learning:'#AC93FF',personal:'#F585B8'};const cg=g=>g&&COL[areaOf(g.area).k]||'#FFB547';
  const nx=active().map(g=>({g,s:nextStep(g)})).filter(x=>x.s).sort(urgency).slice(0,4).map(({g,s})=>({t:s.title,g:g.title,d:s.due?dueShort(s):'',late:dueCls(s)==='over',c:cg(g),gid:g.id,sid:s.id,time:s.time?fmtTime(s.time):''}));
  const tn=dnum(ymd());const days=S.days.filter(x=>{const n=dnum(x.date);return n>=tn-1&&n<=tn+8}).sort(byTime).map(x=>({id:x.id,t:x.title,d:x.date,done:!!x.done,time:x.time?fmtTime(x.time):'',c:cg(x.goalId&&G(x.goalId))}));
  const M=calItems(tn-7,tn+21),counts={};for(const k in M)counts[fromN(+k)]=M[k].length;
@@ -1811,7 +1830,7 @@ function goalForm(g,parent){const e=!!g;g=g||{title:'',why:'',area:'personal',ho
  return`<h2>${e?'Edit goal':'New goal'}</h2><form data-form="saveGoal" data-id="${e?g.id:''}">
  <div class="field"><label>What do you want to achieve?</label><input name="title" required maxlength="80" value="${esc(g.title)}" placeholder="Run a 10K race"></div>
  <div class="field"><label>Why it matters</label><textarea name="why" placeholder="Your future self will read this on hard days.">${esc(g.why)}</textarea></div>
- <div class="two"><div class="field"><label>Life area</label><select name="area">${AREAS.map(a=>`<option value="${a.id}" ${a.id===g.area?'selected':''}>${a.name}</option>`).join('')}</select></div><div class="field"><label>Horizon</label><select name="horizon">${HORIZONS.map(([k,n])=>`<option value="${k}" ${k===g.horizon?'selected':''}>${n}</option>`).join('')}</select></div></div>
+ <div class="two"><div class="field"><label>Life area</label>${areaInput('area',g.area)}</div><div class="field"><label>Horizon</label><select name="horizon">${HORIZONS.map(([k,n])=>`<option value="${k}" ${k===g.horizon?'selected':''}>${n}</option>`).join('')}</select></div></div>
  ${S.goals.some(x=>!e||x.id!==g.id)?`<div class="field"><label>Part of a bigger goal · optional</label><select name="parent">${parentOptions(e?g:null,g.parent||'')}</select></div>`:''}
  <div class="field"><label>Priority</label><div class="radios">${[[1,'High'],[2,'Medium'],[3,'Low']].map(([v,n])=>`<label><input type="radio" name="priority" value="${v}" ${g.priority===v?'checked':''}><span>${n}</span></label>`).join('')}</div></div>
  <div class="two"><div class="field"><label>Start date</label><input type="date" name="startDate" required value="${g.startDate||ymd()}"></div><div class="field"><label>Target date</label><input type="date" name="targetDate" value="${g.targetDate||''}"></div></div>
@@ -1868,7 +1887,7 @@ const ACT={
  filt:d=>{F.v=d.v;render(false)},
  gvMode:d=>{S.settings.layout.goal=d.v;save();render(false)},
  jSteps:d=>{S.settings.jSteps=d.v==='1';save();render(false)},
- laneToggle:d=>{if(cur.p!=='road')return;RD.open.has(d.id)?RD.open.delete(d.id):RD.open.add(d.id);RD.pulse=reduced()?null:d.id;render(false);RD.pulse=null},
+ laneToggle:d=>{if(cur.p==='goal'){if(d.id!==cur.id)go('goal/'+d.id);return}if(cur.p!=='road')return;RD.open.has(d.id)?RD.open.delete(d.id):RD.open.add(d.id);RD.pulse=reduced()?null:d.id;render(false);RD.pulse=null},
  rdZoom:d=>{RD.zoom=d.v;RD.scroll=null;render(false)},rdShow:d=>{RD.show=d.v;render(false)},
  rdAll:()=>{if(RD.open.size)RD.open.clear();else S.goals.forEach(g=>RD.open.add(g.id));RD.key=null;render(false)},
  rdToday:()=>{const r=$('#road');if(!r)return;r.scrollTo({left:Math.max(0,RD.todayX-.25*(r.clientWidth-labW(r))),behavior:reduced()?'auto':'smooth'});const tl=r.querySelector('.today-line');if(tl){tl.classList.remove('grow');void tl.offsetWidth;tl.classList.add('grow')}},
@@ -1924,7 +1943,7 @@ const ACT={
  welcomeSync:()=>{S.settings.onboarded=true;SHEET_LOCK=false;closeSheet();save();go('settings');setTimeout(()=>$('#syncPanel')?.scrollIntoView({behavior:'smooth',block:'center'}),400)},
 };
 const FORM={
- saveGoal:(f)=>{const fd=new FormData(f);const o={title:String(fd.get('title')).trim(),why:String(fd.get('why')).trim(),area:fd.get('area'),horizon:fd.get('horizon'),priority:+fd.get('priority')||2,startDate:validDate(fd.get('startDate'))||ymd(),targetDate:validDate(fd.get('targetDate')),pinned:fd.get('pinned')==='on',checkin:fd.get('checkin')||'',checkinTime:fd.get('checkinTime')||'19:00',checkinDay:+(fd.get('checkinDay')??1)};if(COVER!==undefined)o.img=COVER;if(fd.has('parent')){const pid=String(fd.get('parent')||''),me=f.dataset.id&&G(f.dataset.id);o.parent=pid&&G(pid)&&!(me&&(pid===me.id||descendants(me).some(x=>x.id===pid)))?pid:''}
+ saveGoal:(f)=>{const fd=new FormData(f);const o={title:String(fd.get('title')).trim(),why:String(fd.get('why')).trim(),area:areaKey(fd.get('area'))||'personal',horizon:fd.get('horizon'),priority:+fd.get('priority')||2,startDate:validDate(fd.get('startDate'))||ymd(),targetDate:validDate(fd.get('targetDate')),pinned:fd.get('pinned')==='on',checkin:fd.get('checkin')||'',checkinTime:fd.get('checkinTime')||'19:00',checkinDay:+(fd.get('checkinDay')??1)};if(COVER!==undefined)o.img=COVER;if(fd.has('parent')){const pid=String(fd.get('parent')||''),me=f.dataset.id&&G(f.dataset.id);o.parent=pid&&G(pid)&&!(me&&(pid===me.id||descendants(me).some(x=>x.id===pid)))?pid:''}
   if(o.checkin)askNotif();
   if(f.dataset.id){const g=G(f.dataset.id);const delta=dnum(o.startDate)-dnum(g.startDate||o.startDate);let moved=0;
    if(delta&&fd.get('shift')==='on'){g.steps.forEach(s=>{if(!s.done&&s.due){s.due=shiftDate(s.due,delta);s.reminded=false;moved++}});if(o.targetDate&&o.targetDate===g.targetDate)o.targetDate=shiftDate(o.targetDate,delta)}
@@ -1976,7 +1995,7 @@ const SMILES=[3,7,14,21,30,50,66,100,150,200,365],WMILES=[2,4,8,12,26,52];
 const ACOL={health:'#46C99B',career:'#6B9BFF',family:'#FF8C6B',faith:'#F0C862',finance:'#A9D14A',learning:'#AC93FF',personal:'#F585B8'};
 function normHabit(h){const k=['build','quit','routine'].includes(h.kind)?h.kind:'build';
  const o={kind:k,title:'Habit',icon:'',why:'',cue:'',mini:'',plan:'',area:'personal',goalId:'',freq:'daily',days:[0,1,2,3,4,5,6],times:3,target:1,unit:'',part:'any',time:'',remind:false,steps:[],log:{},rs:{},skip:{},pz:[],mode:'quit',limit:1,start:0,slips:[],urges:[],cost:0,cur:'$',mins:0,mile:0,smile:0,status:'active',startDate:'',createdAt:Date.now(),...h};
- o.kind=k;if(!AREA_IDS.includes(o.area))o.area='personal';if(!['daily','days','times'].includes(o.freq))o.freq='daily';
+ o.kind=k;o.area=areaKey(o.area)||'personal';if(!['daily','days','times'].includes(o.freq))o.freq='daily';
  o.days=Array.isArray(o.days)?o.days.map(Number).filter(x=>x>=0&&x<7):[];if(!o.days.length)o.days=[0,1,2,3,4,5,6];
  o.times=Math.min(7,Math.max(1,+o.times||3));o.target=Math.max(1,Math.min(999,+o.target||1));o.limit=Math.max(0,+o.limit||0);if(o.mode!=='limit')o.mode='quit';
  if(!validDate(o.startDate))o.startDate=ymd(new Date(o.createdAt||Date.now()));if(k==='quit'&&!o.start)o.start=o.createdAt||Date.now();
@@ -2189,7 +2208,7 @@ function habitForm(h,kind,tpl){const e=!!h;h=h||normHabit({kind:kind||'build',..
   <div class="field"><label>Time of day</label><div class="radios sm">${HPARTS.map(([k,n])=>`<label><input type="radio" name="part" value="${k}" ${(h.part||'any')===k?'checked':''}><span>${n}</span></label>`).join('')}</div></div>
   <div class="two"><div class="field"><label>Reminder time · optional</label><input type="time" name="time" value="${h.time||''}"></div><div class="field"><label>&nbsp;</label><label class="sw" style="border:0;padding:6px 0"><span>Remind me</span><input type="checkbox" name="remind" ${h.remind?'checked':''}><i></i></label></div></div></div>
  <div class="field"><label>Why it matters · optional</label><textarea name="why" style="min-height:72px" placeholder="Read this on the days you don’t feel like it">${esc(h.why)}</textarea></div>
- <div class="two"><div class="field"><label>Life area</label><select name="area">${AREAS.map(a=>`<option value="${a.id}" ${a.id===h.area?'selected':''}>${a.name}</option>`).join('')}</select></div><div class="field"><label>Supports a goal · optional</label><select name="goal"><option value="">None</option>${treeOrder(gs).map(({g,d})=>`<option value="${g.id}" ${h.goalId===g.id?'selected':''}>${' '.repeat(d)}${esc(trunc(g.title,44))}</option>`).join('')}</select></div></div>
+ <div class="two"><div class="field"><label>Life area</label>${areaInput('area',h.area)}</div><div class="field"><label>Supports a goal · optional</label><select name="goal"><option value="">None</option>${treeOrder(gs).map(({g,d})=>`<option value="${g.id}" ${h.goalId===g.id?'selected':''}>${' '.repeat(d)}${esc(trunc(g.title,44))}</option>`).join('')}</select></div></div>
  <div class="actions"><button type="button" class="btn ghost" data-act="close">Cancel</button><button class="btn pri">${e?'Save':'Create'}</button></div></form>`}
 function hFormSync(f){const k=(f.querySelector('[name=kind]:checked')||f.querySelector('[name=kind][type=hidden]')||{}).value||'build',fq=(f.querySelector('[name=freq]:checked')||{}).value||'daily',md=(f.querySelector('[name=mode]:checked')||{}).value||'quit';
  f.querySelectorAll('[data-k]').forEach(x=>x.hidden=!x.dataset.k.split(' ').includes(k));f.querySelectorAll('[data-fq]').forEach(x=>x.hidden=x.dataset.fq!==fq);f.querySelectorAll('[data-md]').forEach(x=>x.hidden=x.dataset.md!==md);
@@ -2224,8 +2243,8 @@ function habitWeekLine(){const tn=dnum(ymd());let due=0,dn=0;for(let k=tn-6;k<=t
 function hCelebrate(h){const td=ymd(),t=dayRatio(td);if(t.due>1&&t.dn>=t.due){burst();toast('Every habit for today is done');return}const s=hStreak(h);if(s>1)toast(`${esc(hIcon(h))} ${esc(h.title)} · ${s}${h.freq==='times'?'-week':'-day'} streak`)}
 /* widget + notification payload */
 function widgetHabits(){const td=ymd(),tn=dnum(td),L=d=>{const o={};for(let k=tn-7;k<=tn;k++){const ds=fromN(k),v=hVal(d,ds);if(v)o[ds]=v;if(d.skip[ds])o[ds]=-1}return o};
- const hs=S.habits.filter(h=>h.status==='active'&&h.kind!=='quit').sort((a,b)=>HPARTS.findIndex(p=>p[0]===a.part)-HPARTS.findIndex(p=>p[0]===b.part)||(a.time||'99').localeCompare(b.time||'99')).slice(0,12).map(h=>{const s=hStreak(h);return{id:h.id,t:h.title,e:hIcon(h),a:h.area,c:ACOL[h.area]||'#FFB547',n:hTarget(h),u:h.unit||'',k:h.kind==='routine'&&h.steps.length?'routine':'build',m:[0,1,2,3,4,5,6].map(i=>h.freq!=='days'||h.days.includes(i)?'1':'0').join(''),sd:h.startDate,tw:h.freq==='times'?h.times:0,sb:h.freq==='times'?s:Math.max(0,s-(hDone(h,td)?1:0)),l:L(h)}});
- const qs=S.habits.filter(h=>h.status==='active'&&h.kind==='quit').slice(0,6).map(h=>{const sv=qSaved(h),d=qDays(h),nx=MILES.find(m=>m>d);return{id:h.id,t:h.title,e:hIcon(h),a:h.area,c:ACOL[h.area]||'#FFB547',mode:h.mode,since:qSince(h),best:qBest(h),saved:h.mode==='limit'?'':sv.money>=.5?money(h,sv.money)+' saved':sv.mins>=30?hrs(sv.mins)+' back':'',next:nx?mileName(nx):'',lim:h.limit,u:h.unit||'',l:L(h),ls:lStreak(h)}});
+ const hs=S.habits.filter(h=>h.status==='active'&&h.kind!=='quit').sort((a,b)=>HPARTS.findIndex(p=>p[0]===a.part)-HPARTS.findIndex(p=>p[0]===b.part)||(a.time||'99').localeCompare(b.time||'99')).slice(0,12).map(h=>{const s=hStreak(h);return{id:h.id,t:h.title,e:hIcon(h),a:areaOf(h.area).k,c:ACOL[areaOf(h.area).k]||'#FFB547',n:hTarget(h),u:h.unit||'',k:h.kind==='routine'&&h.steps.length?'routine':'build',m:[0,1,2,3,4,5,6].map(i=>h.freq!=='days'||h.days.includes(i)?'1':'0').join(''),sd:h.startDate,tw:h.freq==='times'?h.times:0,sb:h.freq==='times'?s:Math.max(0,s-(hDone(h,td)?1:0)),l:L(h)}});
+ const qs=S.habits.filter(h=>h.status==='active'&&h.kind==='quit').slice(0,6).map(h=>{const sv=qSaved(h),d=qDays(h),nx=MILES.find(m=>m>d);return{id:h.id,t:h.title,e:hIcon(h),a:areaOf(h.area).k,c:ACOL[areaOf(h.area).k]||'#FFB547',mode:h.mode,since:qSince(h),best:qBest(h),saved:h.mode==='limit'?'':sv.money>=.5?money(h,sv.money)+' saved':sv.mins>=30?hrs(sv.mins)+' back':'',next:nx?mileName(nx):'',lim:h.limit,u:h.unit||'',l:L(h),ls:lStreak(h)}});
  return{hd:td,habits:hs,quits:qs}}
 function habitAlarms(now,L){S.habits.forEach(h=>{if(h.status!=='active')return;
   if(h.kind!=='quit'&&h.remind&&h.time){const[hh,mm]=h.time.split(':').map(Number);for(let k=0;k<4;k++){const d=new Date();d.setDate(d.getDate()+k);d.setHours(hh,mm,0,0);const ds=ymd(d);if(d.getTime()<=now||!hCounts(h,ds)||hDone(h,ds))continue;const s=hStreak(h);
@@ -2287,7 +2306,7 @@ Object.assign(ACT,{
 });
 Object.assign(FORM,{
  saveHabit:f=>{const fd=new FormData(f),kind=fd.get('kind')||'build',title=String(fd.get('title')||'').trim();if(!title)return toast('Give it a name');const ex=f.dataset.id&&H(f.dataset.id);
-  const o={title,icon:fd.get('icon')||'',why:String(fd.get('why')||'').trim(),area:fd.get('area')||'personal',goalId:fd.get('goal')||''};
+  const o={title,icon:fd.get('icon')||'',why:String(fd.get('why')||'').trim(),area:areaKey(fd.get('area'))||'personal',goalId:fd.get('goal')||''};
   if(kind!=='quit'){o.freq=fd.get('freq')||'daily';o.days=fd.getAll('days').map(Number);if(o.freq==='days'&&(!o.days.length||o.days.length===7)){o.freq='daily';o.days=[0,1,2,3,4,5,6]}o.times=+fd.get('times')||3;o.part=fd.get('part')||'any';o.time=fd.get('time')||'';o.remind=fd.get('remind')==='on'&&!!o.time}
   if(kind==='build'){o.cue=String(fd.get('cue')||'').trim();o.mini=String(fd.get('mini')||'').trim();o.target=Math.max(1,Math.min(999,+fd.get('target')||1));o.unit=String(fd.get('unit')||'').trim()}
   if(kind==='routine'){o.steps=parseSteps(fd.get('steps'),ex?ex.steps:[]);if(!o.steps.length)return toast('Add at least one step')}
@@ -2302,7 +2321,7 @@ Object.assign(FORM,{
 FILE.aicover=async inp=>{const f=inp.files[0];if(!f||!AI.main)return;try{AI.main.img=await readImg(f);render(false)}catch(e){toast('Couldn’t read that image')}};
 document.addEventListener('change',e=>{const t=e.target;if(t.form&&t.form.dataset.form==='saveHabit')hFormSync(t.form);
  if(t.dataset.hstep){const h=H(t.dataset.id),ds=t.dataset.d;if(!h)return;const L=new Set(h.rs[ds]||[]);t.checked?L.add(t.dataset.hstep):L.delete(t.dataset.hstep);h.rs[ds]=h.steps.filter(s=>L.has(s.id)).map(s=>s.id);if(!h.rs[ds].length)delete h.rs[ds];else delete h.skip[ds];if(t.checked)vib();if(hDone(h,ds))checkMilestones();save();render(false)}
- if(t.dataset.aim&&AI.main&&t.tagName!=='TEXTAREA'&&t.type!=='text'){AI.main[t.dataset.aim]=t.value;render(false)}});
+ if(t.dataset.aim&&AI.main&&(t.tagName!=='TEXTAREA'&&t.type!=='text'||t.dataset.aim==='area')){AI.main[t.dataset.aim]=t.dataset.aim==='area'?(areaKey(t.value)||'personal'):t.value;render(false)}});
 document.addEventListener('input',e=>{const t=e.target;if(t.dataset.aim&&AI.main&&(t.tagName==='TEXTAREA'||t.type==='text'))AI.main[t.dataset.aim]=t.value;else if(t.dataset.ait!=null&&AI.plan){const g=AI.plan.goals[+t.dataset.ait];if(g)g.title=t.value}});
 function seedHabits(){const day=864e5,tn=dnum(ymd());const mk=(o,fill)=>{const h=normHabit({id:uid(),createdAt:Date.now()-50*day,startDate:addDays(-49),...o});if(fill)for(let k=tn-49;k<tn;k++){const v=fill(tn-k,dUTC(k).getUTCDay());if(v)hSetVal(h,fromN(k),v)}S.habits.push(h);return h};
  const water=mk({title:'Drink water',icon:'💧',area:'health',target:8,unit:'glasses',cue:'After each meal'},a=>a%9===4?5:8);water.log[ymd()]=3;
