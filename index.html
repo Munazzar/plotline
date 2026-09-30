@@ -1205,6 +1205,38 @@ html,body{overscroll-behavior-y:contain}
 .ms-d:active span{transform:scale(.88)}
 .ms-d em{font:500 9px var(--f-mono);font-style:normal}
 .ms-d.now em{color:var(--text)}
+/* ================= insights ================= */
+.ins{display:grid;gap:16px;margin-top:6px}
+.ins-ask h3,.ins-res h3{font:700 22px/1.05 var(--f-display);text-transform:uppercase;margin-bottom:6px}
+.ins-ask textarea{margin-top:14px;min-height:74px}
+.ins-pre{margin-top:12px}
+.ins-opts{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:10px;margin-top:14px;align-items:center}
+.ins-opts .radios span{padding:10px 2px;font-size:13px}
+@media (max-width:640px){.ins-opts{grid-template-columns:1fr}}
+.ins-ask .actions{align-items:center}
+.ins-prog{min-height:18px;margin-top:8px}
+.ins-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+.ins-st{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;min-width:0}
+.ins-st b{display:block;font:800 30px/1 var(--f-display);color:var(--text)}
+.ins-st span{display:block;font:500 10px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.ins-st.hl{grid-column:1/-1;border-color:color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+.ins-st.hl b{color:var(--accent)}
+.ins-st small{display:block;margin-top:6px;font-size:13.5px;line-height:1.45;color:var(--text)}
+.ins-ans{margin-top:12px;font-size:15.5px;line-height:1.62}
+.ins-ans p{margin:0 0 10px}.ins-ans ul{margin:0 0 10px 20px}.ins-ans li{margin:4px 0}
+.ins-ans h4{font:700 15px var(--f-body);margin:14px 0 6px}
+.cite{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;margin:0 1px;border-radius:7px;border:0;vertical-align:2px;background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent);font:600 10.5px var(--f-mono);cursor:pointer}
+.cite:hover,.cite:focus-visible{background:var(--accent);color:var(--bg)}
+.ins-src{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.ins-src summary{cursor:pointer;color:var(--muted);font-weight:600}
+.ins-src ol{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.ins-si{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--bg-2);color:var(--text);font:inherit;cursor:pointer}
+.ins-si:hover{border-color:var(--line-2)}
+.ins-si .n{flex:none;width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:var(--surface-2);font:600 11px var(--f-mono);color:var(--muted)}
+.ins-si .t{min-width:0}.ins-si b{display:block;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ins-si small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.ins-eng .field{margin-top:12px}
+.ins-eng code{font:12px var(--f-mono);background:var(--bg-2);padding:2px 6px;border-radius:6px;word-break:break-all}
 </style>
 </head>
 <body>
@@ -1924,11 +1956,11 @@ function diffGoal(ex,x){const out=[];[['title','title'],['why','why'],['area','a
  const moved=kept.filter(y=>{const s=open.find(z=>z.id===y.id);return s&&((y.dueInDays!=null?addDays(y.dueInDays):'')!==(s.due||'')||y.title!==s.title)}).length;const locked=ex.steps.length-open.length;
  return[locked?`<span class="data">${ic('lock','ico-s')} ${locked} done, locked</span>`:'',added?`<span class="data" style="color:#46C99B">+${added} new</span>`:'',removed?`<span class="data" style="color:#FF7A7A">−${removed} removed</span>`:'',moved?`<span class="data">${moved} rescheduled or edited</span>`:'',out.length?`<span class="data">changed: ${out.join(', ')}</span>`:''].join('')}
 let AI={tab:'new',text:'',change:'',reply:'',plan:null,errs:[],sel:new Set()};
-function vAI(){const ch=AI.tab==='change',mode=ch?'update':'create';
+function vAI(){if(AI.tab==='insights')return`<header class="ph"><div><h1>Your<br>insights</h1><div class="data">From your own notes · search runs on this device</div></div><div class="ph-r">${gear()}</div></header><div class="bar">${segHTML('ai','aiTab',[['new','New plan'],['change','Change of plans'],['insights','Insights']],AI.tab)}</div>`+vInsights();const ch=AI.tab==='change',mode=ch?'update':'create';
  const s1=ch?`<h3>What changed?</h3><p class="small muted">Your whole plan goes along, with every goal and step id. Completed steps are locked. The AI can only rework, reschedule or add what’s still open.</p><textarea id="aiChange" placeholder="e.g. I started a job with long weekdays, so training moves to weekends. We’re moving in March, so the family days pause for a month.">${esc(AI.change)}</textarea>`
   :`<h3>Describe what you want</h3><p class="small muted">Messy is fine: hopes, worries, things you keep putting off. You don’t need to know your goals yet.</p><textarea id="aiText" placeholder="e.g. I want to be healthier, maybe run a race. Save for a house in 3 years. Spend more real time with my kids. Learn to cook properly.">${esc(AI.text)}</textarea>`;
  return`<header class="ph"><div><h1>${ch?'Change<br>of plans':'Plan with AI'}</h1><div class="data">Works with ChatGPT, Claude, Gemini or any assistant</div></div><div class="ph-r">${gear()}</div></header>
- <div class="bar">${segHTML('ai','aiTab',[['new','New plan'],['change','Change of plans']],AI.tab)}</div>
+ <div class="bar">${segHTML('ai','aiTab',[['new','New plan'],['change','Change of plans'],['insights','Insights']],AI.tab)}</div>
  <div class="fstep rv ${AI.plan?'':'on'}"><div class="fnum">1</div><div>${s1}<div class="actions left"><button class="btn pri" data-act="copyPrompt">${ic('copy')}Copy prompt</button><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Claude ${ic('ext','ico-s')}</a><a class="btn" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ${ic('ext','ico-s')}</a><a class="btn" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ${ic('ext','ico-s')}</a></div></div></div>
  <div class="fstep rv"><div class="fnum">2</div><div><h3>Paste the whole reply</h3><p class="small muted">The app finds the plan and checks every field against the format.</p><textarea id="aiReply" placeholder="Paste the AI’s full answer here">${esc(AI.reply)}</textarea><div class="actions left"><button class="btn ${AI.plan?'':'pri'}" data-act="parseAI">Check plan</button></div>
  ${AI.errs.length?`<div class="errbox"><b>The plan doesn’t match the format yet</b><ul>${AI.errs.map(e=>`<li>${esc(e)}</li>`).join('')}</ul><div class="actions left" style="margin-top:12px"><button class="btn pri" data-act="copyFix">${ic('copy')}Copy fix-it message</button></div><p class="small muted" style="margin-top:8px">Paste it into the same AI chat, then paste the new reply here.</p></div>`:''}</div></div>
@@ -2806,7 +2838,7 @@ document.addEventListener('touchcancel',()=>{if(PTR&&PTR.on){$('#view').style.tr
 let cur={p:'today'},booted=false;
 const VIEWS={today:vToday,habits:vHabits,habit:vHabit,cal:vCal,goals:vGoals,goal:vGoal,road:vRoad,map:vMap,journal:vJournal,ai:vAI,settings:vSettings};
 function go(h){if(location.hash==='#/'+h)route();else location.hash='#/'+h}
-function route(){let[p,id]=(location.hash.slice(2)||'today').split('/');if(p==='timeline')p='journal';const doit=()=>{cur={p:VIEWS[p]?p:'today',id};render(true);window.scrollTo(0,0)};
+function route(){let[p,id]=(location.hash.slice(2)||'today').split('/');if(p==='timeline')p='journal';if(p==='insights'){AI.tab='insights';p='ai'}const doit=()=>{cur={p:VIEWS[p]?p:'today',id};render(true);window.scrollTo(0,0)};
  if(booted&&document.startViewTransition&&!reduced()&&!TOURING){const vt=document.startViewTransition(doit);vt.finished.finally(()=>document.querySelectorAll('[data-vt]').forEach(x=>x.style.viewTransitionName=''))}else doit();booted=true}
 let RANIM=true;
 function render(anim=true){RANIM=anim;const v=$('#view');const y=scrollY;if(cur.p!=='map')MP=null;v.innerHTML=VIEWS[cur.p](cur.id);if(!anim)window.scrollTo(0,y);
@@ -2847,6 +2879,214 @@ function seedDemo(){const day=864e5;const mk=(o,done,ago)=>{const g=newGoal(o);g
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){applyWidgetQueue();syncSoon(400)}});window.addEventListener('app-resume',()=>{applyWidgetQueue();syncSoon(400)});window.addEventListener('online',()=>syncSoon(400));setInterval(()=>syncSoon(0),5*60e3);
  if(!NATIVE&&'serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
  if(document.fonts)document.fonts.ready.then(()=>{moveInd();placeSegs();fillSpine(false);document.querySelectorAll('.hs-shell').forEach(hsLayout)})})();
+/* ================= INSIGHTS (on-device RAG) =================
+ Retrieval runs on this device. Every journal entry, goal, habit and day plan becomes a short passage.
+ Keyword search (BM25) works instantly and offline. "Smart search" adds semantic search with the open-source
+ all-MiniLM-L6-v2 model via Transformers.js — downloaded once from Hugging Face, cached, then offline; vectors are
+ kept in IndexedDB ('ragvec'), never synced. The best passages plus numbers the app computes itself go to one of:
+ copy to any AI (default, nothing sent by the app), your own OpenAI-compatible server (Ollama, LM Studio…),
+ or an on-device model through WebLLM (needs WebGPU). */
+const RAG_CFG=Object.assign({lib:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0/dist/transformers.min.js',model:'Xenova/all-MiniLM-L6-v2',dtype:'q8',localModels:'',wasm:'',webllm:'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.85/+esm'},window.PLOTLINE_RAG||{});
+const LLMS=[['Llama-3.2-1B-Instruct-q4f16_1-MLC','Llama 3.2 1B · about 0.9 GB · phones'],['Qwen3.5-2B-q4f16_1-MLC','Qwen 3.5 2B · about 2.2 GB · better answers'],['Qwen3.5-4B-q4f16_1-MLC','Qwen 3.5 4B · about 3.9 GB · laptops']];
+const API_PRE=[['Ollama','http://localhost:11434/v1','llama3.2'],['LM Studio','http://localhost:1234/v1','local-model'],['OpenRouter','https://openrouter.ai/api/v1','meta-llama/llama-3.3-70b-instruct']];
+function insSet(){const d={engine:'copy',smart:false,priv:false,url:API_PRE[0][1],model:API_PRE[0][2],llm:LLMS[0][0]};return S.settings.ins={...d,...(S.settings.ins||{})}}
+const aiKey=()=>{try{return localStorage.getItem('plotline.aikey')||''}catch(e){return''}};
+const MOODN=Object.fromEntries(MOODS.map(([m,n])=>[m,n]));const MOOD_POS=new Set(['Calm','Energized','Grateful']),MOOD_NEG=new Set(['Low','Anxious','Frustrated','Tired']);
+let IN={q:'',pre:'',win:30,goal:'',busy:false,prog:'',res:null,ctl:null,paste:''},VEC=null,EMB=null,EMB_P=null,LLM=null,LLM_ID='',GPU=null;
+const fnv=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36)+s.length.toString(36)};
+
+/* ---- passages ---- */
+function ragDocs(){const priv=insSet().priv,out=[],dstr=t=>ymd(new Date(t));
+ const add=(o,body)=>{body=String(body||'').replace(/\s+/g,' ').trim();if(body.length<2)return;const head=o.head;
+  if(body.length<=800){out.push({...o,text:head+': '+body});return}
+  for(let i=0,n=0;i<body.length;i+=620,n++){let s=body.slice(i,i+800);out.push({...o,id:o.id+'#'+n,text:head+(n?' (cont.)':'')+': '+s});if(i+800>=body.length)break}};
+ const gt=id=>{const g=id&&G(id);return g?` · goal “${g.title}”`:''};
+ S.entries.forEach(e=>{if(e.type==='token'||(e.private&&!priv))return;const d=dstr(e.t),h=entryHabit(e),mood=MOODN[e.mood];
+  const kind={note:'Journal',step:'Step done',focus:'Focus session','goal-new':'New goal','goal-done':'Goal completed',habit:'Habit milestone'}[e.type]||'Note';
+  add({id:'e'+e.id,kind:'entry',ref:e.id,gid:e.goalId||'',date:d,label:e.title||trunc(e.text||kind,60),mood:mood||'',head:`${d} · ${kind}${mood?' · mood '+mood:''}${gt(e.goalId)}${h?` · habit “${h.title}”`:''}${e.title?' · '+e.title:''}`},e.text||e.title)});
+ S.goals.forEach(g=>{const p=Math.round(prog(g)*100),par=g.parent&&G(g.parent),td=ymd();
+  const done=g.steps.filter(s=>s.done),open=g.steps.filter(s=>!s.done);const last=done.reduce((a,s)=>Math.max(a,s.doneAt||0),0);
+  const body=[g.why&&'Why: '+g.why,`${areaName(g.area)}, ${hzName(g.horizon)}, ${PRIO[g.priority]||'Medium'} priority, ${g.status==='done'?'completed'+(g.completedAt?' '+dstr(g.completedAt):''):g.status}, ${p}% done`,`started ${g.startDate}${g.targetDate?', target '+g.targetDate:''}`,par&&`part of “${par.title}”`,last&&'last step done '+dstr(last),
+   done.length&&'Done steps: '+done.map(s=>s.title).join('; '),open.length&&'Open steps: '+open.map(s=>s.title+(s.due?(s.due<td?' (overdue since '+s.due+')':' (due '+s.due+')'):'')).join('; ')].filter(Boolean).join('. ');
+  add({id:'g'+g.id,kind:'goal',ref:g.id,gid:g.id,date:g.startDate,label:g.title,head:`Goal “${g.title}”`},body)});
+ const td=dnum(ymd());
+ S.habits.forEach(h=>{if(h.status==='archived')return;const K={build:'build',routine:'routine',quit:h.mode==='limit'?'limit':'break'}[h.kind];let body=[h.why&&'Why: '+h.why,h.cue&&'Cue: '+h.cue,h.mini&&'Minimum version: '+h.mini,h.status==='paused'&&'paused'];
+  if(h.kind==='quit'){const sl=h.slips.map(Number).filter(Boolean).sort((a,b)=>b-a);body.push(h.mode==='limit'?`daily limit ${h.limit}${h.unit?' '+h.unit:''}`:`clean since ${dstr(sl[0]||h.start)}`,`${sl.length} slip${sl.length===1?'':'s'} logged`+(sl.length?', last '+dstr(sl[0]):''),h.urges.length&&h.urges.length+' urges surfed')}
+  else{let due=0,dn=0,miss=[];for(let k=td-29;k<=td;k++){const ds=fromN(k);if(!hCounts(h,ds))continue;due++;if(hDone(h,ds))dn++;else if(k<td)miss.push(DAYS[dowOf(ds)])}
+   const mc={};miss.forEach(x=>mc[x]=(mc[x]||0)+1);const worst=Object.entries(mc).sort((a,b)=>b[1]-a[1]).filter(x=>x[1]>1).slice(0,2).map(x=>x[0]);
+   body.push(`streak ${hStreak(h)}, best ${hBest(h)}, strength ${hStrength(h)}%`,`last 30 days: done ${dn} of ${due} due days`,worst.length&&'most often missed on '+worst.join(' and '),Object.keys(h.skip).length&&Object.keys(h.skip).length+' rest days')}
+  add({id:'h'+h.id,kind:'habit',ref:h.id,gid:h.goalId||'',date:h.startDate,label:h.title,head:`Habit “${h.title}” (${K})${gt(h.goalId)}`},body.filter(Boolean).join('. '))});
+ const days={};S.days.forEach(x=>(days[x.date]=days[x.date]||[]).push(x));
+ Object.entries(days).forEach(([d,xs])=>add({id:'d'+d,kind:'day',ref:d,gid:(xs.find(x=>x.goalId)||{}).goalId||'',date:d,label:'Day plan · '+fmtDate(d),head:`${d} · Day plan`},xs.map(x=>x.title+(x.done?' (done)':' (not done)')).join('; ')));
+ out.forEach(o=>{o.h=fnv(o.text)});return out}
+
+/* ---- keyword search (BM25) ---- */
+const STOPW=new Set("a an and are as at be been but by can could do did does for from had has have how i if im in into is it its just me my of on or our so than that the their them then there these they this to too up us was we were what when where which who why will with would you your".split(' '));
+const stemW=w=>w.length>4?w.replace(/(ings|ing|edly|ed|ies|es|ly|s)$/,''):w;
+const toksOf=s=>(String(s).toLowerCase().match(/[\p{L}\p{N}]+/gu)||[]).filter(w=>w.length>1&&!STOPW.has(w)).map(stemW);
+function bm25(docs,q){const N=docs.length,qt=[...new Set(toksOf(q))];if(!N||!qt.length)return docs.map(()=>0);const tf=docs.map(d=>toksOf(d.text)),avg=tf.reduce((a,t)=>a+t.length,0)/N||1,df=new Map();
+ tf.forEach(t=>new Set(t).forEach(w=>df.set(w,(df.get(w)||0)+1)));
+ return tf.map(t=>{const c=new Map();t.forEach(w=>c.set(w,(c.get(w)||0)+1));let s=0;qt.forEach(w=>{const f=c.get(w);if(!f)return;const n=df.get(w);s+=Math.log(1+(N-n+.5)/(n+.5))*f*2.2/(f+1.2*(.25+.75*t.length/avg))});return s})}
+
+/* ---- semantic search (Transformers.js + MiniLM) ---- */
+function embedder(onP){if(EMB)return Promise.resolve(EMB);if(EMB_P)return EMB_P;
+ EMB_P=(async()=>{const T=await import(RAG_CFG.lib);if(RAG_CFG.localModels){T.env.allowLocalModels=true;T.env.localModelPath=RAG_CFG.localModels;T.env.allowRemoteModels=false}if(RAG_CFG.wasm)T.env.backends.onnx.wasm.wasmPaths=RAG_CFG.wasm;
+  const files={};const p=await T.pipeline('feature-extraction',RAG_CFG.model,{dtype:RAG_CFG.dtype,progress_callback:x=>{if(x.status==='progress'&&x.total){files[x.file]=[x.loaded,x.total];const a=Object.values(files).reduce((s,v)=>[s[0]+v[0],s[1]+v[1]],[0,0]);onP&&onP(`Downloading the search model · ${Math.round(a[0]/1048576)} of ${Math.round(a[1]/1048576)} MB`)}}});
+  EMB=async arr=>{const o=await p(arr,{pooling:'mean',normalize:true}),n=o.dims[o.dims.length-1],d=o.data;return arr.map((_,i)=>d.slice(i*n,(i+1)*n))};return EMB})();
+ EMB_P.catch(()=>{EMB_P=null});return EMB_P}
+async function loadVecs(){if(VEC)return VEC;const r=await DB.get('ragvec').catch(()=>null);VEC=new Map(r&&r.m===RAG_CFG.model&&r.v?Object.entries(r.v):[]);return VEC}
+async function ensureVecs(docs,onP){await loadVecs();const need=docs.filter(d=>!VEC.has(d.h));if(!need.length)return;const f=await embedder(onP);
+ for(let i=0;i<need.length;i+=16){const b=need.slice(i,i+16),vs=await f(b.map(d=>d.text));b.forEach((d,j)=>VEC.set(d.h,vs[j]));onP&&onP(`Reading your notes · ${Math.min(i+16,need.length)} of ${need.length}`);await new Promise(r=>setTimeout(r,0))}
+ const live=new Set(docs.map(d=>d.h));for(const k of [...VEC.keys()])if(!live.has(k))VEC.delete(k);await DB.set('ragvec',{m:RAG_CFG.model,v:Object.fromEntries(VEC)}).catch(()=>{})}
+
+/* ---- retrieve: filter → BM25 (+ vectors) → reciprocal rank fusion → fit to budget ---- */
+async function ragRetrieve(q,o,onP){let docs=ragDocs();const since=o.win?fromN(dnum(ymd())-o.win+1):'';
+ if(o.goal){const g=G(o.goal);const ids=new Set(g?[g.id,...descendants(g).map(x=>x.id)]:[]);docs=docs.filter(d=>ids.has(d.gid))}
+ if(o.kinds)docs=docs.filter(d=>o.kinds.includes(d.kind));
+ if(since)docs=docs.filter(d=>d.kind==='goal'||d.kind==='habit'||d.date>=since);
+ let mode='keyword',err='',order;
+ if(o.all){order=docs.map((d,i)=>i).sort((a,b)=>(docs[b].kind==='entry')-(docs[a].kind==='entry')||(docs[a].date<docs[b].date?1:-1))}
+ else{const lists=[];const rank=sc=>sc.map((s,i)=>[i,s]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);lists.push(rank(bm25(docs,q)));
+  if(insSet().smart&&docs.length){try{await ensureVecs(docs,onP);const[qv]=await(await embedder(onP))([q]);lists.push(rank(docs.map(d=>{const v=VEC.get(d.h);let s=0;for(let j=0;j<v.length;j++)s+=v[j]*qv[j];return s>.2?s:0})));mode='smart'}catch(e){console.warn('smart search',e);err='Smart search couldn’t load, so keyword search was used. Check your connection and try again.'}}
+  const sc=new Map();lists.forEach(l=>l.forEach((i,r)=>sc.set(i,(sc.get(i)||0)+1/(60+r))));order=[...sc.entries()].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+  const seen=new Set(order);docs.map((d,i)=>i).filter(i=>!seen.has(i)&&docs[i].kind==='entry').sort((a,b)=>docs[a].date<docs[b].date?1:-1).slice(0,Math.max(0,6-order.length)).forEach(i=>order.push(i))}
+ const budget=insSet().engine==='local'?5200:12000,srcs=[];let used=0;for(const i of order){const d=docs[i];if(used+d.text.length>budget||srcs.length>=(insSet().engine==='local'?10:16))break;used+=d.text.length;srcs.push(d)}
+ return{srcs,mode,err,total:docs.length}}
+
+/* ---- numbers the app computes itself (no AI) ---- */
+function insStats(win,goal){const tn=dnum(ymd()),from=win?tn-win+1:-1e9,inW=t=>dnum(ymd(new Date(t)))>=from,out=[],priv=insSet().priv;
+ const gs=goal&&G(goal)?[G(goal),...descendants(G(goal))]:S.goals,gid=new Set(gs.map(g=>g.id));
+ const ents=S.entries.filter(e=>e.type!=='token'&&inW(e.t)&&(!goal||gid.has(e.goalId))),notes=ents.filter(e=>e.type==='note'&&(!e.private||priv));
+ const moods={};notes.forEach(e=>{const m=MOODN[e.mood];if(m)moods[m]=(moods[m]||0)+1});const mt=Object.entries(moods).sort((a,b)=>b[1]-a[1]);
+ out.push({k:'Journal',v:notes.length,t:`${notes.length} journal entr${notes.length===1?'y':'ies'}${mt.length?', moods: '+mt.map(([m,n])=>`${m} ${n}`).join(', '):''}`});
+ const steps=ents.filter(e=>e.type==='step').length;out.push({k:'Steps done',v:steps,t:`${steps} steps completed`});
+ const gd=gs.filter(g=>g.status==='done'&&g.completedAt&&inW(g.completedAt)).length;if(gd)out.push({k:'Goals done',v:gd,t:`${gd} goals completed`});
+ const td=ymd(),od=gs.reduce((a,g)=>a+(g.status==='active'?g.steps.filter(s=>!s.done&&s.due&&s.due<td).length:0),0);out.push({k:'Overdue',v:od,t:`${od} open steps are past their due date`});
+ const stale=gs.filter(g=>g.status==='active'&&g.steps.some(s=>!s.done)&&Math.max(g.createdAt||0,...g.steps.map(s=>s.doneAt||0))<Date.now()-21*864e5);
+ if(stale.length)out.push({k:'Stalled',v:stale.length,t:`No step done in 3+ weeks on: ${stale.map(g=>'“'+g.title+'”').join(', ')}`});
+ const dys=S.days.filter(x=>dnum(x.date)>=from&&x.date<=td&&(!goal||gid.has(x.goalId)));if(dys.length){const dn=dys.filter(x=>x.done).length;out.push({k:'Day goals',v:Math.round(dn/dys.length*100)+'%',t:`${dn} of ${dys.length} day goals done`})}
+ const hs=S.habits.filter(h=>h.status!=='archived'&&h.kind!=='quit'&&(!goal||gid.has(h.goalId)));
+ if(hs.length){const w=Math.min(win||90,90);let due=0,dn=0;hs.forEach(h=>{for(let k=tn-w+1;k<=tn;k++){const ds=fromN(k);if(hCounts(h,ds)){due++;if(hDone(h,ds))dn++}}});if(due)out.push({k:'Habits kept',v:Math.round(dn/due*100)+'%',t:`habits kept on ${dn} of ${due} due days (last ${w} days)`})}
+ /* mood × habit: share of positive moods on days a habit was done vs not */
+ const md={};S.entries.forEach(e=>{if(e.type!=='note'||(e.private&&!priv))return;const m=MOODN[e.mood];if(!m||(!MOOD_POS.has(m)&&!MOOD_NEG.has(m)))return;const d=ymd(new Date(e.t));if(dnum(d)<tn-179)return;(md[d]=md[d]||[]).push(MOOD_POS.has(m)?1:0)});
+ const mdays=Object.keys(md),links=[];if(mdays.length>=6)hs.forEach(h=>{const a=[],b=[];mdays.forEach(d=>{if(!hDue(h,d))return;const v=md[d].reduce((x,y)=>x+y,0)/md[d].length;(hDone(h,d)?a:b).push(v)});if(a.length<3||b.length<3)return;const pa=Math.round(a.reduce((x,y)=>x+y,0)/a.length*100),pb=Math.round(b.reduce((x,y)=>x+y,0)/b.length*100);
+  if(Math.abs(pa-pb)>=20)links.push({k:'Mood link',d:Math.abs(pa-pb),v:(pa>pb?'+':'')+(pa-pb)+'%',t:`On days you did “${h.title}”, ${pa}% of your moods were positive, vs ${pb}% on days you didn’t (${a.length} and ${b.length} days)`,hl:1})});
+ links.sort((a,b)=>b.d-a.d).slice(0,2).forEach(x=>out.push(x));
+ return out}
+
+function insPrompt(q,r,stats){const nm=S.settings.name;return`You are a thoughtful, practical coach inside Plotline, ${nm?nm+'’s':'my'} personal goals, habits and journal app. Answer using ONLY the numbers and notes below, which come from my own data. Cite the notes you rely on like [3]. If the notes don’t cover something, say so in one line instead of guessing. Be warm, specific and brief. No generic advice. Today is ${ymd()}.
+
+QUESTION
+${q}
+
+NUMBERS (computed by the app${IN.win?`, last ${IN.win} days`:''})
+${stats.map(s=>'- '+s.t).join('\n')||'- none'}
+
+NOTES (most relevant first)
+${r.srcs.map((d,i)=>`[${i+1}] ${d.text}`).join('\n')||'(no matching notes)'}
+
+ANSWER FORMAT
+Two to five short paragraphs or bullets, citing notes like [2]. End with one small next step for this week, starting with "Next step:".`}
+
+/* ---- answer engines ---- */
+async function apiChat(msgs,onTok,signal){const s=insSet(),key=aiKey();if(!s.url)throw new Error('Add your AI server address first');
+ const r=await fetch(s.url.replace(/\/+$/,'')+'/chat/completions',{method:'POST',signal,headers:{'Content-Type':'application/json',...(key?{Authorization:'Bearer '+key}:{})},body:JSON.stringify({model:s.model,messages:msgs,stream:true,temperature:.4})});
+ if(!r.ok)throw new Error(`The server said ${r.status}. ${(await r.text().catch(()=>'')).slice(0,160)}`);
+ if(!r.body||!(r.headers.get('content-type')||'').includes('event-stream')){const j=await r.json();onTok(j.choices?.[0]?.message?.content||'');return}
+ const rd=r.body.getReader(),dec=new TextDecoder();let buf='';for(;;){const{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
+  while((i=buf.indexOf('\n'))>=0){const ln=buf.slice(0,i).trim();buf=buf.slice(i+1);if(!ln.startsWith('data:'))continue;const d=ln.slice(5).trim();if(d==='[DONE]')return;try{const t=JSON.parse(d).choices?.[0]?.delta?.content;if(t)onTok(t)}catch(e){}}}}
+async function hasGPU(){if(GPU!=null)return GPU;try{GPU=!!(navigator.gpu&&await navigator.gpu.requestAdapter())}catch(e){GPU=false}return GPU}
+async function localChat(msgs,onTok,onP){const id=insSet().llm;if(!LLM||LLM_ID!==id){const W=await import(RAG_CFG.webllm);if(LLM)try{await LLM.unload()}catch(e){}LLM=null;
+  LLM=await W.CreateMLCEngine(id,{initProgressCallback:p=>onP&&onP(p.text||'Loading the on-device model…')});LLM_ID=id}
+ const it=await LLM.chat.completions.create({messages:msgs,stream:true,temperature:.4,max_tokens:700,extra_body:{enable_thinking:false}});for await(const c of it){const t=c.choices?.[0]?.delta?.content;if(t)onTok(t);if(IN.ctl&&IN.ctl.signal.aborted){try{LLM.interruptGenerate()}catch(e){}break}}}
+
+/* ---- answer text → safe HTML with clickable citations ---- */
+function mdLite(s,n){s=String(s||'').replace(/<think>[\s\S]*?(<\/think>|$)/g,'').trim();let h=esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[\s(])\*(?!\s)([^*\n]+?)\*(?=[\s).,;:!?]|$)/g,'$1<i>$2</i>');
+ h=h.replace(/\[(\d{1,2}(?:\s*[,–-]\s*\d{1,2})*)\]/g,(m,g)=>{const ids=[];g.split(/\s*,\s*/).forEach(p=>{const[a,b]=p.split(/\s*[–-]\s*/).map(Number);for(let k=a;k<=(b||a)&&k<a+8;k++)ids.push(k)});const bs=ids.filter(k=>k>=1&&k<=n).map(k=>`<button class="cite" data-act="insSrc" data-i="${k-1}" aria-label="Source ${k}">${k}</button>`).join('');return bs||m});
+ let out='',ul=false;h.split('\n').forEach(l=>{const m=/^\s*(?:[-*•]|\d+[.)])\s+(.*)/.exec(l);if(m){if(!ul){out+='<ul>';ul=true}out+=`<li>${m[1]}</li>`;return}if(ul){out+='</ul>';ul=false}if(/^\s*#{1,4}\s+/.test(l))out+=`<h4>${l.replace(/^\s*#+\s+/,'')}</h4>`;else if(l.trim())out+=`<p>${l.replace(/^(Next step:)/,'<b>$1</b>')}</p>`});if(ul)out+='</ul>';return out}
+
+/* ---- view ---- */
+const INS_PRE=[{k:'week',n:'Weekly reflection',q:'Reflect on my last 7 days: what went well, what slipped, and what pattern do you notice? Suggest one adjustment for next week.',win:7,all:true},
+ {k:'mood',n:'What lifts my mood',q:'Looking at my moods, journal notes and habits, what seems to lift my mood and what drags it down?',kw:'feel happy calm energized grateful low anxious tired frustrated',win:90,kinds:['entry','habit']},
+ {k:'stuck',n:'Where I’m stuck',q:'Which goals have stalled, and what in my notes suggests why? Suggest one small restart step for each.',kw:'stuck overdue delay hard skip',win:0,kinds:['goal','entry']},
+ {k:'habits',n:'Habit patterns',q:'What patterns do you see in my habits: when do I keep them and when do I slip? What would make them easier?',kw:'habit streak missed skip slip routine',win:60,kinds:['habit','entry','day']},
+ {k:'wins',n:'Wins to celebrate',q:'What have I accomplished recently that I should be proud of? Be specific.',win:30,all:true}];
+const INS_WIN=[[7,'7 days'],[30,'30 days'],[90,'90 days'],[0,'All time']];
+const ENG_N={copy:'Copy to any AI',api:'Your AI server',local:'On this device'};
+function vInsights(){if(GPU==null)hasGPU().then(v=>{if(!v&&insPage())render(false)});const s=insSet(),R=IN.res,pre=INS_PRE.find(p=>p.k===IN.pre);const tops=S.goals.filter(g=>!g.parent||!G(g.parent));
+ const stats=insStats(IN.win,IN.goal);
+ return`<section class="ins">
+ <div class="panel rv ins-ask"><h3>Ask about your plan</h3><p class="small muted">Answers come from your own journal, goals, steps and habits. The search runs on this device${s.smart?' with smart search':''}.</p>
+  <textarea id="insQ" rows="2" placeholder="e.g. What seems to lift my mood? Why do I keep skipping my run?">${esc(IN.q)}</textarea>
+  <div class="chips ins-pre">${INS_PRE.map(p=>`<button class="chip ${IN.pre===p.k?'on':''}" data-act="insPre" data-k="${p.k}">${p.n}</button>`).join('')}</div>
+  <div class="ins-opts"><div class="radios sm wrap" role="radiogroup" aria-label="Time range">${INS_WIN.map(([v,n])=>`<label><input type="radio" name="insWin" data-ins="win" value="${v}" ${IN.win===v?'checked':''}><span>${n}</span></label>`).join('')}</div>
+   <select data-ins="goal" aria-label="Focus"><option value="">Whole plan</option>${treeOrder(S.goals).filter(t=>tops.includes(t.g)||t.d<2).map(t=>`<option value="${t.g.id}" ${IN.goal===t.g.id?'selected':''}>${'· '.repeat(t.d||0)}${esc(trunc(t.g.title,48))}</option>`).join('')}</select></div>
+  <div class="actions left"><button class="btn pri" data-act="insAsk" ${IN.busy?'disabled':''}>${ic('ai')}${IN.busy?'Working…':'Find insights'}</button>${IN.busy?`<button class="btn ghost" data-act="insStop">Stop</button>`:''}<button class="link small" data-act="insEng">Answer with: ${ENG_N[s.engine]}</button></div>
+  <p class="small muted ins-prog" id="insProg" aria-live="polite">${esc(IN.prog)}</p></div>
+ <div class="ins-stats rv">${stats.map(x=>`<div class="ins-st ${x.hl?'hl':''}" title="${esc(x.t)}"><b>${esc(String(x.v))}</b><span>${esc(x.k)}</span>${x.hl?`<small>${esc(x.t)}</small>`:''}</div>`).join('')}</div>
+ ${R?insResult(R):''}
+ ${insEngineHTML()}
+ </section>`}
+function insResult(R){const s=R.srcs;return`<div class="panel rv ins-res"><div class="data">${esc(trunc(R.q,90))}</div>
+ ${R.err?`<p class="small err" style="margin-top:8px">${esc(R.err)}</p>`:''}
+ ${R.engine==='copy'&&!R.answer?`<h3 style="margin-top:10px">Your insight prompt is ready</h3><p class="small muted">It holds your question, ${s.length} matching note${s.length===1?'':'s'} and the numbers above — nothing else. Paste it into any assistant.</p><div class="actions left"><button class="btn pri" data-act="insCopy">${ic('copy')}Copy prompt</button><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Claude ${ic('ext','ico-s')}</a><a class="btn" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ${ic('ext','ico-s')}</a><a class="btn" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ${ic('ext','ico-s')}</a></div>
+  <textarea id="insPaste" rows="3" placeholder="Paste the reply here to keep it with its sources" style="margin-top:14px">${esc(IN.paste)}</textarea><div class="actions left"><button class="btn" data-act="insPasted">Show reply</button></div>`
+ :`<div class="ins-ans" id="insAns">${R.answer?mdLite(R.answer,s.length):'<p class="muted small">Thinking…</p>'}</div>${R.done&&R.answer?`<div class="actions left"><button class="btn" data-act="insSave">${ic('journal')}Save to journal</button><button class="btn ghost" data-act="insCopyAns">${ic('copy')}Copy</button></div>`:''}`}
+ <details class="ins-src"><summary class="small">${s.length} source${s.length===1?'':'s'} · ${R.mode==='smart'?'smart + keyword search':'keyword search'}${R.total?` over ${R.total} passages`:''}</summary><ol>${s.map((d,i)=>`<li><button class="ins-si" data-act="insSrc" data-i="${i}"><span class="n">${i+1}</span><span class="t"><b>${esc(trunc(d.label,70))}</b><small>${esc(({entry:'Journal',goal:'Goal',habit:'Habit',day:'Day plan'})[d.kind])}${d.kind==='entry'||d.kind==='day'?' · '+fmtDate(d.date):''}${d.mood?' · '+esc(d.mood):''}</small></span></button></li>`).join('')}</ol></details></div>`}
+function insEngineHTML(){const s=insSet();return`<details class="panel rv ins-eng" id="insEng" ${IN.engOpen?'open':''}><summary>How answers are made</summary>
+ <p class="small muted" style="margin-top:10px">Plotline finds the notes that match your question on this device, then hands only those notes to the engine you pick.</p>
+ <div class="field"><label>Answer engine</label><div class="radios sm wrap">${Object.entries(ENG_N).map(([k,n])=>`<label><input type="radio" name="insE" data-ins="engine" value="${k}" ${s.engine===k?'checked':''} ${k==='local'&&GPU===false?'disabled':''}><span>${n}</span></label>`).join('')}</div></div>
+ ${s.engine==='copy'?`<p class="small muted">You copy a ready-made prompt into Claude, ChatGPT, Gemini or any assistant. Plotline itself sends nothing.</p>`:''}
+ ${s.engine==='api'?`<p class="small muted">Any OpenAI-compatible server. Open-source models on your own computer with Ollama or LM Studio keep everything at home. The key stays on this device and is never synced or backed up.</p>
+  <div class="chips" style="margin:10px 0">${API_PRE.map(([n,u,m])=>`<button class="chip ${s.url===u?'on':''}" data-act="insApiPre" data-u="${u}" data-m="${m}">${n}</button>`).join('')}</div>
+  <div class="field"><label for="insUrl">Server address</label><input id="insUrl" data-ins="url" value="${esc(s.url)}" placeholder="http://localhost:11434/v1" autocomplete="off" spellcheck="false"></div>
+  <div class="field"><label for="insModel">Model</label><input id="insModel" data-ins="model" value="${esc(s.model)}" placeholder="llama3.2" autocomplete="off" spellcheck="false"></div>
+  <div class="field"><label for="insKey">API key <small class="muted">(not needed for Ollama)</small></label><input id="insKey" data-ins="key" type="password" value="${esc(aiKey())}" autocomplete="off"></div>
+  <p class="small muted">For Ollama on your computer, start it with <code>OLLAMA_ORIGINS=${esc(NATIVE?'https://appassets.androidplatform.net':location.origin)}</code>. The phone app needs an https address (for example through Tailscale).</p>
+  <div class="actions left"><button class="btn sm" data-act="insTest">Test connection</button></div>`:''}
+ ${s.engine==='local'?`<p class="small muted">An open-source model runs inside ${NATIVE?'the app':'this browser'} with WebLLM. It downloads once, then works offline. Nothing leaves this device.</p><div class="field"><label>Model</label><select data-ins="llm">${LLMS.map(([k,n])=>`<option value="${k}" ${s.llm===k?'selected':''}>${n}</option>`).join('')}</select></div>`:''}
+ ${GPU===false?`<p class="small muted">On this device answers can’t run locally (no WebGPU). Pick another engine.</p>`:''}
+ <label class="sw"><span>Smart search<small>Finds notes by meaning, not just words. Downloads a 23 MB open-source model (all-MiniLM-L6-v2) once.</small></span><input type="checkbox" data-ins="smart" ${s.smart?'checked':''}><i></i></label>
+ <label class="sw"><span>Include private entries<small>Off by default. Private journal entries stay out of every search and prompt.</small></span><input type="checkbox" data-ins="priv" ${s.priv?'checked':''}><i></i></label>
+ ${s.smart?`<div class="actions left"><button class="btn sm ghost" data-act="insReindex">Rebuild search index</button></div>`:''}</details>`}
+const insProg=t=>{IN.prog=t||'';const p=$('#insProg');if(p)p.textContent=IN.prog};
+let INS_RAF=0;function insPaint(){if(INS_RAF)return;INS_RAF=requestAnimationFrame(()=>{INS_RAF=0;const a=$('#insAns');if(a&&IN.res)a.innerHTML=mdLite(IN.res.answer,IN.res.srcs.length)||'<p class="muted small">Thinking…</p>'})}
+const insPage=()=>cur.p==='ai'&&AI.tab==='insights';
+Object.assign(ACT,{
+ insPre:d=>{const p=INS_PRE.find(x=>x.k===d.k);if(!p)return;if(IN.pre===p.k){IN.pre='';IN.q=''}else{IN.pre=p.k;IN.q=p.q;IN.win=p.win}render(false)},
+ insEng:()=>{IN.engOpen=true;render(false);setTimeout(()=>$('#insEng')?.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'start'}),60)},
+ insAsk:async()=>{if(IN.busy)return;const p=INS_PRE.find(x=>x.k===IN.pre);const q=IN.q.trim();if(!q)return toast('Ask a question or pick one of the suggestions');
+  if(!S.entries.length&&!S.goals.length&&!S.habits.length)return toast('Add a goal, habit or journal entry first');
+  const s=insSet();IN.busy=true;IN.paste='';IN.ctl=new AbortController();insProg('Searching your notes…');render(false);
+  try{const r=await ragRetrieve(p?p.q+' '+(p.kw||''):q,{win:IN.win,goal:IN.goal,all:p&&p.all,kinds:p&&p.kinds},insProg);const stats=insStats(IN.win,IN.goal);
+   IN.res={q,srcs:r.srcs,mode:r.mode,err:r.err,total:r.total,engine:s.engine,prompt:insPrompt(q,r,stats),answer:'',done:false};
+   if(s.engine==='copy'){insProg('');IN.busy=false;render(false);return}
+   insProg(s.engine==='local'?'Starting the on-device model…':'Asking your AI server…');render(false);
+   const msgs=[{role:'system',content:'You answer questions about the user’s own goals, habits and journal, using only the notes provided. Cite notes like [2].'},{role:'user',content:IN.res.prompt}];
+   const onTok=t=>{if(IN.res.answer==='')insProg('');IN.res.answer+=t;insPaint()};
+   if(s.engine==='api')await apiChat(msgs,onTok,IN.ctl.signal);else await localChat(msgs,onTok,insProg);
+   if(!IN.res.answer.trim())IN.res.err='The model returned an empty answer.';}
+  catch(e){if(IN.res&&e.name!=='AbortError')IN.res.err=(e&&e.message||'Something went wrong')+(s.engine==='api'&&/fetch|network|load/i.test(e.message||'')?' · Check the address, that the server is running, and that it allows this app (CORS).':'');else if(!IN.res)toast('Search failed: '+(e.message||e))}
+  IN.busy=false;insProg('');if(IN.res)IN.res.done=true;if(insPage())render(false)},
+ insStop:()=>{IN.ctl&&IN.ctl.abort();try{LLM&&LLM.interruptGenerate()}catch(e){}},
+ insCopy:async()=>toast(IN.res&&await copyText(IN.res.prompt)?'Prompt copied. Paste it into any AI':'Copy failed. Try again'),
+ insPasted:()=>{if(!IN.res)return;if(!IN.paste.trim())return toast('Paste the reply first');IN.res.answer=IN.paste.trim();IN.res.done=true;render(false)},
+ insCopyAns:async()=>toast(IN.res&&await copyText(IN.res.answer.replace(/<think>[\s\S]*?<\/think>/g,'').trim())?'Copied':'Copy failed'),
+ insSave:()=>{const R=IN.res;if(!R||!R.answer)return;const html=cleanHTML(mdLite(R.answer,0).replace(/<button[^>]*>(\d+)<\/button>/g,'[$1]'));const text=htmlText(html);
+  S.entries.push({id:uid(),t:Date.now(),type:'note',goalId:IN.goal||null,title:'Insight · '+trunc(R.q,60),text,html,mood:'',private:false,sid:null,img:null});save();toast('Saved to your journal')},
+ insSrc:d=>{const x=IN.res&&IN.res.srcs[+d.i];if(!x)return;if(x.kind==='entry'){if(S.entries.some(e=>e.id===x.ref))ACT.viewEntry({id:x.ref})}else if(x.kind==='goal')go('goal/'+x.ref);else if(x.kind==='habit')go('habit/'+x.ref);else if(x.kind==='day'){CAL.d=x.ref;S.settings.layout.cal='day';go('cal')}},
+ insApiPre:d=>{const s=insSet();s.url=d.u;s.model=d.m;save();render(false)},
+ insTest:async()=>{const s=insSet();try{const r=await fetch(s.url.replace(/\/+$/,'')+'/models',{headers:aiKey()?{Authorization:'Bearer '+aiKey()}:{}});if(!r.ok)throw new Error('status '+r.status);const j=await r.json().catch(()=>({}));const ids=(j.data||[]).map(m=>m.id);toast(ids.length?`Connected · ${ids.length} model${ids.length===1?'':'s'}${ids.includes(s.model)?'':' · “'+s.model+'” not found'}`:'Connected')}catch(e){toast('Couldn’t reach the server. Check the address and CORS')}},
+ insReindex:async()=>{VEC=new Map();await DB.set('ragvec',{m:RAG_CFG.model,v:{}}).catch(()=>{});try{insProg('Rebuilding…');await ensureVecs(ragDocs(),insProg);insProg('');toast('Search index rebuilt')}catch(e){insProg('');toast('Couldn’t load the search model. Check your connection')}}
+});
+document.addEventListener('input',e=>{const t=e.target;if(t.id==='insQ'){IN.q=t.value;if(IN.pre){IN.pre='';document.querySelectorAll('.ins-pre .chip.on').forEach(c=>c.classList.remove('on'))}}else if(t.id==='insPaste')IN.paste=t.value;
+ else if(t.dataset&&(t.dataset.ins==='url'||t.dataset.ins==='model')){insSet()[t.dataset.ins]=t.value.trim();save()}else if(t.dataset&&t.dataset.ins==='key'){try{t.value?localStorage.setItem('plotline.aikey',t.value.trim()):localStorage.removeItem('plotline.aikey')}catch(_){}}});
+document.addEventListener('change',e=>{const t=e.target,k=t.dataset&&t.dataset.ins;if(!k||k==='url'||k==='model'||k==='key')return;const s=insSet();
+ if(k==='win'){IN.win=+t.value;render(false);return}if(k==='goal'){IN.goal=t.value;render(false);return}
+ if(k==='engine'||k==='llm')s[k]=t.value;else if(k==='smart'||k==='priv')s[k]=t.checked;save();IN.engOpen=true;
+ if(k==='smart'&&t.checked){insProg('Preparing smart search…');ensureVecs(ragDocs(),insProg).then(()=>{insProg('');toast('Smart search is ready')}).catch(()=>{insProg('');toast('Couldn’t load the search model. Keyword search still works')})}
+ render(false)});
+
 </script>
 </body>
 </html>
