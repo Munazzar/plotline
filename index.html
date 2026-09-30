@@ -1023,9 +1023,10 @@ html,body{overscroll-behavior-y:contain}
 .tour{position:fixed;inset:0;z-index:90;pointer-events:none}
 .tblock{position:absolute;inset:0;pointer-events:auto}
 .tspot.none{box-shadow:0 0 0 9999px rgba(3,5,12,.68)}
-.tspot{position:fixed;left:0;top:0;border-radius:20px;box-shadow:0 0 0 2px var(--accent),0 0 0 9999px rgba(3,5,12,.68),0 0 40px 6px color-mix(in srgb,var(--accent) 35%,transparent);transition:transform .55s var(--ease),width .55s var(--ease),height .55s var(--ease),opacity .35s;pointer-events:none}
-[data-theme=daylight] .tspot{box-shadow:0 0 0 2px var(--accent),0 0 0 9999px rgba(10,16,34,.55),0 0 40px 6px color-mix(in srgb,var(--accent) 30%,transparent)}
-.trcard{position:fixed;left:16px;top:16px;width:min(380px,calc(100vw - 24px));padding:18px 18px 14px;border-radius:24px;background:var(--bg-2);border:1px solid var(--line-2);box-shadow:0 30px 70px -20px rgba(0,0,0,.7);pointer-events:auto;transition:left .5s var(--ease),top .5s var(--ease)}
+.tspot{position:fixed;left:0;top:0;border-radius:20px;box-shadow:0 0 0 2px var(--accent),0 0 0 9999px rgba(3,5,12,.7);transition:transform .45s var(--ease),width .45s var(--ease),height .45s var(--ease);will-change:transform;pointer-events:none}
+[data-theme=daylight] .tspot{box-shadow:0 0 0 2px var(--accent),0 0 0 9999px rgba(10,16,34,.55)}
+.trcard{position:fixed;left:16px;top:16px;width:min(380px,calc(100vw - 24px));padding:18px 18px 14px;border-radius:24px;background:var(--bg-2);border:1px solid var(--line-2);box-shadow:0 20px 50px -20px rgba(0,0,0,.7);pointer-events:auto;transition:transform .45s var(--ease);will-change:transform}
+@media(max-width:820px){.trcard{padding:14px 16px 10px}.trcard h3{font-size:22px;margin:4px 0 6px}.trcard p{font-size:13.5px;line-height:1.45}.tc-a{margin-top:10px}}
 .trcard.in{animation:tcin .5s var(--spring)}
 @keyframes tcin{0%{opacity:0;transform:translateY(10px) scale(.97)}100%{opacity:1;transform:none}}
 .trcard h3{font:800 26px/1 var(--f-display);text-transform:uppercase;margin:8px 0 8px}
@@ -1123,7 +1124,9 @@ html,body{overscroll-behavior-y:contain}
 :root[data-focus=on] .ph>div:first-child{display:none}
 :root[data-focus=on] .ph.cph{margin-bottom:14px}
 :root[data-focus=on] .crumb{margin-top:58px}
-:root[data-focus=on] .mapwrap{height:calc(100dvh - 92px);min-height:320px}
+:root[data-focus=on] .mapwrap{position:fixed;inset:0;height:auto;min-height:0;border-radius:0;border:0;z-index:30}
+:root[data-focus=on] .mapctl{top:calc(12px + env(safe-area-inset-top))}
+:root[data-focus=on] .mapdock{bottom:calc(12px + env(safe-area-inset-bottom))}
 :root[data-focus=on] .st-h:first-child{margin-top:8px}
 :root[data-focus=on] .toast{top:auto;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,160%)}
 :root[data-focus=on] .toast.on{transform:translate(-50%,0)}
@@ -2547,7 +2550,8 @@ function startTour(){document.querySelector('.tprompt')?.remove();if(TOURING)ret
  S=norm({settings:{...JSON.parse(JSON.stringify(st)),sync:{...st.sync,on:false},timer:null,pinHash:''}});seedDemo();
  const run=S.goals.find(g=>g.title==='Run a 10K race');if(run){const sub=newGoal({title:'Build strength for race day',area:'health',horizon:'month',parent:run.id,targetDate:addDays(40),steps:[{title:'Two leg days a week',due:addDays(4)},{title:'Core routine after each run',due:addDays(12)}]});S.goals.push(sub)}
  const o=document.createElement('div');o.className='tour';o.innerHTML=`<div class="tblock"></div><div class="tspot"></div><div class="tfinger"><i></i><i></i></div><div class="trcard" role="dialog" aria-live="polite"></div><div class="tbadge data">Tour · example data</div>`;document.body.appendChild(o);
- TR.pos=setInterval(tourPlace,220);window.addEventListener('resize',tourPlace);document.addEventListener('scroll',tourPlace,{passive:true});tourStep(0)}
+ TR.pos=0;window.addEventListener('resize',tourPlaceRaf);document.addEventListener('scroll',tourPlaceRaf,{passive:true});tourStep(0)}
+let TPR=0;function tourPlaceRaf(){if(TPR)return;TPR=requestAnimationFrame(()=>{TPR=0;tourPlace()})}
 function tourEl(q){if(!q)return null;for(const s of q.split(','))for(const e of document.querySelectorAll(s.trim()))if(e.offsetParent||e.getClientRects().length)return e;return null}
 function navEl(r){return[...document.querySelectorAll(`[data-nav="${r}"],a.ibtn[href="#/${r}"]`)].find(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'&&e.offsetParent)}
 const tWait=ms=>new Promise(r=>{TR.timers.push(setTimeout(r,reduced()?Math.min(ms,120):ms))});
@@ -2557,8 +2561,8 @@ async function tourStep(i){if(!TR)return;TR.timers.forEach(clearTimeout);TR.time
  if(!here&&st.nav&&!back){const n=navEl(st.r);if(n){TR.focus=n;tourCard(st,i,true);tourPlace();await tWait(450);if(TR.tok!==tok)return;tourFinger('tap',n);await tWait(900);if(TR.tok!==tok)return}}
  if(st.prep)st.prep();
  if(!here)go(route);else render(false);await tWait(here?120:520);if(TR.tok!==tok)return;
- const el=st.c?null:tourEl(st.s);if(el){const r=el.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight-150){el.scrollIntoView({block:r.height>innerHeight*.55?'start':'center',behavior:'auto'});if(r.height>innerHeight*.55)scrollBy(0,-80)}}else if(!st.c)window.scrollTo(0,0);
- TR.focus=el;tourFinger('');tourCard(st,i,false);tourPlace();await tWait(650);if(TR.tok!==tok)return;tourDemo(st,el,tok)}
+ const el=st.c?null:tourEl(st.s);TR.focus=el;tourFinger('');tourCard(st,i,false);if(el){const ch=$('.tour .trcard').offsetHeight,r=el.getBoundingClientRect(),free=innerHeight-ch-40,top=70;const want=r.height>free-top?top:top+(free-top-r.height)/2;if(Math.abs(r.top-want)>8)window.scrollBy(0,r.top-want)}else if(!st.c)window.scrollTo(0,0);
+ tourPlace();await tWait(650);if(TR.tok!==tok)return;tourDemo(st,el,tok)}
 function tourCard(st,i,nav){const c=$('.tour .trcard'),N=TOUR_STEPS.length;c.classList.toggle('mid',!!st.c);
  c.innerHTML=nav?`<div class="data">Step ${i+1} of ${N}</div><h3>${esc(st.t)}</h3><p>Opening it from the menu…</p>`
  :`<div class="tc-bar"><i style="width:${((i+1)/N*100).toFixed(1)}%"></i></div><div class="data">Step ${i+1} of ${N}</div>${st.d==='widget'?tourWidgetMock():''}${st.d==='pull'?`<div class="tpull"><i></i><span>${ic('reset')}</span></div>`:''}<h3>${esc(st.t)}</h3><p>${esc(st.x)}</p><div class="tc-a">${i===N-1?'':`<button class="link" data-act="tourEnd">Skip tour</button>`}<span style="flex:1"></span>${i?`<button class="btn ghost sm" data-act="tourPrev">Back</button>`:''}<button class="btn pri sm" data-act="tourNext">${i===N-1?'Finish':i?'Next':'Start'}</button></div>`;
@@ -2566,14 +2570,15 @@ function tourCard(st,i,nav){const c=$('.tour .trcard'),N=TOUR_STEPS.length;c.cla
 function tourWidgetMock(){return`<div class="twid"><div class="tw-h"><b>HABITS TODAY</b><span>2/4</span></div>${[['💧','Drink water','3/8',0],['📖','Read before bed','✓',1],['💪','Exercise','',0],['🙏','Pray on time','✓',1]].map(([e,t,v,d],k)=>`<div class="tw-r" style="--k:${k}"><span>${e}</span><em>${t}</em><i class="${d?'on':''}">${v}</i></div>`).join('')}</div>`}
 function tourPlace(){if(!TR)return;const sp=$('.tour .tspot'),c=$('.tour .trcard');if(!sp||!c)return;const el=TR.focus&&document.contains(TR.focus)?TR.focus:(TOUR_STEPS[TR.i]&&!TOUR_STEPS[TR.i].c?tourEl(TOUR_STEPS[TR.i].s):null);if(el&&el!==TR.focus)TR.focus=el;
  const mob=innerWidth<=820,cw=c.offsetWidth,ch=c.offsetHeight;
- if(!el){sp.classList.add('none');sp.style.opacity=1;sp.style.transform=`translate(${innerWidth/2}px,${innerHeight/2}px)`;sp.style.width=sp.style.height='0px';c.style.left=Math.max(12,(innerWidth-cw)/2)+'px';c.style.top=Math.max(12,(innerHeight-ch)/2)+'px';return}
+ if(!el){sp.classList.add('none');sp.style.opacity=1;sp.style.transform=`translate(${innerWidth/2}px,${innerHeight/2}px)`;sp.style.width=sp.style.height='0px';c.style.transform=`translate(${Math.round(Math.max(12,(innerWidth-cw)/2))-16}px,${Math.round(Math.max(12,(innerHeight-ch)/2))-16}px)`;return}
  sp.classList.remove('none');const r=el.getBoundingClientRect(),pad=8,top=Math.max(6,r.top-pad),bot=Math.min(innerHeight-6,r.bottom+pad);sp.style.opacity=1;sp.style.transform=`translate(${r.left-pad}px,${top}px)`;sp.style.width=(r.width+pad*2)+'px';sp.style.height=Math.max(0,bot-top)+'px';
- let x,y;if(mob){x=(innerWidth-cw)/2;const below=innerHeight-bot,above=top;y=below>=ch+24?Math.min(bot+14,innerHeight-ch-100):above>=ch+24?Math.max(12,top-ch-14):(r.top+r.height/2<innerHeight/2?innerHeight-ch-96:56)}
- else{x=Math.min(innerWidth-cw-16,Math.max(16,r.left));y=innerHeight-bot>=ch+24?bot+14:top>=ch+24?top-ch-14:Math.max(16,innerHeight-ch-24);if(r.width>innerWidth*.5&&y===Math.max(16,innerHeight-ch-24))x=innerWidth-cw-24}
- c.style.left=Math.round(Math.max(12,x))+'px';c.style.top=Math.round(Math.max(12,y))+'px'}
+ let x,y;const below=innerHeight-bot,above=top,fitsB=below>=ch+20,fitsA=above>=ch+20;
+ if(mob){x=(innerWidth-cw)/2;y=fitsB?innerHeight-ch-12:fitsA?12:(below>=above?innerHeight-ch-12:12)}
+ else{x=Math.min(innerWidth-cw-16,Math.max(16,r.left));y=fitsB?bot+14:fitsA?top-ch-14:(below>=above?innerHeight-ch-16:16);if(!fitsB&&!fitsA)x=innerWidth-cw-24}
+ c.style.transform=`translate(${Math.round(Math.max(12,x))-16}px,${Math.round(Math.max(12,y))-16}px)`}
 function tourFinger(kind,el,dx=0,dy=0){const f=$('.tour .tfinger');if(!f)return;f.className='tfinger';if(!kind||reduced())return;const r=el?el.getBoundingClientRect():{left:innerWidth/2,top:innerHeight/2,width:0,height:0};
  f.style.left=(r.left+r.width/2+dx)+'px';f.style.top=(r.top+r.height/2+dy)+'px';void f.offsetWidth;f.classList.add('on',kind)}
-async function tourDemo(st,el,tok){const ok=()=>TR&&TR.tok===tok;if(!st.d||!ok())return;
+async function tourDemo(st,el,tok){const ok=()=>TR&&TR.tok===tok;const rp=setInterval(()=>ok()?tourPlace():clearInterval(rp),700);TR.timers.push(setTimeout(()=>clearInterval(rp),9000));if(!st.d||!ok())return;
  if(st.d==='tap'){const t=el&&el.querySelector(st.tap)||tourEl(st.tap);if(!t)return;tourFinger('tap',t);await tWait(700);if(!ok())return;if(st.click){t.click();await tWait(500);if(!ok())return;TR.focus=tourEl(st.s)}await tWait(900);if(ok())tourFinger('')}
  else if(st.d==='type'){const inp=el&&el.querySelector('input');if(!inp)return;tourFinger('tap',inp,-60);await tWait(600);const txt='Call the bank about the car loan';for(let k=1;k<=txt.length&&ok();k++){inp.value=txt.slice(0,k);await tWait(38)}tourFinger('tap',el.querySelector('.tg-add button'));await tWait(1400);if(!ok())return;inp.value='';const ck=el.querySelector('.li:not(.done) .chk');if(ck){tourFinger('tap',ck);await tWait(650);if(!ok())return;ck.click();await tWait(400);TR.focus=tourEl(st.s)}await tWait(1000);if(ok())tourFinger('')}
  else if(st.d==='swipe'){const sc=st.sc?tourEl(st.sc):null;tourFinger('swipe',el);if(sc){await tWait(500);sc.scrollBy({left:Math.min(300,sc.clientWidth*.7),behavior:'smooth'});await tWait(1500);if(!ok())return;sc.scrollBy({left:-Math.min(300,sc.clientWidth*.7),behavior:'smooth'})}await tWait(1600);if(ok())tourFinger('')}
@@ -2582,7 +2587,7 @@ async function tourDemo(st,el,tok){const ok=()=>TR&&TR.tok===tok;if(!st.d||!ok()
  else if(st.d==='pinch'){tourFinger('pinch',el);await tWait(700);if(!ok())return;ACT.calZoom({d:'1'});await tWait(1400);if(!ok())return;ACT.calZoom({d:'-1'});await tWait(900);if(ok())tourFinger('')}
  else if(st.d==='drag'){tourFinger('drag',el,-40,-20);await tWait(2600);if(ok())tourFinger('')}
  else if(st.d==='pull'){const p=$('.tour .tpull');if(p)p.classList.add('go')}}
-function endTour(){if(!TR)return;const t=TR;TR=null;t.timers.forEach(clearTimeout);clearInterval(t.pos);window.removeEventListener('resize',tourPlace);document.removeEventListener('scroll',tourPlace);
+function endTour(){if(!TR)return;const t=TR;TR=null;t.timers.forEach(clearTimeout);clearInterval(t.pos);window.removeEventListener('resize',tourPlaceRaf);document.removeEventListener('scroll',tourPlaceRaf);
  document.querySelector('.tour')?.remove();closeSheet();RP=null;URGE=null;TOURING=false;S=norm(JSON.parse(t.prev));HV=t.hv||'today';primeSig();S.settings.toured=true;S.settings.tourOffered=true;save();applyTheme();
  const b=t.back&&t.back.startsWith('#/')?t.back.slice(2):'today';if(location.hash==='#/'+b)route();else go(b);toast('Tour finished. Your own plan is back.')}
 Object.assign(ACT,{tourGo:()=>startTour(),tourNo:()=>{const d=$('.tprompt');if(d){d.classList.remove('on');setTimeout(()=>d.remove(),400)}toast('You can take the tour any time from Settings')},
