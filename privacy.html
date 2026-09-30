@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Plotline Privacy Policy</title>
+<meta name="description" content="How Plotline handles your data: what it stores, where it is stored, and how to delete it.">
+<meta name="theme-color" content="#0A0F1F">
+<link rel="icon" href="icon-192.png">
+<style>
+@font-face{font-family:'Big Shoulders Display';font-weight:800;font-display:swap;src:url(fonts/big-shoulders-display-latin-800-normal.woff2) format('woff2')}
+@font-face{font-family:'Figtree';font-weight:400;font-display:swap;src:url(fonts/figtree-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Figtree';font-weight:600;font-display:swap;src:url(fonts/figtree-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Figtree';font-weight:700;font-display:swap;src:url(fonts/figtree-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Martian Mono';font-weight:500;font-display:swap;src:url(fonts/martian-mono-latin-500-normal.woff2) format('woff2')}
+:root{--bg:#0A0F1F;--surface:#141B32;--surface-2:#1B2340;--line:rgba(200,210,240,.1);--line-2:rgba(200,210,240,.2);--text:#ECEAE3;--muted:#98A0B6;--accent:#FFB547;--ok:#46C99B}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#EDF0F6;--surface:#FFFFFF;--surface-2:#F4F6FA;--line:rgba(18,26,52,.09);--line-2:rgba(18,26,52,.18);--text:#131A2D;--muted:#566079;--accent:#2E5BFF;--ok:#0F8A5F}}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font:16px/1.65 'Figtree',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:820px;margin:0 auto;padding:48px 16px 96px}
+header h1{font:800 clamp(44px,9vw,78px)/.9 'Big Shoulders Display',Impact,sans-serif;text-transform:uppercase;letter-spacing:.005em}
+.meta{font:500 11px/1.6 'Martian Mono',ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:16px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:26px;text-decoration:none;color:var(--text);font-weight:700}
+.brand img{width:34px;height:34px;border-radius:9px}
+h2{font:800 30px/1 'Big Shoulders Display',Impact,sans-serif;text-transform:uppercase;letter-spacing:.01em;margin:56px 0 14px;scroll-margin-top:20px}
+h3{font-size:17px;font-weight:700;margin:26px 0 8px}
+p,li{color:var(--text)}
+p+p{margin-top:12px}
+ul,ol{padding-left:22px;margin-top:10px}
+li+li{margin-top:6px}
+.muted{color:var(--muted)}
+.summary{margin-top:30px;padding:22px 24px;border-radius:22px;background:var(--surface);border:1px solid var(--line)}
+.summary h2{margin-top:0;font-size:24px}
+.summary ul{list-style:none;padding:0}
+.summary li{position:relative;padding-left:26px}
+.summary li::before{content:'';position:absolute;left:2px;top:.62em;width:10px;height:10px;border-radius:50%;background:var(--ok)}
+nav.toc{margin-top:28px;padding:18px 22px;border-radius:18px;border:1px solid var(--line)}
+nav.toc b{font:500 11px 'Martian Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+nav.toc ol{columns:2;column-gap:28px;margin-top:10px}
+@media(max-width:600px){nav.toc ol{columns:1}}
+nav.toc a{color:var(--text);text-decoration:none}
+nav.toc a:hover{color:var(--accent)}
+.tbl{margin-top:14px;border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr) minmax(0,1fr);gap:0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row>div{padding:14px 16px;font-size:14.5px;line-height:1.5}
+.row.h>div{font:500 10.5px 'Martian Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface-2);padding:10px 16px}
+.row>div:first-child{font-weight:600}
+.row small{display:block;color:var(--muted);font-weight:400;font-size:12.5px;margin-top:2px}
+@media(max-width:640px){.row{grid-template-columns:1fr}.row.h{display:none}.row>div{padding:4px 16px}.row>div:first-child{padding-top:14px}.row>div:last-child{padding-bottom:14px;color:var(--muted)}}
+code{font:500 13px 'Martian Mono',monospace;background:var(--surface-2);padding:1px 6px;border-radius:6px;word-break:break-word}
+.note{margin-top:14px;padding:14px 18px;border-left:3px solid var(--accent);background:var(--surface);border-radius:4px 14px 14px 4px;font-size:15px}
+footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="brand" href="./"><img src="icon-192.png" alt="">Plotline</a>
+<header>
+<h1>Privacy Policy</h1>
+<div class="meta">Effective September 30, 2026 · Applies to the Plotline Android app and the Plotline web app</div>
+</header>
+
+<section class="summary" aria-labelledby="sum">
+<h2 id="sum">The short version</h2>
+<ul>
+<li>Everything you write in Plotline (goals, steps, habits, journal moments, photos) is stored on your own device.</li>
+<li>Plotline has no servers and no database. We never receive, see or store your data.</li>
+<li>If you turn on sync, your data is copied to a private, hidden folder in <b>your own</b> Google Drive. Only Plotline on your devices can read it, and only you can delete it.</li>
+<li>No accounts with us, no analytics, no advertising, no tracking, no cookies, and we never sell or share your data.</li>
+<li>You can export or erase everything at any time.</li>
+</ul>
+</section>
+
+<nav class="toc" aria-label="Contents"><b>Contents</b><ol>
+<li><a href="#who">Who we are</a></li>
+<li><a href="#collect">What Plotline handles</a></li>
+<li><a href="#storage">How and where data is stored</a></li>
+<li><a href="#sync">Google sign-in and Drive sync</a></li>
+<li><a href="#ai">AI planning</a></li>
+<li><a href="#device">Notifications, widgets and files</a></li>
+<li><a href="#perms">Android permissions</a></li>
+<li><a href="#third">Third-party services</a></li>
+<li><a href="#dont">What we never do</a></li>
+<li><a href="#security">Security</a></li>
+<li><a href="#delete">Keeping and deleting your data</a></li>
+<li><a href="#rights">Your rights</a></li>
+<li><a href="#children">Children</a></li>
+<li><a href="#changes">Changes to this policy</a></li>
+<li><a href="#contact">Contact</a></li>
+</ol></nav>
+
+<h2 id="who">1. Who we are</h2>
+<p>Plotline is a personal planning app for life goals, daily goals, habits, routines and journaling. It is developed independently by Munazzar (“we”, “us”). This policy explains what information Plotline handles, where it is kept, who can access it and how you control it.</p>
+<p>Because Plotline works without a server, we are not able to access your information. In data-protection terms, you are in control of your own data at all times.</p>
+
+<h2 id="collect">2. What Plotline handles</h2>
+<h3>Content you create</h3>
+<ul>
+<li>Goals and sub-goals: titles, reasons (“why it matters”), life area, horizon, priority, dates, links between goals, cover images, pinned status and check-in times.</li>
+<li>Steps: titles, notes, due dates and times, reminders, repeat settings, completion history and focus-timer minutes.</li>
+<li>Daily goals (goals for a day) with dates, times and durations.</li>
+<li>Habits and routines: names, schedules, amounts, reminders, routine steps, daily check-offs, rest days, pauses, and for habits you are breaking: start time, slips (time, trigger and optional note), urges resisted, daily counts and any cost or time figures you enter.</li>
+<li>Journal moments: titles, text and photos, plus automatic entries such as completed steps and milestones.</li>
+<li>Weekly reviews you write.</li>
+</ul>
+<h3>Settings and preferences</h3>
+<p>Your first name (optional), theme and display choices, card styles, layout choices, reminder preferences, and a PIN if you set one (stored only as a one-way hash).</p>
+<h3>Google account details (only if you turn on sync)</h3>
+<p>The email address of the Google account you connect, and a short-lived access token that lets Plotline read and write its own sync file. See <a href="#sync">section 4</a>.</p>
+<h3>What Plotline does not collect</h3>
+<p>Plotline does not collect your location, contacts, device identifiers, advertising IDs, usage analytics, crash reports, health-sensor data, or any information from other apps. Some of the content you write may be personal or sensitive (for example, a habit you are trying to break or a note about your health). That content stays in your storage, as described below, and is never sent to us.</p>
+
+<h2 id="storage">3. How and where your data is stored</h2>
+<p>This is every place Plotline keeps information.</p>
+<div class="tbl" role="table" aria-label="Where Plotline stores data">
+<div class="row h" role="row"><div role="columnheader">Location</div><div role="columnheader">What is kept there</div><div role="columnheader">Who can access it · how long</div></div>
+<div class="row" role="row"><div role="cell">On your device: app database<small>IndexedDB database <code>waypoints</code>, record <code>state</code></small></div><div role="cell">Everything listed in section 2: goals, steps, daily goals, habits, journal moments and photos, settings, your name, the PIN hash and sync status.</div><div role="cell">Only Plotline on that device (and anyone who can unlock the device). Kept until you delete it, erase the app’s data or uninstall.</div></div>
+<div class="row" role="row"><div role="cell">On your device: browser storage<small><code>localStorage</code> / <code>sessionStorage</code></small></div><div role="cell">A temporary Google access token (<code>plotline.tok</code>) while sync is on, and brief sign-in hand-off flags.</div><div role="cell">Plotline only. The access token expires within about one hour. The flags are removed right after sign-in.</div></div>
+<div class="row" role="row"><div role="cell">On your device: Android app storage<small>Private app preferences</small></div><div role="cell"><code>plotline_auth</code>: the Google account you picked for sync. <code>plotline_widget</code>: a copy of upcoming items, goal progress and habit status so home-screen widgets can display them, plus widget taps waiting to be applied. <code>plotline_alarms</code>: titles and times of scheduled reminders.</div><div role="cell">Plotline only. Updated whenever the app saves, and removed when you uninstall.</div></div>
+<div class="row" role="row"><div role="cell">On your device: offline cache<small>Web app only (service worker)</small></div><div role="cell">The app’s own files (page, fonts, icons) so it opens offline. No personal data.</div><div role="cell">Your browser. Replaced when a new version is released.</div></div>
+<div class="row" role="row"><div role="cell">Your Google Drive<small>Only if you turn on sync</small></div><div role="cell">One file, <code>plotline.json</code>, in Drive’s hidden app-data folder. It contains your goals, steps, daily goals, habits and journal moments (including photos). It also holds deletion markers (item IDs and times) so deletions reach your other devices; these are kept for up to 120 days. Settings, your name, theme and PIN are <b>not</b> synced.</div><div role="cell">Only Plotline on devices where you sign in with that Google account. The folder is hidden from your normal Drive view and from other apps. Google stores it under its own terms. It stays until you delete it (see section 11).</div></div>
+<div class="row" role="row"><div role="cell">Files you choose to save</div><div role="cell">Backups you export (<code>.json</code>) and calendar files (<code>.ics</code>). On Android these go to <code>Download/Plotline</code>. Photos you take with the camera from inside Plotline are also saved to <code>Pictures/Plotline</code> in your gallery.</div><div role="cell">These are ordinary files on your device, outside Plotline’s control. They stay until you delete them.</div></div>
+<div class="row" role="row"><div role="cell">Android device backup</div><div role="cell">If Android backup is turned on for your phone, Android may include Plotline’s app data in your device backup, the same as for other apps.</div><div role="cell">Managed by Android and Google under your device backup settings. You can turn it off in Android Settings → System → Backup.</div></div>
+</div>
+<p class="note">Photos and cover images are resized (at most 1280 pixels on the longest side) and saved inside the app’s data. They do not leave your device unless you turn on sync, export a backup or share them yourself.</p>
+
+<h2 id="sync">4. Google sign-in and Drive sync</h2>
+<p>Sync is optional and off until you turn it on. When you connect Google Drive:</p>
+<ul>
+<li><b>Sign-in.</b> On Android, you pick a Google account on your device, or sign in through your browser. On the web, you sign in on Google’s own page. We never see your Google password.</li>
+<li><b>Permission requested.</b> Plotline asks for one Google permission only: <code>drive.appdata</code>. It lets Plotline create and read its own hidden file in your Drive. It does <b>not</b> let Plotline see, open or change any of your other Drive files, and it gives no access to Gmail, Contacts, Photos or anything else.</li>
+<li><b>Your email address.</b> Plotline reads the email address of the connected account, shows it in Settings, and uses it to confirm your identity if you reset a forgotten PIN. It is stored only on your device.</li>
+<li><b>How data travels.</b> Your device talks directly to Google’s servers over encrypted HTTPS connections. Nothing passes through any server of ours, because we don’t run one.</li>
+<li><b>When it syncs.</b> Sync runs when you make changes, when you open the app, every few minutes while the app is open, and when you pull down to refresh. If two devices changed the same item, the most recent change wins.</li>
+<li><b>Turning it off.</b> Settings → Sync → Turn off sync. That device stops syncing. Your Drive copy stays until you delete it (see section 11).</li>
+</ul>
+<p class="note">Plotline’s use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements. Data from Google is used only to provide sync to you. It is never used for advertising, never sold, never transferred to others, and never read by a person.</p>
+
+<h2 id="ai">5. AI planning</h2>
+<p>Plotline does not connect to any AI service. The AI Plan feature builds a text prompt on your device. You copy it and paste it into an assistant of your choice (for example Claude, ChatGPT or Gemini), then paste the reply back into Plotline, which checks and imports it on your device.</p>
+<ul>
+<li>A <b>New plan</b> prompt contains what you type into the box.</li>
+<li>A <b>Change of plans</b> prompt also contains your current plan: goal titles, reasons, areas, dates and steps.</li>
+</ul>
+<p>What you paste into an AI assistant is handled under that provider’s own privacy policy and account settings, not ours. Read the prompt before you paste it, and leave out anything you don’t want to share.</p>
+
+<h2 id="device">6. Notifications, widgets, sharing and files</h2>
+<ul>
+<li><b>Reminders and notifications</b> (step reminders, goal check-ins, habit reminders, focus timers, milestones) are scheduled on your device using Android’s alarm service, or by your browser while the web app is open. No push server is involved. Notification text can appear on your lock screen, depending on your device’s notification settings.</li>
+<li><b>Home-screen widgets</b> show titles, progress and habit status on your home screen. Anyone who can see your home screen can see them. Taps on widgets and on the “Mark done” button in notifications are stored on your device until the app next opens.</li>
+<li><b>Sharing a goal</b> opens your device’s share sheet with the goal as text. Where it goes is up to you.</li>
+<li><b>Calendar export</b> creates a standard calendar file that you open in your calendar app. That app then handles the events.</li>
+<li><b>Links</b> to AI assistants and to Google sign-in open in your browser or the relevant app.</li>
+</ul>
+
+<h2 id="perms">7. Android permissions</h2>
+<ul>
+<li><b>Internet</b>: only for Google sign-in and Drive sync when you turn sync on.</li>
+<li><b>Notifications</b>: to show the reminders you set.</li>
+<li><b>Schedule exact alarms</b>: so reminders arrive on time.</li>
+<li><b>Run at startup</b> (receive boot completed): to restore scheduled reminders after your phone restarts.</li>
+<li><b>Vibrate</b>: short feedback when you check something off.</li>
+</ul>
+<p>Plotline does not request camera, storage, location, contacts or microphone permissions. When you add a photo, Android’s own camera or file picker opens, and Plotline receives only the image you choose.</p>
+
+<h2 id="third">8. Third-party services</h2>
+<ul>
+<li><b>Google</b> (sign-in and Drive), only if you turn on sync. Google’s <a href="https://policies.google.com/privacy" rel="noopener">Privacy Policy</a> applies to data stored in your Google account.</li>
+<li><b>GitHub Pages</b> hosts the web app. Like any web host, GitHub may record technical information such as your IP address when your browser loads the site. See <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub’s Privacy Statement</a>. The Android app loads its pages from inside the app. It contacts GitHub Pages only if you choose browser sign-in for sync, because Google returns you to the web app’s address to finish signing in.</li>
+<li><b>AI assistants and share targets</b> you choose to use, as described in sections 5 and 6.</li>
+</ul>
+<p>Plotline includes no third-party SDKs, analytics libraries, advertising networks or crash reporters. Fonts are bundled with the app and are not loaded from outside services.</p>
+
+<h2 id="dont">9. What we never do</h2>
+<ul>
+<li>Run servers or databases that hold your data.</li>
+<li>Sell, rent or share your personal information.</li>
+<li>Show ads or use your data for advertising.</li>
+<li>Track you across apps or websites, or use cookies.</li>
+<li>Collect analytics, usage statistics or crash reports.</li>
+<li>Read your content, or train AI models on it.</li>
+</ul>
+
+<h2 id="security">10. Security</h2>
+<ul>
+<li>Your data lives inside Plotline’s private storage on your device, which other apps cannot read. Modern Android and iOS devices encrypt this storage when the device is locked with a screen lock. We recommend using one.</li>
+<li>Sync traffic travels only over encrypted HTTPS connections directly to Google. The Drive file sits in your own account, protected by your Google sign-in. We recommend turning on two-step verification.</li>
+<li>If you set a PIN, only a one-way hash of it is stored, and it never leaves your device. The PIN keeps other people out of the app on a shared device. It does not encrypt your data.</li>
+<li>Google access tokens are short-lived (about one hour) and are removed when you turn off sync.</li>
+</ul>
+<p>No method of storage or transmission is completely secure. We keep Plotline’s design simple and local to reduce risk, but we cannot guarantee absolute security.</p>
+
+<h2 id="delete">11. Keeping and deleting your data</h2>
+<p>Your data stays until you delete it. You can:</p>
+<ul>
+<li><b>Delete single items</b> (goals, steps, habits, moments) inside the app. With sync on, deletions reach your other devices.</li>
+<li><b>Erase everything on a device</b>: Settings → Your data → Erase everything. This clears that device only. Your Drive copy is kept so you can restore it.</li>
+<li><b>Remove the app’s data completely</b>: uninstall the Android app, or clear this site’s data in your browser settings for the web app.</li>
+<li><b>Delete the synced copy in Google Drive</b>: open <a href="https://drive.google.com" rel="noopener">drive.google.com</a> → Settings (gear icon) → Manage apps → Plotline → Options → Delete hidden app data.</li>
+<li><b>Revoke Plotline’s access to your Google account</b> at <a href="https://myaccount.google.com/permissions" rel="noopener">myaccount.google.com/permissions</a>.</li>
+<li><b>Delete exported files</b> (backups, calendar files, photos in <code>Pictures/Plotline</code>) with your file manager or gallery.</li>
+</ul>
+
+<h2 id="rights">12. Your rights</h2>
+<p>Depending on where you live (for example under the GDPR in Europe or the CCPA/CPRA in California), you may have the right to access, correct, delete, export or restrict the processing of your personal data. Plotline gives you these controls directly: you can view and edit everything in the app, export a complete copy with Settings → Your data → Export backup, and delete everything as described in section 11.</p>
+<p>Because we hold no copy of your data, we cannot view, change, export or delete it for you. If you have questions, contact us (section 15).</p>
+
+<h2 id="children">13. Children</h2>
+<p>Plotline is intended for general audiences and is not directed at children under 13 (or the minimum age in your country). We do not knowingly collect personal information from children. Because Plotline stores data only on your device and in your own Google account, we do not receive information from any user, including children.</p>
+
+<h2 id="changes">14. Changes to this policy</h2>
+<p>If Plotline’s data handling changes, for example a new feature that sends data somewhere new, we will update this page and its effective date before the change is released. Significant changes will also be noted in the app’s release notes. We will not start collecting data from you without telling you first.</p>
+
+<h2 id="contact">15. Contact</h2>
+<p>Questions or requests about this policy or your privacy: <b>[add your contact email]</b>.</p>
+
+<footer>Plotline · Privacy Policy · Effective September 30, 2026 · <a href="./">Open Plotline</a></footer>
+</div>
+</body>
+</html>
