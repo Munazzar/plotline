@@ -1214,6 +1214,11 @@ html,body{overscroll-behavior-y:contain}
 .demob{display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:10px 10px 10px 16px;border-radius:18px;border:1px dashed color-mix(in srgb,var(--accent) 55%,transparent);background:color-mix(in srgb,var(--accent) 6%,var(--surface));font-size:14px}
 .demob span{flex:1;display:flex;align-items:center;gap:8px;min-width:0}.demob span svg{width:17px;height:17px;color:var(--accent);flex:none}
 .demob .ibtn.sm{width:36px;height:36px;border-radius:12px}
+.aig{margin-top:16px;padding:14px;border-radius:20px;border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.aig.on{border-color:var(--accent)}
+.aig-h{display:flex;gap:10px;align-items:center}.aig-h b{display:block;font-size:15px}.aig-h small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.aig .actions{margin-top:12px}.aig-p{margin-top:10px}
+.aig-or{align-self:center;margin-right:4px}
 /* ================= ask (assistant) ================= */
 .ask{display:flex;flex-direction:column;min-height:calc(100dvh - 190px)}
 .ask-h{margin-bottom:8px}
@@ -2049,9 +2054,9 @@ let AI={tab:'new',text:'',change:'',reply:'',plan:null,errs:[],sel:new Set()};
 function vAI(){if(AI.tab==='insights')AI.tab='new';const ch=AI.tab==='change',mode=ch?'update':'create';
  const s1=ch?`<h3>What changed?</h3><p class="small muted">Your whole plan goes along, with every goal and step id. Completed steps are locked. The AI can only rework, reschedule or add what’s still open.</p><textarea id="aiChange" placeholder="e.g. I started a job with long weekdays, so training moves to weekends. We’re moving in March, so the family days pause for a month.">${esc(AI.change)}</textarea>`
   :`<h3>Describe what you want</h3><p class="small muted">Messy is fine: hopes, worries, things you keep putting off. You don’t need to know your goals yet.</p><textarea id="aiText" placeholder="e.g. I want to be healthier, maybe run a race. Save for a house in 3 years. Spend more real time with my kids. Learn to cook properly.">${esc(AI.text)}</textarea>`;
- return`<header class="ph"><div><h1>${ch?'Change<br>of plans':'Plan with AI'}</h1><div class="data">Works with ChatGPT, Claude, Gemini or any assistant</div></div><div class="ph-r">${gear()}</div></header>
+ return`<header class="ph"><div><h1>${ch?'Change<br>of plans':'Plan with AI'}</h1><div class="data">${planEngine()?'On this device, or with any AI assistant':'Works with ChatGPT, Claude, Gemini or any assistant'}</div></div><div class="ph-r">${gear()}</div></header>
  <div class="bar">${segHTML('ai','aiTab',[['new','New plan'],['change','Change of plans']],AI.tab)}</div>
- <div class="fstep rv ${AI.plan?'':'on'}"><div class="fnum">1</div><div>${s1}<div class="actions left"><button class="btn pri" data-act="copyPrompt">${ic('copy')}Copy prompt</button><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Claude ${ic('ext','ico-s')}</a><a class="btn" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ${ic('ext','ico-s')}</a><a class="btn" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ${ic('ext','ico-s')}</a></div></div></div>
+ <div class="fstep rv ${AI.plan?'':'on'}"><div class="fnum">1</div><div>${s1}${aiGenHTML(ch)}<div class="actions left">${planEngine()?'<span class="small muted aig-or">Or copy it into any AI:</span>':''}<button class="btn ${planEngine()?'':'pri'}" data-act="copyPrompt">${ic('copy')}Copy prompt</button><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Claude ${ic('ext','ico-s')}</a><a class="btn" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ${ic('ext','ico-s')}</a><a class="btn" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ${ic('ext','ico-s')}</a></div></div></div>
  <div class="fstep rv"><div class="fnum">2</div><div><h3>Paste the whole reply</h3><p class="small muted">The app finds the plan and checks every field against the format.</p><textarea id="aiReply" placeholder="Paste the AI’s full answer here">${esc(AI.reply)}</textarea><div class="actions left"><button class="btn ${AI.plan?'':'pri'}" data-act="parseAI">Check plan</button></div>
  ${AI.errs.length?`<div class="errbox"><b>The plan doesn’t match the format yet</b><ul>${AI.errs.map(e=>`<li>${esc(e)}</li>`).join('')}</ul><div class="actions left" style="margin-top:12px"><button class="btn pri" data-act="copyFix">${ic('copy')}Copy fix-it message</button></div><p class="small muted" style="margin-top:8px">Paste it into the same AI chat, then paste the new reply here.</p></div>`:''}</div></div>
  <div class="fstep rv ${AI.plan?'on':''}"><div class="fnum">3</div><div><h3>${ch?'Review the changes':'Review and create'}</h3>${AI.plan?previewHTML():`<p class="small muted">${ch?'You’ll see exactly what gets added, rescheduled or removed before anything changes. Completed steps are never touched.':'Your goals show up here to check before anything is created.'}</p>`}</div></div>
@@ -2715,8 +2720,10 @@ const TOUR_STEPS=[
  {r:'road',nav:1,navk:'vista',s:'#road',t:'Vista · Timeline',x:'Vista shows your whole plan two ways. Timeline: every goal flows on its own path across the months, with steps as points along it. Tap a path to open it up.',d:'swipe',sc:'#road'},
  {r:'map',s:'#map',t:'Vista · Map',x:'Switch to Map for the big picture: goals grouped by life area, with lines where goals support each other. Drag anything, pinch to zoom, tap to focus.',d:'drag'},
  {r:'journal',nav:1,s:'.hs-shell,.spine',t:'Journal',x:'Moments, photos, milestones and achieved goals collect here as the story of your year.'},
- {r:'ask',nav:1,s:'.ask-comp',t:'Ask',x:'Your private assistant. Ask anything about your goals, habits and journal: it searches your own notes and answers on this device. The sliders icon changes the model and privacy settings.',d:'tap'},
- {r:'ai',s:'.fstep',t:'Plan with AI',x:'Describe what you want in your own words. Copy the prompt into any AI assistant, paste its reply back, then review one main goal with everything nested under it before anything is created.',d:'tap',tap:'[data-act=copyPrompt]'},
+ {r:'ask',nav:1,prep:()=>{IN.res=null},s:'.ask-comp',t:'Ask',x:'Your private assistant. Ask anything about your goals, habits and journal, then keep asking follow-ups. It searches your own notes, answers with links back to them, and can save an answer to your journal.',d:'tap'},
+ {r:'ask',s:'.ask-sugs',t:'Start with a suggestion',x:'A weekly reflection, mood patterns, stalled goals, habit patterns, wins. The dashed ones are questions written from your own plan.',d:'tap'},
+ {r:'ask',s:'.ask-h .ph-r',t:'Choose how it answers',x:'The sliders open the assistant settings: run an open-source model on this phone (private and offline after one download), use your own AI server, or copy a ready prompt into any AI.'},
+ {r:'ai',prep:()=>{AI.tab='new'},s:'.fstep',t:'Plan with AI',x:'From Ask, “Plan something new” opens this. Describe what you want in your own words, then tap Create my plan to have the on-device model write it, or copy the prompt into any AI. You review one main goal, with everything nested under it, before anything is created.',d:'tap'},
  {r:'settings',nav:1,s:'#syncPanel',t:'Sync and settings',x:'Connect your own Google Drive to keep phone and web in step. Themes, card styles, reminders, a PIN and backups are here too.'},
  {r:'today',c:1,t:'Pull down to sync',x:'On a phone, pull down at the top of any page to sync or refresh.',d:'pull'},
  {r:'today',c:1,native:1,t:'Home-screen widgets',x:'Long-press your home screen, choose Widgets, then Plotline. Check off goals and habits, see your week, or watch a live clean-time clock without opening the app.',d:'widget'},
@@ -3113,8 +3120,8 @@ ${fresh.length?`\nMORE NOTES\n${fresh.map((d,i)=>`[${base+i+1}] ${d.text}`).join
 Answer the same way, using everything above. Cite notes like [${base+1}]. End with "Next step:" only if it helps.`}
 
 /* ---- answer engines ---- */
-async function apiChat(msgs,onTok,signal){const s=insSet(),key=aiKey();if(!s.url)throw new Error('Add your AI server address first');
- const r=await fetch(s.url.replace(/\/+$/,'')+'/chat/completions',{method:'POST',signal,headers:{'Content-Type':'application/json',...(key?{Authorization:'Bearer '+key}:{})},body:JSON.stringify({model:s.model,messages:msgs,stream:true,temperature:.4})});
+async function apiChat(msgs,onTok,signal,opts={}){const s=insSet(),key=aiKey();if(!s.url)throw new Error('Add your AI server address first');
+ const r=await fetch(s.url.replace(/\/+$/,'')+'/chat/completions',{method:'POST',signal,headers:{'Content-Type':'application/json',...(key?{Authorization:'Bearer '+key}:{})},body:JSON.stringify({model:s.model,messages:msgs,stream:true,temperature:opts.temperature??.4,...(opts.max_tokens?{max_tokens:opts.max_tokens}:{}),...(opts.schema?{response_format:{type:'json_object'}}:{})})});
  if(!r.ok)throw new Error(`The server said ${r.status}. ${(await r.text().catch(()=>'')).slice(0,160)}`);
  if(!r.body||!(r.headers.get('content-type')||'').includes('event-stream')){const j=await r.json();onTok(j.choices?.[0]?.message?.content||'');return}
  const rd=r.body.getReader(),dec=new TextDecoder();let buf='';for(;;){const{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
@@ -3133,12 +3140,12 @@ async function localLLM(onP,cpuOnly){const m=llmOf(insSet().llm),gpu=useGPU()&&!
 const insShrink=msgs=>msgs.map(m=>{if(m.role!=='user'||!/\n\[\d+\] /.test(m.content))return m;const L=m.content.split('\n'),ix=L.map((l,i)=>/^\[\d+\] /.test(l)?i:-1).filter(i=>i>=0);const cut=new Set(ix.slice(Math.ceil(ix.length*.5)));return{...m,content:L.filter((l,i)=>!cut.has(i)).map(l=>l.length>700&&/^\[\d+\] /.test(l)?l.slice(0,700)+'…':l).join('\n')}});
 /* garbled output (runs of commas, a token repeating): stop early instead of filling the screen */
 const garbled=s=>{if(RAG_CFG.noGuard)return false;if(/([^\p{L}\p{N}\s])\1{9,}/u.test(s)||/(\S{1,6})\1{9,}/u.test(s))return true;if(s.length<80)return false;const l=(s.match(/[\p{L}\p{N}]/gu)||[]).length;return l/s.length<.35};
-async function localChat(msgs,onTok,onP,tries=0,reset,cpuOnly){const w=await localLLM(onP,cpuOnly);const t0=Date.now(),tick=setInterval(()=>onP&&!got&&onP(`Reading your notes on this device… ${Math.round((Date.now()-t0)/1000)}s`),1000);let got=false,acc='',bad=false;const ctl=new AbortController();const outer=IN.ctl&&IN.ctl.signal;if(outer)outer.addEventListener('abort',()=>ctl.abort(),{once:true});
- try{await w.createChatCompletion({messages:msgs,stream:true,max_tokens:IS_PHONE?450:600,temperature:.3,top_k:40,top_p:.9,repeat_penalty:1.15,abortSignal:ctl.signal,onData:c=>{const t=c.choices?.[0]?.delta?.content;if(!t||bad)return;acc+=t;if(garbled(acc)){bad=true;ctl.abort();return}got=true;onTok(t)}})}
- catch(e){if(!(e&&e.name==='AbortError'||bad||(outer&&outer.aborted))){clearInterval(tick);if(!got&&tries<2&&/context/i.test(e&&e.message||''))return localChat(insShrink(msgs),onTok,onP,tries+1,reset,cpuOnly);try{await w.exit()}catch(_){}LLM=null;LLM_ID='';if(!got)throw e}}
+async function localChat(msgs,onTok,onP,tries=0,reset,cpuOnly,opts={}){const w=await localLLM(onP,cpuOnly);const t0=Date.now(),tick=setInterval(()=>onP&&!got&&onP(`${opts.reading||'Reading your notes on this device…'} ${Math.round((Date.now()-t0)/1000)}s`),1000);let got=false,acc='',bad=false;const ctl=new AbortController();const outer=IN.ctl&&IN.ctl.signal;if(outer)outer.addEventListener('abort',()=>ctl.abort(),{once:true});
+ try{await w.createChatCompletion({messages:msgs,stream:true,max_tokens:opts.max_tokens||(IS_PHONE?450:600),temperature:opts.temperature??.3,top_k:40,top_p:.9,repeat_penalty:opts.schema?1:1.15,...(opts.schema?{response_format:{type:'json_schema',json_schema:{name:'plan',schema:opts.schema}}}:{}),abortSignal:ctl.signal,onData:c=>{const t=c.choices?.[0]?.delta?.content;if(!t||bad)return;acc+=t;if(!opts.schema&&garbled(acc)){bad=true;ctl.abort();return}got=true;onTok(t)}})}
+ catch(e){if(!(e&&e.name==='AbortError'||bad||(outer&&outer.aborted))){clearInterval(tick);if(!got&&tries<2&&/context/i.test(e&&e.message||''))return localChat(opts.schema?msgs:insShrink(msgs),onTok,onP,tries+1,reset,cpuOnly,opts);try{await w.exit()}catch(_){}LLM=null;LLM_ID='';if(!got)throw e}}
  clearInterval(tick);
  if(bad&&!(outer&&outer.aborted)){try{await w.exit()}catch(_){}LLM=null;LLM_ID='';reset&&reset();
-  if(!cpuOnly&&useGPU()){onP&&onP('The GPU gave garbled text. Retrying on the CPU…');return localChat(msgs,onTok,onP,tries,reset,true)}
+  if(!cpuOnly&&useGPU()){onP&&onP('The GPU gave garbled text. Retrying on the CPU…');return localChat(msgs,onTok,onP,tries,reset,true,opts)}
   throw new Error('The on-device model got confused. Try again, or pick a bigger model under “How answers are made”.')}}
 /* ---- Android app: native llama.cpp (llama-server built for arm64, run by LocalLlm.java), 3–5× faster than wasm ---- */
 let NAT_ST=null;const natSt=()=>{try{return NAT_ST=JSON.parse(NATIVE.llmStatus())}catch(e){return NAT_ST={ok:false}}};
@@ -3146,7 +3153,7 @@ const NAT_OK=()=>!!(NATIVE&&NATIVE.llmStatus)&&(NAT_ST||natSt()).ok;
 const LLMCB={};window.__llm=(id,k,t)=>{const f=LLMCB[id];if(f)f(k,t)};
 const natFile=m=>(m[4]||m[2]).split('/').pop();
 const natHave=m=>!!(natSt().have||{})[natFile(m)];
-const natCtx=m=>(m[5]||m[3])>1.5?3072:4096,natThreads=()=>Math.max(2,Math.min(4,(NAT_ST&&NAT_ST.cores)||4));
+const natCtx=m=>(m[5]||m[3])>1.5?4096:8192,natThreads=()=>Math.max(2,Math.min(4,(NAT_ST&&NAT_ST.cores)||4));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let NAT_WARM='';
 function natWarm(){if(!NAT_OK()||insSet().engine!=='local')return;const m=llmOf(insSet().llm);if(NAT_WARM===m[0]||!natHave(m)||natSt().running===natFile(m))return;NAT_WARM=m[0];const id='w'+uid();LLMCB[id]=()=>{delete LLMCB[id]};NATIVE.llmStart(id,natFile(m),natCtx(m),natThreads())}
@@ -3157,12 +3164,12 @@ async function natEnsure(m,onP){const f=natFile(m),gb=m[5]||m[3];
    onP&&onP(`Downloading ${m[1].split(' · ')[0]} · ${Math.round((d.loaded||0)/1048576)} of ${d.total?Math.round(d.total/1048576):Math.round(gb*1024)} MB · once, then offline`)}}
  if(natSt().running===f)return;onP&&onP('Loading the model on this phone…');
  await new Promise((res,rej)=>{const id='s'+uid();LLMCB[id]=(k,t)=>{if(k!=='ready'&&k!=='err')return;delete LLMCB[id];k==='ready'?res():rej(new Error(t))};NATIVE.llmStart(id,f,natCtx(m),natThreads())})}
-async function natChat(msgs,onTok,onP,reset){const m=llmOf(insSet().llm);await natEnsure(m,onP);const t0=Date.now();let got=false,acc='';
- const tick=setInterval(()=>{if(!got&&onP)onP(`Reading your notes on this phone… ${Math.round((Date.now()-t0)/1000)}s`)},1000);
+async function natChat(msgs,onTok,onP,reset,opts={}){const m=llmOf(insSet().llm);await natEnsure(m,onP);const t0=Date.now();let got=false,acc='';
+ const tick=setInterval(()=>{if(!got&&onP)onP(`${opts.reading||'Reading your notes on this phone…'} ${Math.round((Date.now()-t0)/1000)}s`)},1000);
  try{await new Promise((res,rej)=>{const id='c'+uid();const stop=()=>NATIVE.llmCancel(id);if(IN.ctl)IN.ctl.signal.addEventListener('abort',stop,{once:true});
-  LLMCB[id]=(k,t)=>{if(k==='t'){acc+=t;if(garbled(acc)){stop();delete LLMCB[id];reset&&reset();rej(new Error('The model got confused. Try again, or pick a different model under “How answers are made”.'));return}if(!got){got=true;clearInterval(tick);onP&&onP('')}onTok(t);return}
+  LLMCB[id]=(k,t)=>{if(k==='t'){acc+=t;if(!opts.schema&&garbled(acc)){stop();delete LLMCB[id];reset&&reset();rej(new Error('The model got confused. Try again, or pick a different model under “How answers are made”.'));return}if(!got){got=true;clearInterval(tick);onP&&onP('')}onTok(t);return}
    delete LLMCB[id];k==='done'?res():rej(new Error(/memory|stopped|killed/i.test(t)?t:'On-device answer failed: '+t))};
-  NATIVE.llmChat(id,JSON.stringify({messages:msgs,max_tokens:IS_PHONE?450:600,temperature:.3,top_k:40,top_p:.9,repeat_penalty:1.1}))})}
+  NATIVE.llmChat(id,JSON.stringify({messages:msgs,max_tokens:opts.max_tokens||(IS_PHONE?450:600),temperature:opts.temperature??.3,top_k:40,top_p:.9,repeat_penalty:opts.schema?1:1.1,...(opts.schema?{response_format:{type:'json_schema',json_schema:{name:'plan',schema:opts.schema}}}:{})}))})}
  finally{clearInterval(tick)}}
 /* follow-ups on a small on-device model: keep the first prompt and the last exchange so it fits the context window */
 const insMsgs=R=>{const m=R.msgs;if(R.engine!=='local'||m.length<=4)return m;return[m[0],m[1],...m.slice(-3)]};
@@ -3312,6 +3319,45 @@ Object.assign(ACT,{
    S.days=S.days.filter(x=>!z.d.has(x.id));S.days.forEach(x=>{if(z.g.has(x.goalId))x.goalId=null});
    S.entries=S.entries.filter(x=>!z.e.has(x.id));S.entries.forEach(x=>{if(z.g.has(x.goalId))x.goalId=null;if(z.h.has(x.hid))x.hid=''});
    S.settings.demoGone=true;save();closeSheet();go('today');render(false);toast('Sample data removed',u)})}
+});
+
+/* ================= AI PLAN on this device =================
+ Same prompt and Plotline Plan Format as the copy/paste flow, but sent to the assistant's engine
+ (native llama.cpp on the Android app, wllama on the web, or your own AI server). Local engines are
+ constrained by a JSON schema of the format, so a small model can only write valid JSON;
+ validatePlan() still checks every field and one automatic retry carries the errors back. */
+function planEngine(){const s=insSet();if(s.engine==='api'&&s.url)return'api';if(NAT_OK())return'native';if(s.engine==='local')return'wasm';return''}
+function planEngineName(){const e=planEngine(),m=llmOf(insSet().llm)[1].split(' · ')[0];return e==='api'?'your AI server':e==='native'?m+' on this phone':m+' on this device'}
+function planSchema(mode){const up=mode==='update',N=t=>({type:[t,'null']});
+ const step={type:'object',properties:{id:up?{type:'string',maxLength:24}:{const:'new'},title:{type:'string',minLength:3,maxLength:100},dueInDays:{type:['integer','null'],minimum:0},dueTime:{type:['string','null'],pattern:'^([01][0-9]|2[0-3]):[0-5][0-9]$'},reminder:{enum:['none','at-time','15m','1h','1d','1w']},note:{type:'string',maxLength:200}},required:STEP_KEYS,additionalProperties:false};
+ const goal={type:'object',properties:{id:up?{type:'string',maxLength:24}:{type:'string',pattern:'^new-[0-9]{1,2}$'},action:{enum:up?['keep','update','add','remove']:['add']},parent:{type:['string','null'],maxLength:24},title:{type:'string',minLength:3,maxLength:80},why:{type:'string',maxLength:200},area:{type:'string',minLength:1,maxLength:24},horizon:{enum:HZ_IDS},priority:{enum:[1,2,3]},startInDays:up?{type:['integer','null'],minimum:0}:{type:'integer',minimum:0},targetInDays:{type:['integer','null'],minimum:1},steps:{type:'array',items:step,maxItems:12},linksTo:{type:'array',items:{type:'string',maxLength:24},maxItems:6}},required:GOAL_KEYS,additionalProperties:false};
+ return{type:'object',properties:{format:{const:WP_FMT},version:{const:1},mode:{const:mode},goals:{type:'array',items:goal,minItems:1,maxItems:12}},required:['format','version','mode','goals'],additionalProperties:false}}
+let AIG={busy:false,out:'',prog:'',err:'',try:0};
+function aiGenHTML(ch){const e=planEngine();if(!e)return`<p class="small muted" style="margin-top:12px">Want it written right here? Pick an on-device model in <button class="link small" data-act="askSettings">assistant settings</button>.</p>`;
+ const n=(AIG.out.match(/"title"\s*:/g)||[]).length,g=(AIG.out.match(/"action"\s*:/g)||[]).length;
+ return`<div class="aig ${AIG.busy?'on':''}"><div class="aig-h"><span class="ask-av">${ic('ai')}</span><div><b>${AIG.busy?'Writing your plan…':ch?'Rework my plan here':'Write the plan here'}</b><small>${esc(planEngineName())}${e!=='api'?' · nothing leaves this device':''} · <button class="link small" data-act="askSettings">change</button></small></div></div>
+ ${AIG.busy?`<p class="small muted aig-p" id="aigProg">${esc(AIG.prog||(g?`${g} goal${g===1?'':'s'}, ${Math.max(0,n-g)} step${n-g===1?'':'s'} so far`:'Starting…'))}</p><div class="actions left"><button class="btn sm" data-act="aiGenStop">Stop</button></div>`
+  :`${AIG.err?`<p class="small err">${esc(AIG.err)}</p>`:''}<div class="actions left"><button class="btn pri" data-act="aiGen">${ic('ai')}${ch?'Rework my plan':'Create my plan'}</button></div>`}</div>`}
+function aiGenPaint(){const p=$('#aigProg');if(!p)return;const n=(AIG.out.match(/"title"\s*:/g)||[]).length,g=(AIG.out.match(/"action"\s*:/g)||[]).length;p.textContent=AIG.prog||(g?`${g} goal${g===1?'':'s'}, ${Math.max(0,n-g)} step${n-g===1?'':'s'} so far`:'Reading what you wrote…')}
+Object.assign(ACT,{
+ aiGen:async()=>{if(AIG.busy)return;const ch=AI.tab==='change',mode=ch?'update':'create',t=(ch?AI.change:AI.text)||'';const ta=$(ch?'#aiChange':'#aiText');const txt=(ta?ta.value:t).trim();
+  if(!txt)return toast(ch?'Describe what changed first':'Write a few lines about what you want first');if(ch&&!S.goals.length)return toast('No goals yet. Start with New plan');
+  const e=planEngine(),s=insSet(),m=llmOf(s.llm);if(e==='native'&&!natHave(m)&&!(s.dl||{})[m[0]])return askConfirm('Download '+esc(m[1].split(' · ')[0])+'?',`This downloads ${m[5]||m[3]} GB once, then plans and answers work offline. Use Wi-Fi.`,'Download',()=>{s.dl={...(s.dl||{}),[m[0]]:1};save();closeSheet();ACT.aiGen()},false);
+  if(ch)AI.change=txt;else AI.text=txt;
+  AIG={busy:true,out:'',prog:'',err:'',try:0};AI.plan=null;AI.errs=[];AI.reply='';IN.ctl=new AbortController();render(false);setTimeout(()=>$('.aig')?.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'center'}),60);
+  const sys={role:'system',content:'You are a life-planning coach inside the Plotline app. Reply with only the JSON plan in the Plotline Plan Format.'};
+  const base=(ch?updatePrompt:createPrompt)(txt);let errs=[];
+  for(let attempt=0;attempt<2;attempt++){AIG.out='';AIG.try=attempt;AIG.prog=attempt?'The first draft didn’t pass the checks. Fixing it…':'';aiGenPaint();
+   const msgs=[sys,{role:'user',content:attempt?base+`\n\nYour previous plan was rejected for these reasons. Avoid them:\n${errs.map(x=>'- '+x).join('\n')}`:base}];
+   const opts={schema:planSchema(mode),max_tokens:2200,temperature:.5,reading:'Reading what you wrote…'};
+   const onTok=x=>{AIG.out+=x;if(AIG.prog&&!attempt)AIG.prog='';aiGenPaint()};const onP=x=>{AIG.prog=x||'';aiGenPaint()};
+   try{if(e==='api')await apiChat(msgs,onTok,IN.ctl.signal,opts);else if(e==='native')await natChat(msgs,onTok,onP,null,opts);else await localChat(msgs,onTok,onP,0,null,false,opts)}
+   catch(err){if(err&&err.name==='AbortError'||IN.ctl.signal.aborted){AIG.busy=false;AIG.err='Stopped.';render(false);return}AIG.busy=false;AIG.err=(err&&err.message||'Couldn’t write the plan')+'. You can still copy the prompt into any AI below.';render(false);return}
+   if(IN.ctl.signal.aborted){AIG.busy=false;AIG.err='Stopped.';render(false);return}
+   try{const o=extractPlan(AIG.out);errs=validatePlan(o,mode)}catch(x){errs=x.errs||[String(x.message||x)]}
+   if(!errs.length)break}
+  AIG.busy=false;AIG.err=errs.length?'The model’s plan still has problems (listed below). Try again, pick a bigger model, or copy the prompt into any AI.':'';AI.reply=AIG.out;render(false);ACT.parseAI()},
+ aiGenStop:()=>{IN.ctl&&IN.ctl.abort()}
 });
 
 </script>
