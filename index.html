@@ -1372,7 +1372,7 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .hv-svg{display:block}
 .hv-labs{position:absolute;inset:0;pointer-events:none}
 .hv-lane{position:absolute;left:0;right:0;display:flex;align-items:flex-start;gap:8px;padding:12px 22px 0}
-.hv-name{pointer-events:auto;display:flex;align-items:center;gap:8px;min-width:0;flex:1;border:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;padding:0}
+.hv-name{pointer-events:auto;display:flex;align-items:center;gap:8px;min-width:0;flex:0 1 auto;margin-right:auto;border:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;padding:0}
 .hv-name b{font-size:13.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hv-name em{font-style:normal;font:500 9.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);flex:none}
 .hv-ic{flex:none;width:22px;height:22px;border-radius:8px;display:grid;place-items:center;font-size:12px;background:color-mix(in srgb,var(--c) 22%,transparent)}
@@ -1455,6 +1455,23 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .nh-list span{display:block;margin-top:2px}.nh-list small{display:block;opacity:.8}
 .hown span{padding:0;overflow:hidden}.hicons .hown-in{position:static;opacity:1;pointer-events:auto;width:42px;height:42px;padding:0;border:0;background:none;text-align:center;font-size:20px;color:var(--text);caret-color:var(--accent)}
 .hown-in::placeholder{color:var(--muted);font-size:18px}
+
+/* no scrollbars anywhere; mouse can drag timelines sideways; selected day stays readable in every theme */
+*{scrollbar-width:none}*::-webkit-scrollbar{display:none;width:0;height:0}
+.ds.pk b,.ds.now.pk b{color:var(--bg)}
+.ds.now.pk{box-shadow:inset 0 -3px 0 var(--accent)}
+[data-theme=graphite] .ds.now.pk{box-shadow:inset 0 -3px 0 var(--muted)}
+@media(pointer:fine){.road,.hv-wrap,.hstrip,.hscroll{cursor:grab}.mpan,.mpan *{cursor:grabbing!important;user-select:none}}
+
+/* sign-in banner */
+.authb{position:fixed;z-index:80;left:50%;top:calc(10px + var(--sat,env(safe-area-inset-top)));transform:translateX(-50%);width:min(560px,calc(100% - 24px));display:flex;align-items:center;gap:12px;padding:10px 10px 10px 14px;border-radius:18px;background:color-mix(in srgb,var(--surface-2) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 10px 30px rgba(0,0,0,.35);animation:authIn .45s var(--spring)}
+.authb>div{flex:1;min-width:0}.authb b{display:block;font-size:14px}.authb small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35;margin-top:1px}
+.authb-i{flex:none;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}.authb-i svg{width:16px;height:16px}
+.authb.busy{opacity:.7;pointer-events:none}
+.authb.min{width:auto;left:auto;right:12px;transform:none;padding:6px}.authb.min>div,.authb.min [data-act=authLater]{display:none}
+@media(min-width:821px){.authb{left:calc(50% + 48px)}}
+@keyframes authIn{from{opacity:0;transform:translate(-50%,-12px)}}
+[data-nav].dot{position:relative}[data-nav].dot::after{content:'';position:absolute;top:6px;right:calc(50% - 16px);width:8px;height:8px;border-radius:50%;background:#FF7A7A;box-shadow:0 0 0 2px var(--bg)}
 </style>
 </head>
 <body>
@@ -1576,14 +1593,16 @@ const tokGet=()=>{try{const t=JSON.parse(localStorage.getItem(TOKK)||'null');ret
 const tokSet=(t,sec)=>{try{localStorage.setItem(TOKK,JSON.stringify({t,exp:Date.now()+(sec||3600)*1e3}))}catch(e){}};
 const tokDrop=()=>{try{localStorage.removeItem(TOKK)}catch(e){}};
 function authUrl(state,prompt){const c=cfg();const redirect=NATIVE?c.webUrl:(location.origin+location.pathname);const p=new URLSearchParams({client_id:c.clientId,redirect_uri:redirect,response_type:'token',scope:DRIVE_SCOPE,include_granted_scopes:'true',state});if(prompt)p.set('prompt',prompt);if(S.settings.sync.email&&!/select_account/.test(prompt||''))p.set('login_hint',S.settings.sync.email);return'https://accounts.google.com/o/oauth2/v2/auth?'+p}
-let AUTHWAIT=null;
-function authDone(a){if(a&&a.token){ownerMigrate();tokSet(a.token,a.exp);if(a.email)S.settings.sync.email=a.email}const w=AUTHWAIT;AUTHWAIT=null;if(w)a&&a.token?w.res(a.token):w.rej(new Error((a&&a.err)||'Sign-in cancelled'))}
+/* every caller waiting for a token gets the answer; a sign-in that never answers fails after a while instead of freezing sync */
+let AUTHWAIT=null,AUTHQ=[];
+function authWait(ms){return new Promise((res,rej)=>{const w={res,rej,t:setTimeout(()=>{AUTHQ=AUTHQ.filter(x=>x!==w);rej({auth:true,timeout:true})},ms||120000)};AUTHQ.push(w);AUTHWAIT=w})}
+function authDone(a){if(a&&a.token){ownerMigrate();tokSet(a.token,a.exp);if(a.email)S.settings.sync.email=a.email;if(S.settings.sync.err==='auth'){S.settings.sync.err='';authBanner()}}const q=AUTHQ;AUTHQ=[];AUTHWAIT=null;q.forEach(w=>{clearTimeout(w.t);a&&a.token?w.res(a.token):w.rej(new Error((a&&a.err)||'Sign-in cancelled'))})}
 window.__gauth=json=>{let a;try{a=typeof json==='string'?JSON.parse(json):json}catch(e){a={err:'bad_response'}}if(a.token&&a.native)S.settings.sync.native=true;authDone(a)};
 try{const bc=new BroadcastChannel('plotline-auth');bc.onmessage=e=>{if(e.data&&e.data.plotlineAuth)authDone(e.data.plotlineAuth)}}catch(e){}
 window.addEventListener('storage',e=>{if(e.key==='plotline.authmsg'&&e.newValue){try{authDone(JSON.parse(e.newValue))}catch(_){}}});
-function webAuth(prompt){return new Promise((res,rej)=>{AUTHWAIT={res,rej};const st='web'+uid();const w=window.open(authUrl(st,prompt),'plotline-auth','width=500,height=660');if(!w){sessionStorage.setItem('plotline.after','sync');location.href=authUrl(st,prompt)}})}
-function nativeAuth(interactive){return new Promise((res,rej)=>{AUTHWAIT={res,rej};try{NATIVE.googleToken(!!interactive)}catch(e){AUTHWAIT=null;rej(e)}})}
-function browserAuthFromApp(){const c=cfg();if(!c.webUrl)return toast('Add your web app address in Sync settings first');return new Promise((res,rej)=>{AUTHWAIT={res,rej};NATIVE.openUrl(authUrl('app'+uid(),'consent'))})}
+function webAuth(prompt){const p=authWait(180000);const st='web'+uid();const w=window.open(authUrl(st,prompt),'plotline-auth','width=500,height=660');if(!w){sessionStorage.setItem('plotline.after','sync');location.href=authUrl(st,prompt)}return p}
+function nativeAuth(interactive){const p=authWait(interactive?180000:25000);try{NATIVE.googleToken(!!interactive)}catch(e){authDone({err:String(e&&e.message||e)})}return p}
+function browserAuthFromApp(){const c=cfg();if(!c.webUrl)return Promise.reject(new Error('Add your web app address in Sync settings first'));const p=authWait(300000);NATIVE.openUrl(authUrl('app'+uid(),'consent'));return p}
 async function token(interactive){const t=tokGet();if(t)return t;
  if(NATIVE&&S.settings.sync.native){try{return await nativeAuth(interactive)}catch(e){if(!interactive)throw{auth:true};throw e}}
  if(!interactive)throw{auth:true};
@@ -1619,7 +1638,7 @@ async function syncNow(manual){if(!syncOn()||TOURING)return;if(SYNCING){SYNC_AGA
   if(!remote||!sameDoc(merged,remote)||DIRTY){S.settings.sync.fileId=await driveWrite(f&&f.id,docOf(merged))}else S.settings.sync.fileId=f.id;
   DIRTY=false;S.settings.sync.last=Date.now();S.settings.sync.err='';if(who)S.settings.sync.owner=lc(who);await DB.set('state',S).catch(()=>{});
   setSyncMsg('Synced '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}));if(manual)toast(changedLocal?'Synced · changes pulled in':'Synced · everything is up to date')}
- catch(e){if(e&&e.auth){S.settings.sync.err='auth';setSyncMsg('Sign in again to keep syncing');if(manual)return connectDrive()}else{S.settings.sync.err=String(e&&e.message||e);setSyncMsg('Sync failed: '+S.settings.sync.err);if(manual)toast('Sync failed. '+esc(S.settings.sync.err))}}
+ catch(e){if(e&&e.auth){S.settings.sync.err='auth';setSyncMsg('Sign in again to keep syncing');authBanner();if(manual)return ACT.reauth()}else{S.settings.sync.err=String(e&&e.message||e);setSyncMsg('Sync failed: '+S.settings.sync.err);if(manual)toast('Sync failed. '+esc(S.settings.sync.err))}}
  finally{SYNCING=null;if(SYNC_AGAIN){SYNC_AGAIN=false;syncSoon(500)}}})();return SYNCING}
 async function connectDrive(useBrowser){const c=cfg();if(!NATIVE&&!c.clientId)return toast('Add your Google client ID first');
  try{if(NATIVE&&!useBrowser){S.settings.sync.native=true;await nativeAuth(true)}else{S.settings.sync.native=false;await(NATIVE?browserAuthFromApp():webAuth('select_account consent'))}
@@ -2879,16 +2898,19 @@ const TOUR_STEPS=[
  {r:'today',s:'.hstrip',t:'Habits at a glance',x:'Today’s habits sit right on the Today page. Tap a ring to log one, and swipe for the rest.',d:'swipe',sc:'.hstrip'},
  {r:'habits',nav:1,s:'.hsum',t:'Habits',x:'Build good habits, break bad ones and run routines. The ring is today, the bars are the last seven days.'},
  {r:'habits',s:'.hrow',t:'Log a habit',x:'Tap the ring to log it. Counted habits, like 8 glasses of water, fill one tap at a time. The dots are the last seven days: tap one to fix a day you forgot. The 🔔 sets when it reminds you, and every step, day goal and goal has one too.',d:'tap',tap:'.hrow .hchk',click:1},
+ {r:'habits',s:'.hrow .bell',t:'Reminders, your way',x:'Every habit, step, day goal and goal has a 🔔. It starts from when you planned it, and you choose the time, a nudge if it’s still not done, a second reminder, or a custom date. The bell shows what’s set, including a “remind me again” you asked for from a notification.',d:'tap'},
  {r:'habits',s:'.hq',t:'Break a habit',x:'A live clock counts your time free, with milestones along the way. When a craving hits, tap “I have an urge” for a guided breathing timer. Slips are logged honestly and the clock starts again.',d:'tap',tap:'.hq .btn.ink'},
- {r:'habits',prep:()=>{HV='vista'},s:'.hvista',t:'Habit vista',x:'Every habit as a line through time. Bold glowing stretches are streaks, gaps are misses, × marks a slip. Pinch or use − + to zoom from days to a whole year, and tap a stop to fix that day.'},
+ {r:'habits',prep:()=>{HV='vista'},s:'.hvista',t:'Habit vista',x:'Every habit as a lane through time, with its live streak on top. Bold glowing stretches are streaks, faint dots are misses, × marks a slip, and today pulses until you log it. Switch Week, Month, 3 months or Year, pinch to zoom, drag to look back, and tap a stop to fix that day.'},
  {r:'habits',prep:()=>{HV='routine'},s:'.rcard',t:'Routines',x:'A routine is a short sequence you run the same way each time, like a morning start. Press Start and a timer walks you through each step.',d:'tap',tap:'.rcard .btn.ink'},
  {r:'habits',prep:()=>{HV='templates'},s:'.tplg',t:'Templates',x:'Ready-made habits, habit breakers and routines. Tap one, adjust it, and you’re going. They’re always one tap away under Templates.',d:'tap',tap:'.tpl'},
  {r:'goals',nav:1,prep:()=>{HV='today';S.settings.layout.goals='grid'},s:'.fgrid .fc',t:'Goals',x:'Every goal is a card. Tap one to flip it and see the next step and due date. Sub-goals sit right after the goal they belong to.',d:'flip'},
  {r:'goals',s:'.bar',t:'Filter and switch views',x:'Show active, short-term, long-term or achieved goals, filter by life area, or switch to a swipeable carousel.'},
  {r:'goal',id:()=>(S.goals.find(g=>kids(g).length)||S.goals[0]).id,prep:()=>{S.settings.layout.goal='cards'},s:'.hero',t:'A goal up close',x:'Why it matters, the dates, and progress that includes every sub-goal beneath it. Pin it to Today with the pin, edit it with the pencil.'},
+ {r:'goal',s:'.crumb .bell',t:'Goal reminders',x:'Set a daily or weekly check-in, a reminder before the target date, and a reminder for every step, all from one place.',d:'tap'},
  {r:'goal',s:'.bar .seg-c',t:'Three ways to see the path',x:'Cards, a path, or a flowing timeline. Steps and sub-goals, at any depth, appear in all three.',d:'cycle'},
  {r:'goal',prep:()=>{S.settings.layout.goal='cards'},s:'.hs-shell',t:'Swipe through steps',x:'Swipe the cards. Tap a card to flip it for notes and actions, and tap its dot to mark the step done. Sub-goal cards open that sub-goal.',d:'swipe',sc:'.hs-shell .hs'},
  {r:'cal',nav:1,prep:()=>{S.settings.layout.cal='month'},s:'.cal-card',t:'Calendar',x:'Day goals, steps and goal targets together. Each day in Month shows what’s planned, a bar for habits kept, your mood and ⚑ for goal targets. Tap a day to see and tick off everything on it. Swipe to move through dates.',d:'swipe'},
+ {r:'cal',prep:()=>{S.settings.layout.cal='month';CAL.d=ymd()},s:'#cpeek',t:'Everything on a day',x:'The day you tap opens right under the month: tick off its goals and steps, log that day’s habits, and see what you wrote. Tap the same day again for the hour-by-hour view.'},
  {r:'cal',prep:()=>{S.settings.layout.cal='day';CAL.d=ymd()},s:'#dgrid',t:'Plan the day by the hour',x:'Tap an empty slot to add something at that time. Pinch, or use the zoom buttons, to see more or less of the day.',d:'pinch'},
  {r:'road',nav:1,navk:'vista',s:'#road',t:'Vista · Timeline',x:'Vista shows your whole plan two ways. Timeline: every goal flows on its own path across the months, with steps as points along it. Tap a path to open it up.',d:'swipe',sc:'#road'},
  {r:'map',s:'#map',t:'Vista · Map',x:'Switch to Map for the big picture: goals grouped by life area, with lines where goals support each other. Drag anything, pinch to zoom, tap to focus.',d:'drag'},
@@ -2897,9 +2919,11 @@ const TOUR_STEPS=[
  {r:'ask',s:'.ask-sugs',t:'Start with a suggestion',x:'A weekly reflection, mood patterns, stalled goals, habit patterns, wins. The dashed ones are questions written from your own plan.',d:'tap'},
  {r:'ask',s:'.ask-h .ph-r',t:'Choose how it answers',x:'The sliders open the assistant settings: run an open-source model on this phone (private and offline after one download), use your own AI server, or copy a ready prompt into any AI.'},
  {r:'ai',prep:()=>{AI.tab='new'},s:'.fstep',t:'Plan with AI',x:'From Ask, “Plan something new” opens this. Describe what you want in your own words, then tap Create my plan to have the on-device model write it, or copy the prompt into any AI. You review one main goal, with everything nested under it, before anything is created.',d:'tap'},
- {r:'settings',nav:1,s:'#syncPanel',t:'Sync and settings',x:'Connect your own Google Drive to keep phone and web in step. Themes, card styles, reminders, a PIN and backups are here too.'},
+ {r:'today',c:1,t:'Reply to reminders',x:NATIVE?'Answer a reminder right from the notification bar in your own words: “done”, “remind me again at 5”, “mute for 2 days”, “in meetings till 4:30”, “push it to Friday”. The on-device AI does it on your phone, tells you exactly what changed, and gives you Undo. Each item keeps a quiet notification history of what was sent, what you replied and what was done.':'On the Android app you can answer reminders right from the notification bar in your own words, like “done”, “remind me again at 5” or “mute for 2 days”, and the on-device AI does it.'},
+ {r:'settings',nav:1,s:'#syncPanel',t:'Sync and settings',x:'Connect your own Google Drive to keep phone and web in step. If Google ever needs you to sign in again, a banner appears on every page with one button, and sync picks up where it left off. Themes, card styles, a PIN and backups are here too.'},
+ {r:'settings',s:'#notifSet',t:'Notifications',x:'Choose which reminders you get, the evening wrap-up, quiet hours and how long Mute lasts. Focus mode pauses everything for an hour or more, and missed reminders arrive as one summary afterwards.'},
  {r:'today',c:1,t:'Pull down to sync',x:'On a phone, pull down at the top of any page to sync or refresh.',d:'pull'},
- {r:'today',c:1,native:1,t:'Home-screen widgets',x:'Long-press your home screen, choose Widgets, then Plotline. Check off goals and habits, see your week, or watch a live clean-time clock without opening the app.',d:'widget'},
+ {r:'today',c:1,native:1,t:'Home-screen widgets',x:'Long-press your home screen, choose Widgets, then Plotline. Habit vista draws your habit lines right on the home screen. Check off goals and habits, see your week, or watch a live clean-time clock without opening the app.',d:'widget'},
  {r:'today',c:1,t:'You’re all set',x:'Your own plan is back, exactly as you left it. Replay this tour any time from Settings.'},
 ].filter(s=>!s.native||NATIVE);
 function tourPrompt(){if(TOURING||$('.tprompt')||S.settings.tourOffered)return;S.settings.tourOffered=true;save();const d=document.createElement('div');d.className='tprompt';d.setAttribute('role','dialog');d.innerHTML=`${LOGO}<div><b>Take a quick tour?</b><span>Two minutes, with examples, through goals, habits, the calendar, timeline and more.</span></div><div class="tp-a"><button class="btn ghost sm" data-act="tourNo">Not now</button><button class="btn pri sm" data-act="tourGo">Start tour</button></div>`;document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'))}
@@ -3114,7 +3138,7 @@ function route(){let[p,id]=(location.hash.slice(2)||'today').split('/');if(p==='
 let RANIM=true;
 function render(anim=true){RANIM=anim;const v=$('#view');const y=scrollY;if(cur.p!=='map')MP=null;v.innerHTML=VIEWS[cur.p](cur.id);if(!anim)window.scrollTo(0,y);
  document.querySelectorAll('[data-nav]').forEach(a=>{const on=a.dataset.nav===(({goal:'goals',habit:'habits',road:'vista',map:'vista',ai:'ask'})[cur.p]||cur.p);a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
- imgCSS();zfixAll();if(typeof hvInit==='function')hvInit();moveInd();placeSegs();initHS();reveal(anim);fillSpine(anim);if(S.settings.focus)buildFloater();
+ imgCSS();zfixAll();if(typeof hvInit==='function')hvInit();if(typeof authBanner==='function')authBanner();moveInd();placeSegs();initHS();reveal(anim);fillSpine(anim);if(S.settings.focus)buildFloater();
  if(cur.p==='map')requestAnimationFrame(initMap);
  if(cur.p==='cal')requestAnimationFrame(()=>{fitCal();initDayGrid()});
  if(cur.p==='road'||cur.p==='goal')requestAnimationFrame(()=>{const r=$('#road');if(!r)return;r.style.setProperty('--vw',r.clientWidth+'px');if(cur.p==='road'){r.scrollLeft=RD.scroll!=null?RD.scroll:Math.max(0,RD.todayX-.25*(r.clientWidth-labW(r)));r.addEventListener('scroll',()=>{RD.scroll=r.scrollLeft},{passive:true})}else r.scrollLeft=Math.max(0,GV.x-30)})}
@@ -3825,6 +3849,29 @@ function oneEmoji(v){v=String(v||'').trim();if(!v)return'';try{if(window.Intl&&I
 document.addEventListener('input',e=>{const t=e.target;if(t.name==='iconOwn'){const r=t.closest('label')&&t.closest('label').querySelector('input[type=radio]');if(r)r.checked=true;const one=oneEmoji(t.value);if(one&&t.value!==one)t.value=one}});
 document.addEventListener('focusin',e=>{const t=e.target;if(t.name==='iconOwn'){const r=t.closest('label').querySelector('input[type=radio]');if(r)r.checked=true}});
 Object.assign(ACT,{exactOn:()=>{try{NATIVE.openExactAlarms()}catch(e){}},snzCancel:d=>{if(!NATIVE||!NATIVE.notifCancelSnooze)return;NATIVE.notifCancelSnooze(+d.nid);NSC.t=0;toast('Snooze cancelled');render(false);const bd=$('#remBody');if(bd)bd.innerHTML=remBody()}});
+
+/* mouse: drag any sideways timeline (Vista, Habit Vista, strips) to move through time; a drag never counts as a click */
+(()=>{let P=null,LAST=0;const SEL='.road,.hv-wrap,.hstrip,.hscroll';
+ document.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0)return;let el=e.target.closest&&e.target.closest(SEL);if(el&&el.classList.contains('hv-wrap'))el=el.querySelector('.hv-sc');if(!el||el.scrollWidth<=el.clientWidth+2||e.target.closest('input,textarea,select,[contenteditable]'))return;P={el,x:e.clientX,sl:el.scrollLeft,m:0}},true);
+ window.addEventListener('pointermove',e=>{if(!P)return;const dx=e.clientX-P.x;if(!P.m&&Math.abs(dx)<5)return;if(!P.m){P.m=1;P.el.classList.add('mpan')}P.el.scrollLeft=P.sl-dx;e.preventDefault()},{passive:false});
+ window.addEventListener('pointerup',()=>{if(!P)return;if(P.m){LAST=Date.now();P.el.classList.remove('mpan')}P=null});
+ document.addEventListener('click',e=>{if(Date.now()-LAST<250&&e.target.closest&&e.target.closest(SEL)){e.stopPropagation();e.preventDefault()}},true);
+ document.addEventListener('dragstart',e=>{if(e.target.closest&&e.target.closest(SEL))e.preventDefault()});})();
+
+/* ================= SIGN-IN STAYS VISIBLE =================
+ Sync never turns itself off. When Google needs you to sign in again, a slim banner shows on every page with one button,
+ instead of sync quietly stopping in Settings. On Android, device sign-in renews itself; the button prefers it. */
+function authBanner(){let b=document.getElementById('authb');const need=S.settings.sync.on&&S.settings.sync.err==='auth'&&!TOURING;
+ if(!need){if(b)b.remove();document.querySelectorAll('[data-nav=settings]').forEach(a=>a.classList.remove('dot'));return}
+ if(!b){b=document.createElement('div');b.id='authb';b.className='authb';b.setAttribute('role','status');document.body.appendChild(b)}
+ const em=S.settings.sync.email;b.innerHTML=`<span class="authb-i">${ic('lock')}</span><div><b>Sync paused</b><small>Sign in${em?' as '+esc(em):''} again to keep your phone and web in step. Nothing is lost.</small></div><button class="btn sm pri" data-act="reauth">Sign in</button><button class="ibtn sm" data-act="authLater" aria-label="Later">${ic('minus')}</button>`;
+ document.querySelectorAll('[data-nav=settings]').forEach(a=>a.classList.add('dot'))}
+Object.assign(ACT,{
+ reauth:async()=>{const b=document.getElementById('authb');if(b)b.classList.add('busy');
+  try{if(NATIVE){try{S.settings.sync.native=true;await nativeAuth(true)}catch(e){if(!cfg().webUrl)throw e;S.settings.sync.native=false;await browserAuthFromApp()}}else await webAuth('')
+   S.settings.sync.err='';save();authBanner();toast('Signed in · syncing');await syncNow(false);render(false)}
+  catch(e){if(b)b.classList.remove('busy');toast('Couldn’t sign in: '+esc(e&&e.message||'try again'))}},
+ authLater:()=>{const b=document.getElementById('authb');if(b)b.classList.add('min')}});
 </script>
 </body>
 </html>
