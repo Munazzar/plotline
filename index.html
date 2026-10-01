@@ -1436,6 +1436,25 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .rm-next svg{width:20px;height:20px;color:var(--accent);flex:none;margin-top:2px}.rm-next b{display:block}.rm-next small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
 .rm-steps{display:grid;gap:6px;margin-bottom:10px}.rm-st{display:flex;align-items:center;gap:8px;padding:8px 6px 8px 12px;border-radius:14px;background:var(--bg-2)}.rm-st>span{flex:1;min-width:0;font-size:14px}.rm-st small{display:block;color:var(--muted);font-size:12px}
 .small.warn,small.warn{color:#FFB547}
+
+/* snoozes, quiet history, own-emoji icon */
+.rm-snz{display:flex;align-items:center;gap:12px;margin:6px 0 12px;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--accent) 10%,var(--bg-2));border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.rm-snz>svg{width:20px;height:20px;flex:none;color:var(--accent)}.rm-snz>div{flex:1;min-width:0}.rm-snz b{display:block;font-size:14px}.rm-snz small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.rm-snz.mute{background:var(--bg-2);border-color:var(--line-2)}.rm-snz.mute>svg{color:var(--muted)}
+.nhist{margin:12px 0 4px;color:var(--muted)}
+.nhist>summary{list-style:none;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font:500 12px var(--f-body);opacity:.6;padding:6px 8px;margin-left:-8px;border-radius:10px;transition:opacity .2s,background-color .2s}
+.nhist>summary::-webkit-details-marker{display:none}
+.nhist>summary:hover,.nhist[open]>summary{opacity:1;background:color-mix(in srgb,var(--text) 6%,transparent)}
+.nhist>summary svg{width:14px;height:14px}.nhist>summary em{font-style:normal;font:600 10px var(--f-mono);padding:1px 6px;border-radius:6px;background:var(--bg-2)}
+.nh-list{list-style:none;margin:8px 0 0;padding:0 0 0 14px;border-left:1px solid var(--line);display:grid;gap:10px;max-height:340px;overflow:auto}
+.nh-list li{position:relative;font-size:13px;line-height:1.4}
+.nh-list li::before{content:'';position:absolute;left:-18px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--line-2)}
+.nh-list li.nh-reply::before,.nh-list li.nh-reply-ai::before,.nh-list li.nh-done::before{background:var(--accent)}
+.nh-list time{display:block;font:500 10px var(--f-mono);letter-spacing:.04em;opacity:.8}
+.nh-list b{font-weight:600;color:var(--text)}.nh-list q{display:block;color:var(--text);font-style:italic;margin-top:2px}
+.nh-list span{display:block;margin-top:2px}.nh-list small{display:block;opacity:.8}
+.hown span{padding:0;overflow:hidden}.hicons .hown-in{position:static;opacity:1;pointer-events:auto;width:42px;height:42px;padding:0;border:0;background:none;text-align:center;font-size:20px;color:var(--text);caret-color:var(--accent)}
+.hown-in::placeholder{color:var(--muted);font-size:18px}
 </style>
 </head>
 <body>
@@ -1835,6 +1854,7 @@ function vGoal(id){const g=G(id);if(!g)return`<header class="ph"><div><h1>Not fo
  return`<div class="crumb"><a href="#/goals" class="ibtn" aria-label="Back to goals">${ic('back')}</a><div class="ph-r">${g.status==='active'?goalBell(g,'pill'):''}<button class="ibtn ${g.pinned?'on':''}" data-act="pin" data-id="${g.id}" aria-label="${g.pinned?'Unpin':'Pin to Today'}">${ic('pin')}</button><button class="ibtn" data-act="editGoal" data-id="${g.id}" aria-label="Edit goal">${ic('edit')}</button><button class="ibtn" data-act="goalMenu" data-id="${g.id}" aria-label="More">${ic('more')}</button></div></div>
  ${ancestors(g).length?`<nav class="gcrumb rv" aria-label="Part of">${ancestors(g).reverse().map(a=>`<a href="#/goal/${a.id}" style="${cvar(a)}"><i></i>${esc(trunc(a.title,32))}</a>`).join(ic('next','ico-s'))}</nav>`:''}<section class="hero tint${haloOn(g)?' halo':''}" style="${cvar(g)};view-transition-name:hero"><div class="data">${areaName(g.area)} · ${hzName(g.horizon)} · ${PRIO[g.priority]} priority</div><h1>${esc(g.title)}</h1>${g.why?`<p class="why">${esc(g.why)}</p>`:''}<div class="hero-f"><div><div class="data">${fmtDate(g.startDate)} → ${g.targetDate?fmtDate(g.targetDate):'open-ended'} · ${kids(g).length?`${kids(g).length} sub-goal${kids(g).length>1?'s':''}${g.steps.length?' · ':''}`:''}${g.steps.length||!kids(g).length?`${dn} of ${g.steps.length} steps`:''}${g.checkin?' · '+checkinTxt(g):''}</div><div class="pbar"><i style="width:${p}%"></i></div></div><div class="hero-pct">${g.status==='done'?'✓':p}<small>${g.status==='done'?'':'%'}</small></div></div></section>
  ${subGoals(g)}
+ ${histHTML('g:'+g.id)}
  <div class="bar">${segHTML('gv','gvMode',[['cards','Cards'],['path','Path'],['orbit','Timeline']],S.settings.layout.goal)}</div>
  ${body}
  ${typeof goalHabits==='function'?goalHabits(g):''}
@@ -2655,7 +2675,7 @@ function vHabit(id){const h=H(id);if(!h)return`<header class="ph"><div><h1>Not f
   if(h.status==='active'){if(h.kind==='routine'&&h.steps.length)o+=`<div class="hq-a" style="margin-top:20px"><button class="btn ink" data-act="routineGo" data-id="${h.id}">${ic('play')}${v>=n?'Run again':v?`Continue · ${v} of ${n}`:'Start routine'}</button></div>`;
    else if(n>1)o+=`<div class="hstep ink" style="margin-top:20px"><button class="ibtn" data-act="hAdj" data-id="${h.id}" data-d="${td}" data-n="-1" aria-label="One less">${ic('minus')}</button><div><b>${v}</b><span>of ${n} ${esc(h.unit)} today</span></div><button class="ibtn" data-act="hAdj" data-id="${h.id}" data-d="${td}" data-n="1" aria-label="One more">${ic('plus')}</button></div>`;
    else o+=`<div class="hq-a" style="margin-top:20px"><button class="btn ${v>=n?'inkline':'ink'}" data-act="hTap" data-id="${h.id}">${ic('check')}${v>=n?'Done today · undo':'Mark done for today'}</button>${hDue(h,td)&&v<n?`<button class="btn inkline" data-act="hSkip" data-id="${h.id}" data-d="${td}">${h.skip[td]?'Undo rest day':'Rest day'}</button>`:''}</div>`}
-  o+=`</section>`;const r=hRate(h),age=dnum(td)-dnum(h.startDate)+1;
+  o+=`</section>`+histHTML('h:'+h.id);const r=hRate(h),age=dnum(td)-dnum(h.startDate)+1;
   o+=hTiles([[`${s}<small>${u}</small>`,'Current streak'],[`${hBest(h)}<small>${u}</small>`,'Best streak'],[`${hStrength(h)}<small>%</small>`,'Strength'],[r==null?'—':`${r}<small>%</small>`,h.freq==='times'?'Last 4 weeks':'Last 30 days']]);
   if(h.mini)o+=`<div class="hnudge rv" style="margin-top:14px">${ic('shield')}<div><b>On a hard day</b><div class="small muted">${esc(h.mini)}. It still counts.</div></div></div>`;
   if(h.kind==='routine')o+=`<section class="rv"><div class="st-h"><h3>Steps</h3><button class="link" data-act="editHabit" data-id="${h.id}">Edit</button></div><div class="list">${h.steps.map((st,i)=>`<label class="li"><input type="checkbox" class="rchk" data-hstep="${st.id}" data-id="${h.id}" data-d="${td}" ${(h.rs[td]||[]).includes(st.id)?'checked':''}><span class="nbadge sm" style="position:static">${pad2(i+1)}</span><div style="flex:1;min-width:0"><div class="t">${esc(st.title)}</div></div><span class="data">${st.min?st.min+' min':''}</span></label>`).join('')||'<p class="small muted" style="padding:16px">No steps yet. Add them in Edit.</p>'}</div></section>`;
@@ -2705,7 +2725,7 @@ function habitForm(h,kind,tpl){const e=!!h;h=h||normHabit({kind:kind||'build',..
  return`<h2>${e?'Edit habit':tpl?'New habit from template':'New habit'}</h2><form data-form="saveHabit" ${e?`data-id="${h.id}"`:''}>
  <div class="field"><label>Type</label><div class="radios">${HKIND.map(([k,n])=>`<label><input type="radio" name="kind" value="${k}" ${K===k?'checked':''} ${e?'disabled':''}><span>${n}</span></label>`).join('')}</div>${e?`<input type="hidden" name="kind" value="${K}">`:''}</div>
  <div class="field"><label>Name</label><input name="title" required maxlength="60" value="${esc(e||tpl?h.title:'')}" placeholder="Read 20 pages"></div>
- <div class="field"><label>Icon</label><div class="hicons">${icons.map(x=>`<label><input type="radio" name="icon" value="${x}" ${hIcon(h)===x?'checked':''}><span>${x}</span></label>`).join('')}</div></div>
+ <div class="field"><label>Icon</label><div class="hicons">${icons.map(x=>`<label><input type="radio" name="icon" value="${x}" ${hIcon(h)===x?'checked':''}><span>${x}</span></label>`).join('')}<label class="hown" title="Type any emoji"><input type="radio" name="icon" value="__own" ${icons.includes(hIcon(h))?'':'checked'}><span><input type="text" name="iconOwn" class="hown-in" maxlength="16" autocomplete="off" aria-label="Type any emoji" placeholder="＋" value="${icons.includes(hIcon(h))?'':esc(hIcon(h))}"></span></label></div><p class="small muted" style="margin-top:6px">Or tap ＋ and type any emoji from your keyboard.</p></div>
  <div data-k="quit"><div class="field"><label>Approach</label><div class="radios">${[['quit','Stop completely'],['limit','Cut down']].map(([k,n])=>`<label><input type="radio" name="mode" value="${k}" ${h.mode===k?'checked':''}><span>${n}</span></label>`).join('')}</div></div>
   <div data-md="quit"><div class="field"><label>${e?'Current run started':'When did you stop?'}</label><input type="datetime-local" name="start" value="${localDT(e?h.start:Date.now())}" max="${localDT(Date.now()+6e4)}"><small class="hint">Already stopped a while ago? Set the real date and the clock starts there.</small></div></div>
   <div data-md="limit"><div class="two"><div class="field"><label>Daily limit</label><input type="number" name="limit" min="0" max="99" value="${h.limit}"></div><div class="field"><label>Unit · optional</label><input name="lunit" maxlength="20" value="${esc(h.unit)}" placeholder="cups, sessions"></div></div></div>
@@ -2819,7 +2839,8 @@ Object.assign(ACT,{
 });
 Object.assign(FORM,{
  saveHabit:f=>{const fd=new FormData(f),kind=fd.get('kind')||'build',title=String(fd.get('title')||'').trim();if(!title)return toast('Give it a name');const ex=f.dataset.id&&H(f.dataset.id);
-  const o={title,icon:fd.get('icon')||'',why:String(fd.get('why')||'').trim(),area:areaKey(fd.get('area'))||'personal',goalId:fd.get('goal')||''};
+  let icon=fd.get('icon')||'';if(icon==='__own'){icon=oneEmoji(fd.get('iconOwn'));if(!icon)return toast('Type an emoji for the icon, or pick one')}
+  const o={title,icon,why:String(fd.get('why')||'').trim(),area:areaKey(fd.get('area'))||'personal',goalId:fd.get('goal')||''};
   if(kind!=='quit'){o.freq=fd.get('freq')||'daily';o.days=fd.getAll('days').map(Number);if(o.freq==='days'&&(!o.days.length||o.days.length===7)){o.freq='daily';o.days=[0,1,2,3,4,5,6]}o.times=+fd.get('times')||3;o.part=fd.get('part')||'any';o.time=fd.get('time')||'';o.remind=fd.get('remind')==='on';if(o.remind&&!o.time)o.time=PART_T[o.part]||'09:00'}
   if(kind==='build'){o.cue=String(fd.get('cue')||'').trim();o.mini=String(fd.get('mini')||'').trim();o.target=Math.max(1,Math.min(999,+fd.get('target')||1));o.unit=String(fd.get('unit')||'').trim()}
   if(kind==='routine'){o.steps=parseSteps(fd.get('steps'),ex?ex.steps:[]);if(!o.steps.length)return toast('Add at least one step')}
@@ -3528,7 +3549,7 @@ Object.assign(ACT,{
  constrained by a JSON schema of the format, so a small model can only write valid JSON;
  validatePlan() still checks every field and one automatic retry carries the errors back. */
 function planEngine(){const s=insSet();if(s.engine==='api'&&s.url)return'api';if(NAT_OK())return'native';if(s.engine==='local')return'wasm';return''}
-function planEngineName(){const e=planEngine(),m=llmOf(insSet().llm)[1].split(' · ')[0];return e==='api'?'your AI server':e==='native'?m+' on this phone':m+' on this device'}
+function planEngineName(){const e=planEngine();return e==='api'?'Your AI server':e==='native'?'On-device AI on this phone':'On-device AI'}
 function planSchema(mode){const up=mode==='update',N=t=>({type:[t,'null']});
  const step={type:'object',properties:{id:up?{type:'string',maxLength:24}:{const:'new'},title:{type:'string',minLength:3,maxLength:100},dueInDays:{type:['integer','null'],minimum:0},dueTime:{type:['string','null'],pattern:'^([01][0-9]|2[0-3]):[0-5][0-9]$'},reminder:{enum:['none','at-time','15m','1h','1d','1w']},note:{type:'string',maxLength:200}},required:STEP_KEYS,additionalProperties:false};
  const goal={type:'object',properties:{id:up?{type:'string',maxLength:24}:{type:'string',pattern:'^new-[0-9]{1,2}$'},action:{enum:up?['keep','update','add','remove']:['add']},parent:{type:['string','null'],maxLength:24},title:{type:'string',minLength:3,maxLength:80},why:{type:'string',maxLength:200},area:{type:'string',minLength:1,maxLength:24},horizon:{enum:HZ_IDS},priority:{enum:[1,2,3]},startInDays:up?{type:['integer','null'],minimum:0}:{type:'integer',minimum:0},targetInDays:{type:['integer','null'],minimum:1},steps:{type:'array',items:step,maxItems:12},linksTo:{type:'array',items:{type:'string',maxLength:24},maxItems:6}},required:GOAL_KEYS,additionalProperties:false};
@@ -3685,11 +3706,11 @@ function notifHTML(){const n=nset(),ns=NATIVE?notifState():{},mu=ns.muteUntil>Da
  const tg=(k,t,sub)=>`<label class="sw"><span>${t}${sub?`<small>${sub}</small>`:''}</span><input type="checkbox" data-nset="${k}" ${n[k]?'checked':''}><i></i></label>`;
  return`<section class="panel rv" id="notifSet"><h3>Notifications</h3><p class="small muted">${NATIVE?'Reply right from the notification bar in your own words: “done”, “mute for 2 days”, “remind me again in 5 hrs”, “in meetings till 4:30”, “push it to Friday”, “skipping today, feeling sick”. The on-device AI reads it and does it on your phone, and every reply can be undone.':'Notifications with replies and Done buttons need the Android app. Here, reminders show while the app is open.'}</p>
  ${NATIVE?`<div class="nmute${mu?' on':''}"><div><b>${mu?'Muted until '+new Date(ns.muteUntil).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'Focus mode'}</b><small>${mu?'Reminders wait and arrive as one summary when this ends.':'Pause every reminder for a while.'}</small></div>${mu?`<button class="btn sm" data-act="notifMute" data-m="0">Unmute</button>`:`<div class="nmb">${[[60,'1h'],[120,'2h'],[240,'4h']].map(([m,l])=>`<button class="btn sm" data-act="notifMute" data-m="${m}">${l}</button>`).join('')}</div>`}</div>`:''}
- <div class="nlist">${tg('habits','Habit reminders','At the time set on each habit')}${tg('wrap','Evening wrap-up','One list of habits still open')}${n.wrap?`<label class="nrow"><span>Wrap-up time</span><input type="time" data-nset="wrapAt" value="${n.wrapAt}"></label>`:''}${tg('steps','Step reminders','Steps with a reminder')}${tg('days','Day goals','Day goals with a time')}${tg('checkins','Goal check-ins','Daily or weekly, set on each goal')}${tg('miles','Milestones','Clean-time wins on habits you’re breaking')}${NATIVE?tg('reply','Reply and Done buttons','Act on reminders without opening the app'):''}${NATIVE&&n.reply?tg('ai','Understand replies with on-device AI',(()=>{try{const m=LLMS.find(x=>natHave(x)&&x[0]===insSet().llm)||LLMS.find(x=>natHave(x));return m?`${m[1].split(' · ')[0]} reads what you type, right on the phone`:'Download a model in Ask settings first. Until then a quick reader handles simple replies'}catch(e){return''}})()):''}
+ ${NATIVE&&NATIVE.exactAlarms&&!NATIVE.exactAlarms()?`<div class="rm-snz mute" style="margin-top:14px">${ic('timer')}<div><b>Allow on-time reminders</b><small>Android can delay reminders by several minutes until you allow “Alarms &amp; reminders” for Plotline.</small></div><button class="btn sm" data-act="exactOn">Allow</button></div>`:''}<div class="nlist">${tg('habits','Habit reminders','At the time set on each habit')}${tg('wrap','Evening wrap-up','One list of habits still open')}${n.wrap?`<label class="nrow"><span>Wrap-up time</span><input type="time" data-nset="wrapAt" value="${n.wrapAt}"></label>`:''}${tg('steps','Step reminders','Steps with a reminder')}${tg('days','Day goals','Day goals with a time')}${tg('checkins','Goal check-ins','Daily or weekly, set on each goal')}${tg('miles','Milestones','Clean-time wins on habits you’re breaking')}${NATIVE?tg('reply','Reply and Done buttons','Act on reminders without opening the app'):''}${NATIVE&&n.reply?tg('ai','Understand replies with on-device AI',(()=>{try{const m=LLMS.find(x=>natHave(x)&&x[0]===insSet().llm)||LLMS.find(x=>natHave(x));return m?`${m[1].split(' · ')[0]} reads what you type, right on the phone`:'Download a model in Ask settings first. Until then a quick reader handles simple replies'}catch(e){return''}})()):''}
  ${NATIVE?`<label class="nrow"><span>Mute button length</span><select data-nset="mute">${[[30,'30 min'],[60,'1 hour'],[120,'2 hours'],[180,'3 hours'],[240,'4 hours']].map(([m,l])=>`<option value="${m}" ${+n.mute===m?'selected':''}>${l}</option>`).join('')}</select></label>`:''}
  ${tg('quiet','Quiet hours','No reminders overnight')}${n.quiet?`<label class="nrow"><span>From</span><input type="time" data-nset="qFrom" value="${n.qFrom}"></label><label class="nrow"><span>Until</span><input type="time" data-nset="qTo" value="${n.qTo}"></label>`:''}</div></section>`}
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.nset)return;const k=t.dataset.nset;S.settings.notif={...nset(),[k]:t.type==='checkbox'?t.checked:k==='mute'?+t.value:t.value};save();syncNative();if(t.type==='checkbox')render(false)});
-Object.assign(ACT,{notifMute:d=>{if(!NATIVE||!NATIVE.notifMute)return;const msg=NATIVE.notifMute(+d.m||0);toast(esc(msg||'Done'));render(false)}});
+Object.assign(ACT,{notifMute:d=>{if(!NATIVE||!NATIVE.notifMute)return;const msg=NATIVE.notifMute(+d.m||0);NSC.t=0;toast(esc(msg||'Done'));render(false);const bd=$('#remBody');if(bd)bd.innerHTML=remBody()}});
 
 /* ---- replies the phone couldn't place: ask the assistant what they mean ---- */
 const REPLY_RX={done:/\b(done|did|finished|completed?|yes|yep|already|drank|ran|read|prayed|walked|worked out)\b/i,neg:/\b(not|didn'?t|haven'?t|no|forgot)\b/i,skip:/\b(skip|rest|day off|sick|not today)\b/i};
@@ -3728,14 +3749,15 @@ const fmtAt=t=>{const d=new Date(t),td=ymd(),ds=ymd(d);return(ds===td?'Today':ds
 function habitRemTimes(h){if(!h.remind)return[];const t=[h.time||partTime(h)];if(h.time2)t.push(h.time2);return t}
 /* the bell on an item: shows the next reminder at a glance */
 function bellBtn(k,attrs,on,label,cls=''){return`<button class="bell ${on?'on':''} ${cls}" data-act="remEdit" data-k="${k}" ${attrs} aria-label="Reminder: ${esc(label)}">${ic('bell')}${label&&cls!=='ic'?`<span>${esc(label)}</span>`:''}</button>`}
-const habitBell=(h,cls)=>h.kind==='quit'?'':bellBtn('habit',`data-id="${h.id}"`,h.remind,h.remind?fmtTime(h.time||partTime(h))+(h.time2?' +1':''):'Off',cls);
-const stepBell=(g,s,cls)=>s.done?'':bellBtn('step',`data-g="${g.id}" data-s="${s.id}"`,!!remAtOf(s,s.due,s.time),remAtOf(s,s.due,s.time)?remLabel(s.remind,s):'Off',cls);
-const dayBell=(x,cls)=>x.done?'':bellBtn('day',`data-id="${x.id}"`,!!dayRemAt(x),dayRemAt(x)?(x.time&&dayRem(x)==='0'?fmtTime(x.time):remLabel(dayRem(x),x)):'Off',cls);
-const goalBell=(g,cls)=>bellBtn('goal',`data-id="${g.id}"`,!!(g.checkin||g.remTarget),g.checkin?cap(g.checkin)+' check-in':g.remTarget?'Target reminder':'Reminders',cls);
+const habitBell=(h,cls)=>{if(h.kind==='quit')return'';const z=snzFor('h:'+h.id)[0];return bellBtn('habit',`data-id="${h.id}"`,h.remind||!!z,z?'Again '+fmtAtShort(z.at):h.remind?fmtTime(h.time||partTime(h))+(h.time2?' +1':''):'Off',cls)};
+const stepBell=(g,s,cls)=>{if(s.done)return'';const z=snzFor('s:'+g.id+'/'+s.id)[0];return bellBtn('step',`data-g="${g.id}" data-s="${s.id}"`,!!remAtOf(s,s.due,s.time)||!!z,z?'Again '+fmtAtShort(z.at):remAtOf(s,s.due,s.time)?remLabel(s.remind,s):'Off',cls)};
+const dayBell=(x,cls)=>{if(x.done)return'';const z=snzFor('d:'+x.id)[0];return bellBtn('day',`data-id="${x.id}"`,!!dayRemAt(x)||!!z,z?'Again '+fmtAtShort(z.at):dayRemAt(x)?(x.time&&dayRem(x)==='0'?fmtTime(x.time):remLabel(dayRem(x),x)):'Off',cls)};
+const goalBell=(g,cls)=>{const z=snzFor('g:'+g.id)[0];return bellBtn('goal',`data-id="${g.id}"`,!!(g.checkin||g.remTarget||z),z?'Again '+fmtAtShort(z.at):g.checkin?cap(g.checkin)+' check-in':g.remTarget?'Target reminder':'Reminders',cls)};
 
 let REM=null;
 function remItem(){if(!REM)return null;if(REM.k==='habit')return H(REM.id);if(REM.k==='day')return S.days.find(x=>x.id===REM.id);if(REM.k==='goal')return G(REM.id);const g=G(REM.g);return g&&g.steps.find(x=>x.id===REM.s)}
-function remNext(){const now=Date.now(),L=[],o=remItem();if(!o)return[];
+function remNext(){const r=remNext0(),z=snzFor(remKey()).map(x=>x.at);return[...r,...z].sort((a,b)=>a-b).slice(0,3)}
+function remNext0(){const now=Date.now(),L=[],o=remItem();if(!o)return[];
  if(REM.k==='habit'){for(let k=0;k<8&&L.length<3;k++){const d=new Date();d.setDate(d.getDate()+k);const ds=ymd(d);if(!hCounts(o,ds)||hDone(o,ds)&&k===0)continue;habitRemTimes(o).forEach(t=>{const[hh,mm]=t.split(':').map(Number);d.setHours(hh,mm,0,0);if(d.getTime()>now)L.push(d.getTime())});if(o.again&&o.remind){const[hh,mm]=(o.time||partTime(o)).split(':').map(Number);d.setHours(hh,mm,0,0);const t=d.getTime()+o.again*6e4;if(t>now)L.push(t)}}return L.sort((a,b)=>a-b).slice(0,3)}
  if(REM.k==='step'){const t=remAtOf(o,o.due,o.time);return t&&t>now?[t]:[]}
  if(REM.k==='day'){const t=dayRemAt(o);return t&&t>now?[t]:[]}
@@ -3743,7 +3765,7 @@ function remNext(){const now=Date.now(),L=[],o=remItem();if(!o)return[];
  const tt=goalTargetAt(g);if(tt&&tt>now)L.push(tt);return L.sort((a,b)=>a-b)}
 function goalTargetAt(g){if(!g.targetDate||g.remTarget===''||g.remTarget==null||g.status!=='active')return null;const[y,m,d]=g.targetDate.split('-').map(Number);return new Date(y,m-1,d,9,0).getTime()-(+g.remTarget)*864e5}
 const chipsRow=(f,opts,cur)=>`<div class="chips rm-ch">${opts.map(([v,l])=>`<button type="button" class="chip${String(cur)===String(v)?' on':''}" data-act="remSet" data-f="${f}" data-v="${v}">${l}</button>`).join('')}</div>`;
-function remBody(){const o=remItem();if(!o)return'<p class="small muted">This item is gone.</p>';const nx=remNext(),K=REM.k;let b='';
+function remBody(){const o=remItem();if(!o)return'<p class="small muted">This item is gone.</p>';const nx=remNext(),K=REM.k;let b='';b+=snzBlock(remKey());
  const sw=(on,f)=>`<label class="sw rm-sw"><span>${on?'Reminder on':'Reminder off'}<small>${on?'You can change anything below':'Turn it on to get a nudge'}</small></span><input type="checkbox" data-rm="${f}" ${on?'checked':''}><i></i></label>`;
  if(K==='habit'){const t=o.time||partTime(o),sug=[...new Set([o.time,partTime(o),'07:00','08:00','12:30','18:00','21:00'].filter(Boolean))].sort();
   b+=sw(o.remind,'remind');
@@ -3762,6 +3784,7 @@ function remBody(){const o=remItem();if(!o)return'<p class="small muted">This it
   b+=`<div class="field"><label>Target date${g.targetDate?' · '+fmtDate(g.targetDate):''}</label>${g.targetDate?chipsRow('remTarget',[['','Off'],['0','On the day'],['1','1 day before'],['7','1 week before'],['30','1 month before']],g.remTarget??''):'<p class="small muted">Set a target date in Edit to get reminded before it.</p>'}</div>`;
   const open=g.steps.filter(s=>!s.done);if(open.length)b+=`<div class="field"><label>Steps</label><div class="rm-steps">${open.slice(0,12).map(s=>`<div class="rm-st"><span class="ell">${esc(s.title)}<small>${s.due?fmtDate(s.due)+(s.time?' · '+fmtTime(s.time):''):'No date'}</small></span>${stepBell(g,s)}</div>`).join('')}</div>${open.some(s=>s.due&&!remAtOf(s,s.due,s.time))?`<button class="btn sm" data-act="remAllSteps" data-id="${g.id}">${ic('bell')}Remind me for every dated step</button>`:''}</div>`}
  b+=`<div class="rm-next">${ic('bell')}<div><b>${nx.length?'Next: '+fmtAt(nx[0]):'No reminder coming up'}</b>${nx.length>1?`<small>Then ${nx.slice(1).map(fmtAt).join(' · ')}</small>`:''}${NATIVE&&nset&&!nset()[{habit:'habits',step:'steps',day:'days',goal:'checkins'}[K]]?`<small class="warn">This type is turned off in Settings → Notifications.</small>`:''}</div></div>`;
+ if(K==='step'||K==='day')b+=histHTML(remKey());
  return b}
 function remTitle(){const o=remItem();return o?o.title:''}
 function remOpen(){openSheet(`<div class="data">Reminders</div><h2 style="margin-top:6px">${esc(remTitle())}</h2><div id="remBody">${remBody()}</div><div class="actions">${REM.back?`<button class="btn ghost" data-act="remBack">Back</button>`:''}<button class="btn pri" data-act="close">Done</button></div>`)}
@@ -3780,6 +3803,28 @@ Object.assign(ACT,{
 /* which on-device model reads replies typed into notifications (the phone runs it even with the app closed) */
 function replyModelSync(){if(!NATIVE||!NATIVE.setReplyModel||typeof NAT_OK!=='function')return;try{const n=nset();let m=null;if(n.ai&&NAT_OK()){const pick=llmOf(insSet().llm);m=natHave(pick)?pick:LLMS.find(x=>natHave(x))||null}
  const key=m?natFile(m):'';if(replyModelSync.k===key)return;replyModelSync.k=key;NATIVE.setReplyModel(key,m?m[1].split(' · ')[0]:'',m?natCtx(m):4096,natThreads())}catch(e){}}
+
+/* ================= REMINDER STATE + HISTORY (phone) =================
+ Snoozes you asked for in a reply ("remind me again at 5") show on the item's 🔔 and in its sheet, where you can cancel them.
+ Each item keeps a quiet, collapsed history of its notifications: sent, held while muted, your replies and what was done. */
+let NSC={t:0,v:{}};const lc1=s=>s.replace(/^(Today|Tomorrow)/,m=>m.toLowerCase());
+function nstate(){if(!NATIVE||!NATIVE.notifState)return{};if(Date.now()-NSC.t>1500){try{NSC={t:Date.now(),v:JSON.parse(NATIVE.notifState()||'{}')}}catch(e){NSC={t:Date.now(),v:{}}}}return NSC.v}
+function snzFor(key){const z=nstate().snoozes||{},now=Date.now();return Object.entries(z).map(([nid,x])=>({nid:+nid,...x})).filter(x=>x.at>now&&(x.key===key||key.startsWith('g:')&&String(x.key).startsWith('s:'+key.slice(2)+'/'))).sort((a,b)=>a.at-b.at)}
+const fmtAtShort=t=>{const d=new Date(t),ds=ymd(d);return(ds===ymd()?'':ds===addDays(1)?'Tmrw ':d.toLocaleDateString(undefined,{weekday:'short'})+' ')+d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})};
+function remKey(){if(!REM)return'';return REM.k==='habit'?'h:'+REM.id:REM.k==='step'?'s:'+REM.g+'/'+REM.s:REM.k==='day'?'d:'+REM.id:'g:'+REM.id}
+function snzBlock(key){const L=snzFor(key),ns=nstate(),mu=ns.muteUntil>Date.now();let b='';
+ L.forEach(z=>{b+=`<div class="rm-snz">${ic('timer')}<div><b>Reminds you again ${lc1(fmtAt(z.at))}</b><small>You asked for this in a notification reply</small></div><button class="btn sm" data-act="snzCancel" data-nid="${z.nid}">Cancel</button></div>`});
+ if(mu)b+=`<div class="rm-snz mute">${ic('bell')}<div><b>All reminders are muted until ${lc1(fmtAt(ns.muteUntil))}</b><small>They wait and arrive as one summary when it ends</small></div><button class="btn sm" data-act="notifMute" data-m="0">Unmute</button></div>`;
+ if(NATIVE&&NATIVE.exactAlarms&&!NATIVE.exactAlarms())b+=`<div class="rm-snz mute">${ic('timer')}<div><b>Reminders may come a few minutes late</b><small>Allow “Alarms &amp; reminders” so they arrive on time</small></div><button class="btn sm" data-act="exactOn">Allow</button></div>`;
+ return b}
+const NH_TXT={sent:'Reminder sent',again:'Reminded again, as you asked',held:'Held while muted',done:'Marked done from the notification',mute:'Muted with the button',reply:'You replied','reply-ai':'You replied',undo:'Undone from the notification'};
+function nhist(key){if(!NATIVE||!NATIVE.notifLog)return[];try{return JSON.parse(NATIVE.notifLog(key)||'[]')}catch(e){return[]}}
+function histHTML(key){if(!NATIVE||!NATIVE.notifLog)return'';const L=nhist(key);if(!L.length)return'';
+ return`<details class="nhist" data-nkey="${esc(key)}"><summary>${ic('bell')}<span>Notification history</span><em>${L.length}</em></summary><ol class="nh-list">${L.slice(0,60).map(e=>`<li class="nh-${esc(e.kind)}"><time>${esc(fmtAt(e.t))}</time><b>${esc(NH_TXT[e.kind]||e.kind)}${e.kind==='sent'||e.kind==='again'||e.kind==='held'?'':''}</b>${e.text?(/^reply/.test(e.kind)?`<q>${esc(e.text)}</q>`:`<span>${esc(e.text)}</span>`):''}${e.res?`<span>${esc(e.res)}</span>`:''}${key.startsWith('g:')&&e.key!==key&&e.title?`<small>${esc(e.title)}</small>`:''}</li>`).join('')}</ol></details>`}
+function oneEmoji(v){v=String(v||'').trim();if(!v)return'';try{if(window.Intl&&Intl.Segmenter){const it=new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(v)[Symbol.iterator]().next();return it.value?it.value.segment:''}}catch(e){}return Array.from(v).slice(0,2).join('')}
+document.addEventListener('input',e=>{const t=e.target;if(t.name==='iconOwn'){const r=t.closest('label')&&t.closest('label').querySelector('input[type=radio]');if(r)r.checked=true;const one=oneEmoji(t.value);if(one&&t.value!==one)t.value=one}});
+document.addEventListener('focusin',e=>{const t=e.target;if(t.name==='iconOwn'){const r=t.closest('label').querySelector('input[type=radio]');if(r)r.checked=true}});
+Object.assign(ACT,{exactOn:()=>{try{NATIVE.openExactAlarms()}catch(e){}},snzCancel:d=>{if(!NATIVE||!NATIVE.notifCancelSnooze)return;NATIVE.notifCancelSnooze(+d.nid);NSC.t=0;toast('Snooze cancelled');render(false);const bd=$('#remBody');if(bd)bd.innerHTML=remBody()}});
 </script>
 </body>
 </html>
