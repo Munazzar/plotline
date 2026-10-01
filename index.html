@@ -382,8 +382,8 @@ input[type=checkbox]{width:auto}
 .spl.done span{color:var(--muted)}
 
 /* ================= map ================= */
-.mapwrap{position:relative;height:calc(100vh - 220px);min-height:460px;border-radius:32px;border:1px solid var(--line);background:radial-gradient(circle at 50% 46%,var(--glow),transparent 62%),var(--bg-2);overflow:hidden}
-@media(max-width:820px){.mapwrap{height:calc(100vh - 262px);height:calc(100dvh - 262px);min-height:280px;border-radius:26px}.mapcard{bottom:62px;padding:10px 10px 10px 16px}.mapcard .t{font-size:19px}}
+.mapwrap{position:relative;height:calc(100vh - 246px);min-height:460px;border-radius:32px;border:1px solid var(--line);background:radial-gradient(circle at 50% 46%,var(--glow),transparent 62%),var(--bg-2);overflow:hidden}
+@media(max-width:820px){.mapwrap{height:calc(100vh - 288px);height:calc(100dvh - 288px);min-height:280px;border-radius:26px}.mapcard{bottom:62px;padding:10px 10px 10px 16px}.mapcard .t{font-size:19px}}
 #map{width:100%;height:100%;display:block;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
 #map.drag{cursor:grabbing}
 #mapg{transform-origin:0 0}
@@ -1205,6 +1205,61 @@ html,body{overscroll-behavior-y:contain}
 .ms-d:active span{transform:scale(.88)}
 .ms-d em{font:500 9px var(--f-mono);font-style:normal}
 .ms-d.now em{color:var(--text)}
+.acct-opts{display:grid;gap:10px;margin-top:16px}
+.acct-o{display:block;width:100%;text-align:left;padding:16px;border-radius:18px;border:1px solid var(--line-2);background:var(--surface);color:var(--text);font:inherit;cursor:pointer;transition:border-color .2s}
+.acct-o b{display:block;font-size:15.5px;overflow-wrap:anywhere}.acct-o small{display:block;margin-top:4px;color:var(--muted);font-size:13px;line-height:1.45}
+.acct-o.on{border-color:color-mix(in srgb,var(--accent) 70%,transparent);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+.acct-o:hover{border-color:var(--accent)}
+.vsw{margin-top:10px}.vsw .seg-c button{padding-left:16px;padding-right:16px}
+.demob{display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:10px 10px 10px 16px;border-radius:18px;border:1px dashed color-mix(in srgb,var(--accent) 55%,transparent);background:color-mix(in srgb,var(--accent) 6%,var(--surface));font-size:14px}
+.demob span{flex:1;display:flex;align-items:center;gap:8px;min-width:0}.demob span svg{width:17px;height:17px;color:var(--accent);flex:none}
+.demob .ibtn.sm{width:36px;height:36px;border-radius:12px}
+/* ================= ask (assistant) ================= */
+.ask{display:flex;flex-direction:column;min-height:calc(100dvh - 190px)}
+.ask-h{margin-bottom:8px}
+.ask-eng{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:0;cursor:pointer;color:var(--muted);text-align:left}
+.ask-eng .ico-s{width:12px;height:12px}
+.ask-hero{text-align:center;padding:26px 8px 18px}
+.ask-orb{width:66px;height:66px;margin:0 auto 16px;border-radius:24px;display:grid;place-items:center;color:var(--accent);background:radial-gradient(circle at 30% 25%,color-mix(in srgb,var(--accent) 34%,transparent),color-mix(in srgb,var(--accent) 6%,var(--surface)));border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);box-shadow:0 0 44px -8px color-mix(in srgb,var(--accent) 55%,transparent)}
+.ask-orb svg{width:30px;height:30px}
+.ask-hero h2{font:800 clamp(28px,6vw,40px)/1 var(--f-display);text-transform:uppercase}
+.ask-hero p{max-width:440px;margin:10px auto 0;font-size:15px;line-height:1.5}
+.ask-sugs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:8px}
+.ask-sug{display:block;text-align:left;padding:14px 16px;border-radius:18px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;cursor:pointer;transition:border-color .2s,transform .45s var(--spring)}
+.ask-sug:hover{border-color:var(--line-2)}.ask-sug:active{transform:scale(.97)}
+.ask-sug b{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:650;line-height:1.35}.ask-sug b svg{width:16px;height:16px;color:var(--accent)}
+.ask-sug small{display:block;margin-top:4px;color:var(--muted);font-size:12.5px}
+.ask-sug.idea{border-style:dashed}.ask-sug.idea small{color:var(--accent)}
+.ask-sug.plan{background:color-mix(in srgb,var(--accent) 7%,var(--surface));border-color:color-mix(in srgb,var(--accent) 35%,transparent)}
+.ask-sig{margin-top:22px}.ask-sig .ins-stats{margin-top:8px}
+.ask-thread{display:grid;gap:22px;padding-top:6px}
+.ask-turn{display:grid;gap:12px}
+.ask-me{justify-self:end;max-width:min(84%,560px);padding:11px 15px;border-radius:20px 20px 6px 20px;background:var(--accent);color:var(--bg);font-weight:600;font-size:15px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap}
+.ask-ai{display:flex;gap:10px;align-items:flex-start}
+.ask-av{flex:none;width:30px;height:30px;border-radius:11px;display:grid;place-items:center;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+.ask-av svg{width:16px;height:16px}
+.ask-body{min-width:0;flex:1}
+.ask-body .ins-ans{margin-top:4px}
+.ask-body .ins-top{margin:0 0 6px}
+.ask-prog{color:var(--muted);font-size:13px;margin-top:6px;min-height:18px}
+.ask-dots{display:flex;gap:5px;padding:8px 0}.ask-dots i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:askd 1.2s infinite ease-in-out}.ask-dots i:nth-child(2){animation-delay:.15s}.ask-dots i:nth-child(3){animation-delay:.3s}
+@keyframes askd{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.ask-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ask-copy{padding:14px;border-radius:18px;border:1px solid var(--line);background:var(--surface)}.ask-copy textarea{margin-top:12px;min-height:70px}
+.ask-comp{position:sticky;bottom:calc(92px + env(safe-area-inset-bottom));margin:auto -8px 0;padding:22px 8px 0;z-index:20;background:linear-gradient(to bottom,transparent,var(--bg) 30px)}
+.ask.has .ask-comp{margin-top:22px}
+.ask-row{display:flex;align-items:flex-end;gap:8px;padding:7px 7px 7px 16px;border-radius:24px;border:1px solid var(--line-2);background:color-mix(in srgb,var(--bg-2) 88%,transparent);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);box-shadow:0 18px 44px -18px rgba(0,0,0,.6)}
+.ask-row:focus-within{border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+.ask-row textarea{flex:1;min-height:40px;max-height:160px;resize:none;border:0;background:none;padding:9px 0;font-size:16px;line-height:1.4;box-shadow:none!important;outline:none}
+.ask-go{flex:none;width:42px;height:42px;border-radius:15px;border:0;display:grid;place-items:center;background:var(--accent);color:var(--bg);cursor:pointer;transition:transform .4s var(--spring)}
+.ask-go:active{transform:scale(.9)}.ask-go svg{width:20px;height:20px}
+.ask-go.stop{background:var(--surface-2);color:var(--text)}.ask-go.stop i{width:13px;height:13px;border-radius:3px;background:currentColor}
+.ask-scope{display:inline-flex;align-items:center;gap:6px;margin:0 0 7px 6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:color-mix(in srgb,var(--bg-2) 80%,transparent);backdrop-filter:blur(14px);color:var(--muted);font:500 12px var(--f-body);cursor:pointer}
+.ask-scope .ico-s{width:12px;height:12px}
+.ins-src-l{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:6px}
+@media(max-width:820px){.ask-sugs{grid-template-columns:1fr 1fr;gap:8px}.ask-sug{padding:12px 13px;border-radius:16px}.ask-sug b{font-size:13.5px}.ask-sug small{font-size:12px}.ask-sug.plan{grid-column:1/-1}.ask-hero{padding:14px 4px 12px}.ask-orb{width:56px;height:56px;border-radius:20px;margin-bottom:12px}}
+@media(min-width:821px){.ask-comp{bottom:22px}.ask{min-height:calc(100vh - 120px)}}
+:root[data-focus=on] .ask-comp{bottom:16px}
 /* ================= insights ================= */
 .ins{display:grid;gap:16px;margin-top:6px}
 .ins-ask h3,.ins-res h3{font:700 22px/1.05 var(--f-display);text-transform:uppercase;margin-bottom:6px}
@@ -1222,6 +1277,7 @@ html,body{overscroll-behavior-y:contain}
 .ins-st.hl{grid-column:1/-1;border-color:color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
 .ins-st.hl b{color:var(--accent)}
 .ins-st small{display:block;margin-top:6px;font-size:13.5px;line-height:1.45;color:var(--text)}
+.ins-res{min-width:0}.ins-ans,.ins-fq,.ins-tc{overflow-wrap:anywhere;word-break:break-word}
 .ins-ans{margin-top:12px;font-size:15.5px;line-height:1.62}
 .ins-ans p{margin:0 0 10px}.ins-ans ul{margin:0 0 10px 20px}.ins-ans li{margin:4px 0}
 .ins-ans h4{font:700 15px var(--f-body);margin:14px 0 6px}
@@ -1237,6 +1293,16 @@ html,body{overscroll-behavior-y:contain}
 .ins-si small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .ins-eng .field{margin-top:12px}
 .ins-eng code{font:12px var(--f-mono);background:var(--bg-2);padding:2px 6px;border-radius:6px;word-break:break-all}
+.ins-turn+.ins-turn{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.ins-fq{display:inline-block;max-width:100%;padding:9px 14px;border-radius:16px 16px 16px 6px;background:var(--surface-2);font-weight:600;font-size:14.5px}
+.ins-follow{margin-top:16px}.ins-follow textarea{min-height:60px}
+.ins-top{display:grid;gap:8px;margin-top:12px}
+.ins-tc{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:var(--bg-2);color:var(--text);font:inherit;cursor:pointer;min-width:0}
+.ins-tc:hover{border-color:var(--line-2)}
+.ins-tc .k{display:block;font:500 10px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.ins-tc b{display:block;margin-top:4px;font-size:14.5px}.ins-tc small{display:block;margin-top:3px;color:var(--muted);font-size:13px;line-height:1.45}
+.ins-first{padding:14px 16px;border-radius:16px;border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+.ins-first .k{display:block;font:500 10px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}.ins-first b{display:block;font:800 26px/1.1 var(--f-display);margin-top:4px}.ins-first small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
 </style>
 </head>
 <body>
@@ -1304,6 +1370,7 @@ const THEME_IDS=THEMES.map(t=>t[0]);
 const IC={rep:'<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',today:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3 4.9 4.9M19.1 19.1l-1.4-1.4M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
 goals:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
 road:'<path d="M3 7h9M8 12h13M3 17h7"/><circle cx="15" cy="7" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="13" cy="17" r="2"/>',
+tune:'<path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/>',
 map:'<circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18.5" r="2"/><circle cx="12" cy="11" r="2.5"/><path d="M6.7 7.1 9.9 9.6M17.3 7.1l-3.2 2.5M12 13.5v3"/>',
 journal:'<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="16" r="2"/><path d="M14 7h6M4 16h6"/>',
 ai:'<path d="M11 3l1.8 4.7 4.7 1.8-4.7 1.8L11 16l-1.8-4.7L4.5 9.5l4.7-1.8z"/><path d="M18.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
@@ -1355,9 +1422,9 @@ const TOKK='plotline.tok';
 const tokGet=()=>{try{const t=JSON.parse(localStorage.getItem(TOKK)||'null');return t&&t.exp>Date.now()+60e3?t.t:null}catch(e){return null}};
 const tokSet=(t,sec)=>{try{localStorage.setItem(TOKK,JSON.stringify({t,exp:Date.now()+(sec||3600)*1e3}))}catch(e){}};
 const tokDrop=()=>{try{localStorage.removeItem(TOKK)}catch(e){}};
-function authUrl(state,prompt){const c=cfg();const redirect=NATIVE?c.webUrl:(location.origin+location.pathname);const p=new URLSearchParams({client_id:c.clientId,redirect_uri:redirect,response_type:'token',scope:DRIVE_SCOPE,include_granted_scopes:'true',state});if(prompt)p.set('prompt',prompt);if(S.settings.sync.email)p.set('login_hint',S.settings.sync.email);return'https://accounts.google.com/o/oauth2/v2/auth?'+p}
+function authUrl(state,prompt){const c=cfg();const redirect=NATIVE?c.webUrl:(location.origin+location.pathname);const p=new URLSearchParams({client_id:c.clientId,redirect_uri:redirect,response_type:'token',scope:DRIVE_SCOPE,include_granted_scopes:'true',state});if(prompt)p.set('prompt',prompt);if(S.settings.sync.email&&!/select_account/.test(prompt||''))p.set('login_hint',S.settings.sync.email);return'https://accounts.google.com/o/oauth2/v2/auth?'+p}
 let AUTHWAIT=null;
-function authDone(a){if(a&&a.token){tokSet(a.token,a.exp);if(a.email)S.settings.sync.email=a.email}const w=AUTHWAIT;AUTHWAIT=null;if(w)a&&a.token?w.res(a.token):w.rej(new Error((a&&a.err)||'Sign-in cancelled'))}
+function authDone(a){if(a&&a.token){ownerMigrate();tokSet(a.token,a.exp);if(a.email)S.settings.sync.email=a.email}const w=AUTHWAIT;AUTHWAIT=null;if(w)a&&a.token?w.res(a.token):w.rej(new Error((a&&a.err)||'Sign-in cancelled'))}
 window.__gauth=json=>{let a;try{a=typeof json==='string'?JSON.parse(json):json}catch(e){a={err:'bad_response'}}if(a.token&&a.native)S.settings.sync.native=true;authDone(a)};
 try{const bc=new BroadcastChannel('plotline-auth');bc.onmessage=e=>{if(e.data&&e.data.plotlineAuth)authDone(e.data.plotlineAuth)}}catch(e){}
 window.addEventListener('storage',e=>{if(e.key==='plotline.authmsg'&&e.newValue){try{authDone(JSON.parse(e.newValue))}catch(_){}}});
@@ -1390,25 +1457,48 @@ function syncSoon(ms=2500){if(!syncOn())return;clearTimeout(syncT);syncT=setTime
 function setSyncMsg(m){SYNC_MSG=m;const el=$('#syncStatus');if(el)el.textContent=m}
 async function syncNow(manual){if(!syncOn()||TOURING)return;if(SYNCING){SYNC_AGAIN=true;return SYNCING}
  SYNCING=(async()=>{try{setSyncMsg('Syncing…');stamp();
+  const who=await acctEmail();if(who&&ownerOf()&&lc(who)!==ownerOf()){S.settings.sync.on=false;S.settings.sync.fileId='';await DB.set('state',S).catch(()=>{});setSyncMsg('Paused · different account');acctChoice(who);return}
   let f=S.settings.sync.fileId?{id:S.settings.sync.fileId}:await driveFind();let remote=null;
   if(f){try{remote=await driveRead(f.id)}catch(e){if(String(e.message).includes('404')){S.settings.sync.fileId='';f=await driveFind();remote=f?await driveRead(f.id):null}else throw e}}
   const local=docOf(S);const merged=remote?mergeDocs(local,remote):local;
   const changedLocal=!sameDoc(merged,local);
   if(changedLocal){S.goals=merged.goals;S.entries=merged.entries;S.days=merged.days;S.habits=merged.habits.map(normHabit);S.dead=merged.dead;primeSig();await DB.set('state',S).catch(()=>{});syncNative();pushWidget();if(!$('#sheet').classList.contains('on'))render(false)}
   if(!remote||!sameDoc(merged,remote)||DIRTY){S.settings.sync.fileId=await driveWrite(f&&f.id,docOf(merged))}else S.settings.sync.fileId=f.id;
-  DIRTY=false;S.settings.sync.last=Date.now();S.settings.sync.err='';await DB.set('state',S).catch(()=>{});
+  DIRTY=false;S.settings.sync.last=Date.now();S.settings.sync.err='';if(who)S.settings.sync.owner=lc(who);await DB.set('state',S).catch(()=>{});
   setSyncMsg('Synced '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}));if(manual)toast(changedLocal?'Synced · changes pulled in':'Synced · everything is up to date')}
  catch(e){if(e&&e.auth){S.settings.sync.err='auth';setSyncMsg('Sign in again to keep syncing');if(manual)return connectDrive()}else{S.settings.sync.err=String(e&&e.message||e);setSyncMsg('Sync failed: '+S.settings.sync.err);if(manual)toast('Sync failed. '+esc(S.settings.sync.err))}}
  finally{SYNCING=null;if(SYNC_AGAIN){SYNC_AGAIN=false;syncSoon(500)}}})();return SYNCING}
 async function connectDrive(useBrowser){const c=cfg();if(!NATIVE&&!c.clientId)return toast('Add your Google client ID first');
- try{if(NATIVE&&!useBrowser){S.settings.sync.native=true;await nativeAuth(true)}else{S.settings.sync.native=false;await(NATIVE?browserAuthFromApp():webAuth('consent'))}
-  if(!S.settings.sync.email){const em=await driveEmail();if(em)S.settings.sync.email=em}
+ try{if(NATIVE&&!useBrowser){S.settings.sync.native=true;await nativeAuth(true)}else{S.settings.sync.native=false;await(NATIVE?browserAuthFromApp():webAuth('select_account consent'))}
+  const em=await acctEmail(true);if(em)S.settings.sync.email=em;S.settings.sync.fileId='';
+  if(em&&ownerOf()&&lc(em)!==ownerOf()&&hasData()){save();return acctChoice(em)}
+  if(em&&lc(em)!==ownerOf())await acctAdopt(em,false);
   S.settings.sync.on=true;S.settings.sync.err='';save();toast('Connected to Google Drive');await syncNow(false);render(false)}
  catch(e){if(NATIVE&&!useBrowser&&cfg().webUrl){S.settings.sync.native=false;toast('Device sign-in unavailable. Trying browser sign-in…');return connectDrive(true)}toast('Couldn’t connect: '+esc(e.message||e))}}
 function disconnectDrive(){S.settings.sync={...S.settings.sync,on:false,fileId:'',native:false,err:'',last:0};tokDrop();try{NATIVE&&NATIVE.googleSignOut()}catch(e){}save();render(false);toast('Sync turned off. Your data stays on this device and in Drive.')}
+/* ---- which Google account owns the data on this device ----
+ owner = the account this device last synced with. Connecting a different account never merges silently:
+ the person picks switch (this device's data is set aside under the old account and comes back on switching back),
+ copy (merge into the new account on purpose) or cancel. */
+const lc=x=>String(x||'').trim().toLowerCase();
+let ACCT={t:'',em:''},ACCT_NEW='';
+const hasData=()=>S.goals.length+S.entries.filter(e=>e.type!=='token').length+S.habits.length+S.days.length>0;
+function ownerMigrate(){const sy=S.settings.sync;if(!sy.owner&&sy.email&&hasData())sy.owner=lc(sy.email)}
+const ownerOf=()=>{ownerMigrate();return S.settings.sync.owner||''};
+async function acctEmail(fresh){const t=await token(false);if(!fresh&&ACCT.t===t&&ACCT.em)return ACCT.em;const em=await driveEmail();if(em)ACCT={t,em};return em}
+async function stashPut(em){if(!em||!hasData())return;await DB.set('stash:'+lc(em),{t:Date.now(),doc:docOf(S)}).catch(()=>{})}
+async function acctAdopt(em,stashOld){const old=ownerOf();if(stashOld&&old)await stashPut(old);
+ const st=await DB.get('stash:'+lc(em)).catch(()=>null);const d=st&&st.doc;
+ if(stashOld||!hasData()){S.goals=d?d.goals:[];S.entries=d?d.entries:[];S.days=d?d.days||[]:[];S.habits=d?(d.habits||[]).map(normHabit):[];S.dead=d?d.dead||{}:{};primeSig();DIRTY=!!d;if(d)DB.set('stash:'+lc(em),null).catch(()=>{})}
+ S.settings.sync.owner=lc(em);S.settings.sync.email=em;S.settings.sync.fileId='';await DB.set('state',S).catch(()=>{});syncNative();pushWidget()}
+function acctChoice(em){ACCT_NEW=em;const old=S.settings.sync.owner||'another account';const n=S.goals.length,h=S.habits.length,j=S.entries.filter(e=>e.type==='note').length;
+ openSheet(`<div class="data">Different Google account</div><h2 style="margin-top:10px">This device holds ${esc(old)}’s plan</h2><p class="muted small">You signed in as <b>${esc(em)}</b>. The ${n} goal${n===1?'':'s'}, ${h} habit${h===1?'':'s'} and ${j} journal entr${j===1?'y':'ies'} here belong to ${esc(old)}. Nothing has synced yet.</p>
+ <div class="acct-opts"><button class="acct-o on" data-act="acctSwitch"><b>Switch to ${esc(em)}</b><small>Recommended. ${esc(old)}’s data is set aside safely on this device and comes back when you switch back. You get ${esc(em)}’s own plan.</small></button>
+ <button class="acct-o" data-act="acctMerge"><b>Copy this data into ${esc(em)}</b><small>Everything here is added to ${esc(em)}’s Drive and merged with what’s already there. Only if both accounts are yours.</small></button></div>
+ <div class="actions"><button class="btn ghost" data-act="acctCancel">Cancel · stay with ${esc(old)}</button></div>`,true)}
 /* PIN reset: prove it's you by signing in to the Google account that holds the data */
 async function resetPinWithGoogle(){const want=S.settings.sync.email;tokDrop();try{if(NATIVE&&S.settings.sync.native)await nativeAuth(true);else await(NATIVE?browserAuthFromApp():webAuth('select_account'));const em=await driveEmail()||S.settings.sync.email;
- if(want&&em&&em.toLowerCase()!==want.toLowerCase())return toast('That’s a different Google account');S.settings.pinHash='';save();$('.lock')?.remove();toast('PIN removed. Set a new one in Settings.')}catch(e){toast('Couldn’t verify with Google')}}
+ if(want&&em&&em.toLowerCase()!==want.toLowerCase()){tokDrop();ACCT={t:'',em:''};try{NATIVE&&S.settings.sync.native&&!S.settings.sync.on&&NATIVE.googleSignOut()}catch(_){}return toast('That’s a different Google account')}S.settings.pinHash='';save();$('.lock')?.remove();toast('PIN removed. Set a new one in Settings.')}catch(e){toast('Couldn’t verify with Google')}}
 
 /* ================= model ================= */
 const G=id=>S.goals.find(g=>g.id===id);
@@ -1446,7 +1536,7 @@ function segHTML(key,act,items,val){return`<div class="seg-c" data-seg="${key}" 
 function vToday(){const h=new Date().getHours();const gr=h<5?'Still up':h<12?'Good morning':h<17?'Good afternoon':'Good evening';const nm=S.settings.name;
  const act=active();const nx=act.map(g=>({g,s:nextStep(g)})).filter(x=>x.s).sort(urgency);
  const wk=S.entries.filter(e=>e.type==='step'&&e.t>Date.now()-7*864e5).length;const over=act.flatMap(g=>g.steps).filter(s=>!s.done&&s.due&&daysUntil(s.due)<0).length;
- let o=`<header class="ph"><div><h1>${gr}${nm?',<br>'+esc(nm):''}</h1>${act.length?`<div class="data">${wk} step${wk===1?'':'s'} done this week${over?` · ${over} late`:''} · ${act.length} active goal${act.length===1?'':'s'}</div>`:''}</div><div class="ph-r"><button class="ibtn" data-act="newGoal" aria-label="New goal">${ic('plus')}</button>${gear()}</div></header>`;
+ let o=(demoCount()&&!S.settings.demoHide?`<div class="demob rv"><span>${ic('flag')}You’re exploring with sample data.</span><button class="btn sm" data-act="demoRemove">Remove it</button><button class="ibtn sm" data-act="demoHide" aria-label="Hide">${ic('minus')}</button></div>`:'')+`<header class="ph"><div><h1>${gr}${nm?',<br>'+esc(nm):''}</h1>${act.length?`<div class="data">${wk} step${wk===1?'':'s'} done this week${over?` · ${over} late`:''} · ${act.length} active goal${act.length===1?'':'s'}</div>`:''}</div><div class="ph-r"><button class="ibtn" data-act="newGoal" aria-label="New goal">${ic('plus')}</button>${gear()}</div></header>`;
  const dow=new Date().getDay(),reviewed=S.settings.lastReview&&daysUntil(S.settings.lastReview)>-5;
  if(act.length&&(dow===0||dow>=5)&&!reviewed)o+=`<div class="li rv" style="border-radius:18px;border:1px solid var(--line-2);margin-bottom:14px;--c:var(--accent)" data-act="weekly"><span class="chk" style="border-color:var(--accent);color:var(--accent)">${ic('flag')}</span><div style="flex:1"><div class="t">Time for your weekly review</div><div class="s">Two minutes to look back and set next week’s focus</div></div>${ic('next','ico-s')}</div>`;
  o+=todayGoals();o+=habitsStrip();
@@ -1690,7 +1780,7 @@ function roadHTML(goals,ppd,openAll,single=false){const tn=dnum(ymd());let x0=tn
  if(ppd>=14)for(let n=x0;n<=x1;n++){const dd=dUTC(n);if(dd.getUTCDay()===1&&dd.getUTCDate()>4)ticks+=`<span class="fl-tk wk" style="left:${(n-x0)*ppd}px">${dd.getUTCDate()}</span>`}
  return{html:`<div class="road-in" style="width:${W}px"><div class="fl-ax">${ticks}</div>${goals.map((g,i)=>laneHTML(g,x0,ppd,openAll||RD.open.has(g.id),W,i,single)).join('')}<div class="today-line" style="left:calc(var(--gutter) + ${(tn-x0)*ppd}px)"><span>NOW</span></div></div>`,todayX:(tn-x0)*ppd,firstX:goals.length?(gSpan(goals[0]).s-x0)*ppd:0}}
 function vRoad(){const gs=S.goals.filter(g=>RD.show==='all'||g.status==='active').sort((a,b)=>(gSpan(a).s-gSpan(b).s)||(a.priority-b.priority));
- const top=`<header class="ph"><div><h1>Timeline</h1><div class="data">Every goal flows on its own path · tap one for its steps</div></div><div class="ph-r"><button class="btn" data-act="rdToday">${ic('cal')}Today</button>${gear()}</div></header>
+ const top=`<header class="ph"><div><h1>Vista</h1><div class="vsw">${segHTML('vista','vistaGo',[['road','Timeline'],['map','Map']],cur.p==='map'?'map':'road')}</div></div><div class="ph-r"><button class="btn" data-act="rdToday">${ic('cal')}Today</button>${gear()}</div></header>
  <div class="bar">${segHTML('rz','rdZoom',[['month','Weeks'],['quarter','Months'],['year','Years']],RD.zoom)}<div style="display:flex;gap:8px">${segHTML('rs','rdShow',[['active','Active'],['all','All']],RD.show)}<button class="btn" data-act="rdAll">${RD.open.size?'Collapse':'Expand'}</button></div></div>`;
  if(!gs.length)return top+`<div class="empty rv"><h3>Nothing on the timeline</h3><p>Create a goal and it gets its own track here.</p><div class="actions"><button class="btn pri" data-act="newGoal">${ic('plus')}New goal</button></div></div>`;
  const key=RD.zoom+RD.show,draw=!reduced()&&(RANIM||RD.key!==key);RD.key=key;const R=roadHTML(gs,PPD[RD.zoom]);RD.todayX=R.todayX;return top+`<div class="road rv${draw?' draw':''}" id="road">${R.html}</div>`}
@@ -1698,7 +1788,7 @@ const labW=r=>parseFloat(getComputedStyle(r).getPropertyValue('--lab'))||0;
 
 /* ================= LIFE MAP ================= */
 let T={x:0,y:0,k:1},MP=null,MSEL=null,ML=null;
-function vMap(){const n=S.goals.length;return`<header class="ph"><div><h1>Life map</h1><div class="data">${n?'Drag anything · tap to focus · pinch to zoom':'Your goals will appear here'}</div></div><div class="ph-r"><button class="ibtn" data-act="fit" aria-label="Fit everything">${ic('fit')}</button>${gear()}</div></header>
+function vMap(){const n=S.goals.length;return`<header class="ph"><div><h1>Vista</h1><div class="vsw">${segHTML('vista','vistaGo',[['road','Timeline'],['map','Map']],cur.p==='map'?'map':'road')}</div></div><div class="ph-r"><button class="ibtn" data-act="fit" aria-label="Fit everything">${ic('fit')}</button>${gear()}</div></header>
  <div class="mapwrap rv"><svg id="map" role="img" aria-label="Map of your goals"><g id="mapg"><g id="mstars"></g><g id="mcontent"></g></g></svg><div class="mapctl"><button class="ibtn" data-act="zoom" data-d="1.3" aria-label="Zoom in">${ic('plus')}</button><button class="ibtn" data-act="zoom" data-d="0.77" aria-label="Zoom out">${ic('minus')}</button></div><div class="mapdock"><span class="data">Spacing</span><input type="range" min="0.8" max="2" step="0.05" value="${S.settings.mapSpace||1}" data-map="space" aria-label="Spacing between goals"><button class="ibtn sm" data-act="mapReset" aria-label="Reset layout">${ic('reset')}</button></div><div id="mapcard"></div></div>`}
 const nodeR=g=>15+(4-g.priority)*5;
 function mapLayout(){const goals=S.goals,sp=S.settings.mapSpace||1;const areas=allAreas().filter(a=>goals.some(x=>areaOf(x.area).id===a.id));const P={},AP={},ap=S.settings.areaPos||{};
@@ -1956,11 +2046,11 @@ function diffGoal(ex,x){const out=[];[['title','title'],['why','why'],['area','a
  const moved=kept.filter(y=>{const s=open.find(z=>z.id===y.id);return s&&((y.dueInDays!=null?addDays(y.dueInDays):'')!==(s.due||'')||y.title!==s.title)}).length;const locked=ex.steps.length-open.length;
  return[locked?`<span class="data">${ic('lock','ico-s')} ${locked} done, locked</span>`:'',added?`<span class="data" style="color:#46C99B">+${added} new</span>`:'',removed?`<span class="data" style="color:#FF7A7A">−${removed} removed</span>`:'',moved?`<span class="data">${moved} rescheduled or edited</span>`:'',out.length?`<span class="data">changed: ${out.join(', ')}</span>`:''].join('')}
 let AI={tab:'new',text:'',change:'',reply:'',plan:null,errs:[],sel:new Set()};
-function vAI(){if(AI.tab==='insights')return`<header class="ph"><div><h1>Your<br>insights</h1><div class="data">From your own notes · search runs on this device</div></div><div class="ph-r">${gear()}</div></header><div class="bar">${segHTML('ai','aiTab',[['new','New plan'],['change','Change of plans'],['insights','Insights']],AI.tab)}</div>`+vInsights();const ch=AI.tab==='change',mode=ch?'update':'create';
+function vAI(){if(AI.tab==='insights')AI.tab='new';const ch=AI.tab==='change',mode=ch?'update':'create';
  const s1=ch?`<h3>What changed?</h3><p class="small muted">Your whole plan goes along, with every goal and step id. Completed steps are locked. The AI can only rework, reschedule or add what’s still open.</p><textarea id="aiChange" placeholder="e.g. I started a job with long weekdays, so training moves to weekends. We’re moving in March, so the family days pause for a month.">${esc(AI.change)}</textarea>`
   :`<h3>Describe what you want</h3><p class="small muted">Messy is fine: hopes, worries, things you keep putting off. You don’t need to know your goals yet.</p><textarea id="aiText" placeholder="e.g. I want to be healthier, maybe run a race. Save for a house in 3 years. Spend more real time with my kids. Learn to cook properly.">${esc(AI.text)}</textarea>`;
  return`<header class="ph"><div><h1>${ch?'Change<br>of plans':'Plan with AI'}</h1><div class="data">Works with ChatGPT, Claude, Gemini or any assistant</div></div><div class="ph-r">${gear()}</div></header>
- <div class="bar">${segHTML('ai','aiTab',[['new','New plan'],['change','Change of plans'],['insights','Insights']],AI.tab)}</div>
+ <div class="bar">${segHTML('ai','aiTab',[['new','New plan'],['change','Change of plans']],AI.tab)}</div>
  <div class="fstep rv ${AI.plan?'':'on'}"><div class="fnum">1</div><div>${s1}<div class="actions left"><button class="btn pri" data-act="copyPrompt">${ic('copy')}Copy prompt</button><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Claude ${ic('ext','ico-s')}</a><a class="btn" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ${ic('ext','ico-s')}</a><a class="btn" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ${ic('ext','ico-s')}</a></div></div></div>
  <div class="fstep rv"><div class="fnum">2</div><div><h3>Paste the whole reply</h3><p class="small muted">The app finds the plan and checks every field against the format.</p><textarea id="aiReply" placeholder="Paste the AI’s full answer here">${esc(AI.reply)}</textarea><div class="actions left"><button class="btn ${AI.plan?'':'pri'}" data-act="parseAI">Check plan</button></div>
  ${AI.errs.length?`<div class="errbox"><b>The plan doesn’t match the format yet</b><ul>${AI.errs.map(e=>`<li>${esc(e)}</li>`).join('')}</ul><div class="actions left" style="margin-top:12px"><button class="btn pri" data-act="copyFix">${ic('copy')}Copy fix-it message</button></div><p class="small muted" style="margin-top:8px">Paste it into the same AI chat, then paste the new reply here.</p></div>`:''}</div></div>
@@ -2006,7 +2096,7 @@ function vSettings(){const st=S.settings;const np=('Notification'in window)?Noti
  <section class="panel rv"><h3>You</h3><div class="actions left" style="margin:0 0 14px"><button class="btn" data-act="tourGo">${ic('flag')}Take the tour</button></div><div class="field"><label for="nm">Your name</label><input id="nm" data-set="name" value="${esc(st.name)}" placeholder="What should we call you?"></div></section>
  <section class="panel rv"><h3>Reminders</h3><p class="small muted">${NATIVE?'Step reminders, goal check-ins and focus timers arrive as phone notifications, even when the app is closed.':'Set reminders and focus timers on any step, and check-ins on any goal. They fire while the app is open. Add them to your calendar to be alerted anytime, including by email.'}</p><div class="actions left"><button class="btn" data-act="icsAll">${ic('cal')}Add due steps to calendar</button>${(NATIVE?!NATIVE.notificationsGranted():np==='default')?`<button class="btn" data-act="notif">${ic('bell')}Allow notifications</button>`:''}</div>${!NATIVE&&np==='denied'?`<p class="small muted" style="margin-top:10px">Notifications are blocked in this browser’s settings.</p>`:''}</section>
  <section class="panel rv"><h3>Privacy</h3><p class="small muted">A PIN keeps the app private on a shared device. It never leaves this device. <a class="link" style="font-size:13px" href="${NATIVE?esc(cfg().webUrl||PLOTLINE_CFG.webUrl)+'privacy.html':'privacy.html'}" target="_blank" rel="noopener">Read the privacy policy</a></p><div class="actions left">${st.pinHash?`<button class="btn" data-act="setPin">${ic('lock')}Change PIN</button><button class="btn danger" data-act="removePin">Remove PIN</button>`:`<button class="btn" data-act="setPin">${ic('lock')}Set a PIN</button>`}</div></section>
- <section class="panel rv"><h3>Your data</h3><p class="small muted">Everything is stored on this device. Export a backup before switching devices or browsers.</p><div class="actions left"><button class="btn" data-act="exportData">Export backup</button><label class="btn">Import backup<input type="file" accept="application/json,.json" data-file="backup" hidden></label><label class="btn">Import MQC journal<input type="file" accept="application/json,.json" data-file="mqc" hidden></label><button class="btn danger" data-act="wipe">Erase everything</button></div></section>
+ <section class="panel rv"><h3>Your data</h3><p class="small muted">Everything is stored on this device. Export a backup before switching devices or browsers.</p><div class="actions left">${demoCount()?`<button class="btn" data-act="demoRemove">${ic('trash')}Remove sample data</button>`:''}<button class="btn" data-act="exportData">Export backup</button><label class="btn">Import backup<input type="file" accept="application/json,.json" data-file="backup" hidden></label><label class="btn">Import MQC journal<input type="file" accept="application/json,.json" data-file="mqc" hidden></label><button class="btn danger" data-act="wipe">Erase everything</button></div></section>
 </div>`}
 function syncPanel(){const sy=S.settings.sync,c=cfg();const conn=syncOn();
  const adv=PLOTLINE_CFG.googleClientId?'':`<details style="margin-top:14px"><summary class="small muted" style="cursor:pointer">Google setup${c.clientId?' · configured':''}</summary><form data-form="syncCfg" style="margin-top:12px"><div class="field"><label>OAuth client ID (Web application)</label><input name="cid" value="${esc(sy.clientId||PLOTLINE_CFG.googleClientId)}" placeholder="1234-abc.apps.googleusercontent.com" autocomplete="off" spellcheck="false"></div><div class="field"><label>Web app address</label><input name="url" value="${esc(sy.webUrl||PLOTLINE_CFG.webUrl||(NATIVE?'':location.origin+location.pathname))}" placeholder="https://you.github.io/plotline/" autocomplete="off" spellcheck="false"></div><div class="actions left"><button class="btn sm">Save setup</button></div></form></details>`;
@@ -2204,7 +2294,7 @@ const ACT={
  forgotPin:()=>{if(syncOn()&&S.settings.sync.email){openSheet(`<h2>Forgot your PIN?</h2><p class="muted">Sign in to ${esc(S.settings.sync.email)} to prove it’s you. Your PIN will be removed and nothing else changes.</p><div class="actions"><button class="btn ghost" data-act="close">Cancel</button><button class="btn pri" data-act="pinGoogle">Reset with Google</button></div>`);return}askConfirm('Forgot your PIN?','Sync isn’t on, so there’s no account to verify you with. Erase this device’s data, then restore a backup file.','Erase and start over',()=>{S=norm({});SIG.clear();save();$('.lock')?.remove();render();welcome()})},
  pinGoogle:()=>{closeSheet();resetPinWithGoogle()},
  syncConnect:()=>connectDrive(false),syncConnectBrowser:()=>connectDrive(true),syncNow:()=>syncNow(true),
- syncOff:()=>askConfirm('Turn off sync?','This device stops syncing. Nothing is deleted here or in Drive.','Turn off',()=>disconnectDrive()),
+ syncOff:()=>openSheet(`<h2>Turn off sync?</h2><p class="muted">This device stops syncing with ${esc(S.settings.sync.email||'Google Drive')}. Your Drive copy is not touched.</p><div class="acct-opts"><button class="acct-o" data-act="syncOffKeep"><b>Keep my data on this device</b><small>It stays tied to ${esc(S.settings.sync.email||'this account')}. If you later connect a different account, Plotline asks first.</small></button><button class="acct-o" data-act="syncOffRemove"><b>Remove it from this device</b><small>Syncs one last time, then clears goals, habits and journal here. Sign in again to get them back.</small></button></div><div class="actions"><button class="btn ghost" data-act="close">Cancel</button></div>`),
  shareGoal:d=>shareGoal(G(d.id)),weekly:()=>openSheet(weeklyForm()),pushLate:()=>{const late=active().flatMap(g=>g.steps.filter(s=>!s.done&&s.due&&daysUntil(s.due)<0));late.forEach(s=>{s.due=addDays(Math.max(0,7+daysUntil(s.due)));s.reminded=false});save();render(false);toast(`${late.length} late step${late.length===1?'':'s'} moved into this week`)},
  welcomeSync:()=>{S.settings.onboarded=true;SHEET_LOCK=false;closeSheet();save();go('settings');setTimeout(()=>$('#syncPanel')?.scrollIntoView({behavior:'smooth',block:'center'}),400)},
 };
@@ -2622,10 +2712,11 @@ const TOUR_STEPS=[
  {r:'goal',prep:()=>{S.settings.layout.goal='cards'},s:'.hs-shell',t:'Swipe through steps',x:'Swipe the cards. Tap a card to flip it for notes and actions, and tap its dot to mark the step done. Sub-goal cards open that sub-goal.',d:'swipe',sc:'.hs-shell .hs'},
  {r:'cal',nav:1,prep:()=>{S.settings.layout.cal='month'},s:'.cal-card',t:'Calendar',x:'Day goals, steps and goal targets together. Switch between Day, Week and Month, and swipe to move through dates.',d:'swipe'},
  {r:'cal',prep:()=>{S.settings.layout.cal='day';CAL.d=ymd()},s:'#dgrid',t:'Plan the day by the hour',x:'Tap an empty slot to add something at that time. Pinch, or use the zoom buttons, to see more or less of the day.',d:'pinch'},
- {r:'road',nav:1,s:'#road',t:'Timeline',x:'Every goal flows on its own path across the months, with steps as points along it. Tap a path to open it up.',d:'swipe',sc:'#road'},
- {r:'map',nav:1,s:'#map',t:'Life map',x:'Goals grouped by life area, with lines where goals support each other. Drag anything, pinch to zoom, tap to focus.',d:'drag'},
+ {r:'road',nav:1,navk:'vista',s:'#road',t:'Vista · Timeline',x:'Vista shows your whole plan two ways. Timeline: every goal flows on its own path across the months, with steps as points along it. Tap a path to open it up.',d:'swipe',sc:'#road'},
+ {r:'map',s:'#map',t:'Vista · Map',x:'Switch to Map for the big picture: goals grouped by life area, with lines where goals support each other. Drag anything, pinch to zoom, tap to focus.',d:'drag'},
  {r:'journal',nav:1,s:'.hs-shell,.spine',t:'Journal',x:'Moments, photos, milestones and achieved goals collect here as the story of your year.'},
- {r:'ai',nav:1,s:'.fstep',t:'Plan with AI',x:'Describe what you want in your own words. Copy the prompt into any AI assistant, paste its reply back, then review one main goal with everything nested under it before anything is created.',d:'tap',tap:'[data-act=copyPrompt]'},
+ {r:'ask',nav:1,s:'.ask-comp',t:'Ask',x:'Your private assistant. Ask anything about your goals, habits and journal: it searches your own notes and answers on this device. The sliders icon changes the model and privacy settings.',d:'tap'},
+ {r:'ai',s:'.fstep',t:'Plan with AI',x:'Describe what you want in your own words. Copy the prompt into any AI assistant, paste its reply back, then review one main goal with everything nested under it before anything is created.',d:'tap',tap:'[data-act=copyPrompt]'},
  {r:'settings',nav:1,s:'#syncPanel',t:'Sync and settings',x:'Connect your own Google Drive to keep phone and web in step. Themes, card styles, reminders, a PIN and backups are here too.'},
  {r:'today',c:1,t:'Pull down to sync',x:'On a phone, pull down at the top of any page to sync or refresh.',d:'pull'},
  {r:'today',c:1,native:1,t:'Home-screen widgets',x:'Long-press your home screen, choose Widgets, then Plotline. Check off goals and habits, see your week, or watch a live clean-time clock without opening the app.',d:'widget'},
@@ -2645,7 +2736,7 @@ const tWait=ms=>new Promise(r=>{TR.timers.push(setTimeout(r,reduced()?Math.min(m
 async function tourStep(i){if(!TR)return;TR.timers.forEach(clearTimeout);TR.timers=[];const tok=TR.tok=Math.random();const st=TOUR_STEPS[i];if(!st)return endTour();const back=i<TR.i;TR.i=i;TR.focus=null;tourFinger('');const card=$('.tour .trcard');card.classList.add('away');
  const route=st.r==='goal'?'goal/'+(st.id?st.id():TR.gid):st.r;if(st.r==='goal'&&st.id)TR.gid=st.id();
  const here=(cur.p+(cur.id?'/'+cur.id:''))===route;
- if(!here&&st.nav&&!back){const n=navEl(st.r);if(n){TR.focus=n;tourPlace();await tWait(450);if(TR.tok!==tok)return;tourFinger('tap',n);await tWait(900);if(TR.tok!==tok)return}}
+ if(!here&&st.nav&&!back){const n=navEl(st.navk||st.r);if(n){TR.focus=n;tourPlace();await tWait(450);if(TR.tok!==tok)return;tourFinger('tap',n);await tWait(900);if(TR.tok!==tok)return}}
  if(st.prep)st.prep();
  if(!here)go(route);else render(false);await tWait(here?40:140);if(TR.tok!==tok)return;
  const el=st.c?null:await tSettle(st.s,tok);if(TR.tok!==tok)return;TR.focus=el;tourFinger('');tourCard(st,i,false);
@@ -2701,7 +2792,7 @@ function applyFocus(anim){const on=!!S.settings.focus,r=document.documentElement
  try{NATIVE&&NATIVE.immersive&&NATIVE.immersive(on)}catch(e){}
  setTimeout(()=>{moveInd();placeSegs();document.querySelectorAll('.hs-shell').forEach(hsLayout);if(cur.p==='map')fitMap(false);if(cur.p==='cal')fitCal()},anim?420:30)}
 function buildFloater(){let f=$('#fnav');if(!S.settings.focus){f&&f.remove();return}if(!f){f=document.createElement('div');f.id='fnav';document.body.appendChild(f)}
- const items=[...NAV,['settings','Settings','settings']],on=(({goal:'goals',habit:'habits'})[cur.p]||cur.p),curN=items.find(x=>x[0]===on)||items[0];
+ const items=[...NAV.flatMap(x=>x[0]==='vista'?[['road','Timeline','road'],['map','Map','map']]:[x]),['settings','Settings','settings']],on=(({goal:'goals',habit:'habits',ai:'ask'})[cur.p]||cur.p),curN=items.find(x=>x[0]===on)||items[0];
  f.innerHTML=`<button class="fn-t" data-act="fnavToggle" aria-expanded="false" aria-label="Open navigation">${ic(curN[2])}<span>${curN[1]}</span>${ic('menu','fn-m')}</button><div class="fn-p" role="menu">${items.map(([k,l,i],n)=>`<a href="#/${k}" class="fn-i${k===on?' on':''}" role="menuitem" style="--n:${n}" data-act="fnavGo">${ic(i)}<span>${l}</span></a>`).join('')}<button class="fn-x" style="--n:${items.length}" data-act="focusMode">${ic('unfull')}<span>Exit full screen</span></button></div>`}
 function setFocus(on){S.settings.focus=on;save();applyFocus(true);
  if(!NATIVE){try{if(on&&!document.fullscreenElement&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen({navigationUI:'hide'}).catch(()=>{});else if(!on&&document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}}
@@ -2791,7 +2882,7 @@ document.addEventListener('change',e=>{const t=e.target;if(t.name==='checkin'&&t
  if(t.dataset.file)FILE[t.dataset.file](t)});
 
 /* ================= shell ================= */
-const NAV=[['today','Today','today'],['habits','Habits','habit'],['cal','Calendar','cal'],['goals','Goals','goals'],['road','Timeline','road'],['map','Map','map'],['journal','Journal','journal'],['ai','AI Plan','ai']];
+const NAV=[['today','Today','today'],['habits','Habits','habit'],['cal','Calendar','cal'],['goals','Goals','goals'],['vista','Vista','map'],['journal','Journal','journal'],['ask','Ask','ai']];
 const navHTML=()=>`<div class="navs"><span class="nav-ind"></span>${NAV.map(([k,l,i])=>`<a class="nav" href="#/${k}" data-nav="${k}">${ic(i)}<span>${l}</span></a>`).join('')}</div>`;
 function buildChrome(){$('#rail').innerHTML=`<a href="#/today" aria-label="Plotline home">${LOGO}</a>${navHTML()}<div class="spacer"></div><div class="navs"><span class="nav-ind"></span><a class="nav" href="#/settings" data-nav="settings">${ic('settings')}<span>Settings</span></a></div>`;$('#tabbar').innerHTML=navHTML()}
 function moveInd(){document.querySelectorAll('.navs').forEach(n=>{const on=n.querySelector('.nav.on'),ind=n.querySelector('.nav-ind');if(!ind)return;if(!on){ind.style.opacity=0;return}ind.style.opacity=1;ind.style.width=on.offsetWidth+'px';ind.style.height=on.offsetHeight+'px';ind.style.transform=`translate(${on.offsetLeft}px,${on.offsetTop}px)`})}
@@ -2836,13 +2927,13 @@ document.addEventListener('touchend',()=>{const P=PTR;PTR=null;if(!P||!P.on)retu
  else{render(false);setTimeout(()=>{hide();toast('Refreshed · connect Google Drive in Settings to sync devices')},500)}},{passive:true});
 document.addEventListener('touchcancel',()=>{if(PTR&&PTR.on){$('#view').style.transform='';const el=ptrEl();el.classList.remove('on','ready','spin');el.style.transform=''}PTR=null},{passive:true});
 let cur={p:'today'},booted=false;
-const VIEWS={today:vToday,habits:vHabits,habit:vHabit,cal:vCal,goals:vGoals,goal:vGoal,road:vRoad,map:vMap,journal:vJournal,ai:vAI,settings:vSettings};
+const VIEWS={today:vToday,habits:vHabits,habit:vHabit,cal:vCal,goals:vGoals,goal:vGoal,road:vRoad,map:vMap,journal:vJournal,ai:vAI,ask:vAsk,settings:vSettings};
 function go(h){if(location.hash==='#/'+h)route();else location.hash='#/'+h}
-function route(){let[p,id]=(location.hash.slice(2)||'today').split('/');if(p==='timeline')p='journal';if(p==='insights'){AI.tab='insights';p='ai'}const doit=()=>{cur={p:VIEWS[p]?p:'today',id};render(true);window.scrollTo(0,0)};
+function route(){let[p,id]=(location.hash.slice(2)||'today').split('/');if(p==='timeline')p='journal';if(p==='insights')p='ask';if(p==='vista')p=S.settings.layout.vista==='map'?'map':'road';if(p==='road'||p==='map')S.settings.layout.vista=p;const doit=()=>{cur={p:VIEWS[p]?p:'today',id};render(true);window.scrollTo(0,0)};
  if(booted&&document.startViewTransition&&!reduced()&&!TOURING){const vt=document.startViewTransition(doit);vt.finished.finally(()=>document.querySelectorAll('[data-vt]').forEach(x=>x.style.viewTransitionName=''))}else doit();booted=true}
 let RANIM=true;
 function render(anim=true){RANIM=anim;const v=$('#view');const y=scrollY;if(cur.p!=='map')MP=null;v.innerHTML=VIEWS[cur.p](cur.id);if(!anim)window.scrollTo(0,y);
- document.querySelectorAll('[data-nav]').forEach(a=>{const on=a.dataset.nav===(({goal:'goals',habit:'habits'})[cur.p]||cur.p);a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+ document.querySelectorAll('[data-nav]').forEach(a=>{const on=a.dataset.nav===(({goal:'goals',habit:'habits',road:'vista',map:'vista',ai:'ask'})[cur.p]||cur.p);a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
  imgCSS();moveInd();placeSegs();initHS();reveal(anim);fillSpine(anim);if(S.settings.focus)buildFloater();
  if(cur.p==='map')requestAnimationFrame(initMap);
  if(cur.p==='cal')requestAnimationFrame(()=>{fitCal();initDayGrid()});
@@ -2851,7 +2942,8 @@ window.addEventListener('hashchange',route);
 window.addEventListener('resize',()=>{if(cur.p==='cal')fitCal();moveInd();placeSegs();fillSpine(false);document.querySelectorAll('.hs-shell').forEach(hsLayout);const rd=$('#road');if(rd)rd.style.setProperty('--vw',rd.clientWidth+'px');if(cur.p==='map')fitMap(false)});
 function welcome(){openSheet(`<div class="data">Welcome to Plotline</div><h2 style="margin-top:10px">Small steps.<br>A clear path.<br>Your whole life in view.</h2><p class="muted small">Set short and long-term goals, break them into steps, connect them, and watch the bigger picture take shape. Everything stays on your device.</p><form data-form="onboard"><div class="field"><label>What should we call you?</label><input name="name" placeholder="Your first name" autocomplete="given-name"></div><div class="actions"><button class="btn" value="empty">Start fresh</button><button class="btn pri" value="demo">Explore with examples</button></div><div style="text-align:center;margin-top:16px"><button type="button" class="link" data-act="welcomeSync">I already use Plotline on another device</button></div></form>`,true)}
 function showLock(){const d=document.createElement('div');d.className='lock';d.innerHTML=`<form class="box" data-form="unlock">${LOGO}<h2>Welcome back</h2><p class="muted small">Enter your PIN to open Plotline</p><input class="pin-in" name="p" type="password" inputmode="numeric" autocomplete="off" aria-label="PIN"><p class="err" id="pinErr"></p><button class="btn pri" style="width:100%;margin-top:10px">Unlock</button><div style="margin-top:16px"><button type="button" class="link" data-act="forgotPin">Forgot PIN?</button></div></form>`;document.body.appendChild(d);setTimeout(()=>d.querySelector('input').focus(),100)}
-function seedDemo(){const day=864e5;const mk=(o,done,ago)=>{const g=newGoal(o);g.createdAt=Date.now()-ago*day;g.startDate=ymd(new Date(g.createdAt));g.steps.forEach((s,i)=>{if(i<done){s.done=true;s.doneAt=Date.now()-(done-i)*2*day}});S.goals.push(g);log('goal-new',g.id,g.title,g.createdAt);g.steps.filter(s=>s.done).forEach(s=>log('step',g.id,s.title,s.doneAt,s.id));return g};
+function seedDemo(){const pre=new Set([...S.goals,...S.entries,...S.days,...S.habits].map(o=>o.id));try{seedDemo0()}finally{[...S.goals,...S.entries,...S.days,...S.habits].forEach(o=>{if(!pre.has(o.id))o.demo=1})}}
+function seedDemo0(){const day=864e5;const mk=(o,done,ago)=>{const g=newGoal(o);g.createdAt=Date.now()-ago*day;g.startDate=ymd(new Date(g.createdAt));g.steps.forEach((s,i)=>{if(i<done){s.done=true;s.doneAt=Date.now()-(done-i)*2*day}});S.goals.push(g);log('goal-new',g.id,g.title,g.createdAt);g.steps.filter(s=>s.done).forEach(s=>log('step',g.id,s.title,s.doneAt,s.id));return g};
  const run=mk({title:'Run a 10K race',why:'More energy for my family, and proof to myself that I can finish hard things.',area:'health',horizon:'quarter',priority:1,pinned:true,targetDate:addDays(80),steps:[{title:'Get fitted for proper running shoes'},{title:'Run 20 minutes, 3 times this week',due:addDays(2)},{title:'Run 5K without stopping',due:addDays(21)},{title:'Register for a local 10K',due:addDays(30)},{title:'Complete an 8K long run',due:addDays(60)},{title:'Race day — enjoy it',due:addDays(80)}]},1,12);
  const fund=mk({title:'Build a 3-month emergency fund',why:'Sleep well knowing a surprise bill won’t shake us.',area:'finance',horizon:'year',priority:1,steps:[{title:'Track every expense for 2 weeks'},{title:'Set up an automatic transfer on payday'},{title:'Cancel two unused subscriptions',due:addDays(0)},{title:'Reach 1 month of expenses saved',due:addDays(120)},{title:'Reach 3 months saved',due:addDays(330)}]},2,20);
  const fam=mk({title:'Weekly family adventure day',why:'The kids are only this small once.',area:'family',horizon:'month',priority:2,pinned:true,steps:[{title:'List 10 places within an hour’s drive'},{title:'Block Saturdays on the shared calendar',due:addDays(-1)},{title:'Plan the first trip to the lake',due:addDays(5)},{title:'Print favourite photos into a small album',due:addDays(26)}]},1,9);
@@ -2884,15 +2976,22 @@ function seedDemo(){const day=864e5;const mk=(o,done,ago)=>{const g=newGoal(o);g
  Keyword search (BM25) works instantly and offline. "Smart search" adds semantic search with the open-source
  all-MiniLM-L6-v2 model via Transformers.js — downloaded once from Hugging Face, cached, then offline; vectors are
  kept in IndexedDB ('ragvec'), never synced. The best passages plus numbers the app computes itself go to one of:
- copy to any AI (default, nothing sent by the app), your own OpenAI-compatible server (Ollama, LM Studio…),
- or an on-device model through WebLLM (needs WebGPU). */
-const RAG_CFG=Object.assign({lib:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0/dist/transformers.min.js',model:'Xenova/all-MiniLM-L6-v2',dtype:'q8',localModels:'',wasm:'',webllm:'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.85/+esm'},window.PLOTLINE_RAG||{});
-const LLMS=[['Llama-3.2-1B-Instruct-q4f16_1-MLC','Llama 3.2 1B · about 0.9 GB · phones'],['Qwen3.5-2B-q4f16_1-MLC','Qwen 3.5 2B · about 2.2 GB · better answers'],['Qwen3.5-4B-q4f16_1-MLC','Qwen 3.5 4B · about 3.9 GB · laptops']];
+ an on-device open-source model through wllama (llama.cpp in WebAssembly, bundled in lib/wllama; CPU, or WebGPU when
+ present), your own OpenAI-compatible server (Ollama, LM Studio…), or a prompt to copy into any AI.
+ Every question also carries insOverview(): a compact "about me" of all goals, habits and moods. */
+const RAG_CFG=Object.assign({lib:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0/dist/transformers.min.js',model:'Xenova/all-MiniLM-L6-v2',dtype:'q8',localModels:'',wasm:'',wllama:'./lib/wllama/index.min.js',wllamaWasm:'lib/wllama/wllama.wasm',nctx:4096},window.PLOTLINE_RAG||{});
+const HFR=(r,f)=>`https://huggingface.co/${r}/resolve/main/${f}`;
+/* [id, label, url, GB]. Phi-4 mini uses Q3_K_S: the Q4 file is 2.5 GB, over wllama's 2 GB-per-file limit. */
+const LLMS=[['llama3.2-1b','Llama 3.2 1B · 0.8 GB · fast, good',HFR('bartowski/Llama-3.2-1B-Instruct-GGUF','Llama-3.2-1B-Instruct-Q4_K_M.gguf'),.8,HFR('bartowski/Llama-3.2-1B-Instruct-GGUF','Llama-3.2-1B-Instruct-Q4_0.gguf'),.77],
+ ['qwen2.5-1.5b','Qwen 2.5 1.5B · 1.1 GB · better answers',HFR('Qwen/Qwen2.5-1.5B-Instruct-GGUF','qwen2.5-1.5b-instruct-q4_k_m.gguf'),1.1,HFR('Qwen/Qwen2.5-1.5B-Instruct-GGUF','qwen2.5-1.5b-instruct-q4_0.gguf'),1.07],
+ ['phi4-mini','Phi-4 mini 3.8B · smartest, about a minute per answer',HFR('bartowski/microsoft_Phi-4-mini-instruct-GGUF','microsoft_Phi-4-mini-instruct-Q3_K_S.gguf'),1.9,HFR('bartowski/microsoft_Phi-4-mini-instruct-GGUF','microsoft_Phi-4-mini-instruct-Q4_0.gguf'),2.33],
+ ['qwen2.5-0.5b','Qwen 2.5 0.5B · 0.5 GB · fastest, basic',HFR('Qwen/Qwen2.5-0.5B-Instruct-GGUF','qwen2.5-0.5b-instruct-q4_k_m.gguf'),.5,HFR('Qwen/Qwen2.5-0.5B-Instruct-GGUF','qwen2.5-0.5b-instruct-q4_0.gguf'),.43]].concat(window.PLOTLINE_RAG&&window.PLOTLINE_RAG.llms||[]);
+/* rows: [id, label, wasm url (web, ≤2 GB), GB, native url (Android app, Q4_0: repacked for ARM dot-product → fastest on phones), GB] */
 const API_PRE=[['Ollama','http://localhost:11434/v1','llama3.2'],['LM Studio','http://localhost:1234/v1','local-model'],['OpenRouter','https://openrouter.ai/api/v1','meta-llama/llama-3.3-70b-instruct']];
-function insSet(){const d={engine:'copy',smart:false,priv:false,url:API_PRE[0][1],model:API_PRE[0][2],llm:LLMS[0][0]};return S.settings.ins={...d,...(S.settings.ins||{})}}
+function insSet(){const d={engine:'local',smart:false,priv:false,url:API_PRE[0][1],model:API_PRE[0][2],llm:LLMS[0][0]};const o=S.settings.ins={...d,...(S.settings.ins||{})};if(!o.nat){o.nat=1;o.phi=1;if(NAT_OK()||!o.llm||o.llm==='phi4-mini')o.llm='llama3.2-1b'}return o}
 const aiKey=()=>{try{return localStorage.getItem('plotline.aikey')||''}catch(e){return''}};
 const MOODN=Object.fromEntries(MOODS.map(([m,n])=>[m,n]));const MOOD_POS=new Set(['Calm','Energized','Grateful']),MOOD_NEG=new Set(['Low','Anxious','Frustrated','Tired']);
-let IN={q:'',pre:'',win:30,goal:'',busy:false,prog:'',res:null,ctl:null,paste:''},VEC=null,EMB=null,EMB_P=null,LLM=null,LLM_ID='',GPU=null;
+let IN={q:'',pre:'',win:0,goal:'',busy:false,prog:'',res:null,ctl:null,paste:'',fq:''},VEC=null,EMB=null,EMB_P=null,LLM=null,LLM_ID='';
 const fnv=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36)+s.length.toString(36)};
 
 /* ---- passages ---- */
@@ -2950,7 +3049,7 @@ async function ragRetrieve(q,o,onP){let docs=ragDocs();const since=o.win?fromN(d
   if(insSet().smart&&docs.length){try{await ensureVecs(docs,onP);const[qv]=await(await embedder(onP))([q]);lists.push(rank(docs.map(d=>{const v=VEC.get(d.h);let s=0;for(let j=0;j<v.length;j++)s+=v[j]*qv[j];return s>.2?s:0})));mode='smart'}catch(e){console.warn('smart search',e);err='Smart search couldn’t load, so keyword search was used. Check your connection and try again.'}}
   const sc=new Map();lists.forEach(l=>l.forEach((i,r)=>sc.set(i,(sc.get(i)||0)+1/(60+r))));order=[...sc.entries()].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
   const seen=new Set(order);docs.map((d,i)=>i).filter(i=>!seen.has(i)&&docs[i].kind==='entry').sort((a,b)=>docs[a].date<docs[b].date?1:-1).slice(0,Math.max(0,6-order.length)).forEach(i=>order.push(i))}
- const budget=insSet().engine==='local'?5200:12000,srcs=[];let used=0;for(const i of order){const d=docs[i];if(used+d.text.length>budget||srcs.length>=(insSet().engine==='local'?10:16))break;used+=d.text.length;srcs.push(d)}
+ const budget=insSet().engine==='local'?(IS_PHONE?3200:5200):12000,srcs=[];let used=0;for(const i of order){const d=docs[i];if(used+d.text.length>budget||srcs.length>=(insSet().engine==='local'?(IS_PHONE?6:10):16))break;used+=d.text.length;srcs.push(d)}
  return{srcs,mode,err,total:docs.length}}
 
 /* ---- numbers the app computes itself (no AI) ---- */
@@ -2974,19 +3073,44 @@ function insStats(win,goal){const tn=dnum(ymd()),from=win?tn-win+1:-1e9,inW=t=>d
  links.sort((a,b)=>b.d-a.d).slice(0,2).forEach(x=>out.push(x));
  return out}
 
-function insPrompt(q,r,stats){const nm=S.settings.name;return`You are a thoughtful, practical coach inside Plotline, ${nm?nm+'’s':'my'} personal goals, habits and journal app. Answer using ONLY the numbers and notes below, which come from my own data. Cite the notes you rely on like [3]. If the notes don’t cover something, say so in one line instead of guessing. Be warm, specific and brief. No generic advice. Today is ${ymd()}.
+/* ---- "about me": a compact overview of the whole plan, sent with every question so the model knows my context ---- */
+function insOverview(max){const td=ymd(),tn=dnum(td),dstr=t=>ymd(new Date(t)),L=[],priv=insSet().priv,nm=S.settings.name;
+ L.push(`${nm?'Name: '+nm+'. ':''}Today: ${DAYS[new Date().getDay()]} ${td}.`);
+ const act=treeOrder(S.goals.filter(g=>g.status!=='archived'));const on=act.filter(t=>t.g.status==='active'),dn=S.goals.filter(g=>g.status==='done');
+ if(on.length){L.push(`Active goals (${on.length}):`);on.forEach(({g,d})=>{const nx=g.steps.find(s=>!s.done),od=g.steps.filter(s=>!s.done&&s.due&&s.due<td).length,last=Math.max(g.createdAt||0,...g.steps.map(s=>s.doneAt||0)),idle=Math.floor((Date.now()-last)/864e5);
+  L.push(`${'  '.repeat(Math.min(d,3))}- “${g.title}” · ${areaName(g.area)} · ${Math.round(prog(g)*100)}%${g.targetDate?' · target '+g.targetDate:''}${g.priority===1?' · high priority':''}${nx?` · next: ${nx.title}${nx.due?' ('+nx.due+')':''}`:''}${od?` · ${od} overdue`:''}${idle>=14?` · no progress for ${idle} days`:''}${g.why&&d===0?` · why: ${trunc(g.why,90)}`:''}`)})}
+ else L.push('No active goals yet.');
+ const rd=dn.filter(g=>g.completedAt&&g.completedAt>Date.now()-90*864e5);if(rd.length)L.push(`Completed in the last 90 days: ${rd.map(g=>'“'+g.title+'”').join(', ')}.`);
+ const hs=S.habits.filter(h=>h.status!=='archived');if(hs.length){L.push(`Habits (${hs.length}):`);hs.forEach(h=>{let t;
+  if(h.kind==='quit'){const sl=h.slips.map(Number).filter(Boolean).sort((a,b)=>b-a);t=h.mode==='limit'?`limit ${h.limit}${h.unit?' '+h.unit:''} a day`:`breaking it · clean ${Math.floor((Date.now()-(sl[0]||h.start))/864e5)} days · ${sl.length} slips`}
+  else{let due=0,d2=0;for(let k=tn-29;k<=tn;k++){const ds=fromN(k);if(hCounts(h,ds)){due++;if(hDone(h,ds))d2++}}t=`${h.kind==='routine'?'routine':'building'} · streak ${hStreak(h)} · kept ${d2} of ${due} due days (30d)${h.cue?' · cue: '+trunc(h.cue,50):''}`}
+  L.push(`- “${h.title}” · ${t}${h.status==='paused'?' · paused':''}`)})}
+ const mw=(a,b)=>{const c={};S.entries.forEach(e=>{if(e.type!=='note'||(e.private&&!priv))return;const k=dnum(dstr(e.t)),m=MOODN[e.mood];if(m&&k>tn-a&&k<=tn-b)c[m]=(c[m]||0)+1});return c};
+ const m1=mw(30,0),m0=mw(60,30),pos=c=>{const v=Object.entries(c),n=v.reduce((a,x)=>a+x[1],0);return n?Math.round(v.filter(x=>MOOD_POS.has(x[0])).reduce((a,x)=>a+x[1],0)/n*100):null};
+ if(Object.keys(m1).length){const p1=pos(m1),p0=pos(m0);L.push(`Moods, last 30 days: ${Object.entries(m1).sort((a,b)=>b[1]-a[1]).map(([m,n])=>m+' '+n).join(', ')} (${p1}% positive${p0!=null?`, vs ${p0}% the 30 days before`:''}).`)}
+ const tg=S.days.filter(x=>x.date===td);if(tg.length)L.push(`Today’s plan: ${tg.map(x=>x.title+(x.done?' ✓':'')).join('; ')}.`);
+ let s=L.join('\n');if(s.length>max)s=s.slice(0,max-1)+'…';return s}
 
-QUESTION
-${q}
+function insPrompt(q,r,stats,W=IN.win){const loc=insSet().engine==='local',nm=S.settings.name;return`You are a thoughtful, practical coach inside Plotline, ${nm?nm+'’s':'my'} personal goals, habits and journal app. You know my plan from ABOUT ME and NUMBERS, and my own words from NOTES. Answer using ONLY this data. Cite the notes you rely on like [3]. If the data doesn’t cover something, say so in one line instead of guessing. Talk to me directly, warm and specific. No generic advice.
 
-NUMBERS (computed by the app${IN.win?`, last ${IN.win} days`:''})
+ABOUT ME
+${insOverview(loc?(IS_PHONE?1200:1800):4000)}
+
+NUMBERS (computed by the app${W?`, last ${W} days`:''})
 ${stats.map(s=>'- '+s.t).join('\n')||'- none'}
 
 NOTES (most relevant first)
 ${r.srcs.map((d,i)=>`[${i+1}] ${d.text}`).join('\n')||'(no matching notes)'}
 
+QUESTION
+${q}
+
 ANSWER FORMAT
 Two to five short paragraphs or bullets, citing notes like [2]. End with one small next step for this week, starting with "Next step:".`}
+function insFollowMsg(q,fresh,base){return`FOLLOW-UP QUESTION
+${q}
+${fresh.length?`\nMORE NOTES\n${fresh.map((d,i)=>`[${base+i+1}] ${d.text}`).join('\n')}\n`:''}
+Answer the same way, using everything above. Cite notes like [${base+1}]. End with "Next step:" only if it helps.`}
 
 /* ---- answer engines ---- */
 async function apiChat(msgs,onTok,signal){const s=insSet(),key=aiKey();if(!s.url)throw new Error('Add your AI server address first');
@@ -2995,47 +3119,107 @@ async function apiChat(msgs,onTok,signal){const s=insSet(),key=aiKey();if(!s.url
  if(!r.body||!(r.headers.get('content-type')||'').includes('event-stream')){const j=await r.json();onTok(j.choices?.[0]?.message?.content||'');return}
  const rd=r.body.getReader(),dec=new TextDecoder();let buf='';for(;;){const{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
   while((i=buf.indexOf('\n'))>=0){const ln=buf.slice(0,i).trim();buf=buf.slice(i+1);if(!ln.startsWith('data:'))continue;const d=ln.slice(5).trim();if(d==='[DONE]')return;try{const t=JSON.parse(d).choices?.[0]?.delta?.content;if(t)onTok(t)}catch(e){}}}}
-async function hasGPU(){if(GPU!=null)return GPU;try{GPU=!!(navigator.gpu&&await navigator.gpu.requestAdapter())}catch(e){GPU=false}return GPU}
-async function localChat(msgs,onTok,onP){const id=insSet().llm;if(!LLM||LLM_ID!==id){const W=await import(RAG_CFG.webllm);if(LLM)try{await LLM.unload()}catch(e){}LLM=null;
-  LLM=await W.CreateMLCEngine(id,{initProgressCallback:p=>onP&&onP(p.text||'Loading the on-device model…')});LLM_ID=id}
- const it=await LLM.chat.completions.create({messages:msgs,stream:true,temperature:.4,max_tokens:700,extra_body:{enable_thinking:false}});for await(const c of it){const t=c.choices?.[0]?.delta?.content;if(t)onTok(t);if(IN.ctl&&IN.ctl.signal.aborted){try{LLM.interruptGenerate()}catch(e){}break}}}
+/* on-device: wllama (llama.cpp in WebAssembly, bundled with the app) runs an open-source GGUF model on the CPU, or on the GPU through WebGPU when there is one */
+const llmOf=id=>LLMS.find(m=>m[0]===id)||LLMS[0];
+/* phones: CPU only (mobile WebGPU drivers can freeze the phone or return garbage), leave cores free for the UI, smaller context */
+const IS_PHONE=!!NATIVE||/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+const useGPU=()=>{const g=insSet().gpu;return g==null?!IS_PHONE:!!g};
+async function localLLM(onP,cpuOnly){const m=llmOf(insSet().llm),gpu=useGPU()&&!cpuOnly,key=m[0]+(gpu?':gpu':':cpu');if(LLM&&LLM_ID===key)return LLM;
+ const{Wllama}=await import(RAG_CFG.wllama);if(LLM)try{await LLM.exit()}catch(e){}LLM=null;LLM_ID='';
+ const w=new Wllama({default:new URL(RAG_CFG.wllamaWasm,location.href).href},{suppressNativeLog:true,allowOffline:true});const hc=navigator.hardwareConcurrency||4;
+ await w.loadModelFromUrl(m[2],{n_ctx:RAG_CFG.nctx||(IS_PHONE?(m[3]>1.5?2560:3072):4096),n_gpu_layers:gpu?999:0,...(IS_PHONE?{n_threads:Math.max(1,Math.min(4,hc-2))}:{}),progressCallback:({loaded,total})=>onP&&total&&onP(`Downloading ${m[1].split(' · ')[0]} · ${Math.round(loaded/1048576)} of ${Math.round(total/1048576)} MB · once, then offline`)});
+ LLM=w;LLM_ID=key;return w}
+/* if the prompt is too long for the model, drop the least relevant notes (they come last) and try again */
+const insShrink=msgs=>msgs.map(m=>{if(m.role!=='user'||!/\n\[\d+\] /.test(m.content))return m;const L=m.content.split('\n'),ix=L.map((l,i)=>/^\[\d+\] /.test(l)?i:-1).filter(i=>i>=0);const cut=new Set(ix.slice(Math.ceil(ix.length*.5)));return{...m,content:L.filter((l,i)=>!cut.has(i)).map(l=>l.length>700&&/^\[\d+\] /.test(l)?l.slice(0,700)+'…':l).join('\n')}});
+/* garbled output (runs of commas, a token repeating): stop early instead of filling the screen */
+const garbled=s=>{if(RAG_CFG.noGuard)return false;if(/([^\p{L}\p{N}\s])\1{9,}/u.test(s)||/(\S{1,6})\1{9,}/u.test(s))return true;if(s.length<80)return false;const l=(s.match(/[\p{L}\p{N}]/gu)||[]).length;return l/s.length<.35};
+async function localChat(msgs,onTok,onP,tries=0,reset,cpuOnly){const w=await localLLM(onP,cpuOnly);const t0=Date.now(),tick=setInterval(()=>onP&&!got&&onP(`Reading your notes on this device… ${Math.round((Date.now()-t0)/1000)}s`),1000);let got=false,acc='',bad=false;const ctl=new AbortController();const outer=IN.ctl&&IN.ctl.signal;if(outer)outer.addEventListener('abort',()=>ctl.abort(),{once:true});
+ try{await w.createChatCompletion({messages:msgs,stream:true,max_tokens:IS_PHONE?450:600,temperature:.3,top_k:40,top_p:.9,repeat_penalty:1.15,abortSignal:ctl.signal,onData:c=>{const t=c.choices?.[0]?.delta?.content;if(!t||bad)return;acc+=t;if(garbled(acc)){bad=true;ctl.abort();return}got=true;onTok(t)}})}
+ catch(e){if(!(e&&e.name==='AbortError'||bad||(outer&&outer.aborted))){clearInterval(tick);if(!got&&tries<2&&/context/i.test(e&&e.message||''))return localChat(insShrink(msgs),onTok,onP,tries+1,reset,cpuOnly);try{await w.exit()}catch(_){}LLM=null;LLM_ID='';if(!got)throw e}}
+ clearInterval(tick);
+ if(bad&&!(outer&&outer.aborted)){try{await w.exit()}catch(_){}LLM=null;LLM_ID='';reset&&reset();
+  if(!cpuOnly&&useGPU()){onP&&onP('The GPU gave garbled text. Retrying on the CPU…');return localChat(msgs,onTok,onP,tries,reset,true)}
+  throw new Error('The on-device model got confused. Try again, or pick a bigger model under “How answers are made”.')}}
+/* ---- Android app: native llama.cpp (llama-server built for arm64, run by LocalLlm.java), 3–5× faster than wasm ---- */
+let NAT_ST=null;const natSt=()=>{try{return NAT_ST=JSON.parse(NATIVE.llmStatus())}catch(e){return NAT_ST={ok:false}}};
+const NAT_OK=()=>!!(NATIVE&&NATIVE.llmStatus)&&(NAT_ST||natSt()).ok;
+const LLMCB={};window.__llm=(id,k,t)=>{const f=LLMCB[id];if(f)f(k,t)};
+const natFile=m=>(m[4]||m[2]).split('/').pop();
+const natHave=m=>!!(natSt().have||{})[natFile(m)];
+const natCtx=m=>(m[5]||m[3])>1.5?3072:4096,natThreads=()=>Math.max(2,Math.min(4,(NAT_ST&&NAT_ST.cores)||4));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let NAT_WARM='';
+function natWarm(){if(!NAT_OK()||insSet().engine!=='local')return;const m=llmOf(insSet().llm);if(NAT_WARM===m[0]||!natHave(m)||natSt().running===natFile(m))return;NAT_WARM=m[0];const id='w'+uid();LLMCB[id]=()=>{delete LLMCB[id]};NATIVE.llmStart(id,natFile(m),natCtx(m),natThreads())}
+async function natEnsure(m,onP){const f=natFile(m),gb=m[5]||m[3];
+ if(!natHave(m)){if(!(natSt().dl||{}).busy)NATIVE.llmDownload(m[4]||m[2],f);
+  for(;;){await sleep(700);if(IN.ctl&&IN.ctl.signal.aborted)throw Object.assign(new Error('stopped'),{name:'AbortError'});const st=natSt();if(st.have&&st.have[f])break;const d=st.dl||{};
+   if(!d.busy&&d.err)throw new Error('The model couldn’t download ('+d.err+'). Check your connection and try again.');
+   onP&&onP(`Downloading ${m[1].split(' · ')[0]} · ${Math.round((d.loaded||0)/1048576)} of ${d.total?Math.round(d.total/1048576):Math.round(gb*1024)} MB · once, then offline`)}}
+ if(natSt().running===f)return;onP&&onP('Loading the model on this phone…');
+ await new Promise((res,rej)=>{const id='s'+uid();LLMCB[id]=(k,t)=>{if(k!=='ready'&&k!=='err')return;delete LLMCB[id];k==='ready'?res():rej(new Error(t))};NATIVE.llmStart(id,f,natCtx(m),natThreads())})}
+async function natChat(msgs,onTok,onP,reset){const m=llmOf(insSet().llm);await natEnsure(m,onP);const t0=Date.now();let got=false,acc='';
+ const tick=setInterval(()=>{if(!got&&onP)onP(`Reading your notes on this phone… ${Math.round((Date.now()-t0)/1000)}s`)},1000);
+ try{await new Promise((res,rej)=>{const id='c'+uid();const stop=()=>NATIVE.llmCancel(id);if(IN.ctl)IN.ctl.signal.addEventListener('abort',stop,{once:true});
+  LLMCB[id]=(k,t)=>{if(k==='t'){acc+=t;if(garbled(acc)){stop();delete LLMCB[id];reset&&reset();rej(new Error('The model got confused. Try again, or pick a different model under “How answers are made”.'));return}if(!got){got=true;clearInterval(tick);onP&&onP('')}onTok(t);return}
+   delete LLMCB[id];k==='done'?res():rej(new Error(/memory|stopped|killed/i.test(t)?t:'On-device answer failed: '+t))};
+  NATIVE.llmChat(id,JSON.stringify({messages:msgs,max_tokens:IS_PHONE?450:600,temperature:.3,top_k:40,top_p:.9,repeat_penalty:1.1}))})}
+ finally{clearInterval(tick)}}
+/* follow-ups on a small on-device model: keep the first prompt and the last exchange so it fits the context window */
+const insMsgs=R=>{const m=R.msgs;if(R.engine!=='local'||m.length<=4)return m;return[m[0],m[1],...m.slice(-3)]};
 
 /* ---- answer text → safe HTML with clickable citations ---- */
 function mdLite(s,n){s=String(s||'').replace(/<think>[\s\S]*?(<\/think>|$)/g,'').trim();let h=esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[\s(])\*(?!\s)([^*\n]+?)\*(?=[\s).,;:!?]|$)/g,'$1<i>$2</i>');
  h=h.replace(/\[(\d{1,2}(?:\s*[,–-]\s*\d{1,2})*)\]/g,(m,g)=>{const ids=[];g.split(/\s*,\s*/).forEach(p=>{const[a,b]=p.split(/\s*[–-]\s*/).map(Number);for(let k=a;k<=(b||a)&&k<a+8;k++)ids.push(k)});const bs=ids.filter(k=>k>=1&&k<=n).map(k=>`<button class="cite" data-act="insSrc" data-i="${k-1}" aria-label="Source ${k}">${k}</button>`).join('');return bs||m});
  let out='',ul=false;h.split('\n').forEach(l=>{const m=/^\s*(?:[-*•]|\d+[.)])\s+(.*)/.exec(l);if(m){if(!ul){out+='<ul>';ul=true}out+=`<li>${m[1]}</li>`;return}if(ul){out+='</ul>';ul=false}if(/^\s*#{1,4}\s+/.test(l))out+=`<h4>${l.replace(/^\s*#+\s+/,'')}</h4>`;else if(l.trim())out+=`<p>${l.replace(/^(Next step:)/,'<b>$1</b>')}</p>`});if(ul)out+='</ul>';return out}
 
-/* ---- view ---- */
-const INS_PRE=[{k:'week',n:'Weekly reflection',q:'Reflect on my last 7 days: what went well, what slipped, and what pattern do you notice? Suggest one adjustment for next week.',win:7,all:true},
- {k:'mood',n:'What lifts my mood',q:'Looking at my moods, journal notes and habits, what seems to lift my mood and what drags it down?',kw:'feel happy calm energized grateful low anxious tired frustrated',win:90,kinds:['entry','habit']},
- {k:'stuck',n:'Where I’m stuck',q:'Which goals have stalled, and what in my notes suggests why? Suggest one small restart step for each.',kw:'stuck overdue delay hard skip',win:0,kinds:['goal','entry']},
- {k:'habits',n:'Habit patterns',q:'What patterns do you see in my habits: when do I keep them and when do I slip? What would make them easier?',kw:'habit streak missed skip slip routine',win:60,kinds:['habit','entry','day']},
- {k:'wins',n:'Wins to celebrate',q:'What have I accomplished recently that I should be proud of? Be specific.',win:30,all:true}];
+/* ---- Ask: a private assistant over your own plan ---- */
+const INS_PRE=[{k:'week',n:'Weekly reflection',d:'What went well, what slipped',q:'Reflect on my last 7 days: what went well, what slipped, and what pattern do you notice? Suggest one adjustment for next week.',win:7,all:true},
+ {k:'mood',n:'What lifts my mood',d:'Patterns in moods and habits',q:'Looking at my moods, journal notes and habits, what seems to lift my mood and what drags it down?',kw:'feel happy calm energized grateful low anxious tired frustrated',win:90,kinds:['entry','habit']},
+ {k:'stuck',n:'Where I’m stuck',d:'Stalled goals and a restart step',q:'Which goals have stalled, and what in my notes suggests why? Suggest one small restart step for each.',kw:'stuck overdue delay hard skip',win:0,kinds:['goal','entry']},
+ {k:'habits',n:'Habit patterns',d:'When I keep them, when I slip',q:'What patterns do you see in my habits: when do I keep them and when do I slip? What would make them easier?',kw:'habit streak missed skip slip routine',win:60,kinds:['habit','entry','day']},
+ {k:'wins',n:'Wins to celebrate',d:'What I’ve achieved lately',q:'What have I accomplished recently that I should be proud of? Be specific.',win:30,all:true}];
 const INS_WIN=[[7,'7 days'],[30,'30 days'],[90,'90 days'],[0,'All time']];
-const ENG_N={copy:'Copy to any AI',api:'Your AI server',local:'On this device'};
-function vInsights(){if(GPU==null)hasGPU().then(v=>{if(!v&&insPage())render(false)});const s=insSet(),R=IN.res,pre=INS_PRE.find(p=>p.k===IN.pre);const tops=S.goals.filter(g=>!g.parent||!G(g.parent));
- const stats=insStats(IN.win,IN.goal);
- return`<section class="ins">
- <div class="panel rv ins-ask"><h3>Ask about your plan</h3><p class="small muted">Answers come from your own journal, goals, steps and habits. The search runs on this device${s.smart?' with smart search':''}.</p>
-  <textarea id="insQ" rows="2" placeholder="e.g. What seems to lift my mood? Why do I keep skipping my run?">${esc(IN.q)}</textarea>
-  <div class="chips ins-pre">${INS_PRE.map(p=>`<button class="chip ${IN.pre===p.k?'on':''}" data-act="insPre" data-k="${p.k}">${p.n}</button>`).join('')}</div>
-  <div class="ins-opts"><div class="radios sm wrap" role="radiogroup" aria-label="Time range">${INS_WIN.map(([v,n])=>`<label><input type="radio" name="insWin" data-ins="win" value="${v}" ${IN.win===v?'checked':''}><span>${n}</span></label>`).join('')}</div>
-   <select data-ins="goal" aria-label="Focus"><option value="">Whole plan</option>${treeOrder(S.goals).filter(t=>tops.includes(t.g)||t.d<2).map(t=>`<option value="${t.g.id}" ${IN.goal===t.g.id?'selected':''}>${'· '.repeat(t.d||0)}${esc(trunc(t.g.title,48))}</option>`).join('')}</select></div>
-  <div class="actions left"><button class="btn pri" data-act="insAsk" ${IN.busy?'disabled':''}>${ic('ai')}${IN.busy?'Working…':'Find insights'}</button>${IN.busy?`<button class="btn ghost" data-act="insStop">Stop</button>`:''}<button class="link small" data-act="insEng">Answer with: ${ENG_N[s.engine]}</button></div>
-  <p class="small muted ins-prog" id="insProg" aria-live="polite">${esc(IN.prog)}</p></div>
- <div class="ins-stats rv">${stats.map(x=>`<div class="ins-st ${x.hl?'hl':''}" title="${esc(x.t)}"><b>${esc(String(x.v))}</b><span>${esc(x.k)}</span>${x.hl?`<small>${esc(x.t)}</small>`:''}</div>`).join('')}</div>
- ${R?insResult(R):''}
- ${insEngineHTML()}
- </section>`}
-function insResult(R){const s=R.srcs;return`<div class="panel rv ins-res"><div class="data">${esc(trunc(R.q,90))}</div>
- ${R.err?`<p class="small err" style="margin-top:8px">${esc(R.err)}</p>`:''}
- ${R.engine==='copy'&&!R.answer?`<h3 style="margin-top:10px">Your insight prompt is ready</h3><p class="small muted">It holds your question, ${s.length} matching note${s.length===1?'':'s'} and the numbers above — nothing else. Paste it into any assistant.</p><div class="actions left"><button class="btn pri" data-act="insCopy">${ic('copy')}Copy prompt</button><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Claude ${ic('ext','ico-s')}</a><a class="btn" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ${ic('ext','ico-s')}</a><a class="btn" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ${ic('ext','ico-s')}</a></div>
-  <textarea id="insPaste" rows="3" placeholder="Paste the reply here to keep it with its sources" style="margin-top:14px">${esc(IN.paste)}</textarea><div class="actions left"><button class="btn" data-act="insPasted">Show reply</button></div>`
- :`<div class="ins-ans" id="insAns">${R.answer?mdLite(R.answer,s.length):'<p class="muted small">Thinking…</p>'}</div>${R.done&&R.answer?`<div class="actions left"><button class="btn" data-act="insSave">${ic('journal')}Save to journal</button><button class="btn ghost" data-act="insCopyAns">${ic('copy')}Copy</button></div>`:''}`}
- <details class="ins-src"><summary class="small">${s.length} source${s.length===1?'':'s'} · ${R.mode==='smart'?'smart + keyword search':'keyword search'}${R.total?` over ${R.total} passages`:''}</summary><ol>${s.map((d,i)=>`<li><button class="ins-si" data-act="insSrc" data-i="${i}"><span class="n">${i+1}</span><span class="t"><b>${esc(trunc(d.label,70))}</b><small>${esc(({entry:'Journal',goal:'Goal',habit:'Habit',day:'Day plan'})[d.kind])}${d.kind==='entry'||d.kind==='day'?' · '+fmtDate(d.date):''}${d.mood?' · '+esc(d.mood):''}</small></span></button></li>`).join('')}</ol></details></div>`}
-function insEngineHTML(){const s=insSet();return`<details class="panel rv ins-eng" id="insEng" ${IN.engOpen?'open':''}><summary>How answers are made</summary>
- <p class="small muted" style="margin-top:10px">Plotline finds the notes that match your question on this device, then hands only those notes to the engine you pick.</p>
- <div class="field"><label>Answer engine</label><div class="radios sm wrap">${Object.entries(ENG_N).map(([k,n])=>`<label><input type="radio" name="insE" data-ins="engine" value="${k}" ${s.engine===k?'checked':''} ${k==='local'&&GPU===false?'disabled':''}><span>${n}</span></label>`).join('')}</div></div>
+const ENG_N={local:'On this device',api:'Your AI server',copy:'Copy to any AI'};
+const insPage=()=>cur.p==='ask';
+function askEngineLabel(){const s=insSet();if(s.engine==='local')return llmOf(s.llm)[1].split(' · ')[0]+(NAT_OK()?' · on this phone':' · on this device');return s.engine==='api'?'Your AI server'+(s.model?' · '+s.model:''):'Prompt to copy into any AI'}
+/* questions written from the plan itself */
+function askIdeas(){const out=[],td=ymd();
+ const stale=S.goals.filter(g=>g.status==='active'&&g.steps.some(x=>!x.done)&&Math.max(g.createdAt||0,...g.steps.map(x=>x.doneAt||0))<Date.now()-21*864e5)[0];if(stale)out.push(`Why have I stalled on “${trunc(stale.title,40)}”?`);
+ const hs=S.habits.filter(h=>h.status==='active'&&h.kind!=='quit').map(h=>{let due=0,dn=0;for(let k=dnum(td)-13;k<=dnum(td);k++){const ds=fromN(k);if(hCounts(h,ds)){due++;if(hDone(h,ds))dn++}}return{h,r:due?dn/due:1}}).sort((a,b)=>a.r-b.r)[0];if(hs&&hs.r<.6)out.push(`How can I keep “${trunc(hs.h.title,36)}” going?`);
+ const g=S.goals.filter(x=>x.status==='active'&&x.priority===1)[0];if(g)out.push(`What should I do next for “${trunc(g.title,40)}”?`);
+ return out.slice(0,3)}
+function vAsk(){setTimeout(natWarm,300);const s=insSet(),R=IN.res,nm=S.settings.name,h=new Date().getHours(),gr=h<5?'Still up':h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+ const head=`<header class="ph ask-h"><div><h1>Ask</h1><button class="data ask-eng" data-act="askSettings">${esc(askEngineLabel())} ${ic('next','ico-s')}</button></div><div class="ph-r">${R?`<button class="ibtn" data-act="askNew" aria-label="New chat">${ic('plus')}</button>`:''}<button class="ibtn" data-act="askSettings" aria-label="Assistant settings">${ic('tune')}</button>${gear()}</div></header>`;
+ let body;
+ if(!R){const stats=insStats(IN.win,IN.goal),ideas=askIdeas();
+  body=`<div class="ask-hero rv"><div class="ask-orb">${ic('ai')}</div><h2>${gr}${nm?', '+esc(nm):''}.</h2><p class="muted">Ask anything about your goals, habits and journal. Answers come from your own notes${s.engine==='local'?', on this device':''}.</p></div>
+  <div class="ask-sugs rv">${INS_PRE.map(p=>`<button class="ask-sug" data-act="askPre" data-k="${p.k}"><b>${p.n}</b><small>${p.d}</small></button>`).join('')}${ideas.map(q=>`<button class="ask-sug idea" data-act="askIdea" data-q="${esc(q)}"><b>${esc(q)}</b><small>From your plan</small></button>`).join('')}
+   <button class="ask-sug plan" data-act="askPlan"><b>${ic('flag')}Plan something new</b><small>Turn hopes into goals and steps with AI</small></button></div>
+  <div class="ask-sig rv"><div class="small muted">Signals${IN.win?` · last ${IN.win} days`:''}</div><div class="ins-stats">${stats.map(x=>`<div class="ins-st ${x.hl?'hl':''}" title="${esc(x.t)}"><b>${esc(String(x.v))}</b><span>${esc(x.k)}</span>${x.hl?`<small>${esc(x.t)}</small>`:''}</div>`).join('')}</div></div>`}
+ else body=`<div class="ask-thread">${R.turns.map((t,i)=>askTurn(R,t,i)).join('')}</div>`;
+ const scope=`${(INS_WIN.find(w=>w[0]===IN.win)||INS_WIN[3])[1]}${IN.goal&&G(IN.goal)?' · '+esc(trunc(G(IN.goal).title,22)):''}`;
+ return`<section class="ask ${R?'has':''}">${head}${body}
+ <div class="ask-comp"><button class="ask-scope" data-act="askScope" aria-label="Search scope">${ic('search','ico-s')}<span>${scope}</span></button>
+  <div class="ask-row"><textarea id="askIn" rows="1" placeholder="${R?'Ask a follow-up…':'Ask about your goals, habits, journal…'}" aria-label="Ask">${esc(IN.q)}</textarea>
+  ${IN.busy?`<button class="ask-go stop" data-act="insStop" aria-label="Stop"><i></i></button>`:`<button class="ask-go" data-act="askSend" aria-label="Send">${ic('up')}</button>`}</div></div></section>`}
+function askTurn(R,t,i){const last=i===R.turns.length-1,n=R.srcs.length,done=R.turns.every(x=>x.done);
+ let a='';
+ if(R.pending)a=`<p class="ask-prog" id="insProg">${esc(IN.prog||'Searching your notes…')}</p>`;
+ else{if(i===0)a+=insTop(R);
+  if(R.engine==='copy'&&!t.a)a+=`<div class="ask-copy"><b>${i?'Follow-up prompt ready':'Your prompt is ready'}</b><p class="small muted">${i?'Paste it into the same chat.':`It holds your question, an overview of your plan and ${n} matching note${n===1?'':'s'}. Nothing is sent by Plotline.`}</p><div class="actions left"><button class="btn pri sm" data-act="insCopy">${ic('copy')}Copy prompt</button>${i?'':`<a class="btn sm" href="https://claude.ai/new" target="_blank" rel="noopener">Claude ${ic('ext','ico-s')}</a><a class="btn sm" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ${ic('ext','ico-s')}</a><a class="btn sm" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ${ic('ext','ico-s')}</a>`}</div><textarea id="insPaste" rows="3" placeholder="Paste the reply here to keep it with its sources">${esc(IN.paste)}</textarea><div class="actions left"><button class="btn sm" data-act="insPasted">Show reply</button></div></div>`;
+  else{a+=`${t.err?`<p class="small err">${esc(t.err)}</p>`:''}<div class="ins-ans" ${last?'id="insAns"':''}>${t.a?mdLite(t.a,n):t.done?'':'<p class="ask-dots"><i></i><i></i><i></i></p>'}</div>`;
+   if(last&&!t.done)a+=`<p class="ask-prog" id="insProg">${esc(IN.prog)}</p>`}
+  if(last&&done&&R.turns.some(x=>x.a))a+=`<div class="ask-acts"><button class="btn sm ghost" data-act="insSave">${ic('journal')}Save to journal</button><button class="btn sm ghost" data-act="insCopyAns">${ic('copy')}Copy</button>${n?`<button class="btn sm ghost" data-act="askSources">${n} source${n===1?'':'s'}</button>`:''}</div>`}
+ return`<div class="ask-turn"><div class="ask-me">${esc(t.q)}</div><div class="ask-ai"><span class="ask-av">${ic('ai')}</span><div class="ask-body">${a}</div></div></div>`}
+function askScroll(force){requestAnimationFrame(()=>{const near=innerHeight+scrollY>=document.documentElement.scrollHeight-260;if(force||near)window.scrollTo({top:document.documentElement.scrollHeight,behavior:force&&!reduced()?'smooth':'auto'})})}
+function askSetRefresh(){const sh=$('#sheet');if(sh&&sh.classList.contains('on')&&$('#askSet')){const y=sh.scrollTop;ACT.askSettings();sh.scrollTop=y}}
+const insProg=t=>{IN.prog=t||'';const p=$('#insProg');if(p)p.textContent=IN.prog};
+let INS_RAF=0;function insPaint(){if(INS_RAF)return;INS_RAF=requestAnimationFrame(()=>{INS_RAF=0;const a=$('#insAns'),R=IN.res;if(a&&R){const t=R.turns[R.turns.length-1];a.innerHTML=mdLite(t.a,R.srcs.length)||'<p class="ask-dots"><i></i><i></i><i></i></p>';askScroll()}})}
+function insTop(R){const top=R.srcs.slice(0,3);if(!top.length)return'';const q=R.turns[0].q,dated=R.srcs.slice(0,6).filter(d=>d.kind==='entry'),first=/^\s*(when|since when|how long)\b/i.test(q)&&dated.length?dated.reduce((a,b)=>a.date<=b.date?a:b):null;return`<div class="ins-top">${first?`<div class="ins-first"><span class="k">Earliest matching note</span><b>${esc(fmtDate(first.date))}</b><small>${esc(trunc(first.label,80))} · ${Math.max(0,-daysUntil(first.date))} days ago</small></div>`:''}<div class="small muted">Best matches in your notes</div>${top.map((d,i)=>{const body=d.text.slice(d.text.indexOf(': ')+2);return`<button class="ins-tc" data-act="insSrc" data-i="${i}"><span class="k">${esc(({entry:'Journal',goal:'Goal',habit:'Habit',day:'Day plan'})[d.kind])}${d.kind==='entry'||d.kind==='day'?' · '+esc(fmtDate(d.date)):''}${d.mood?' · '+esc(d.mood):''}</span><b>${esc(trunc(d.label,70))}</b><small>${esc(trunc(body,110))}</small></button>`}).join('')}</div>`}
+function insEngineHTML(){const s=insSet();return`<div class="ins-eng" id="askSet">
+ <p class="small muted">Plotline builds a short overview of your plan and finds the notes that match your question on this device. Only that goes to the engine you pick.</p>
+ <div class="field"><label>Answer engine</label><div class="radios sm wrap">${Object.entries(ENG_N).map(([k,n])=>`<label><input type="radio" name="insE" data-ins="engine" value="${k}" ${s.engine===k?'checked':''}><span>${n}</span></label>`).join('')}</div></div>
+ ${s.engine==='local'?`<p class="small muted">An open-source model runs ${NAT_OK()?'natively on this phone with llama.cpp':'inside '+(NATIVE?'the app':'this browser')+' with llama.cpp (wllama)'}. It downloads once, then works offline. Nothing leaves this device. Smaller models answer faster; bigger ones understand more.</p><div class="field"><label>Model</label><select data-ins="llm">${LLMS.map(([k,n])=>`<option value="${k}" ${llmOf(s.llm)[0]===k?'selected':''}>${n}${NAT_OK()&&natHave(llmOf(k))?' · on this phone':''}</option>`).join('')}</select></div>${NAT_OK()&&natHave(llmOf(s.llm))?`<div class="actions left"><button class="btn sm ghost" data-act="insDelModel">Delete this model from the phone</button></div>`:''}`:''}
  ${s.engine==='copy'?`<p class="small muted">You copy a ready-made prompt into Claude, ChatGPT, Gemini or any assistant. Plotline itself sends nothing.</p>`:''}
  ${s.engine==='api'?`<p class="small muted">Any OpenAI-compatible server. Open-source models on your own computer with Ollama or LM Studio keep everything at home. The key stays on this device and is never synced or backed up.</p>
   <div class="chips" style="margin:10px 0">${API_PRE.map(([n,u,m])=>`<button class="chip ${s.url===u?'on':''}" data-act="insApiPre" data-u="${u}" data-m="${m}">${n}</button>`).join('')}</div>
@@ -3044,48 +3228,91 @@ function insEngineHTML(){const s=insSet();return`<details class="panel rv ins-en
   <div class="field"><label for="insKey">API key <small class="muted">(not needed for Ollama)</small></label><input id="insKey" data-ins="key" type="password" value="${esc(aiKey())}" autocomplete="off"></div>
   <p class="small muted">For Ollama on your computer, start it with <code>OLLAMA_ORIGINS=${esc(NATIVE?'https://appassets.androidplatform.net':location.origin)}</code>. The phone app needs an https address (for example through Tailscale).</p>
   <div class="actions left"><button class="btn sm" data-act="insTest">Test connection</button></div>`:''}
- ${s.engine==='local'?`<p class="small muted">An open-source model runs inside ${NATIVE?'the app':'this browser'} with WebLLM. It downloads once, then works offline. Nothing leaves this device.</p><div class="field"><label>Model</label><select data-ins="llm">${LLMS.map(([k,n])=>`<option value="${k}" ${s.llm===k?'selected':''}>${n}</option>`).join('')}</select></div>`:''}
- ${GPU===false?`<p class="small muted">On this device answers can’t run locally (no WebGPU). Pick another engine.</p>`:''}
+ ${s.engine==='local'&&!NAT_OK()?`<label class="sw"><span>Use the GPU<small>Faster on laptops. Off on phones by default, where it can freeze the device or garble answers.</small></span><input type="checkbox" data-ins="gpu" ${useGPU()?'checked':''}><i></i></label>`:''}
  <label class="sw"><span>Smart search<small>Finds notes by meaning, not just words. Downloads a 23 MB open-source model (all-MiniLM-L6-v2) once.</small></span><input type="checkbox" data-ins="smart" ${s.smart?'checked':''}><i></i></label>
  <label class="sw"><span>Include private entries<small>Off by default. Private journal entries stay out of every search and prompt.</small></span><input type="checkbox" data-ins="priv" ${s.priv?'checked':''}><i></i></label>
- ${s.smart?`<div class="actions left"><button class="btn sm ghost" data-act="insReindex">Rebuild search index</button></div>`:''}</details>`}
-const insProg=t=>{IN.prog=t||'';const p=$('#insProg');if(p)p.textContent=IN.prog};
-let INS_RAF=0;function insPaint(){if(INS_RAF)return;INS_RAF=requestAnimationFrame(()=>{INS_RAF=0;const a=$('#insAns');if(a&&IN.res)a.innerHTML=mdLite(IN.res.answer,IN.res.srcs.length)||'<p class="muted small">Thinking…</p>'})}
-const insPage=()=>cur.p==='ai'&&AI.tab==='insights';
+ <div class="actions left">${s.smart?`<button class="btn sm ghost" data-act="insReindex">Rebuild search index</button>`:''}<button class="btn sm ghost" data-act="insAbout">See what the AI knows about you</button></div></div>`}
+async function insRun(){const R=IN.res,t=R.turns[R.turns.length-1];if(R.engine==='copy'){IN.busy=false;insProg('');render(false);return}
+ insProg(R.engine==='local'?(LLM&&LLM_ID.startsWith(llmOf(insSet().llm)[0]+':')?'Thinking on this device…':'Starting the on-device model…'):'Asking your AI server…');render(false);askScroll(true);
+ const onTok=x=>{if(!t.a)insProg('');t.a+=x;insPaint()};
+ try{if(R.engine==='api')await apiChat(insMsgs(R),onTok,IN.ctl.signal);else if(NAT_OK())await natChat(insMsgs(R),onTok,insProg,()=>{t.a='';insPaint()});else await localChat(insMsgs(R),onTok,insProg,0,()=>{t.a='';insPaint()});if(!t.a.trim()&&!IN.ctl.signal.aborted)t.err='The model returned an empty answer.'}
+ catch(e){if(e.name!=='AbortError')t.err=(e&&e.message||'Something went wrong')+(R.engine==='api'&&/fetch|network|load/i.test(e.message||'')?' · Check the address, that the server is running, and that it allows this app (CORS).':R.engine==='local'&&/fetch|network|download/i.test(e.message||'')?' · The model couldn’t download. Check your connection and try again.':R.engine==='local'&&/memory|alloc|oom|abort|range/i.test(e.message||'')?' · This device may not have enough free memory for this model. Close other apps, or pick Llama 3.2 1B in the assistant settings.':'')}
+ if(t.a)R.msgs.push({role:'assistant',content:t.a.replace(/<think>[\s\S]*?<\/think>/g,'').trim()});t.done=true;IN.busy=false;insProg('');if(insPage())render(false)}
 Object.assign(ACT,{
- insPre:d=>{const p=INS_PRE.find(x=>x.k===d.k);if(!p)return;if(IN.pre===p.k){IN.pre='';IN.q=''}else{IN.pre=p.k;IN.q=p.q;IN.win=p.win}render(false)},
- insEng:()=>{IN.engOpen=true;render(false);setTimeout(()=>$('#insEng')?.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'start'}),60)},
- insAsk:async()=>{if(IN.busy)return;const p=INS_PRE.find(x=>x.k===IN.pre);const q=IN.q.trim();if(!q)return toast('Ask a question or pick one of the suggestions');
+ askSend:()=>{const q=(IN.q||'').trim();if(!q||IN.busy)return;if(IN.res&&!IN.res.pending){IN.q='';ACT.insFollow(null,null,null,q)}else ACT.insAsk(null,null,null,q)},
+ askPre:d=>{const p=INS_PRE.find(x=>x.k===d.k);if(!p)return;IN.pre=p.k;ACT.insAsk(null,null,null,p.q)},
+ askIdea:d=>ACT.insAsk(null,null,null,d.q),
+ askPlan:()=>{AI.tab='new';go('ai')},
+ askOpen:()=>{go('ask');setTimeout(()=>$('#askIn')?.focus(),450)},
+ askNew:()=>{IN.ctl&&IN.ctl.abort();IN.res=null;IN.busy=false;IN.q='';IN.prog='';render(false);window.scrollTo(0,0);setTimeout(()=>$('#askIn')?.focus(),60)},
+ askSettings:()=>openSheet(`<h2>Assistant settings</h2>${insEngineHTML()}<div class="actions"><button class="btn" data-act="close">Done</button></div>`),
+ askScope:()=>openSheet(`<h2>What to search</h2><p class="small muted">Answers use notes from this time range. Goals and habits are always included.</p><div class="field"><label>Time range</label><div class="radios sm wrap">${INS_WIN.map(([v,n])=>`<label><input type="radio" name="insWin" data-ins="win" value="${v}" ${IN.win===v?'checked':''}><span>${n}</span></label>`).join('')}</div></div><div class="field"><label>Focus</label><select data-ins="goal"><option value="">Whole plan</option>${treeOrder(S.goals).filter(t=>t.d<2).map(t=>`<option value="${t.g.id}" ${IN.goal===t.g.id?'selected':''}>${'· '.repeat(t.d||0)}${esc(trunc(t.g.title,48))}</option>`).join('')}</select></div><div class="actions"><button class="btn pri" data-act="close">Done</button></div>`),
+ askSources:()=>{const R=IN.res;if(!R)return;openSheet(`<h2>Sources</h2><p class="small muted">${R.mode==='smart'?'Smart + keyword search':'Keyword search'}${R.total?` over ${R.total} passages`:''}, plus an overview of your plan.</p><ol class="ins-src-l">${R.srcs.map((d,i)=>`<li><button class="ins-si" data-act="insSrc" data-i="${i}"><span class="n">${i+1}</span><span class="t"><b>${esc(trunc(d.label,70))}</b><small>${esc(({entry:'Journal',goal:'Goal',habit:'Habit',day:'Day plan'})[d.kind])}${d.kind==='entry'||d.kind==='day'?' · '+fmtDate(d.date):''}${d.mood?' · '+esc(d.mood):''}</small></span></button></li>`).join('')}</ol><div class="actions"><button class="btn" data-act="close">Done</button></div>`)},
+ insFollow:async(d,el,ev,qq)=>{const R=IN.res,q=String(qq||'').trim();if(!R||IN.busy||!q)return;IN.busy=true;IN.paste='';IN.ctl=new AbortController();R.turns.push({q,a:'',done:false,err:''});insProg('Searching your notes…');render(false);askScroll(true);
+  let fresh=[];try{const r=await ragRetrieve(q,R.opt,insProg);const have=new Set(R.srcs.map(d=>d.id));fresh=r.srcs.filter(d=>!have.has(d.id)).slice(0,R.engine==='local'?4:8)}catch(e){}
+  const msg=insFollowMsg(q,fresh,R.srcs.length);R.srcs.push(...fresh);R.msgs.push({role:'user',content:msg});R.prompt=msg;await insRun()},
+ insAsk:async(d,el,ev,qq)=>{if(IN.busy)return;const q=String(qq||IN.q||'').trim(),p=INS_PRE.find(x=>x.k===IN.pre&&x.q===q);if(!q)return toast('Ask a question or pick one of the suggestions');
+  {const s=insSet(),m=llmOf(s.llm),gb=NAT_OK()?(m[5]||m[3]):m[3];if(s.engine==='local'&&(gb||0)>=1&&!(s.dl||{})[m[0]]&&!(NAT_OK()&&natHave(m)))return askConfirm('Download '+esc(m[1].split(' · ')[0])+'?',`This downloads ${gb} GB once from Hugging Face, then answers work offline. Use Wi-Fi.${gb>1.5?' It needs about 3 GB of free memory, and on a phone each answer can take a minute or more.':''}`,'Download',()=>{s.dl={...(s.dl||{}),[m[0]]:1};save();closeSheet();ACT.insAsk(null,null,null,q)},false)}
   if(!S.entries.length&&!S.goals.length&&!S.habits.length)return toast('Add a goal, habit or journal entry first');
-  const s=insSet();IN.busy=true;IN.paste='';IN.ctl=new AbortController();insProg('Searching your notes…');render(false);
-  try{const r=await ragRetrieve(p?p.q+' '+(p.kw||''):q,{win:IN.win,goal:IN.goal,all:p&&p.all,kinds:p&&p.kinds},insProg);const stats=insStats(IN.win,IN.goal);
-   IN.res={q,srcs:r.srcs,mode:r.mode,err:r.err,total:r.total,engine:s.engine,prompt:insPrompt(q,r,stats),answer:'',done:false};
-   if(s.engine==='copy'){insProg('');IN.busy=false;render(false);return}
-   insProg(s.engine==='local'?'Starting the on-device model…':'Asking your AI server…');render(false);
-   const msgs=[{role:'system',content:'You answer questions about the user’s own goals, habits and journal, using only the notes provided. Cite notes like [2].'},{role:'user',content:IN.res.prompt}];
-   const onTok=t=>{if(IN.res.answer==='')insProg('');IN.res.answer+=t;insPaint()};
-   if(s.engine==='api')await apiChat(msgs,onTok,IN.ctl.signal);else await localChat(msgs,onTok,insProg);
-   if(!IN.res.answer.trim())IN.res.err='The model returned an empty answer.';}
-  catch(e){if(IN.res&&e.name!=='AbortError')IN.res.err=(e&&e.message||'Something went wrong')+(s.engine==='api'&&/fetch|network|load/i.test(e.message||'')?' · Check the address, that the server is running, and that it allows this app (CORS).':'');else if(!IN.res)toast('Search failed: '+(e.message||e))}
-  IN.busy=false;insProg('');if(IN.res)IN.res.done=true;if(insPage())render(false)},
- insStop:()=>{IN.ctl&&IN.ctl.abort();try{LLM&&LLM.interruptGenerate()}catch(e){}},
+  const s=insSet();IN.busy=true;IN.paste='';IN.q='';IN.pre='';IN.ctl=new AbortController();IN.res={srcs:[],turns:[{q,a:'',done:false,err:''}],engine:s.engine,msgs:[],pending:1};insProg('Searching your notes…');render(false);askScroll(true);
+  try{const W=p?p.win:IN.win,r=await ragRetrieve(p?p.q+' '+(p.kw||''):q,{win:W,goal:IN.goal,all:p&&p.all,kinds:p&&p.kinds},insProg);const stats=insStats(W,IN.goal),prompt=insPrompt(q,r,stats,W);
+   IN.res={srcs:r.srcs,mode:r.mode,err:r.err,total:r.total,engine:s.engine,prompt,msgs:[{role:'system',content:'You are a personal coach. You answer questions about the user’s own goals, habits and journal, using only the data provided. Cite notes like [2].'},{role:'user',content:prompt}],turns:[{q,a:'',done:false,err:''}],opt:{win:W,goal:IN.goal}}}
+  catch(e){IN.busy=false;IN.res=null;insProg('');toast('Search failed: '+(e.message||e));render(false);return}
+  await insRun()},
+ insStop:()=>{IN.ctl&&IN.ctl.abort()},
  insCopy:async()=>toast(IN.res&&await copyText(IN.res.prompt)?'Prompt copied. Paste it into any AI':'Copy failed. Try again'),
- insPasted:()=>{if(!IN.res)return;if(!IN.paste.trim())return toast('Paste the reply first');IN.res.answer=IN.paste.trim();IN.res.done=true;render(false)},
- insCopyAns:async()=>toast(IN.res&&await copyText(IN.res.answer.replace(/<think>[\s\S]*?<\/think>/g,'').trim())?'Copied':'Copy failed'),
- insSave:()=>{const R=IN.res;if(!R||!R.answer)return;const html=cleanHTML(mdLite(R.answer,0).replace(/<button[^>]*>(\d+)<\/button>/g,'[$1]'));const text=htmlText(html);
-  S.entries.push({id:uid(),t:Date.now(),type:'note',goalId:IN.goal||null,title:'Insight · '+trunc(R.q,60),text,html,mood:'',private:false,sid:null,img:null});save();toast('Saved to your journal')},
- insSrc:d=>{const x=IN.res&&IN.res.srcs[+d.i];if(!x)return;if(x.kind==='entry'){if(S.entries.some(e=>e.id===x.ref))ACT.viewEntry({id:x.ref})}else if(x.kind==='goal')go('goal/'+x.ref);else if(x.kind==='habit')go('habit/'+x.ref);else if(x.kind==='day'){CAL.d=x.ref;S.settings.layout.cal='day';go('cal')}},
- insApiPre:d=>{const s=insSet();s.url=d.u;s.model=d.m;save();render(false)},
+ insPasted:()=>{const R=IN.res;if(!R)return;if(!IN.paste.trim())return toast('Paste the reply first');const t=R.turns[R.turns.length-1];t.a=IN.paste.trim();t.done=true;IN.paste='';R.msgs.push({role:'assistant',content:t.a});render(false)},
+ insCopyAns:async()=>{const R=IN.res;toast(R&&await copyText(R.turns.map((t,i)=>(i?'Q: '+t.q+'\n':'')+t.a.replace(/<think>[\s\S]*?<\/think>/g,'').trim()).join('\n\n'))?'Copied':'Copy failed')},
+ insSave:()=>{const R=IN.res;if(!R||!R.turns.some(t=>t.a))return;const html=cleanHTML(R.turns.map((t,i)=>(i?`<p><b>${esc(t.q)}</b></p>`:'')+mdLite(t.a,0)).join(''));const text=htmlText(html);
+  S.entries.push({id:uid(),t:Date.now(),type:'note',goalId:R.opt.goal||null,title:'Insight · '+trunc(R.turns[0].q,60),text,html,mood:'',private:false,sid:null,img:null});save();toast('Saved to your journal')},
+ insSrc:d=>{const x=IN.res&&IN.res.srcs[+d.i];if(!x)return;closeSheet();if(x.kind==='entry'){if(S.entries.some(e=>e.id===x.ref))ACT.viewEntry({id:x.ref})}else if(x.kind==='goal')go('goal/'+x.ref);else if(x.kind==='habit')go('habit/'+x.ref);else if(x.kind==='day'){CAL.d=x.ref;S.settings.layout.cal='day';go('cal')}},
+ insDelModel:()=>{const m=llmOf(insSet().llm);askConfirm('Delete '+esc(m[1].split(' · ')[0])+'?','The model file is removed from this phone. You can download it again any time.','Delete',()=>{NATIVE.llmDelete(natFile(m));NAT_WARM='';const s=insSet();if(s.dl)delete s.dl[m[0]];save();closeSheet();render(false);toast('Model deleted')})},
+ insAbout:()=>openSheet(`<h2>What the AI knows about you</h2><p class="small muted">This overview goes with every question, together with the notes that match it. It’s built on this device from your plan.</p><pre class="spec">${esc(insOverview(insSet().engine==='local'?(IS_PHONE?1200:1800):4000))}</pre><div class="actions"><button class="btn" data-act="close">Done</button></div>`),
+ insApiPre:d=>{const s=insSet();s.url=d.u;s.model=d.m;save();askSetRefresh()},
  insTest:async()=>{const s=insSet();try{const r=await fetch(s.url.replace(/\/+$/,'')+'/models',{headers:aiKey()?{Authorization:'Bearer '+aiKey()}:{}});if(!r.ok)throw new Error('status '+r.status);const j=await r.json().catch(()=>({}));const ids=(j.data||[]).map(m=>m.id);toast(ids.length?`Connected · ${ids.length} model${ids.length===1?'':'s'}${ids.includes(s.model)?'':' · “'+s.model+'” not found'}`:'Connected')}catch(e){toast('Couldn’t reach the server. Check the address and CORS')}},
  insReindex:async()=>{VEC=new Map();await DB.set('ragvec',{m:RAG_CFG.model,v:{}}).catch(()=>{});try{insProg('Rebuilding…');await ensureVecs(ragDocs(),insProg);insProg('');toast('Search index rebuilt')}catch(e){insProg('');toast('Couldn’t load the search model. Check your connection')}}
 });
-document.addEventListener('input',e=>{const t=e.target;if(t.id==='insQ'){IN.q=t.value;if(IN.pre){IN.pre='';document.querySelectorAll('.ins-pre .chip.on').forEach(c=>c.classList.remove('on'))}}else if(t.id==='insPaste')IN.paste=t.value;
+document.addEventListener('input',e=>{const t=e.target;if(t.id==='askIn'){IN.q=t.value;t.style.height='auto';t.style.height=Math.min(160,t.scrollHeight)+'px'}else if(t.id==='insPaste')IN.paste=t.value;
  else if(t.dataset&&(t.dataset.ins==='url'||t.dataset.ins==='model')){insSet()[t.dataset.ins]=t.value.trim();save()}else if(t.dataset&&t.dataset.ins==='key'){try{t.value?localStorage.setItem('plotline.aikey',t.value.trim()):localStorage.removeItem('plotline.aikey')}catch(_){}}});
+document.addEventListener('keydown',e=>{if(e.target&&e.target.id==='askIn'&&e.key==='Enter'&&!e.shiftKey&&(!IS_PHONE||e.ctrlKey||e.metaKey)){e.preventDefault();ACT.askSend()}});
 document.addEventListener('change',e=>{const t=e.target,k=t.dataset&&t.dataset.ins;if(!k||k==='url'||k==='model'||k==='key')return;const s=insSet();
- if(k==='win'){IN.win=+t.value;render(false);return}if(k==='goal'){IN.goal=t.value;render(false);return}
- if(k==='engine'||k==='llm')s[k]=t.value;else if(k==='smart'||k==='priv')s[k]=t.checked;save();IN.engOpen=true;
- if(k==='smart'&&t.checked){insProg('Preparing smart search…');ensureVecs(ragDocs(),insProg).then(()=>{insProg('');toast('Smart search is ready')}).catch(()=>{insProg('');toast('Couldn’t load the search model. Keyword search still works')})}
- render(false)});
+ if(k==='win'){IN.win=+t.value;if(insPage())render(false);return}if(k==='goal'){IN.goal=t.value;if(insPage())render(false);return}
+ if(k==='engine'||k==='llm')s[k]=t.value;else if(k==='smart'||k==='priv'||k==='gpu')s[k]=t.checked;save();
+ if(k==='smart'&&t.checked){toast('Preparing smart search…');ensureVecs(ragDocs(),()=>{}).then(()=>toast('Smart search is ready')).catch(()=>toast('Couldn’t load the search model. Keyword search still works'))}
+ if(insPage())render(false);askSetRefresh()});
+
+/* account-switch choices (helpers live with the sync code) */
+Object.assign(ACT,{
+ acctSwitch:async()=>{const em=ACCT_NEW;if(!em)return;await acctAdopt(em,true);S.settings.sync.on=true;S.settings.sync.err='';save();SHEET_LOCK=false;closeSheet();toast('Switched to '+em);await syncNow(false);render(false)},
+ acctMerge:()=>askConfirm('Copy into '+esc(ACCT_NEW)+'?',`All goals, habits and journal entries on this device will be added to ${esc(ACCT_NEW)}’s Google Drive. This can’t be undone from the app.`,'Copy and sync',async()=>{const em=ACCT_NEW;S.settings.sync.owner=lc(em);S.settings.sync.email=em;S.settings.sync.fileId='';S.settings.sync.on=true;S.settings.sync.err='';DIRTY=true;save();closeSheet();toast('Copying to '+em);await syncNow(false);render(false)},false),
+ acctCancel:()=>{const old=S.settings.sync.owner;tokDrop();ACCT={t:'',em:''};try{NATIVE&&NATIVE.googleSignOut()}catch(e){}S.settings.sync={...S.settings.sync,on:false,fileId:'',native:false,err:'',last:0,email:old||S.settings.sync.email};ACCT_NEW='';save();SHEET_LOCK=false;closeSheet();render(false);toast('Nothing synced. Your data stays as it was')},
+ syncOffKeep:()=>{closeSheet();disconnectDrive()},
+ syncOffRemove:async()=>{closeSheet();toast('Syncing one last time…');await syncNow(false);if(S.settings.sync.err||!S.settings.sync.last){toast('Couldn’t reach Drive, so your data was kept here');return}
+  S.goals=[];S.entries=[];S.days=[];S.habits=[];S.dead={};primeSig();DIRTY=false;S.settings.sync.owner='';disconnectDrive();toast('Sync turned off and this device was cleared')}
+});
+/* Vista = Timeline + Map under one tab */
+Object.assign(ACT,{vistaGo:d=>{S.settings.layout.vista=d.v;save();go(d.v)}});
+/* ---- sample data: tagged demo:1 when seeded; older installs are recognised by the sample titles ---- */
+const DEMO_T={g:['Run a 10K race','Build a 3-month emergency fund','Weekly family adventure day','Earn a professional certification','Read 12 books this year','Build a calm morning routine'],
+ h:['Drink water','Read before bed','Exercise','Pray on time','Morning routine','Family time, phones away','No added sugar','Less social media'],
+ d:['Drink 8 glasses of water','Call mom after work','45 minutes on the study guide','Clear the email inbox','Pack the lake picnic','Pay the credit card bill','Prep lunches for the week'],n:['First run in months. 2 km, slow, felt amazing.']};
+function demoSets(){const tagged=[...S.goals,...S.habits,...S.days,...S.entries].some(o=>o.demo);const legacy=!tagged&&!S.settings.demoGone;
+ const g=new Set(S.goals.filter(x=>x.demo||legacy&&DEMO_T.g.includes(x.title)).map(x=>x.id)),h=new Set(S.habits.filter(x=>x.demo||legacy&&DEMO_T.h.includes(x.title)).map(x=>x.id));
+ const d=new Set(S.days.filter(x=>x.demo||legacy&&DEMO_T.d.includes(x.title)).map(x=>x.id));
+ const e=new Set(S.entries.filter(x=>x.demo||legacy&&((x.type!=='note'&&(g.has(x.goalId)||h.has(x.hid)))||(x.type==='note'&&DEMO_T.n.includes(x.text)&&g.has(x.goalId)))).map(x=>x.id));
+ return{g,h,d,e}}
+const demoCount=()=>{const z=demoSets();return z.g.size+z.h.size+z.d.size+z.e.size};
+Object.assign(ACT,{
+ demoHide:()=>{S.settings.demoHide=true;save();render(false);toast('Hidden. You can remove sample data in Settings → Your data')},
+ demoRemove:()=>{const z=demoSets();if(!(z.g.size+z.h.size+z.d.size+z.e.size))return toast('No sample data left');
+  const mine=S.goals.length-z.g.size+S.habits.length-z.h.size+S.entries.filter(x=>x.type==='note').length-[...z.e].filter(id=>(S.entries.find(x=>x.id===id)||{}).type==='note').length;
+  askConfirm('Remove sample data?',`This removes the ${z.g.size} sample goal${z.g.size===1?'':'s'}, ${z.h.size} habit${z.h.size===1?'':'s'}, ${z.d.size} day goal${z.d.size===1?'':'s'} and their journal history${syncOn()?', here and on your other synced devices':''}. ${mine>0?'Everything you added yourself stays. Your own goals under a sample goal move up a level.':''}`,'Remove sample data',()=>{const u=undoPoint();
+   S.goals=S.goals.filter(x=>!z.g.has(x.id));S.goals.forEach(x=>{if(z.g.has(x.parent))x.parent='';x.links=(x.links||[]).filter(l=>!z.g.has(l))});
+   S.habits=S.habits.filter(x=>!z.h.has(x.id));S.habits.forEach(x=>{if(z.g.has(x.goalId))x.goalId=''});
+   S.days=S.days.filter(x=>!z.d.has(x.id));S.days.forEach(x=>{if(z.g.has(x.goalId))x.goalId=null});
+   S.entries=S.entries.filter(x=>!z.e.has(x.id));S.entries.forEach(x=>{if(z.g.has(x.goalId))x.goalId=null;if(z.h.has(x.hid))x.hid=''});
+   S.settings.demoGone=true;save();closeSheet();go('today');render(false);toast('Sample data removed',u)})}
+});
 
 </script>
 </body>
