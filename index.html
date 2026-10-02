@@ -2017,8 +2017,8 @@ html.stu-on #vin>.ph h1{display:none}html.stu-on #vin>.ph{min-height:0;margin-bo
 .st-cam{animation:none!important;transform:scale(1.02);will-change:auto}
 .narrow .st-cam{transform:none}
 .sn{animation:none!important;transition:transform .3s var(--spring),box-shadow .3s}
-.st-win .grass path,.st-cur,.st-hang .vine,.st-rays polygon,.st-lights .bulb,.st-plant svg{animation:none!important}
-.st-win .star{animation:none}.st-win .star:nth-child(7n){animation:stTw 5s ease-in-out infinite}
+.st-win .grass path,.st-hang .vine,.st-rays polygon,.st-plant svg{animation:none!important}
+.st-win .star{animation:none}
 .st-win .flies circle:nth-child(n+5){display:none}
 .studio:not(.is-night) :is(.st-win .flies,.st-win .stars,.st-win .moon,.st-lamp .cone,.st-lamp .pool,.st-lamp .glow){display:none}
 .studio:not(.is-day) :is(.st-win .birds,.st-motes,.st-rays,.st-win .sun){display:none}
@@ -2054,6 +2054,34 @@ html.stu-attop .sbar{background:transparent;backdrop-filter:none;-webkit-backdro
 .st-jars{bottom:-2.6cqw;height:5.6cqw;left:4%}
 .narrow .st-jars{display:none}.narrow .st-mug{width:9%}
 .st-yarn{width:4.2%}.narrow .st-yarn{width:8%}
+
+/* ---- round 1.9.5 ---- */
+/* habit circles show progress for counted habits (3 of 8 glasses): every tap visibly lands */
+.sn-chk.cnt{border:0;color:#2A2520;background:radial-gradient(closest-side,rgba(255,252,240,.92) 74%,transparent 76%),conic-gradient(#2A2520 calc(var(--p) * 1%),rgba(42,37,32,.2) 0)}
+.sn-chk.cnt b{font:800 .95em/1 var(--f-body)}
+.sn-cnt{display:block;font:500 .78em var(--f-mono);color:#6B5D50;margin-top:.15em}
+.sn-chk:active{transform:scale(.88)}
+/* stars: a scattered field, some twinkle, now and then a shooting star */
+.st-win .star{fill:#fff}.st-win .star.tw{animation-name:stTw;animation-timing-function:ease-in-out;animation-iteration-count:infinite}
+@keyframes stTw{50%{opacity:.15}}
+.st-win .shoot{opacity:0;animation:stShoot 17s linear infinite 4s}
+@keyframes stShoot{0%,86%{opacity:0;transform:translate(96px,6px)}88%{opacity:1}95%{opacity:0;transform:translate(52px,24px)}100%{opacity:0;transform:translate(52px,24px)}}
+/* gentle life back, all cheap (transform/opacity on small or pre-blurred layers) */
+.st-cur{animation:stCur 7s ease-in-out infinite alternate}
+.st-lights .bulb{animation:stBulb 4s ease-in-out infinite}
+.st-rays{transform-origin:88% 8%;animation:stStir 10s ease-in-out infinite alternate;will-change:transform}
+@keyframes stStir{0%{transform:rotate(-.9deg) scaleX(.985)}100%{transform:rotate(.9deg) scaleX(1.02)}}
+.st-lamp .glow{animation:stFlick 6s ease-in-out infinite}
+@keyframes stFlick{0%,100%{opacity:calc((1 - var(--amb))*.55)}50%{opacity:calc((1 - var(--amb))*.42)}}
+/* the window keeps its shape on very wide screens (no more zoomed-in view) */
+.studio:not(.narrow) .st-win{width:auto;aspect-ratio:.76}
+/* props stand on the desk instead of floating */
+.st-mug,.st-plant,.st-books,.st-cup{bottom:28.7%}
+.st-mug .art,.st-plant .art,.st-books .art{transform:translateY(6%);filter:drop-shadow(0 .25cqw .12cqw rgba(30,15,0,.45)) drop-shadow(0 .6cqw .6cqw rgba(30,15,0,.18))}
+.st-tray{bottom:29%}.st-book{bottom:29.2%}
+.narrow .st-mug,.narrow .st-tray,.narrow .st-book,.narrow .st-lamp{bottom:26.3%}
+.st-basket .art,.st-yarn .art{transform:translateY(6%)}
+.studio:not(.narrow) .st-win{height:54%;top:6%}
 /* shared item panel */
 .shp{margin:14px 0 4px;padding:14px;border-radius:22px;background:var(--surface);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));box-shadow:0 14px 34px -24px color-mix(in srgb,var(--accent) 70%,transparent)}
 .shp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
@@ -2190,7 +2218,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.9.4';
+const APP_VER='1.9.5';
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
@@ -5202,7 +5230,7 @@ const rot=id=>{let n=0;for(const c of String(id))n=(n*31+c.charCodeAt(0))|0;retu
 function studioBoard(D){const td=ymd(),nm=S.settings.name;const hr=new Date().getHours(),gr=hr<5?'Still up':hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
  const listDone=D.list.filter(x=>x.done).length;
  const paper=`<div class="sn sn-list" style="--r:-1.2deg"><i class="pin"></i><b>Today</b>${D.list.length?D.list.slice(0,5).map(x=>`<button class="sn-li${x.done?' d':''}" data-act="toggleDay" data-id="${x.id}" aria-label="${x.done?'Undo':'Done'}: ${esc(x.title)}"><span></span>${esc(trunc(x.title,34))}</button>`).join('')+(D.list.length>5?`<small>+${D.list.length-5} more</small>`:''):`<small>Nothing planned yet</small>`}<small class="sn-c">${listDone} of ${D.list.length}</small></div>`;
- const hab=D.habits.map(h=>{const dn=hDone(h,td);return`<div class="sn sn-hab${dn?' d':''}" style="${cvar(h)};--r:${rot(h.id)}deg"><i class="tape"></i><button class="sn-open" data-act="openHabit" data-id="${h.id}"><em>${esc(hIcon(h))}</em><span>${esc(trunc(h.title,28))}</span></button><button class="sn-chk" data-act="hTap" data-id="${h.id}" aria-label="${dn?'Undo':'Mark done'}: ${esc(h.title)}">${ic('check')}</button></div>`}).join('');
+ const hab=D.habits.map(h=>{const dn=hDone(h,td),n=hTarget(h),v=Math.min(n,+hVal(h,td)||0),cnt=n>1&&!dn;return`<div class="sn sn-hab${dn?' d':''}" style="${cvar(h)};--r:${rot(h.id)}deg"><i class="tape"></i><button class="sn-open" data-act="openHabit" data-id="${h.id}"><em>${esc(hIcon(h))}</em><span>${esc(trunc(h.title,28))}${cnt?`<small class="sn-cnt">${v} of ${n}${h.unit?' '+esc(h.unit):''}</small>`:''}</span></button><button class="sn-chk${cnt?' cnt':''}" style="--p:${n>1?Math.round(v/n*100):dn?100:0}" data-act="hTap" data-id="${h.id}" aria-label="${dn?'Undo':cnt?`Add one (${v} of ${n})`:'Mark done'}: ${esc(h.title)}">${cnt?`<b>${v}</b>`:ic('check')}</button></div>`}).join('');
  const gl=D.goals.map(g=>{const p=pct(g),nx=nextStep(g);return`<button class="sn sn-goal" style="${cvar(g)};--r:${rot(g.id)}deg" data-act="open" data-id="${g.id}"><i class="pin"></i><span class="sn-a">${esc(areaName(g.area))}</span><b>${esc(trunc(g.title,44))}</b><span class="sn-bar"><i style="width:${p}%"></i></span><small>${p}%${nx?' · '+esc(trunc(nx.title,30)):''}</small></button>`}).join('');
  const more=D.more?`<a class="sn sn-more" href="#/goals" style="--r:2deg">+${D.more} more</a>`:'';
  return`<div class="st-board" aria-label="Your work board"><div class="st-cork"><div class="st-hello"><span>${esc(gr)}${nm?', '+esc(nm):''}</span><small>${new Date().toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}</small></div><div class="st-notes">${paper}${hab}${gl}${more}</div></div></div>`}
@@ -5263,7 +5291,7 @@ ${CAT_LEG_H('n','url(#fur)',0)}${CAT_LEG_F('n','url(#fur)',0)}
 <g class="zz"><text x="124" y="58">z</text><text x="132" y="47">z</text><text x="140" y="34">Z</text></g></g>
 <g class="bubble" opacity="0"><rect x="104" y="0" width="46" height="20" rx="10" fill="#FFFDF6" stroke="#3A2B1E" stroke-width="1"/><path d="M114 19l-4 7 10-7z" fill="#FFFDF6"/><text x="127" y="14" text-anchor="middle">mrrp?</text></g></svg>`;
 /* sunlight: soft rays from the window glass that fan out down and to the left, fading into the room */
-function studioRays(narrow){const W=narrow?{x0:52,x1:94,y0:53.5,y1:68.5}:{x0:71,x1:96,y0:7,y1:57};
+function studioRays(narrow,W0){const W=W0||(narrow?{x0:56,x1:94,y0:53.5,y1:68.5}:{x0:71,x1:96,y0:7,y1:57});
  const n=7,rays=[];for(let i=0;i<n;i++){const t=i/(n-1),sx=W.x0+1+(W.x1-W.x0-2)*(.08+.84*t),sy=W.y0+2+(W.y1-W.y0-4)*(.15+.7*(1-t)),w=(narrow?1.6:1.1)+((i*7)%3)*.9;
   const ex=sx-(narrow?44:62)-t*(narrow?6:10),ey=104,spread=(narrow?7:9)+((i*5)%4)*3;rays.push(`<polygon points="${(sx-w).toFixed(1)},${sy.toFixed(1)} ${(sx+w).toFixed(1)},${(sy-w*.4).toFixed(1)} ${(ex+spread).toFixed(1)},${ey} ${(ex-spread).toFixed(1)},${ey}" style="animation-delay:-${(i*1.7).toFixed(1)}s;opacity:${(.55+((i*3)%4)*.12).toFixed(2)}"/>`)}
  /* two broad, faint rays that reach across to the top-left corner */
@@ -5276,11 +5304,12 @@ function studioLights(){const n=innerWidth<640?11:17;let o='',pts=[];for(let i=0
 function studioWindow(){const n=Date.now()/1000;
  const puff=(x,y,r)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="url(#cl)"/>`;
  const cloud=(k,dur,top,sc,op)=>`<g class="cloud" style="animation-duration:${dur}s;animation-delay:-${((n+k*977)%dur).toFixed(1)}s"><g transform="translate(0 ${top}) scale(${sc})" opacity="${op}"><ellipse cx="22" cy="14" rx="24" ry="5" fill="#B9CBE6" opacity=".55"/>${puff(8,10,7)}${puff(18,6,9)}${puff(30,5,11)}${puff(41,9,8)}${puff(26,12,7)}</g></g>`;
- const stars=[...Array(30)].map((_,i)=>`<circle class="star" cx="${(i*37)%100}" cy="${(i*23)%62+2}" r="${i%6?.45:.9}" style="animation-delay:-${(i*.7)%5}s"/>`).join('');
+ let sd=7;const rn=()=>(sd=(sd*16807)%2147483647)/2147483647;
+ const stars=[...Array(70)].map((_,i)=>{const x=rn()*100,y=rn()*rn()*86+1,r=rn()<.12?.75:.28+rn()*.28,tw=rn()<.3;return`<circle class="star${tw?' tw':''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}" style="opacity:${(.45+rn()*.55).toFixed(2)};animation-delay:-${(rn()*6).toFixed(1)}s;animation-duration:${(3+rn()*4).toFixed(1)}s"/>`}).join('')+'<g class="shoot"><path d="M0 0 L-14 5" stroke="url(#shootg)" stroke-width=".7" stroke-linecap="round"/></g>';
  const clump=(x,y,r,c)=>`<g class="clump"><circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/><circle cx="${x-r*.5}" cy="${y+r*.3}" r="${r*.75}" fill="${c}"/><circle cx="${x+r*.55}" cy="${y+r*.25}" r="${r*.7}" fill="${c}"/><circle class="hl" cx="${x-r*.25}" cy="${y-r*.35}" r="${r*.45}"/></g>`;
  const grass=[...Array(22)].map((_,i)=>`<path d="M${(i*4.7).toFixed(1)} 140q${i%2?1:-1} -${6+i%4*2} ${i%3-1} -${9+i%5*2}" style="animation-delay:-${(i*.37)%3}s"/>`).join('');
  return`<div class="st-win" aria-label="Window"><div class="st-glass"><svg viewBox="0 0 100 140" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="stsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--sky1)"/><stop offset=".68" style="stop-color:var(--sky2)"/></linearGradient><radialGradient id="stsun"><stop offset="0" stop-color="#FFF8DE"/><stop offset=".35" stop-color="#FFE8A8"/><stop offset="1" stop-color="#FFC56B" stop-opacity="0"/></radialGradient>
- <radialGradient id="cl" cx=".42" cy=".3" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".65" stop-color="#F3F6FC"/><stop offset="1" stop-color="#C9D6EC"/></radialGradient><radialGradient id="mglow"><stop offset="0" stop-color="#FFF8E0" stop-opacity=".55"/><stop offset="1" stop-color="#FFF8E0" stop-opacity="0"/></radialGradient></defs>
+ <radialGradient id="cl" cx=".42" cy=".3" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".65" stop-color="#F3F6FC"/><stop offset="1" stop-color="#C9D6EC"/></radialGradient><linearGradient id="shootg" x1="0" y1="0" x2="-14" y2="5" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><radialGradient id="mglow"><stop offset="0" stop-color="#FFF8E0" stop-opacity=".55"/><stop offset="1" stop-color="#FFF8E0" stop-opacity="0"/></radialGradient></defs>
  <rect width="100" height="140" fill="url(#stsky)"/><g class="stars">${stars}</g>
  <g class="sun"><circle r="24" fill="url(#stsun)"/><circle r="7" fill="#FFF6D8"/></g><g class="moon"><circle r="16" fill="url(#mglow)"/><path d="M-1.5-6.3A6.5 6.5 0 1 0 5.6 3.4 5.4 5.4 0 0 1-1.5-6.3z" fill="#F6F2E2"/></g>
  <g class="clouds">${cloud(1,150,8,1,.95)}${cloud(2,210,26,.7,.85)}${cloud(3,260,2,.55,.7)}</g>
@@ -5353,13 +5382,19 @@ function catFrame(now){if(!CAT.run)return;const r=catDraw(CAT.el+(now-CAT.t0));i
  if(r.moving)CAT.raf=requestAnimationFrame(catFrame);else{clearTimeout(CATT);CATT=setTimeout(()=>{if(CAT.run)CAT.raf=requestAnimationFrame(catFrame)},Math.max(16,r.left+4))}}
 function catStart(){if(CAT.run)return;CAT.run=true;CAT.t0=performance.now();catBox();CAT.raf=requestAnimationFrame(catFrame)}
 function catStop(){if(!CAT.run)return;CAT.run=false;cancelAnimationFrame(CAT.raf);clearTimeout(CATT);CAT.el+=performance.now()-CAT.t0}
+/* rays start at the real window, wherever the layout put it */
+function raysFit(sc){const cam=sc.querySelector('.st-cam'),w=sc.querySelector('.st-glass'),old=sc.querySelector('.st-rays');if(!cam||!w||!old)return;const a=cam.getBoundingClientRect(),b=w.getBoundingClientRect();if(!a.width)return;
+ const W={x0:+((b.left-a.left)/a.width*100).toFixed(1),x1:+((b.right-a.left)/a.width*100).toFixed(1),y0:+((b.top-a.top)/a.height*100).toFixed(1),y1:+((b.bottom-a.top)/a.height*100).toFixed(1)},k=JSON.stringify(W);
+ if(sc._rk===k)return;sc._rk=k;old.outerHTML=studioRays(sc.classList.contains('narrow'),W)}
+addEventListener('resize',()=>{const sc=document.getElementById('studio');if(sc)raysFit(sc)},{passive:true});
 let STSKY=0;
 let STIO=null,STVIS=true;
 function studioMount(){const sc=$('#studio');if(!sc){catStop();clearInterval(STSKY);STSKY=0;STIO&&STIO.disconnect();return}
  /* rest when the room is scrolled out of sight: the cat stops and every CSS animation pauses */
  if('IntersectionObserver'in window&&!sc._io){STIO&&STIO.disconnect();sc._io=1;STIO=new IntersectionObserver(es=>{STVIS=es[0].isIntersecting;sc.classList.toggle('offscreen',!STVIS);if(STVIS&&st0().play&&document.visibilityState==='visible')catStart();else catStop()});STIO.observe(sc)}
  studioSky();if(!STSKY)STSKY=setInterval(()=>{if(document.visibilityState==='visible')studioSky()},60000);
- catBox();if(st0().play&&document.visibilityState==='visible'&&STVIS){catStop();catStart()}else{catStop();catDraw(CAT.el)}}
+
+ raysFit(sc);catBox();if(st0().play&&document.visibilityState==='visible'&&STVIS){catStop();catStart()}else{catStop();catDraw(CAT.el)}}
 document.addEventListener('visibilitychange',()=>{if(!$('#studio'))return;if(document.visibilityState==='visible'&&st0().play&&STVIS)catStart();else catStop()});
 /* the room lives in #stuHost, outside the part of the page that re-renders (#vin). A re-render only rebuilds the
    board notes, the bench tray and the journal from a light version, so taps keep their target, the board keeps
