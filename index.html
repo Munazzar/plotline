@@ -1757,9 +1757,9 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .st-cat[data-p=walk] .j{transition:none;animation-duration:var(--P);animation-iteration-count:infinite;animation-timing-function:linear}
 .st-cat[data-p=walk] .hip{animation-name:cHip}.st-cat[data-p=walk] .knee{animation-name:cKnee}.st-cat[data-p=walk] .hock{animation-name:cHock}
 .st-cat[data-p=walk] .sho{animation-name:cSho}.st-cat[data-p=walk] .elb{animation-name:cElb}.st-cat[data-p=walk] .wri{animation-name:cWri}
-.st-cat[data-p=walk] .front.n .j{animation-delay:calc(var(--P) * -.75)}
+.st-cat[data-p=walk] .front.n .j{animation-delay:calc(var(--P) * -.5)}
 .st-cat[data-p=walk] .hind.f .j{animation-delay:calc(var(--P) * -.5)}
-.st-cat[data-p=walk] .front.f .j{animation-delay:calc(var(--P) * -.25)}
+.st-cat[data-p=walk] .front.f .j{animation-delay:0s}
 @keyframes cHip{0%{transform:rotate(-14deg)}55%{transform:rotate(13deg)}62%{transform:rotate(12deg)}72%{transform:rotate(4deg)}86%{transform:rotate(-10deg)}100%{transform:rotate(-14deg)}}
 @keyframes cKnee{0%{transform:rotate(2deg)}40%{transform:rotate(-2deg)}55%{transform:rotate(-6deg)}64%{transform:rotate(20deg)}76%{transform:rotate(30deg)}90%{transform:rotate(10deg)}100%{transform:rotate(2deg)}}
 @keyframes cHock{0%{transform:rotate(0)}42%{transform:rotate(4deg)}55%{transform:rotate(20deg)}64%{transform:rotate(36deg)}78%{transform:rotate(-10deg)}92%{transform:rotate(-6deg)}100%{transform:rotate(0)}}
@@ -1839,7 +1839,7 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .hpv.studio{background:linear-gradient(#8FC6EE,#F6C79B) right 10px top 10px/26% 44% no-repeat,repeating-linear-gradient(90deg,#FFFDF6 0 18px,transparent 18px 24px) 14px 18px/52% 26px no-repeat,linear-gradient(#C9A06A,#C9A06A) 8px 8px/62% 54% no-repeat,linear-gradient(#A8714A,#A8714A) 0 64px/100% 5px no-repeat,#E8D4B2}
 @media(prefers-reduced-motion:reduce){.studio .sn{animation:none}}
 
-.st-clock{display:none;z-index:2;left:12%;top:54%;width:20%;aspect-ratio:1;border-radius:50%;background:#FFF8E8;box-shadow:0 0 0 1.4cqw var(--wood),0 0 0 1.8cqw var(--wood-d),0 10px 18px -8px rgba(0,0,0,.6)}
+.st-clock{display:none;z-index:2;left:12%;top:54%;width:20%;aspect-ratio:1;border-radius:50%;background:#FFF8E8;box-shadow:0 0 0 .5cqw var(--wood),0 0 0 .75cqw var(--wood-d),0 8px 14px -8px rgba(0,0,0,.55)}
 .narrow .st-clock{display:block}
 .st-clock svg{width:100%;height:100%;display:block}.st-clock .hd{stroke:#3A2B1E;stroke-linecap:round}
 .st-clock .sec{transform-origin:50px 50px;animation:stSec 60s steps(60) infinite}
@@ -1955,11 +1955,11 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .st-win{z-index:3}
 
 /* camera: a little zoomed in, drifting slowly */
-.st-cam{position:absolute;inset:0;transform-origin:54% 56%;transform:scale(1.1);animation:stCam 60s ease-in-out infinite alternate;will-change:transform}
+.st-cam{position:absolute;inset:0;transform-origin:54% 56%;transform:scale(1.02);animation:stCam 60s ease-in-out infinite alternate;will-change:transform}
 .st-cam>*{position:absolute}
 .narrow .st-cam{transform-origin:50% 55%;animation-name:stCamN}
-@keyframes stCam{0%{transform:scale(1.1) translate(0,0)}50%{transform:scale(1.14) translate(-1.2%,.4%)}100%{transform:scale(1.12) translate(1%,-.3%)}}
-@keyframes stCamN{0%{transform:scale(1.06) translate(0,0)}50%{transform:scale(1.09) translate(-1%,.6%)}100%{transform:scale(1.07) translate(1%,0)}}
+@keyframes stCam{0%{transform:scale(1.02) translate(0,0)}50%{transform:scale(1.045) translate(-.8%,.3%)}100%{transform:scale(1.03) translate(.6%,-.2%)}}
+@keyframes stCamN{0%{transform:scale(1.01) translate(0,0)}50%{transform:scale(1.03) translate(-.6%,.4%)}100%{transform:scale(1.02) translate(.6%,0)}}
 @media(prefers-reduced-motion:reduce){.st-cam{animation:none}}
 
 .st-cat svg{transform-origin:50% 90%;transition:transform .25s ease-out}
@@ -1981,6 +1981,21 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .st-clock{display:block;left:58%;top:27%;width:7%}
 .studio:not(.narrow) .st-board{width:53%}
 .narrow .st-clock{left:12%;top:54%;width:20%}
+
+/* full-bleed: edge to edge of the content area, flush with the top, melting into the page at the bottom */
+.studio{--railw:96px;width:calc(100vw - var(--railw));margin:calc(-44px - var(--sat,0px)) 0 8px calc((100% - (100vw - var(--railw))) / 2);border-radius:0;box-shadow:none;aspect-ratio:auto;height:min(calc((100vw - var(--railw)) * .5625),100vh);max-height:none}
+@media(max-width:820px){.studio{--railw:0px;margin-top:calc(-24px - var(--sat,0px))}}
+:root[data-focus=on] .studio{--railw:0px;margin-top:-14px}
+.studio.narrow{height:auto;aspect-ratio:9/15;border-radius:0}
+.st-fade{position:absolute;left:0;right:0;bottom:0;height:13%;z-index:8;pointer-events:none;
+ background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--bg) 55%,transparent) 55%,var(--bg))}
+.studio::before{border-radius:0;box-shadow:inset 0 3cqw 4cqw -2cqw rgba(20,10,0,.35),inset 0 -6cqw 5cqw -3cqw rgba(20,10,0,.45);background:linear-gradient(180deg,rgba(255,200,140,calc(var(--tw)*.12)),transparent 60%)}
+.st-play{bottom:auto;top:calc(14px + var(--sat,0px));right:16px}
+@media(min-width:821px){.st-play{top:16px;right:20px}}
+.narrow .st-clock{box-shadow:0 0 0 .9cqw var(--wood),0 0 0 1.3cqw var(--wood-d),0 6px 12px -6px rgba(0,0,0,.55)}
+.narrow .st-play{top:auto;bottom:15%;right:12px}
+.bc{max-width:15cqw;max-height:8cqw}.st-tray{justify-content:flex-start}
+.narrow .bc{max-width:none;max-height:none}
 /* shared item panel */
 .shp{margin:14px 0 4px;padding:14px;border-radius:22px;background:var(--surface);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));box-shadow:0 14px 34px -24px color-mix(in srgb,var(--accent) 70%,transparent)}
 .shp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
@@ -2117,7 +2132,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.9.1';
+const APP_VER='1.9.2';
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
@@ -5224,7 +5239,7 @@ const STUDIO_VINE=`<svg viewBox="0 0 60 120"><path d="M30 0v14" stroke="#7A6450"
 function studioHTML(){const narrow=innerWidth<640;const D=studioData(narrow),sky=skyNow(),p=st0().play;
  return`<section class="studio${p?'':' paused'}${narrow?' narrow':''}" id="studio" style="${studioVars(sky)}" aria-label="Your studio">
  <div class="st-cam"><div class="st-wall"></div><div class="st-wains"></div>${studioRays(narrow)}<div class="st-motes" aria-hidden="true">${[...Array(9)].map((_,i)=>`<i style="--x:${(i*37)%90+5}%;--y:${(i*53)%80+10}%;--d:${7+i%4*2}s;animation-delay:-${i*1.3}s"></i>`).join('')}</div>${studioLights()}${studioWindow()}${studioClock()}${studioBoard(D)}<div class="st-floor"></div><div class="st-sunpatch" aria-hidden="true"></div><div class="st-rug" aria-hidden="true"></div>${studioBench(D)}
- <div class="st-cat" id="stCat" data-act="stCat" role="img" aria-label="The studio cat">${STUDIO_CAT}</div><div class="st-night"></div></div>
+ <div class="st-cat" id="stCat" data-act="stCat" role="img" aria-label="The studio cat">${STUDIO_CAT}</div><div class="st-night"></div></div><div class="st-fade"></div>
  <button class="st-play" data-act="stPlay" aria-label="${p?'Pause the scene':'Play the scene'}" title="${p?'Pause':'Play'}">${p?'<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>':'<svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>'}</button></section>`}
 function studioClock(){const d=new Date(),m=d.getMinutes(),h=d.getHours()%12+m/60,s=d.getSeconds();
  return`<div class="st-clock" aria-label="${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}"><svg viewBox="0 0 100 100">${[...Array(12)].map((_,i)=>`<line x1="50" y1="9" x2="50" y2="${i%3?14:17}" stroke="#7A6450" stroke-width="${i%3?2:3.4}" transform="rotate(${i*30} 50 50)"/>`).join('')}
@@ -5238,7 +5253,7 @@ function studioSky(){const el=$('#studio');if(!el)return;const k=skyNow();el.set
 const CAT={t0:0,el:0,run:false,raf:0,plan:null,cycle:0};
 /* behaviours: stroll in → jump on the desk → sit a while (look around, groom, yawn, watch the window, or nap at night)
    → jump off the table and out of view. Each leg {d ms, p pose, a/b [x%,y%], h jump height, act, dir}. */
-function catPlan(narrow){const fl=narrow?96:94,dk=narrow?73.2:71,rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a.splice(Math.floor(Math.random()*a.length),1)[0];
+function catPlan(narrow){const fl=narrow?92.5:91.5,dk=narrow?73.2:71,rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a.splice(Math.floor(Math.random()*a.length),1)[0];
  const fromL=CAT.cycle%2===0,X=v=>fromL?v:100-v,night=skyNow().amb<.2,legs=[];let x=X(-14),dir=fromL?1:-1;
  const ws=(narrow?20:10.5)*.21,walk=(to,y,sp)=>{const speed=ws*(sp||1);dir=to>=x?1:-1;legs.push({d:Math.abs(to-x)/speed*1000,p:'walk',a:[x,y],b:[to,y],dir});x=to};
  const stay=(p,act,d,y)=>legs.push({d,p,act,a:[x,y],b:[x,y],dir});
@@ -5274,7 +5289,7 @@ document.addEventListener('visibilitychange',()=>{if(!$('#studio'))return;if(doc
 {const _r=render;render=function(a){_r(a);studioMount()}}
 const _vToday=vToday;vToday=function(){let o=_vToday();const on=studioOn(),i=o.indexOf('<header class="ph">');if(i<0)return o;
  const j=o.indexOf('<div class="ph-r">',i);if(j>0)o=o.slice(0,j+18)+`<button class="ibtn${on?' on':''}" data-act="homeStyle" data-k="${on?'classic':'studio'}" aria-label="${on?'Classic home':'Studio home (live)'}" title="${on?'Classic home':'Studio home (live)'}">${ic('home')}</button>`+o.slice(j+18);
- return on?o.slice(0,i)+studioHTML()+o.slice(i):o};VIEWS.today=vToday;
+ return on?studioHTML()+o:o};VIEWS.today=vToday;
 function homePanel(){const h=S.settings.home==='studio'?'studio':'classic';return`<section class="panel wide rv"><h3>Home page</h3><p class="small muted">What Today opens with. More live homes are coming.</p><div class="hpick">${[['classic','Classic','Your plan as cards and lists'],['studio','Studio · live','A cosy room: your work board, a bench, a window with the real sky, and a cat']].map(([k,n,x])=>`<button class="hpc${h===k?' on':''}" data-act="homeStyle" data-k="${k}" aria-pressed="${h===k}"><span class="hpv ${k}"></span><b>${n}</b><small>${x}</small></button>`).join('')}</div></section>`}
 Object.assign(ACT,{
  stPlay:()=>{const p=!st0().play;S.settings.studio={...st0(),play:p};save();const sc=$('#studio');if(sc){sc.classList.toggle('paused',!p);const b=sc.querySelector('.st-play');b.innerHTML=p?'<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>':'<svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>';b.setAttribute('aria-label',p?'Pause the scene':'Play the scene')}if(p)catStart();else catStop()},
