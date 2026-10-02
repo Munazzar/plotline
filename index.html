@@ -1604,6 +1604,19 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .rxb .btn{flex:none}.rxb-x{flex:none;font-size:14px}
 @media(min-width:821px){.rxb{left:calc(50% + 48px)}}
 @keyframes rxPop{0%{transform:scale(.3)}100%{transform:scale(1)}}
+/* shared item panel */
+.shp{margin:14px 0 4px;padding:14px;border-radius:22px;background:var(--surface);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));box-shadow:0 14px 34px -24px color-mix(in srgb,var(--accent) 70%,transparent)}
+.shp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.shp-t{font-size:14px;color:var(--muted);min-width:0}.shp-t b{color:var(--text)}
+.shp-h .btn{flex:none;gap:2px;padding:0 10px}
+.shp-m{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 12px;padding:10px 0}.shp-m+.shp-m{border-top:1px solid var(--line)}
+.shp-who{display:flex;align-items:center;gap:10px;flex:1 1 170px;min-width:0}.shp-who>div{min-width:0}.shp-who b{display:block;font-size:15px}
+.shp-who small{display:block;color:var(--muted);font-size:12.5px}.shp-who small.shp-last{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shp-r{display:flex;gap:6px;margin-left:auto}
+.shp-e{width:44px;height:44px;border-radius:14px;border:1px solid var(--line-2);background:var(--bg-2);font-size:21px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:transform .3s var(--spring),background-color .2s}
+.shp-e:active{transform:scale(.85)}.shp-e.sent{animation:rxPop .5s var(--spring);background:color-mix(in srgb,var(--accent) 22%,var(--bg-2))}.shp-e:disabled{opacity:.4;cursor:default}
+.shp-e.more{width:auto;padding:0 10px;display:flex;gap:4px;font-size:16px}.shp-e.more span{font:600 12.5px var(--f-body);color:var(--text)}
+.shp-f{margin-top:4px}
 .rx-burst{position:fixed;inset:0;pointer-events:none;z-index:96;overflow:hidden}
 .rx-burst span{position:absolute;left:50%;bottom:18%;font-size:calc(34px * var(--s));opacity:0;animation:rxUp 1.8s var(--d) cubic-bezier(.2,.7,.3,1) forwards}
 @keyframes rxUp{0%{opacity:0;transform:translate(-50%,0) scale(.4)}15%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--x)),-46vh) scale(1.1) rotate(12deg)}}
@@ -1708,7 +1721,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.8.3';
+const APP_VER='1.8.4';
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
@@ -4595,7 +4608,7 @@ function shCollect(sh,ms){SHR[sh.id]=(ms||[]).filter(m=>m.email!==fme()&&m.statu
 const reactsForMe=cid=>{const all=capReacts(Object.values(SHR).flat());return cid?all.filter(r=>r.cid===cid):all};
 const rxUnread=cid=>((shset().rx||{})[cid]||{}).n||0;
 function rxRead(cid){if(RB.q.some(r=>r.cid===cid)){RB.q=RB.q.filter(r=>r.cid!==cid);reactShow()}const rx={...(shset().rx||{})};if(rx[cid]&&rx[cid].n){rx[cid]={...rx[cid],n:0};shPatch({rx});render(false)}}
-let SHG_OPENING=null;const openGroup=()=>{if(SHG_OPENING)return SHG_OPENING;const el=document.querySelector('#sheet.on [data-shg]');return el&&el.dataset.shg};
+let SHG_OPENING=null;const openGroup=()=>{if(SHG_OPENING)return SHG_OPENING;const el=document.querySelector('#sheet.on [data-shg]')||(!document.querySelector('#sheet.on')&&document.querySelector('[data-shp]'));return el&&(el.dataset.shg||el.dataset.shp)};
 function shInbox(){const rx={...(shset().rx||{})},fresh=[],og=openGroup();let ch=false;
  for(const cid of Object.keys(SHR)){const o={...(rx[cid]||{t:Date.now()-6*36e5,n:0})},nw=reactsForMe(cid).filter(r=>r.t>o.t);if(!rx[cid])ch=true;
   if(nw.length){o.t=Math.max(...nw.map(r=>r.t));if(cid!==og)o.n=(o.n||0)+nw.length;fresh.push(...nw);ch=true}rx[cid]=o}
@@ -4626,7 +4639,7 @@ function shReactSheet(sh,to,name){RXT={id:sh.id,to,nm:name};const left=Math.max(
  <div class="rx-emo">${REACT_EMO.map(e=>`<button class="rx-b" data-act="shReactGo" data-e="${e}" ${dis} aria-label="Send ${e}">${e}</button>`).join('')}</div>
  <div class="data" style="margin-top:16px">Quick messages</div><div class="rx-msgs">${quickMsgs().map((m,i)=>`<button class="rx-m" data-act="shReactGo" data-i="${i}" ${dis}>${esc(m)}</button>`).join('')}</div>
  <p class="small muted rx-left">${left?`${left} of ${REACT_MAX} left today`:`That’s ${REACT_MAX} for today. Reactions open again tomorrow.`}</p>
- <div class="actions"><button class="btn ghost" data-act="shQuickEdit" data-back="1">Edit messages</button><button class="btn pri" data-act="shOpen" data-id="${sh.id}">Back to the group</button></div>`)}
+ <div class="actions"><button class="btn ghost" data-act="shQuickEdit" data-back="1">Edit messages</button><button class="btn pri" data-act="shOpen" data-id="${sh.id}">Open the group</button></div>`)}
 function shQuickForm(back){const q=quickMsgs();openSheet(`<h2>Quick messages</h2><p class="small muted">Short messages you can send with one tap in a shared item. Up to 8, 40 characters each. There’s no free chat, so it stays a nudge.</p>
  <form data-form="shQuick" data-back="${back?1:''}"><div class="rx-qf">${[...Array(8)].map((_,i)=>`<input name="q${i}" maxlength="40" value="${esc(q[i]||'')}" placeholder="${i<REACT_MSG.length?esc(REACT_MSG[i]):'Add one'}" autocomplete="off" aria-label="Quick message ${i+1}">`).join('')}</div>
  <div class="actions"><button type="button" class="btn ghost" data-act="shQuickReset">Reset to defaults</button><button class="btn pri">Save</button></div></form>`)}
@@ -4635,17 +4648,47 @@ async function shPollReacts(){if(!shOn()||SHC.busy||SHC.rb||TOURING)return;const
 setInterval(()=>{if(document.visibilityState==='visible')shPollReacts()},20000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(shPollReacts,1500)});
 Object.assign(ACT,{
- shReact:d=>{const x=shById(d.id);if(!x||x.status!=='joined')return;if(RB.q.length){RB.q=[];reactShow()}shReactSheet(x,d.to,d.nm||(d.to||'').split('@')[0])},
+ shReact:(d,el)=>{const x=shById(d.id);if(!x||x.status!=='joined')return;if(RB.q.length){RB.q=[];reactShow()}const fromGroup=!!(el&&el.closest&&el.closest('[data-shg]'));shReactSheet(x,d.to,d.nm||(d.to||'').split('@')[0]);RXT.back=fromGroup},
  shReactGo:d=>{const x=RXT&&shById(RXT.id);if(!x)return;if(reactsSentToday()>=REACT_MAX)return toast(`That’s ${REACT_MAX} reactions for today`);
-  const m=d.i!=null?String(quickMsgs()[+d.i]||'').slice(0,60):'',r={id:uid(),to:RXT.to,emoji:d.e||'',m,t:Date.now()};if(!r.emoji&&!r.m)return;
-  x.cheerOut=[...(x.cheerOut||[]),r];x.u=Date.now();save();reactBurst(r.emoji||'💬');
-  shPublish(x).then(()=>{toast(`Sent to ${esc(RXT.nm)} ${r.emoji?r.emoji:'· “'+esc(r.m)+'”'}`);shOpen(x)}).catch(e=>toast(shErr(e)))},
+  const m=d.i!=null?String(quickMsgs()[+d.i]||'').slice(0,60):'',nm=RXT.nm,back=RXT.back;
+  reactSend(x,RXT.to,d.e||'',m).then(r=>{if(!r)return;toast(`Sent to ${esc(nm)} ${r.emoji?r.emoji:'· “'+esc(r.m)+'”'}`);if(back)shOpen(x);else{closeSheet();shPanelPaint(x.id)}}).catch(e=>toast(shErr(e)))},
  shQuickEdit:d=>shQuickForm(!!(d.back&&RXT)),
  shQuickReset:()=>{shPatch({quick:null});const f=document.querySelector('form[data-form=shQuick]');shQuickForm(f&&!!f.dataset.back);toast('Back to the defaults')},
  rxOpen:d=>{RB.q=[];reactShow();const x=shById(d.id);if(x)shOpen(x)},
  rxClose:()=>{RB.q=[];reactShow()}});
 Object.assign(FORM,{shQuick:f=>{const fd=new FormData(f),q=[...new Set([...Array(8)].map((_,i)=>String(fd.get('q'+i)||'').replace(/\s+/g,' ').trim().slice(0,40)).filter(Boolean))];
- shPatch({quick:q.length?q:null});toast('Quick messages saved');const x=f.dataset.back&&RXT&&shById(RXT.id);if(x)shReactSheet(x,RXT.to,RXT.nm);else{closeSheet();render(false)}}});
+ shPatch({quick:q.length?q:null});toast('Quick messages saved');const x=f.dataset.back&&RXT&&shById(RXT.id);if(x){const b=RXT.back;shReactSheet(x,RXT.to,RXT.nm);RXT.back=b}else{closeSheet();render(false)}}});
+/* ---- shared item panel (1.8.4): right under the habit / goal hero, who it's shared with, how they're doing,
+ and one-tap reactions. No need to find the small "Shared" chip and open the group first. */
+const SHM={};// cid -> {ms, t}  last members read (also filled by the reaction poll)
+const PANEL_EMO=['👏','🔥','💪','❤️'];
+function shPanelFor(kind,id){return shares().find(x=>x.fs&&x.k&&x.status==='joined'&&x.local&&x.local.kind===kind&&x.local.id===id)}
+function shPanelBody(x){const md=MODES[x.mode]||MODES.together,c=SHM[x.id],left=Math.max(0,REACT_MAX-reactsSentToday()),td=ymd();
+ const head=`<div class="shp-h"><span class="shp-t">${md.e} <b>Shared</b> · ${esc(md.n)}</span><button class="btn sm ghost" data-act="shOpen" data-id="${x.id}">Group${ic('next','ico-s')}</button></div>`;
+ if(!c)return head+`<p class="small muted">Loading who’s in it…</p>`;
+ const others=c.ms.filter(m=>m.email!==fme()&&m.status==='joined');
+ if(!others.length)return head+`<p class="small muted">${x.role==='owner'?'Nobody has joined yet. Once they do, you’ll see their progress here and can react with one tap.':'Waiting for the others.'}</p>`;
+ const mine=reactsForMe(x.id);
+ return head+others.map(m=>{const p=m.progress||{},kind=(x.local||{}).kind,last=mine.filter(r=>r.fe===m.email).slice(-1)[0],nm=m.name||m.email.split('@')[0];
+  const st=kind==='habit'?`${p.checks&&p.checks[td]?'✓ done today':'not yet today'} · ${weekChecks(p)} this week`:`${p.pct||0}% done`;
+  return`<div class="shp-m"><div class="shp-who"><span class="sh-ava">${esc(nm[0].toUpperCase())}</span><div><b>${esc(nm)}</b><small>${st}</small>${last?`<small class="shp-last">${esc(last.e||'💬')} ${last.m?esc(last.m)+' · ':''}${esc(dayLabel(last.t).toLowerCase())}</small>`:''}</div></div>
+  <div class="shp-r" role="group" aria-label="React to ${esc(nm)}">${PANEL_EMO.map(e=>`<button class="shp-e" data-act="shQuick" data-id="${x.id}" data-to="${esc(m.email)}" data-nm="${esc(nm)}" data-e="${e}" ${left?'':'disabled'} aria-label="Send ${e} to ${esc(nm)}">${e}</button>`).join('')}<button class="shp-e more" data-act="shReact" data-id="${x.id}" data-to="${esc(m.email)}" data-nm="${esc(nm)}" ${left?'':'disabled'} aria-label="More reactions and messages for ${esc(nm)}">💬<span>More</span></button></div></div>`}).join('')
+  +`<p class="shp-f small muted">${left?`Tap to send · ${left} left today`:`That’s ${REACT_MAX} for today`}</p>`}
+function shPanel(kind,id){const x=shPanelFor(kind,id);if(!x)return'';const c=SHM[x.id];if(!c||Date.now()-c.t>4000)setTimeout(()=>shPanelLoad(x),0);
+ return`<section class="shp rv" data-shp="${x.id}">${shPanelBody(x)}</section>`}
+async function shPanelLoad(x){if(SHM[x.id]&&SHM[x.id].busy)return;SHM[x.id]={...(SHM[x.id]||{}),busy:1};try{shCollect(x,await fsMembers(x))}catch(e){if(SHM[x.id])SHM[x.id].busy=0}}
+function shPanelPaint(cid){const x=shById(cid);document.querySelectorAll(`[data-shp="${cid}"]`).forEach(el=>{el.innerHTML=shPanelBody(x)})}
+const _shCollect=shCollect;shCollect=function(sh,ms){SHM[sh.id]={ms:ms||[],t:Date.now()};_shCollect(sh,ms);if(document.querySelector(`[data-shp="${sh.id}"]`)){shPanelPaint(sh.id);const rx=shset().rx||{};if(rx[sh.id]&&rx[sh.id].n){rx[sh.id]={...rx[sh.id],n:0};shPatch({rx:{...rx}});document.querySelectorAll(`.sh-chip[data-id="${sh.id}"] .sh-dot`).forEach(e=>e.remove())}}};
+/* live while it's on screen: re-read that item every 8 s */
+setInterval(()=>{if(document.visibilityState!=='visible'||!shOn())return;const el=document.querySelector('[data-shp]');const x=el&&shById(el.dataset.shp);if(x&&!document.querySelector('#sheet.on'))shPanelLoad(x)},8000);
+function shInject(html,kind,id){const p=shPanel(kind,id);if(!p)return html;const i=html.indexOf('class="hero');if(i<0)return html;const j=html.indexOf('</section>',i);return j<0?html:html.slice(0,j+10)+p+html.slice(j+10)}
+const _vHabit=vHabit;vHabit=id=>shInject(_vHabit(id),'habit',id);VIEWS.habit=vHabit;
+const _vGoal=vGoal;vGoal=id=>shInject(_vGoal(id),'goal',id);VIEWS.goal=vGoal;
+async function reactSend(x,to,emoji,m){if(reactsSentToday()>=REACT_MAX){toast(`That’s ${REACT_MAX} reactions for today`);return false}
+ const r={id:uid(),to,emoji:emoji||'',m:String(m||'').slice(0,60),t:Date.now()};if(!r.emoji&&!r.m)return false;
+ x.cheerOut=[...(x.cheerOut||[]),r];x.u=Date.now();save();reactBurst(r.emoji||'💬');await shPublish(x);return r}
+Object.assign(ACT,{shQuick:(d,el)=>{const x=shById(d.id);if(!x)return;if(el){el.classList.remove('sent');void el.offsetWidth;el.classList.add('sent')}
+ reactSend(x,d.to,d.e,'').then(r=>{if(r){toast(`Sent ${r.emoji} to ${esc(d.nm||'')}`);shPanelPaint(x.id)}}).catch(e=>toast(shErr(e)))}});
 </script>
 </body>
 </html>
