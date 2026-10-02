@@ -1250,7 +1250,7 @@ html,body{overscroll-behavior-y:contain}
 .aig .actions{margin-top:12px}.aig-p{margin-top:10px}
 .aig-or{align-self:center;margin-right:4px}
 html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:none}
-.sbar{position:fixed;left:0;right:0;top:0;height:var(--sat,0px);z-index:45;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(14px) saturate(150%);-webkit-backdrop-filter:blur(14px) saturate(150%);pointer-events:none}
+.sbar{position:fixed;left:0;right:0;top:0;height:calc(var(--sat,0px) * 1.6);-webkit-mask:linear-gradient(#000 calc(100% / 1.6),transparent);mask:linear-gradient(#000 calc(100% / 1.6),transparent);z-index:45;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(14px) saturate(150%);-webkit-backdrop-filter:blur(14px) saturate(150%);pointer-events:none}
 :root[data-focus=on] .sbar{display:none}
 /* ================= card zoom (pinch) ================= */
 .fgrid[data-zk]{grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}
@@ -1835,8 +1835,8 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .hpc.on{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
 .hpc b{font-size:14px;padding:0 4px}.hpc small{color:var(--muted);font-size:12.5px;padding:0 4px;line-height:1.35}
 .hpv{display:block;height:84px;border-radius:13px;margin-bottom:6px;background:var(--bg-2)}
-.hpv.classic{background:linear-gradient(var(--surface),var(--surface)) 10px 12px/45% 24px no-repeat,linear-gradient(var(--surface-2),var(--surface-2)) 10px 44px/80% 12px no-repeat,linear-gradient(var(--surface-2),var(--surface-2)) 10px 62px/60% 12px no-repeat,var(--bg-2)}
-.hpv.studio{background:linear-gradient(#8FC6EE,#F6C79B) right 10px top 10px/26% 44% no-repeat,repeating-linear-gradient(90deg,#FFFDF6 0 18px,transparent 18px 24px) 14px 18px/52% 26px no-repeat,linear-gradient(#C9A06A,#C9A06A) 8px 8px/62% 54% no-repeat,linear-gradient(#A8714A,#A8714A) 0 64px/100% 5px no-repeat,#E8D4B2}
+.hpv-classic{background:linear-gradient(var(--surface),var(--surface)) 10px 12px/45% 24px no-repeat,linear-gradient(var(--surface-2),var(--surface-2)) 10px 44px/80% 12px no-repeat,linear-gradient(var(--surface-2),var(--surface-2)) 10px 62px/60% 12px no-repeat,var(--bg-2)}
+.hpv-studio{background:linear-gradient(#8FC6EE,#F6C79B) right 10px top 10px/26% 44% no-repeat,repeating-linear-gradient(90deg,#FFFDF6 0 18px,transparent 18px 24px) 14px 18px/52% 26px no-repeat,linear-gradient(#C9A06A,#C9A06A) 8px 8px/62% 54% no-repeat,linear-gradient(#A8714A,#A8714A) 0 64px/100% 5px no-repeat,#E8D4B2}
 @media(prefers-reduced-motion:reduce){.studio .sn{animation:none}}
 
 .st-clock{display:none;z-index:2;left:12%;top:54%;width:20%;aspect-ratio:1;border-radius:50%;background:#FFF8E8;box-shadow:0 0 0 .5cqw var(--wood),0 0 0 .75cqw var(--wood-d),0 8px 14px -8px rgba(0,0,0,.55)}
@@ -1996,6 +1996,22 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .narrow .st-play{top:auto;bottom:15%;right:12px}
 .bc{max-width:15cqw;max-height:8cqw}.st-tray{justify-content:flex-start}
 .narrow .bc{max-width:none;max-height:none}
+/* phones: the scene starts below the status bar and melts into the page at the top too */
+.studio.narrow{height:auto;aspect-ratio:auto}
+.narrow .st-board{top:calc(2.5% + var(--sat,0px) * .9);height:calc(47.5% - var(--sat,0px) * .9)}
+.narrow .st-lights{top:calc(var(--sat,0px) * .85)}
+.narrow .st-camwrap{position:relative;width:100%;aspect-ratio:9/15}
+.st-fade-top{display:none}
+.narrow .st-fade-top{display:block;position:absolute;left:0;right:0;top:0;height:calc(var(--sat,0px) + 9%);z-index:8;pointer-events:none;
+ background:linear-gradient(180deg,var(--bg) 0,color-mix(in srgb,var(--bg) 80%,transparent) calc(var(--sat,0px) * .7),color-mix(in srgb,var(--bg) 30%,transparent) calc(var(--sat,0px) + 3%),transparent)}
+
+/* lamp light: a soft cone from the bulb down onto the desk, and a warm pool where it lands (night only) */
+.st-lamp .cone{left:-118%;top:36%;width:170%;height:64%;transform:none;clip-path:polygon(78% 0,90% 6%,74% 100%,0 100%);
+ background:linear-gradient(200deg,rgba(255,224,160,.5),rgba(255,214,150,.18) 55%,rgba(255,210,140,.04));filter:blur(1cqw);mix-blend-mode:screen}
+.st-lamp .pool{position:absolute;left:-150%;bottom:-7%;width:230%;height:16%;border-radius:50%;pointer-events:none;z-index:8;
+ background:radial-gradient(closest-side,rgba(255,214,150,.55),rgba(255,200,130,.18) 55%,transparent);opacity:calc(1 - var(--amb));mix-blend-mode:screen;filter:blur(.4cqw)}
+.narrow .st-lamp .cone{filter:blur(1.6cqw)}
+.st-shine{opacity:calc(.25 + var(--amb) * .75)}
 /* shared item panel */
 .shp{margin:14px 0 4px;padding:14px;border-radius:22px;background:var(--surface);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));box-shadow:0 14px 34px -24px color-mix(in srgb,var(--accent) 70%,transparent)}
 .shp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
@@ -2132,7 +2148,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.9.2';
+const APP_VER='1.9.3';
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
@@ -5151,7 +5167,7 @@ function studioBench(D){const today=S.entries.filter(e=>dayOf(e.t)===ymd());cons
  <div class="st-books" aria-hidden="true"><i class="bk a"></i><i class="bk b"></i><i class="bk c"></i></div>
  <div class="st-mug" aria-hidden="true"><i class="steam a"></i><i class="steam b"></i></div>
  <div class="st-plant" aria-hidden="true">${STUDIO_PLANT}</div>
- <div class="st-lamp" aria-hidden="true"><i class="cone"></i><i class="glow"></i>${STUDIO_LAMP}</div>`}
+ <div class="st-lamp" aria-hidden="true"><i class="cone"></i><i class="pool"></i><i class="glow"></i>${STUDIO_LAMP}</div>`}
 const STUDIO_PLANT=`<svg viewBox="0 0 60 80"><ellipse cx="30" cy="78" rx="18" ry="2.6" fill="rgba(0,0,0,.25)"/><path d="M30 52C28 36 16 30 8 30c4 10 12 18 22 22zM30 52c2-18 14-26 24-26-3 12-12 22-24 26zM30 54c-1-20 4-34 10-42 3 14-1 30-10 42z" fill="#5E9C5B"/><path d="M30 54c-6-14-14-20-22-22M30 54c6-16 16-24 24-26" stroke="#3F7343" stroke-width="1.4" fill="none"/><path d="M14 52h32l-4 26H18z" fill="#C8734B"/><path d="M14 52h10l-2 26h-4z" fill="rgba(255,255,255,.14)"/><path d="M40 52h6l-4 26h-4z" fill="rgba(0,0,0,.14)"/><path d="M12 50h36v6H12z" fill="#D9895E"/></svg>`;
 const STUDIO_LAMP=`<svg viewBox="0 0 70 110"><defs><linearGradient id="lsh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3F8B85"/><stop offset="1" stop-color="#1F4C4A"/></linearGradient><linearGradient id="lmt" x1="0" x2="1"><stop offset="0" stop-color="#6B6058"/><stop offset=".5" stop-color="#3B332D"/><stop offset="1" stop-color="#211C18"/></linearGradient></defs>
 <ellipse cx="35" cy="106" rx="20" ry="3" fill="rgba(0,0,0,.28)"/><path d="M16 104h38" stroke="url(#lmt)" stroke-width="7" stroke-linecap="round"/><path d="M35 102V58l-14-22" stroke="url(#lmt)" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="35" cy="58" r="4.2" fill="#3B332D"/><circle cx="21" cy="36" r="3.4" fill="#3B332D"/>
@@ -5238,8 +5254,8 @@ const STUDIO_VINE=`<svg viewBox="0 0 60 120"><path d="M30 0v14" stroke="#7A6450"
 <g class="vine v3"><path d="M30 26c-1 26 2 50-2 78" stroke="#4E7F45" stroke-width="1.4" fill="none"/>${[40,56,72,88,100].map((y,i)=>`<path d="M${29+(i%2?2:-2)} ${y}c${i%2?6:-6}-2 ${i%2?8:-8} 4 ${i%2?4:-4} 7-${i%2?3:-3} 0-5-3-4-7z" fill="#64A55F"/>`).join('')}</g></svg>`;
 function studioHTML(){const narrow=innerWidth<640;const D=studioData(narrow),sky=skyNow(),p=st0().play;
  return`<section class="studio${p?'':' paused'}${narrow?' narrow':''}" id="studio" style="${studioVars(sky)}" aria-label="Your studio">
- <div class="st-cam"><div class="st-wall"></div><div class="st-wains"></div>${studioRays(narrow)}<div class="st-motes" aria-hidden="true">${[...Array(9)].map((_,i)=>`<i style="--x:${(i*37)%90+5}%;--y:${(i*53)%80+10}%;--d:${7+i%4*2}s;animation-delay:-${i*1.3}s"></i>`).join('')}</div>${studioLights()}${studioWindow()}${studioClock()}${studioBoard(D)}<div class="st-floor"></div><div class="st-sunpatch" aria-hidden="true"></div><div class="st-rug" aria-hidden="true"></div>${studioBench(D)}
- <div class="st-cat" id="stCat" data-act="stCat" role="img" aria-label="The studio cat">${STUDIO_CAT}</div><div class="st-night"></div></div><div class="st-fade"></div>
+ ${narrow?'<div class="st-camwrap">':''}<div class="st-cam"><div class="st-wall"></div><div class="st-wains"></div>${studioRays(narrow)}<div class="st-motes" aria-hidden="true">${[...Array(9)].map((_,i)=>`<i style="--x:${(i*37)%90+5}%;--y:${(i*53)%80+10}%;--d:${7+i%4*2}s;animation-delay:-${i*1.3}s"></i>`).join('')}</div>${studioLights()}${studioWindow()}${studioClock()}${studioBoard(D)}<div class="st-floor"></div><div class="st-sunpatch" aria-hidden="true"></div><div class="st-rug" aria-hidden="true"></div>${studioBench(D)}
+ <div class="st-cat" id="stCat" data-act="stCat" role="img" aria-label="The studio cat">${STUDIO_CAT}</div><div class="st-night"></div></div>${narrow?'</div>':''}<div class="st-fade"></div><div class="st-fade-top"></div>
  <button class="st-play" data-act="stPlay" aria-label="${p?'Pause the scene':'Play the scene'}" title="${p?'Pause':'Play'}">${p?'<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>':'<svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>'}</button></section>`}
 function studioClock(){const d=new Date(),m=d.getMinutes(),h=d.getHours()%12+m/60,s=d.getSeconds();
  return`<div class="st-clock" aria-label="${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}"><svg viewBox="0 0 100 100">${[...Array(12)].map((_,i)=>`<line x1="50" y1="9" x2="50" y2="${i%3?14:17}" stroke="#7A6450" stroke-width="${i%3?2:3.4}" transform="rotate(${i*30} 50 50)"/>`).join('')}
@@ -5290,7 +5306,7 @@ document.addEventListener('visibilitychange',()=>{if(!$('#studio'))return;if(doc
 const _vToday=vToday;vToday=function(){let o=_vToday();const on=studioOn(),i=o.indexOf('<header class="ph">');if(i<0)return o;
  const j=o.indexOf('<div class="ph-r">',i);if(j>0)o=o.slice(0,j+18)+`<button class="ibtn${on?' on':''}" data-act="homeStyle" data-k="${on?'classic':'studio'}" aria-label="${on?'Classic home':'Studio home (live)'}" title="${on?'Classic home':'Studio home (live)'}">${ic('home')}</button>`+o.slice(j+18);
  return on?studioHTML()+o:o};VIEWS.today=vToday;
-function homePanel(){const h=S.settings.home==='studio'?'studio':'classic';return`<section class="panel wide rv"><h3>Home page</h3><p class="small muted">What Today opens with. More live homes are coming.</p><div class="hpick">${[['classic','Classic','Your plan as cards and lists'],['studio','Studio · live','A cosy room: your work board, a bench, a window with the real sky, and a cat']].map(([k,n,x])=>`<button class="hpc${h===k?' on':''}" data-act="homeStyle" data-k="${k}" aria-pressed="${h===k}"><span class="hpv ${k}"></span><b>${n}</b><small>${x}</small></button>`).join('')}</div></section>`}
+function homePanel(){const h=S.settings.home==='studio'?'studio':'classic';return`<section class="panel wide rv"><h3>Home page</h3><p class="small muted">What Today opens with. More live homes are coming.</p><div class="hpick">${[['classic','Classic','Your plan as cards and lists'],['studio','Studio · live','A cosy room: your work board, a bench, a window with the real sky, and a cat']].map(([k,n,x])=>`<button class="hpc${h===k?' on':''}" data-act="homeStyle" data-k="${k}" aria-pressed="${h===k}"><span class="hpv hpv-${k}"></span><b>${n}</b><small>${x}</small></button>`).join('')}</div></section>`}
 Object.assign(ACT,{
  stPlay:()=>{const p=!st0().play;S.settings.studio={...st0(),play:p};save();const sc=$('#studio');if(sc){sc.classList.toggle('paused',!p);const b=sc.querySelector('.st-play');b.innerHTML=p?'<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>':'<svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>';b.setAttribute('aria-label',p?'Pause the scene':'Play the scene')}if(p)catStart();else catStop()},
  stCat:(d,el)=>{[0,1,2].forEach(i=>setTimeout(()=>{const h=document.createElement('i');h.className='st-heart';h.style.setProperty('--hx',(i-1)*40+'%');h.textContent='♥';el.appendChild(h);setTimeout(()=>h.remove(),1400)},i*180));el.classList.remove('pet');void el.offsetWidth;el.classList.add('pet');setTimeout(()=>el.classList.remove('pet'),1800)},
