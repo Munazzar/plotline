@@ -38,7 +38,18 @@ Object.assign(IC,{
  wbshare:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
  wbundo:'<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
  wbredo:'<path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
- wbprompt:'<path d="M4 17l6-6-6-6M12 19h8"/>'});
+ wbprompt:'<path d="M4 17l6-6-6-6M12 19h8"/>',
+ print:'<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/>',
+ wbglow:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+ wbal:'<path d="M4 3v18"/><rect x="7" y="6" width="10" height="4" rx="1"/><rect x="7" y="14" width="14" height="4" rx="1"/>',
+ wbac:'<path d="M12 3v18"/><rect x="6" y="6" width="12" height="4" rx="1"/><rect x="4" y="14" width="16" height="4" rx="1"/>',
+ wbar:'<path d="M20 3v18"/><rect x="7" y="6" width="10" height="4" rx="1"/><rect x="3" y="14" width="14" height="4" rx="1"/>',
+ wbat:'<path d="M3 4h18"/><rect x="6" y="7" width="4" height="10" rx="1"/><rect x="14" y="7" width="4" height="14" rx="1"/>',
+ wbam:'<path d="M3 12h18"/><rect x="6" y="6" width="4" height="12" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+ wbab:'<path d="M3 20h18"/><rect x="6" y="7" width="4" height="10" rx="1"/><rect x="14" y="3" width="4" height="14" rx="1"/>',
+ wbdh:'<rect x="3" y="7" width="4" height="10" rx="1"/><rect x="10" y="7" width="4" height="10" rx="1"/><rect x="17" y="7" width="4" height="10" rx="1"/>',
+ wbdv:'<rect x="7" y="3" width="10" height="4" rx="1"/><rect x="7" y="10" width="10" height="4" rx="1"/><rect x="7" y="17" width="10" height="4" rx="1"/>'});
+const DESC={sticky:'A quick thought',card:'A title and details',task:'Something to tick off',step:'A step in a flow',decision:'A yes or no branch',service:'A system or service',data:'A database or store',user:'A person or role',frame:'Group related items',text:'A heading or label'};
 
 /* ---------------- styles ---------------- */
 document.head.insertAdjacentHTML('beforeend',`<style>
@@ -54,12 +65,31 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .wb-e .sel .ln{stroke:var(--accent);stroke-width:2.6}
 .wb-e .tmp{stroke:var(--accent);stroke-dasharray:6 5}
 .wb-e text{font:600 12px var(--f-body);fill:var(--text);paint-order:stroke;stroke:var(--bg);stroke-width:5px;stroke-linejoin:round;text-anchor:middle;dominant-baseline:middle}
-.wn{position:absolute;isolation:isolate;box-sizing:border-box;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid color-mix(in srgb,var(--nc) 40%,var(--line-2));color:var(--text);font:500 14px/1.4 var(--f-body);box-shadow:0 6px 18px -10px rgba(0,0,0,.5);cursor:grab;display:flex;flex-direction:column;justify-content:center;overflow-wrap:anywhere;z-index:1}
+.wn{position:absolute;isolation:isolate;box-sizing:border-box;padding:16px 18px;border-radius:16px;background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,var(--text) 8%),var(--surface) 42px);border:1px solid color-mix(in srgb,var(--nc) 34%,var(--line-2));color:var(--text);font:500 14.5px/1.5 var(--f-body);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--text) 7%,transparent),0 1px 2px rgba(0,0,0,.18),0 12px 28px -16px rgba(0,0,0,.6);transition:box-shadow .25s,border-color .25s;cursor:grab;display:flex;flex-direction:column;justify-content:center;overflow-wrap:anywhere;z-index:1}
 .wn.sel{outline:2px solid var(--accent);outline-offset:2px}
 .wn.drop{outline:2px dashed var(--accent);outline-offset:3px}
 .wn-t{white-space:pre-wrap;min-height:1.4em;outline:none}
 .wn-t[contenteditable]{cursor:text;user-select:text;-webkit-user-select:text}
-.wn-k{font:500 9.5px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--nc);margin-bottom:3px}
+.wn-k{align-self:flex-start;font:600 9.5px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--nc);background:color-mix(in srgb,var(--nc) 15%,transparent);padding:3px 8px;border-radius:999px;margin-bottom:8px}
+.wn:hover{border-color:color-mix(in srgb,var(--nc) 55%,var(--line-2));box-shadow:inset 0 1px 0 color-mix(in srgb,var(--text) 8%,transparent),0 2px 4px rgba(0,0,0,.2),0 18px 36px -18px rgba(0,0,0,.7)}
+.wn.halo{box-shadow:0 0 0 3px color-mix(in srgb,var(--hc) 38%,transparent),0 0 30px 6px color-mix(in srgb,var(--hc) 42%,transparent),0 12px 28px -16px rgba(0,0,0,.6);border-color:var(--hc)}
+.t-decision.halo,.t-text.halo,.t-frame.halo{box-shadow:none;filter:drop-shadow(0 0 14px color-mix(in srgb,var(--hc) 70%,transparent))}
+.wb-addb span{font-size:13px}
+.wb-signin{background:var(--accent);color:var(--on-accent)}.wb-signin:hover{background:var(--accent);filter:brightness(1.08)}
+.wb-pop{position:absolute;z-index:8;display:none;flex-direction:column;align-items:stretch;gap:6px;padding:12px;width:min(360px,calc(100% - 20px));max-height:min(70dvh,520px);overflow:auto;background:var(--bg-2)}
+.wb-pop.on{display:flex;animation:wbPop .22s cubic-bezier(.32,.72,0,1)}
+@keyframes wbPop{from{opacity:0;transform:translateY(6px) scale(.97)}}
+.wb-pt{font:600 10.5px var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:2px 4px 4px}
+.wb-pg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.wb-po{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;text-align:left;padding:10px;border-radius:13px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;cursor:pointer;transition:border-color .2s,transform .3s var(--spring)}
+.wb-po:hover{border-color:var(--accent)}.wb-po:active{transform:scale(.96)}.wb-po.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.wb-po svg{grid-row:1/3;width:20px;height:20px;color:var(--accent)}.wb-po b{font-size:13px}.wb-po small{font-size:11.5px;color:var(--muted);line-height:1.3}
+.wb-pg.g .wb-po{grid-template-columns:1fr;justify-items:start;gap:6px}
+.wb-gp{display:block;width:100%;height:38px;border-radius:9px;border:1px solid var(--line);background-color:var(--bg)}
+.wb-tg{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 6px 2px;font-size:13.5px}.wb-tg input{width:20px;height:20px;accent-color:var(--accent)}
+.wb-zr{width:110px;height:28px;margin:0 2px;accent-color:var(--accent);cursor:pointer;background:none;border:0;padding:0}
+@media(max-width:520px){.wb-zr{width:84px}}
+html.wb-fs .wb-top{top:10px}html.wb-fs .wb-tools,html.wb-fs .wb-zm{bottom:14px}
 .t-sticky{background:color-mix(in srgb,var(--nc) 26%,var(--surface));border-radius:4px 4px 18px 4px;font-weight:600}
 .t-card .wn-t::first-line{font-weight:700;font-size:15px}
 .t-card{justify-content:flex-start;border-top:3px solid var(--nc)}
@@ -106,7 +136,7 @@ input.wb-ttl:focus{background:var(--surface);box-shadow:none}
 .wb-sep{width:1px;height:22px;background:var(--line-2);margin:0 4px;flex:none}
 .wb-zm{position:absolute;right:10px;bottom:calc(14px + var(--sab,0px));z-index:5}
 .wb-zm .z{font:500 11px var(--f-mono);min-width:50px}
-.wb-sb{position:absolute;z-index:6;transform:translate(-50%,calc(-100% - 14px));display:none;flex-wrap:wrap;max-width:calc(100vw - 20px)}
+.wb-sb{position:absolute;z-index:6;transform:translate(-50%,calc(-100% - 14px));display:none;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 20px)}
 .wb-sb.on{display:flex}
 .wb-dot{width:20px;height:20px;border-radius:50%;background:var(--c);border:2px solid var(--bg-2);box-shadow:0 0 0 1px var(--line-2);cursor:pointer;margin:0 2px;padding:0;flex:none}
 .wb-dot.on{box-shadow:0 0 0 2px var(--text)}
@@ -219,15 +249,22 @@ async function anon(force){let s=null;try{s=JSON.parse(localStorage.getItem(AK)|
  if(!r.ok||!j.idToken){const m=(j.error&&j.error.message)||r.status;throw new Error(/OPERATION_NOT_ALLOWED|ADMIN_ONLY/.test(m)?'Shared boards need Anonymous sign-in turned on in Firebase (Authentication → Sign-in method).':'Couldn’t start a cloud session ('+m+')')}
  return keep({id:j.idToken,rt:j.refreshToken,uid:j.localId,exp:now()+(+j.expiresIn||3600)*1e3})}
 const myUid=()=>{try{return(JSON.parse(localStorage.getItem(AK)||'null')||{}).uid||''}catch(e){return''}};
+/* editing a shared board needs a signed-in Plotline (Google) account; boards only on this device don't */
+const gSess=()=>{try{return typeof fbGet==='function'?fbGet():null}catch(e){return null}};
+const signedIn=()=>{const g=gSess();return!!(g&&g.email&&g.rt)};
+const mine=o=>!!o&&(o===myUid()||o===(gSess()||{}).uid);
+const needLogin=b=>!!(b&&b.cloud&&!signedIn()&&!(WB.views[b.cloud.doc]===b));
+async function gs(){if(typeof fbSession!=='function')throw new Error('Sign in to edit shared boards');try{return await fbSession()}catch(e){throw new Error('Sign in to edit shared boards')}}
+const sessFor=(kind,owner)=>kind==='view'&&owner&&owner===myUid()?anon():gs();
 async function cget(doc){let r;try{r=await fetch(`${FSD()}/${doc}?key=${fbc().key}`,{cache:'no-store'})}catch(e){throw new Error('You’re offline')}
  if(r.status===404)return null;if(!r.ok)throw new Error('Cloud error '+r.status);const d=await r.json();return{ut:d.updateTime,...fsDec(d)}}
-async function cput(doc,fields,pre,retry=true){const s=await anon();const q=pre==='new'?'currentDocument.exists=false':pre?'currentDocument.updateTime='+encodeURIComponent(pre):'';let r;
+async function cput(doc,fields,pre,retry=true){const s=await sessFor(fields.kind,fields.owner);const q=pre==='new'?'currentDocument.exists=false':pre?'currentDocument.updateTime='+encodeURIComponent(pre):'';let r;
  try{r=await fetch(`${FSD()}/${doc}?${q}`,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.id},body:JSON.stringify(fsEnc(fields))})}catch(e){throw new Error('You’re offline')}
- if(r.status===401&&retry){await anon(true);return cput(doc,fields,pre,false)}
+ if(r.status===401&&retry){if(fields.kind==='view'&&fields.owner===myUid())await anon(true);else{const g=gSess();if(g&&typeof fbPut==='function')fbPut({...g,exp:0})}return cput(doc,fields,pre,false)}
  if(r.status===400||r.status===409||r.status===404){const t=await r.text();if(/FAILED_PRECONDITION|ABORTED|ALREADY_EXISTS|NOT_FOUND/.test(t))return{conflict:true};throw new Error('Cloud error '+r.status)}
- if(r.status===403)throw new Error('The cloud refused this board. Check the Firestore rules for “benches”.');
+ if(r.status===403)throw new Error(signedIn()?'The cloud refused this board. Check the Firestore rules for “benches”.':'Sign in to edit shared boards');
  if(!r.ok)throw new Error('Cloud error '+r.status);const d=await r.json();return{ut:d.updateTime}}
-async function cdel(doc){const s=await anon();await fetch(`${FSD()}/${doc}`,{method:'DELETE',headers:{Authorization:'Bearer '+s.id}}).catch(()=>{})}
+async function cdel(doc,owner){let s;try{s=await(owner&&owner===myUid()?anon():gs())}catch(e){return}await fetch(`${FSD()}/${doc}`,{method:'DELETE',headers:{Authorization:'Bearer '+s.id}}).catch(()=>{})}
 function setSt(k,m=''){WB.st={k,m};const el=$('#wbst');if(el){el.className='wb-st '+k;el.title=k==='ok'?'Synced':k==='saving'?'Saving…':k==='err'?m:'On this device only'}if(k==='err'&&m&&m!==WB.lastErr){WB.lastErr=m;toast(esc(m))}}
 let pushT,pushing=false,again=false;
 function pushSoon(d=500){const b=WB.B;if(!b||!b.cloud||b.ro)return;clearTimeout(pushT);pushT=setTimeout(()=>push(b),d)}
@@ -244,7 +281,7 @@ async function pull(b,force){const d=await cget(b.cloud.doc);if(!d){b.cloud.gone
  if(mergeInto(b,r)){persist();if(WB.B===b){if(WB.G||WB.edit)WB.pending=true;else draw()}}else drawWho();
  if(!b.ro&&(b.u||0)>(b.cloud.sent||0))pushSoon(300);setSt('ok')}
 /* the public view copy: a second doc under its own key, which only the owner's device may update */
-let pubT;function pubSoon(b){if(!b.pub||b.cloud.owner!==myUid())return;clearTimeout(pubT);pubT=setTimeout(()=>publish(b).catch(e=>setSt('err',e.message)),2500)}
+let pubT;function pubSoon(b){if(!b.pub||!mine(b.cloud.owner))return;clearTimeout(pubT);pubT=setTimeout(()=>publish(b).catch(e=>setSt('err',e.message)),2500)}
 async function publish(b,first){const v=b.pub,{who:_,...p}=payload(b);for(let i=0;i<3;i++){const r=await cput(v.doc,{owner:b.cloud.owner,kind:'view',enc:await encJ(v.key,p),u:now(),v:1},first?'new':v.ut);
   if(r.conflict){const d=await cget(v.doc);v.ut=d&&d.ut;first=!d;continue}v.ut=r.ut;persist();return}}
 // ponytail: polls one doc every 3s while a shared board is open (12s when quiet); switch to Firestore's Listen channel if read quota matters
@@ -252,13 +289,13 @@ let tick=0;setInterval(()=>{const b=WB.B;tick++;if(!b||!b.cloud||cur.p!=='bench'
  if(now()-(WB.lastRemote||0)>60e3&&tick%4)return;pull(b).catch(e=>setSt('err',e.message))},3000);
 setInterval(()=>{const b=WB.B;if(b&&b.cloud&&!b.ro&&!document.hidden&&cur.p==='bench')pushSoon(0)},30e3);
 const linkOf=(k,doc,key)=>`${webBase()}#/bench/${k}~${doc}~${toUrl(key)}`;
-async function shareOn(b){if(!fsOK())throw new Error('Sharing isn’t available in this version');const s=await anon();
+async function shareOn(b){if(!fsOK())throw new Error('Sharing isn’t available in this version');if(!signedIn()&&!(typeof shReady==='function'&&await shReady()))throw new Error('Sign in first to share a board');const s=await gs();
  b.cloud={doc:rnd(24),key:newKey(),owner:s.uid,ut:null,sent:0};persist();await push(b);if(WB.st.k==='err'){b.cloud=null;persist();throw new Error(WB.st.m)}}
 async function viewOn(b){b.pub={doc:rnd(24),key:newKey(),ut:null};await publish(b,true)}
 async function join(kind,doc,key){
  if(kind==='v'){let b=WB.views[doc];if(!b){b={...blank('Shared board'),ro:true,cloud:{doc,key}};WB.views[doc]=b;await pull(b,true)}return b}
  await loadList();let b=LIST.find(x=>x.cloud&&x.cloud.doc===doc);
- if(!b){b={...blank('Shared board'),tu:0,cloud:{doc,key,owner:'',ut:null,sent:now()}};await pull(b,true);if(b.cloud.gone)throw new Error('That board isn’t shared any more');LIST.unshift(b);persist();toast('Board added to your Workbench')}
+ if(!b){b={...blank('Shared board'),tu:0,cloud:{doc,key,owner:'',ut:null,sent:now()}};await pull(b,true);if(b.cloud.gone)throw new Error('That board isn’t shared any more');LIST.unshift(b);persist();toast(signedIn()?'Board added to your Workbench':'Board added. Sign in to edit it')}
  return b}
 
 /* ---------------- AI ---------------- */
@@ -404,7 +441,7 @@ function vBench(id){
   return`<div class="wb"><div class="wb-cv"></div><p class="muted" style="position:absolute;inset:45% 0 auto;text-align:center">Opening the shared board…</p></div>`}
  const b=LIST.find(x=>x.id===id);if(!b)return`<header class="ph"><div><h1>Not found</h1><div class="data">That board isn’t on this device</div></div></header><a class="btn" href="#/bench">All boards</a>`;
  return openB(b)}
-function openB(b){if(WB.lastB!==b){WB.hist=[];WB.fut=[];WB.sel=new Set();WB.esel=new Set();WB.edit=null;WB.lastB=b;WB.panel=null;WB.lastErr=''}WB.B=b;setSt(b.cloud?'ok':'off');return boardHTML(b)}
+function openB(b){if(b.cloud&&!Object.getOwnPropertyDescriptor(b,'ro'))Object.defineProperty(b,'ro',{get(){return needLogin(this)},configurable:true,enumerable:false});if(WB.lastB!==b){WB.hist=[];WB.fut=[];WB.sel=new Set();WB.esel=new Set();WB.edit=null;WB.lastB=b;WB.panel=null;WB.lastErr=''}WB.B=b;setSt(b.cloud?'ok':'off');return boardHTML(b)}
 function listHTML(){return`<header class="ph"><div><h1>Workbench</h1><div class="data">Ideas, workflows and architectures · with any AI</div></div><div class="ph-r">${gear()}</div></header>
  <section class="rv"><div class="wb-tpls">${TPLS.map(([k,n,d,i])=>`<button class="wb-tpl" data-act="wbNew" data-tpl="${k}">${ic(i)}<b>${n}</b><small>${d}</small></button>`).join('')}</div>
  <div class="actions left"><button class="btn sm" data-act="wbJoin">${ic('link')}Open a shared link</button><label class="btn sm">${ic('up')}Import a board<input type="file" accept=".json,application/json" data-file="wbImport" hidden></label></div></section>
@@ -417,14 +454,14 @@ function mini(b){const ns=Object.values(b.nodes);if(!ns.length)return'<div class
 function boardHTML(b){const ro=!!b.ro;
  return`<div class="wb" id="wb">
  <div class="wb-cv" id="wbcv" tabindex="-1" aria-label="Board canvas"><div class="wb-w" id="wbw"><svg class="wb-e" id="wbe"><defs>${['a','s'].map(k=>`<marker id="wbar${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--${k==='a'?'muted':'accent'})"/></marker>`).join('')}</defs><g id="wbeg"></g><path id="wbtmp" class="ln tmp" d=""/></svg><div id="wbn"></div></div><div class="wb-mq" id="wbmq"></div></div>
- <div class="wb-top"><div class="wb-bar"><a class="wb-b" href="#/bench" aria-label="All boards" title="All boards">${ic('back')}</a>${ro?`<span class="wb-ttl">${esc(b.title)}</span><span class="wb-tag">${ic('eye')}View only</span>`:`<input class="wb-ttl" id="wbttl" value="${esc(b.title)}" maxlength="80" aria-label="Board name">`}<span class="wb-who" id="wbwho"></span><span class="wb-st" id="wbst"></span></div>
+ <div class="wb-top"><div class="wb-bar"><a class="wb-b" href="#/bench" aria-label="All boards" title="All boards">${ic('back')}</a>${ro?`<span class="wb-ttl">${esc(b.title)}</span>${needLogin(b)?`<button class="wb-b wb-signin" data-act="wbLogin">${ic('lock')}<span>Sign in to edit</span></button>`:`<span class="wb-tag">${ic('eye')}View only</span>`}`:`<input class="wb-ttl" id="wbttl" value="${esc(b.title)}" maxlength="80" aria-label="Board name">`}<span class="wb-who" id="wbwho"></span><span class="wb-st" id="wbst"></span></div>
  <div class="wb-sp"></div><div class="wb-bar">${ro?'':pbtn('ai','wbspark','AI')}${pbtn('prompt','wbprompt','Prompt')}${pbtn('comments','wbcom','Comments')}${pbtn('share','wbshare','Share')}${btn('wbMore','','more','More')}</div></div>
- ${ro?'':`<div class="wb-tools wb-bar" id="wbtools">${btn('wbTool','data-t="select"','wbptr','Select (drag empty space to box-select)')}${btn('wbTool','data-t="hand"','wbhand','Pan (or hold Space)')}<span class="wb-sep"></span>${Object.entries(TYPES).map(([k,v])=>btn('wbAdd',`data-t="${k}"`,v[3],'Add '+v[0].toLowerCase())).join('')}<span class="wb-sep"></span>${btn('wbTool','data-t="link"','link','Connect: tap one item, then another')}</div>`}
- <div class="wb-zm wb-bar">${ro?'':btn('wbUndo','','wbundo','Undo (Ctrl+Z)','id="wbun"')+btn('wbRedo','','wbredo','Redo (Ctrl+Shift+Z)','id="wbre"')}${btn('wbZoom','data-d="-1"','minus','Zoom out')}<button class="wb-b z" data-act="wbZoom" data-d="0" id="wbz" title="Reset to 100%">100%</button>${btn('wbZoom','data-d="1"','plus','Zoom in')}${btn('wbFit','','fit','Fit the board (Shift+1)')}${ro?'':`<span class="snap">${btn('wbSnap','','grid','Snap to grid','id="wbsnap"')}</span>`}</div>
- <div class="wb-sb wb-bar" id="wbsb"></div><aside class="wb-side" id="wbside" aria-label="Board panel"></aside></div>`}
+ ${ro?'':`<div class="wb-tools wb-bar" id="wbtools">${btn('wbTool','data-t="select"','wbptr','Select (drag empty space to box-select)')}${btn('wbTool','data-t="hand"','wbhand','Pan (or hold Space)')}<span class="wb-sep"></span><button class="wb-b wb-addb" data-act="wbPop" data-p="add" aria-haspopup="dialog" aria-expanded="false" title="Add an item">${ic('plus')}<span>Add</span></button>${btn('wbAdd','data-t="sticky"','wbsticky','Add a sticky note')}<span class="wb-sep"></span>${btn('wbTool','data-t="link"','link','Connect: tap one item, then another')}</div>`}
+ <div class="wb-zm wb-bar">${ro?'':btn('wbUndo','','wbundo','Undo (Ctrl+Z)','id="wbun"')+btn('wbRedo','','wbredo','Redo (Ctrl+Shift+Z)','id="wbre"')}${btn('wbZoom','data-d="-1"','minus','Zoom out 5%')}<input type="range" class="wb-zr" id="wbzr" min="15" max="300" step="1" value="100" aria-label="Zoom"><button class="wb-b z" data-act="wbZoom" data-d="0" id="wbz" title="Back to 100%">100%</button>${btn('wbZoom','data-d="1"','plus','Zoom in 5%')}${btn('wbFit','','fit','Fit the board (Shift+1)')}${btn('wbPop','data-p="view"','grid','Background and snapping','aria-haspopup="dialog" aria-expanded="false"')}${btn('wbFull','','full','Full screen','id="wbfull"')}</div>
+ <div class="wb-sb wb-bar" id="wbsb"></div><div class="wb-pop wb-bar" id="wbpop" role="dialog" aria-label="Choose"></div><aside class="wb-side" id="wbside" aria-label="Board panel"></aside></div>`}
 const pbtn=(p,icon,label)=>`<button class="wb-b" data-act="wbPanel" data-p="${p}" aria-label="${label}" title="${label}">${ic(icon)}<span class="lb">${label}</span>${p==='comments'?'<span class="n" id="wbcn"></span>':''}</button>`;
 function nodeHTML(n,ro){const t=TYPES[n.type]?n.type:'card',cm=Object.values(WB.B.comments).filter(c=>c.on===n.id).length;
- return`<div class="wn t-${t}${n.done?' done':''}${WB.sel.has(n.id)?' sel':''}" data-id="${n.id}" style="left:${n.x}px;top:${n.y}px;width:${n.w}px;min-height:${n.h}px;--nc:${COLORS[n.color]||COLORS.none}">${t==='task'?`<button class="wn-ck" data-ck aria-label="Mark done">${n.done?ic('check'):''}</button>`:''}${KTAG[t]?`<div class="wn-k">${KTAG[t]}</div>`:''}<div class="wn-t">${esc(n.text)}</div>${cm?`<span class="wn-b">${cm}</span>`:''}${ro?'':'<i class="wn-h" data-h title="Drag to connect"></i><i class="wn-r" data-r></i>'}</div>`}
+ return`<div class="wn t-${t}${n.done?' done':''}${n.halo?' halo':''}${WB.sel.has(n.id)?' sel':''}" data-id="${n.id}" style="left:${n.x}px;top:${n.y}px;width:${n.w}px;min-height:${n.h}px;--nc:${COLORS[n.color]||COLORS.none};--hc:${n.color&&n.color!=='none'&&COLORS[n.color]?COLORS[n.color]:'var(--accent)'}">${t==='task'?`<button class="wn-ck" data-ck aria-label="Mark done">${n.done?ic('check'):''}</button>`:''}${KTAG[t]?`<div class="wn-k">${KTAG[t]}</div>`:''}<div class="wn-t">${esc(n.text)}</div>${cm?`<span class="wn-b">${cm}</span>`:''}${ro?'':'<i class="wn-h" data-h title="Drag to connect"></i><i class="wn-r" data-r></i>'}</div>`}
 function draw(){const b=WB.B,box=$('#wbn');if(!b||!box)return;WB.pending=false;const ns=Object.values(b.nodes).sort((p,q)=>(q.type==='frame')-(p.type==='frame'));
  box.innerHTML=ns.map(n=>nodeHTML(n,b.ro)).join('');WB.els=new Map([...box.children].map(el=>[el.dataset.id,el]));
  [...WB.sel].forEach(id=>{if(!b.nodes[id])WB.sel.delete(id)});[...WB.esel].forEach(id=>{if(!b.edges[id])WB.esel.delete(id)});
@@ -443,8 +480,36 @@ function drawEdges(){const g=$('#wbeg');if(!g)return;g.innerHTML=edgesOk(WB.B).m
  return`<g data-eid="${e.id}" class="${s?'sel':''}"><path class="hit" d="${k.d}"/><path class="ln" d="${k.d}" marker-end="url(#wbar${s?'s':'a'})"/>${e.label?`<text x="${k.m.x}" y="${k.m.y}">${esc(e.label)}</text>`:''}</g>`}).join('')}
 function drawWho(){const el=$('#wbwho'),b=WB.B;if(!el||!b)return;const L=Object.entries(b.who||{}).filter(([k,v])=>k!==ME&&v.t>now()-90e3);
  const hue=s=>[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%360;el.innerHTML=L.slice(0,5).map(([k,v])=>`<span style="background:hsl(${hue(k)} 70% 70%)" title="${esc(v.n)} is here">${esc((v.n||'?')[0].toUpperCase())}</span>`).join('');el.title=L.length?`${L.length} other${L.length===1?'':'s'} here now`:''}
+const GRIDS=[['dots','Dots'],['grid','Grid'],['fine','Grid + blocks'],['cross','Crosses'],['iso','Triangles'],['lines','Lined paper'],['none','Plain']];
+const gmode=()=>{const m=S.settings.wbGrid||'dots';return GRIDS.some(g=>g[0]===m)?m:'dots'};
+let GCOL='';function gcol(){if(!GCOL){const c=getComputedStyle(document.documentElement);GCOL=[c.getPropertyValue('--line-2').trim()||'#888',c.getPropertyValue('--line').trim()||'#666']}return GCOL}
+function gridSvg(m,g){const[a,b]=gcol(),u=(w,h,body)=>`url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>${body}</svg>`)}")`,r=Math.max(.8,Math.min(1.6,g/14));
+ if(m==='dots')return[u(g,g,`<circle cx='${g/2}' cy='${g/2}' r='${r}' fill='${a}'/>`),g,g];
+ if(m==='grid')return[u(g,g,`<path d='M${g} 0V${g}H0' fill='none' stroke='${b}' stroke-width='1'/>`),g,g];
+ if(m==='fine'){const G=g*5;let d='';for(let i=1;i<5;i++)d+=`M${i*g} 0V${G}M0 ${i*g}H${G}`;return[u(G,G,`<path d='${d}' fill='none' stroke='${b}' stroke-width='1'/><path d='M${G} 0V${G}H0' fill='none' stroke='${a}' stroke-width='1.2'/>`),G,G]}
+ if(m==='cross'){const c=g/2,k=Math.max(2.5,g/7);return[u(g,g,`<path d='M${c-k} ${c}H${c+k}M${c} ${c-k}V${c+k}' stroke='${a}' stroke-width='1.1'/>`),g,g]}
+ if(m==='iso'){const h=g*Math.sqrt(3);return[u(g,h,`<circle cx='0' cy='0' r='${r}' fill='${a}'/><circle cx='${g}' cy='0' r='${r}' fill='${a}'/><circle cx='${g/2}' cy='${h/2}' r='${r}' fill='${a}'/><circle cx='0' cy='${h}' r='${r}' fill='${a}'/><circle cx='${g}' cy='${h}' r='${r}' fill='${a}'/>`),g,h]}
+ if(m==='lines')return[u(g,g,`<path d='M0 ${g-.5}H${g}' stroke='${b}' stroke-width='1'/>`),g,g];return['none',g,g]}
 function applyView(){const v=WB.B&&WB.B.vp,w=$('#wbw'),cv=$('#wbcv');if(!v||!w)return;w.style.transform=`translate(${v.x}px,${v.y}px) scale(${v.z})`;
- const g=GRID*v.z*(v.z<.5?5:1);cv.style.backgroundSize=`${g}px ${g}px`;cv.style.backgroundPosition=`${v.x}px ${v.y}px`;const z=$('#wbz');if(z)z.textContent=Math.round(v.z*100)+'%';placeSb()}
+ const g=GRID*v.z*(v.z<.5?5:1),[img,gw,gh]=gridSvg(gmode(),g);cv.style.backgroundImage=img;cv.style.backgroundSize=`${gw}px ${gh}px`;cv.style.backgroundPosition=`${v.x}px ${v.y}px`;
+ const z=$('#wbz');if(z)z.textContent=Math.round(v.z*100)+'%';const zr=$('#wbzr');if(zr&&document.activeElement!==zr)zr.value=Math.round(v.z*100);placeSb()}
+function zoomStep(dir,sx,sy){const v=WB.B.vp,c=Math.round(v.z*100),n=dir>0?(Math.floor(c/5)+1)*5:(Math.ceil(c/5)-1)*5;zoomAt(Math.max(15,Math.min(300,n))/100/v.z,sx,sy)}
+function zoomCenter(){const cv=$('#wbcv');return[cv.clientWidth/2,cv.clientHeight/2]}
+/* pop-overs (Add, Background) */
+function popHTML(p){if(p==='add')return`<div class="wb-pt">Add to the board</div><div class="wb-pg">${Object.entries(TYPES).map(([k,v])=>`<button class="wb-po" data-act="wbAddPop" data-t="${k}">${ic(v[3])}<b>${v[0]}</b><small>${DESC[k]||''}</small></button>`).join('')}</div>`;
+ if(p==='view')return`<div class="wb-pt">Background</div><div class="wb-pg g">${GRIDS.map(([k,n])=>`<button class="wb-po${gmode()===k?' on':''}" data-act="wbGrid" data-g="${k}" aria-pressed="${gmode()===k}"><i class="wb-gp" style="background-image:${gridSvg(k,14)[0].replace(/"/g,"'")};background-size:${gridSvg(k,14)[1]}px ${gridSvg(k,14)[2]}px"></i><b>${n}</b></button>`).join('')}</div><label class="wb-tg"><span>Snap items to the grid</span><input type="checkbox" id="wbsnapc" ${WB.snap?'checked':''}></label>`;return''}
+function popOpen(p,anchor){const el=$('#wbpop'),wb=$('#wb');if(!el||!wb)return;if(WB.pop===p)return popClose();popClose();WB.pop=p;el.innerHTML=popHTML(p);el.classList.add('on');
+ const r=anchor.getBoundingClientRect(),o=wb.getBoundingClientRect(),w=el.offsetWidth,h=el.offsetHeight;let x=r.left+r.width/2-o.left-w/2;x=Math.max(10,Math.min(o.width-w-10,x));let y=r.top-o.top-h-10;if(y<10)y=r.bottom-o.top+10;el.style.left=x+'px';el.style.top=y+'px';anchor.setAttribute('aria-expanded','true')}
+function popClose(){WB.pop=null;const el=$('#wbpop');if(el)el.classList.remove('on');document.querySelectorAll('[data-act=wbPop]').forEach(b=>b.setAttribute('aria-expanded','false'))}
+document.addEventListener('pointerdown',e=>{if(WB.pop&&!(e.target.closest&&e.target.closest('#wbpop,[data-act=wbPop]')))popClose()},true);
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='wbsnapc'){WB.snap=e.target.checked;toast(WB.snap?'Snap to grid on':'Snap to grid off')}});
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='wbzr'&&WB.B&&WB.B.vp){const[cx,cy]=zoomCenter();zoomAt((+e.target.value/100)/WB.B.vp.z,cx,cy)}});
+document.addEventListener('wheel',e=>{if(!(e.target&&e.target.id==='wbzr')||!WB.B)return;e.preventDefault();const[cx,cy]=zoomCenter();zoomStep(e.deltaY<0?1:-1,cx,cy)},{passive:false});
+/* full screen: the browser's, or the app's immersive mode */
+function fsSet(on){const R=document.documentElement;R.classList.toggle('wb-fs',on);try{if(on){if(R.requestFullscreen&&!document.fullscreenElement&&!NATIVE)R.requestFullscreen().catch(()=>{})}else if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}try{NATIVE&&NATIVE.immersive&&NATIVE.immersive(!!on)}catch(e){}
+ const b=$('#wbfull');if(b){b.innerHTML=ic(on?'unfull':'full');b.title=b.ariaLabel=on?'Exit full screen':'Full screen'}}
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.documentElement.classList.contains('wb-fs'))fsSet(false)});
+addEventListener('hashchange',()=>{if(!/^#\/bench\//.test(location.hash)&&document.documentElement.classList.contains('wb-fs'))fsSet(false);popClose()});
 function centerWorld(){const cv=$('#wbcv'),v=WB.B.vp||{x:0,y:0,z:1};const w=cv?cv.clientWidth:innerWidth,h=cv?cv.clientHeight:innerHeight;return{x:(w/2-v.x)/v.z,y:(h/2-v.y)/v.z}}
 function fitTo(ids,anim){const cv=$('#wbcv'),b=WB.B;if(!cv)return;const bb=bbox((ids||Object.keys(b.nodes)).map(rectOf).filter(Boolean));const W=cv.clientWidth,H=cv.clientHeight;
  if(!bb){b.vp={x:W/2,y:H/2,z:1};applyView();return}const pad=W<600?40:110,z=Math.max(.15,Math.min(1.2,(W-pad*2)/bb.w,(H-pad*2-60)/bb.h));
@@ -454,11 +519,11 @@ function zoomAt(f,sx,sy){const v=WB.B.vp,z=Math.max(.15,Math.min(3,v.z*f));const
 let SBK='';
 function drawSel(){const b=WB.B;if(!b)return;WB.els.forEach((el,id)=>el.classList.toggle('sel',WB.sel.has(id)));document.querySelectorAll('#wbeg [data-eid]').forEach(g=>{const s=WB.esel.has(g.dataset.eid);g.classList.toggle('sel',s);g.querySelector('.ln').setAttribute('marker-end',`url(#wbar${s?'s':'a'})`)});
  const sb=$('#wbsb');if(!sb)return;if(b.ro||(!WB.sel.size&&!WB.esel.size)){sb.classList.remove('on');SBK='';return}
- const key=[...WB.sel,...WB.esel].join()+'|'+[...WB.sel].map(id=>b.nodes[id]&&b.nodes[id].color+b.nodes[id].type).join();
+ const key=[...WB.sel,...WB.esel].join()+'|'+[...WB.sel].map(id=>b.nodes[id]&&b.nodes[id].color+b.nodes[id].type+(b.nodes[id].halo?'h':'')).join();
  if(key!==SBK){SBK=key;if(WB.sel.size){const ns=[...WB.sel].map(id=>b.nodes[id]),c0=ns[0].color,t0=ns.every(n=>n.type===ns[0].type)?ns[0].type:'';
    sb.innerHTML=Object.entries(COLORS).map(([k,v])=>`<button class="wb-dot${ns.every(n=>n.color===k)?' on':''}" style="--c:${k==='none'?'var(--surface-2)':v}" data-act="wbColor" data-c="${k}" aria-label="Color ${k}" title="${k}"></button>`).join('')
    +`<span class="wb-sep"></span><select id="wbtype" aria-label="Item type">${t0?'':'<option value="">Mixed</option>'}${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${k===t0?'selected':''}>${v[0]}</option>`).join('')}</select><span class="wb-sep"></span>`
-   +(WB.sel.size===1?btn('wbEdit','','edit','Edit text (Enter)'):'')+btn('wbPanel','data-p="comments"','wbcom','Comment')+btn('wbAskSel','','wbspark','Ask AI about the selection')+btn('wbDupSel','','copy','Duplicate (Ctrl+D)')+btn('wbDelSel','','trash','Delete (Del)');void c0}
+   +btn('wbHalo','',  'wbglow',ns.every(n=>n.halo)?'Turn off the glow':'Glow: highlight with a halo',ns.every(n=>n.halo)?'aria-pressed="true" style="color:var(--accent)"':'aria-pressed="false"')+(WB.sel.size>1?'<span class="wb-sep"></span>'+[['l','wbal','Align left'],['c','wbac','Align centres'],['r','wbar','Align right'],['t','wbat','Align tops'],['m','wbam','Align middles'],['b','wbab','Align bottoms']].map(([a,i,l])=>btn('wbAlign',`data-a="${a}"`,i,l)).join('')+(WB.sel.size>2?btn('wbAlign','data-a="dh"','wbdh','Space evenly across')+btn('wbAlign','data-a="dv"','wbdv','Space evenly down'):'')+'<span class="wb-sep"></span>':'')+(WB.sel.size===1?btn('wbEdit','','edit','Edit text (Enter)'):'')+btn('wbPanel','data-p="comments"','wbcom','Comment')+btn('wbAskSel','','wbspark','Ask AI about the selection')+btn('wbDupSel','','copy','Duplicate (Ctrl+D)')+btn('wbDelSel','','trash','Delete (Del)');void c0}
   else sb.innerHTML=btn('wbEdgeLabel','','edit','Edit label')+btn('wbEdgeRev','','horz','Reverse direction')+btn('wbDelSel','','trash','Delete link');}
  sb.classList.toggle('on',!WB.G);placeSb()}
 function placeSb(){const sb=$('#wbsb'),b=WB.B;if(!sb||!b||!sb.classList.contains('on'))return;const v=b.vp;let bb;
@@ -515,11 +580,12 @@ function commentsHTML(){const b=WB.B,one=WB.sel.size===1?[...WB.sel][0]:null,L=O
  ${L.length?L.map(c=>`<div class="wb-cm"><b>${esc(c.by)}</b> <small class="muted">${rel(c.t)}${one?'':` · on <button class="link" data-act="wbGo" data-id="${c.on}">${short(c.on)}</button>`}</small>${c.me===ME&&!b.ro?` <button class="link" data-act="wbCDel" data-id="${c.id}" style="float:right">Delete</button>`:''}<p>${esc(c.text)}</p></div>`).join(''):'<p class="muted small">No comments yet.</p>'}
  ${one&&!b.ro?`<form data-form="wbCom" class="wb-sec">${myName()?'':'<div class="field"><label>Your name</label><input name="name" maxlength="40" required autocomplete="nickname"></div>'}<textarea name="text" placeholder="Write a comment" required maxlength="1000" style="min-height:70px"></textarea><div class="actions left"><button class="btn pri sm">Post</button></div></form>`:''}`}
 function shareHTML(){const b=WB.B;
+ if(needLogin(b))return`<p class="small">Anyone can look at this board with the link, but changing it needs a Plotline account, so every edit has a name on it.</p><div class="actions left"><button class="btn pri" data-act="wbLogin">${ic('lock')}Sign in to edit</button></div>`;
  if(b.ro)return`<p class="small">You’re viewing a read-only link. It updates live as the owner works.</p><div class="sh-what">${ic('lock')}<div><b>Private by design</b><small>This board is encrypted. The key is only in your link, after the #, which is never sent to any server. Search engines and bots can’t find or read it.</small></div></div>`;
  if(!b.cloud)return`<p class="small muted">This board lives only on this device right now.</p>
  <div class="sh-what">${ic('lock')}<div><b>Unlisted, encrypted links</b><small>Sharing puts an end-to-end encrypted copy in the cloud and gives you a long, unguessable link. The key lives only in the link, after the #, which browsers never send to any server, so Google, link previews and bots can’t find or read the board.</small></div></div>
  <div class="actions left"><button class="btn pri" data-act="wbShare" ${fsOK()?'':'disabled'}>${ic('wbshare')}Create share link</button></div>${fsOK()?'':'<p class="wb-hint">Sharing isn’t available in this version.</p>'}`;
- const own=b.cloud.owner===myUid(),n=Object.entries(b.who||{}).filter(([k,v])=>k!==ME&&v.t>now()-90e3).length;
+ const own=mine(b.cloud.owner),n=Object.entries(b.who||{}).filter(([k,v])=>k!==ME&&v.t>now()-90e3).length;
  const row=(id,url)=>`<div class="wb-row"><input id="${id}" readonly value="${esc(url)}" aria-label="Link"><button class="btn sm" data-act="wbCopyLink" data-k="${id}">${ic('copy')}Copy</button></div>`;
  return`<p class="small">${n?`<b>${n} other${n===1?'':'s'}</b> here now. `:''}Changes sync live.</p>
  <label class="lbl">Collaborate · anyone with this link can view, edit and comment</label>${row('wbl1',linkOf('e',b.cloud.doc,b.cloud.key))}
@@ -532,7 +598,7 @@ const PTS=new Map();let SPACE=false;
 const world=e=>{const r=$('#wbcv').getBoundingClientRect(),v=WB.B.vp;return{x:(e.clientX-r.left-v.x)/v.z,y:(e.clientY-r.top-v.y)/v.z}};
 function mount(){const cv=$('#wbcv');if(!cv||cv._m||!WB.B)return;cv._m=1;const b=WB.B;
  cv.addEventListener('pointerdown',pdown);cv.addEventListener('pointermove',pmove);cv.addEventListener('pointerup',pup);cv.addEventListener('pointercancel',pup);cv.addEventListener('dblclick',dbl);
- cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect();if(e.ctrlKey||e.metaKey)zoomAt(Math.exp(-e.deltaY*.0085),e.clientX-r.left,e.clientY-r.top);else{b.vp.x-=e.deltaX;b.vp.y-=e.deltaY;applyView()}},{passive:false});
+ cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect();if(e.ctrlKey||e.metaKey){WB.wacc=(WB.wacc||0)+e.deltaY;if(Math.abs(WB.wacc)>=24){zoomStep(WB.wacc<0?1:-1,e.clientX-r.left,e.clientY-r.top);WB.wacc=0}}else{b.vp.x-=e.deltaX;b.vp.y-=e.deltaY;applyView()}},{passive:false});
  cv.addEventListener('focusout',e=>{if(e.target.matches&&e.target.matches('.wn-t[contenteditable]'))finishEdit()});
  const t=$('#wbttl');if(t)t.addEventListener('input',()=>{b.title=t.value.slice(0,80)||'Untitled board';b.tu=now();b.u=now();persist();pushSoon(800)});
  const side=$('#wbside');side.addEventListener('input',e=>{const id=e.target.id;if(id==='wbaitext')AIS.text=e.target.value;else if(id==='wbaireply')AIS.reply=e.target.value;else if(id==='wbptext'){AIS.ptext=e.target.value;AIS.pout=studioPrompt();const o=$('#wbpout');if(o)o.value=AIS.pout}else if(id==='wbpout')AIS.pout=e.target.value;else if(id==='wbpans')AIS.pans=e.target.value;
@@ -611,7 +677,7 @@ addEventListener('keydown',e=>{if(!onBoard())return;const t=e.target,b=WB.B,k=e.
  else if(mod&&k.toLowerCase()==='d'){e.preventDefault();ACT.wbDupSel()}
  else if(k==='Delete'||k==='Backspace'){if(WB.sel.size||WB.esel.size){e.preventDefault();ACT.wbDelSel()}}
  else if(k==='Enter'&&WB.sel.size===1){e.preventDefault();startEdit([...WB.sel][0])}
- else if(k==='Escape'){WB.sel.clear();WB.esel.clear();WB.linkFrom=null;drawSel()}
+ else if(k==='Escape'&&WB.pop){popClose()}else if(k==='Escape'){WB.sel.clear();WB.esel.clear();WB.linkFrom=null;drawSel()}
  else if(k.startsWith('Arrow')&&WB.sel.size){e.preventDefault();const s=e.shiftKey?GRID*2:WB.snap?GRID:1,dx=k==='ArrowLeft'?-s:k==='ArrowRight'?s:0,dy=k==='ArrowUp'?-s:k==='ArrowDown'?s:0,before=snap(b);WB.sel.forEach(id=>{b.nodes[id].x+=dx;b.nodes[id].y+=dy});commit(before)}
  else if(!mod&&!e.altKey&&k==='n'){e.preventDefault();addNode('sticky')}});
 addEventListener('keyup',e=>{if(e.code==='Space'){SPACE=false;const cv=$('#wbcv');if(cv)cv.classList.remove('pan')}});
@@ -621,15 +687,20 @@ addEventListener('resize',()=>{if(onBoard())placeSb()});
 const B=()=>WB.B;
 const dl=(name,txt,type)=>download(name,txt,type);
 const fileName=b=>(b.title.replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-')||'board').slice(0,60);
+function printBoard(b){const ns=Object.values(b.nodes);if(!ns.length)return toast('The board is empty');const bb=bbox(ns.map(n=>rectOf(n.id)||n)),p=40,hex=n=>{const c=COLORS[n.color];return c&&c[0]==='#'?c:'#8a8f9c'};
+ const ed=edgesOk(b).map(e=>{const[q1,q2]=ends(rectOf(e.a),rectOf(e.b)),k=curve(q1,q2);return`<path d="${k.d}" fill="none" stroke="#666" stroke-width="1.6" marker-end="url(#ar)"/>${e.label?`<text x="${k.m.x}" y="${k.m.y}" font-size="12" text-anchor="middle" fill="#333" stroke="#fff" stroke-width="4" paint-order="stroke">${esc(e.label)}</text>`:''}`}).join('');
+ const nd=ns.sort((x,y)=>(y.type==='frame')-(x.type==='frame')).map(n=>{const r=rectOf(n.id)||n,c=hex(n);return`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="12" fill="${n.type==='frame'?'none':n.type==='sticky'?c+'33':'#fff'}" stroke="${c}" stroke-width="${n.halo?3:1.4}" ${n.type==='frame'?'stroke-dasharray="6 5"':''}/><foreignObject x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}"><div xmlns="http://www.w3.org/1999/xhtml" style="padding:12px 14px;font:${n.type==='text'?'700 20px':'13px'}/1.4 sans-serif;color:#111;white-space:pre-wrap;overflow-wrap:anywhere">${KTAG[n.type]?`<div style="font:600 9px monospace;letter-spacing:.08em;text-transform:uppercase;color:${c};margin-bottom:4px">${KTAG[n.type]}</div>`:''}${n.done?'✓ ':''}${esc(n.text)}</div></foreignObject>`}).join('');
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bb.x-p} ${bb.y-p} ${bb.w+2*p} ${bb.h+2*p}" style="width:100%;height:auto;max-height:180mm;border:1px solid #ddd;border-radius:8px"><defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#666"/></marker></defs>${ed}${nd}</svg>`;
+ const out=typeof window.printDoc==='function'?window.printDoc:null;if(!out)return toast('Printing isn’t available');out(b.title,`<h1>${esc(b.title)}</h1><p class="m">${ns.length} items · ${edgesOk(b).length} links</p>${svg}<h2>Outline</h2><pre style="white-space:pre-wrap;font:12.5px/1.5 ui-monospace,monospace">${esc(md(b))}</pre>`)}
 const exportJSON=b=>dl(fileName(b)+'.plotline-board.json',JSON.stringify({format:'plotline-board',version:1,title:b.title,nodes:b.nodes,edges:b.edges,comments:b.comments},null,1),'application/json');
 const md=b=>`# ${b.title}\n\n${outline(b,'board').replace(/^Board: .*\n\n/,'')}\n`;
 function dupBoard(b){const n={...blank(b.title+' (copy)'),nodes:JSON.parse(JSON.stringify(b.nodes)),edges:JSON.parse(JSON.stringify(b.edges)),comments:JSON.parse(JSON.stringify(b.comments))};LIST.unshift(n);persist();return n}
-function delBoard(b,cloudToo){const i=LIST.indexOf(b);if(i>=0)LIST.splice(i,1);S.dead=S.dead||{};S.dead[b.id]=now();save();persist();if(cloudToo&&b.cloud&&b.cloud.owner===myUid()){cdel(b.cloud.doc);if(b.pub)cdel(b.pub.doc)}
+function delBoard(b,cloudToo){const i=LIST.indexOf(b);if(i>=0)LIST.splice(i,1);S.dead=S.dead||{};S.dead[b.id]=now();save();persist();if(cloudToo&&b.cloud&&mine(b.cloud.owner)){cdel(b.cloud.doc,b.cloud.owner);if(b.pub)cdel(b.pub.doc,b.cloud.owner)}
  toast(`Deleted “${esc(trunc(b.title,30))}”`,cloudToo?null:()=>{LIST.splice(Math.max(0,i),0,b);b.u=now();delete S.dead[b.id];save();persist();if(cur.p==='bench')render(false)})}
 Object.assign(ACT,{
  wbNew:d=>{const t=TPLS.find(x=>x[0]===d.tpl)||TPLS[0],b=blank(t[0]==='blank'?'Untitled board':t[1]);t[4](b);LIST.unshift(b);persist();go('bench/'+b.id)},
  wbOpen:(d,el,e)=>{if(e&&e.target.closest('[data-act=wbCardMenu]'))return;go('bench/'+d.id)},
- wbCardMenu:(d,el,e)=>{if(e)e.stopPropagation();const b=LIST.find(x=>x.id===d.id);if(!b)return;const own=b.cloud&&b.cloud.owner===myUid();
+ wbCardMenu:(d,el,e)=>{if(e)e.stopPropagation();const b=LIST.find(x=>x.id===d.id);if(!b)return;const own=b.cloud&&mine(b.cloud.owner);
   openSheet(`<div class="data">Board</div><h2 style="margin-top:6px">${esc(b.title)}</h2><form data-form="wbRename" data-id="${b.id}"><div class="field"><label>Name</label><input name="t" value="${esc(b.title)}" maxlength="80"></div><div class="actions left"><button class="btn sm pri">Rename</button></div></form>
   <div class="actions left"><button class="btn" data-act="wbDupB" data-id="${b.id}">${ic('copy')}Duplicate</button><button class="btn" data-act="wbExp" data-id="${b.id}">${ic('down')}Export file</button><button class="btn" data-act="wbDelB" data-id="${b.id}">${ic('trash')}Delete${b.cloud?' from this device':''}</button>${own?`<button class="btn" data-act="wbDelB" data-id="${b.id}" data-cloud="1">${ic('trash')}Delete everywhere</button>`:''}</div>`)},
  wbDupB:d=>{const b=LIST.find(x=>x.id===d.id);if(!b)return;closeSheet();dupBoard(b);render(false);toast('Duplicated')},
@@ -638,12 +709,23 @@ Object.assign(ACT,{
  wbJoin:()=>openSheet(`<div class="data">Workbench</div><h2 style="margin-top:6px">Open a shared board</h2><form data-form="wbJoin"><div class="field"><label>Link</label><input name="u" placeholder="Paste the link you were given" autocomplete="off" spellcheck="false" required></div><div class="actions"><button class="btn pri">Open</button></div></form>`),
  wbTool:d=>{WB.tool=d.t==='select'?null:d.t;WB.linkFrom=null;draw();if(d.t==='link')toast('Tap one item, then the item to connect it to')},
  wbAdd:d=>addNode(d.t),
- wbZoom:d=>{const cv=$('#wbcv');if(+d.d===0){const v=B().vp;zoomAt(1/v.z,cv.clientWidth/2,cv.clientHeight/2)}else zoomAt(+d.d>0?1.25:.8,cv.clientWidth/2,cv.clientHeight/2)},
+ wbZoom:d=>{const cv=$('#wbcv');if(+d.d===0){const v=B().vp;zoomAt(1/v.z,cv.clientWidth/2,cv.clientHeight/2)}else zoomStep(+d.d,cv.clientWidth/2,cv.clientHeight/2)},
+ wbPop:(d,el)=>popOpen(d.p,el),
+ wbAddPop:d=>{popClose();addNode(d.t)},
+ wbGrid:d=>{S.settings.wbGrid=d.g;save();applyView();const el=$('#wbpop');if(el&&WB.pop==='view')el.innerHTML=popHTML('view')},
+ wbFull:()=>fsSet(!document.documentElement.classList.contains('wb-fs')),
+ wbHalo:()=>{const b=B(),before=snap(b),ns=[...WB.sel].map(id=>b.nodes[id]).filter(Boolean),on=!ns.every(n=>n.halo);ns.forEach(n=>{if(on)n.halo=true;else delete n.halo});commit(before)},
+ wbAlign:d=>{const b=B(),before=snap(b),ids=[...WB.sel].filter(id=>b.nodes[id]),R0=ids.map(rectOf),bb=bbox(R0);if(!bb||ids.length<2)return;
+  if(d.a==='dh'||d.a==='dv'){const h=d.a==='dh',L=ids.map((id,i)=>({n:b.nodes[id],r:R0[i]})).sort((p,q)=>h?p.r.x-q.r.x:p.r.y-q.r.y),tot=L.reduce((a,o)=>a+(h?o.r.w:o.r.h),0),gap=((h?bb.w:bb.h)-tot)/(L.length-1);let at=h?bb.x:bb.y;L.forEach(o=>{if(h)o.n.x=Math.round(at);else o.n.y=Math.round(at);at+=(h?o.r.w:o.r.h)+gap})}
+  else ids.forEach((id,i)=>{const n=b.nodes[id],r=R0[i];if(d.a==='l')n.x=bb.x;else if(d.a==='r')n.x=bb.x+bb.w-r.w;else if(d.a==='c')n.x=Math.round(bb.x+bb.w/2-r.w/2);else if(d.a==='t')n.y=bb.y;else if(d.a==='b')n.y=bb.y+bb.h-r.h;else if(d.a==='m')n.y=Math.round(bb.y+bb.h/2-r.h/2)});
+  commit(before)},
+ wbPrint:()=>{closeSheet();printBoard(B())},
+ wbLogin:async()=>{if(typeof shReady!=='function')return toast('Sign in from Settings → Sync');const ok=await shReady();if(ok&&signedIn()){toast('Signed in. You can edit now');render(false)}},
  wbFit:()=>fitTo(),wbUndo:undo,wbRedo:redo,
  wbSnap:()=>{WB.snap=!WB.snap;draw();toast(WB.snap?'Snap to grid on':'Snap to grid off')},
  wbPanel:d=>{WB.panel=WB.panel===d.p?null:d.p;if(WB.panel==='prompt')AIS.pout=studioPrompt();if(WB.panel==='ai'&&WB.sel.size)AIS.scope='sel';panelDraw()},
  wbMore:()=>{const b=B();openSheet(`<div class="data">Board</div><h2 style="margin-top:6px">${esc(b.title)}</h2>
-  <div class="actions left"><button class="btn" data-act="wbExpCur">${ic('down')}Export file</button><button class="btn" data-act="wbMd">${ic('copy')}Copy as Markdown</button>${b.ro?'':`<button class="btn" data-act="wbDupCur">${ic('copy')}Duplicate board</button><button class="btn" data-act="wbDelCur">${ic('trash')}Delete board</button>`}</div>
+  <div class="actions left"><button class="btn" data-act="wbPrint">${ic('print')}Print or PDF</button><button class="btn" data-act="wbExpCur">${ic('down')}Export file</button><button class="btn" data-act="wbMd">${ic('copy')}Copy as Markdown</button>${b.ro?'':`<button class="btn" data-act="wbDupCur">${ic('copy')}Duplicate board</button><button class="btn" data-act="wbDelCur">${ic('trash')}Delete board</button>`}</div>
   <details class="panel" style="margin-top:18px"><summary>Keyboard and touch</summary><p class="small muted" style="line-height:1.8">Double-click empty space: new sticky · Double-click or Enter: edit text · Drag the dot on an item’s edge: connect (drop on empty space to create a linked item) · Drag empty space: box-select · Space+drag, middle mouse or two fingers: pan · Ctrl+scroll or pinch: zoom · Shift+1: fit · Ctrl+Z / Ctrl+Shift+Z: undo / redo · Ctrl+D: duplicate · Ctrl+C / Ctrl+V: copy and paste items (plain text pastes as a card) · Arrows: nudge · N: new sticky · Delete: remove</p></details>`)},
  wbExpCur:()=>exportJSON(B()),
  wbMd:async()=>{toast(await copyText(md(B()))?'Copied as Markdown':'Couldn’t copy')},

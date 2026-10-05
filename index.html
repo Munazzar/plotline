@@ -168,7 +168,7 @@ input[type=checkbox]{width:auto}
 .sw small{display:block;color:var(--muted);font-size:13px}
 
 /* ================= colored surfaces ================= */
-.tint{--t-bg:var(--c);--t-fg:#0B1020;--t-mut:rgba(11,16,32,.64);--t-bd:transparent;--t-sh:none;--t-num:var(--t-fg);--t-numsh:none;--t-stroke:0 transparent;--t-bar:#0B1020;--t-barbg:rgba(11,16,32,.16);--t-barsh:none;--t-inv:#F4F2EC;--t-ring:rgba(11,16,32,.13);--t-moon:rgba(11,16,32,.24);--t-blur:none;
+.tint{--t-bg:var(--c);--t-fg:#0B1020;--t-mut:rgba(11,16,32,.8);--t-bd:transparent;--t-sh:none;--t-num:var(--t-fg);--t-numsh:none;--t-stroke:0 transparent;--t-bar:#0B1020;--t-barbg:rgba(11,16,32,.16);--t-barsh:none;--t-inv:#F4F2EC;--t-ring:rgba(11,16,32,.13);--t-moon:rgba(11,16,32,.24);--t-blur:none;
  background:var(--t-bg);color:var(--t-fg);border:1px solid var(--t-bd);box-shadow:var(--t-sh);-webkit-backdrop-filter:var(--t-blur);backdrop-filter:var(--t-blur);position:relative;overflow:hidden;isolation:isolate}
 .tint .data{color:var(--t-mut)}
 .tint::after{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;background:var(--t-fg);opacity:0;-webkit-mask:var(--pat,none) repeat;mask:var(--pat,none) repeat;-webkit-mask-size:var(--pat-s,24px);mask-size:var(--pat-s,24px)}
@@ -2705,6 +2705,117 @@ html.fnat :is(.ph h1,.hero h1,.sheet h2,.st-h h3,.panel h3){letter-spacing:0}
 .axln-r{display:grid;grid-template-columns:minmax(110px,1fr) 1.2fr 56px;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin-top:4px}
 .axln-r b{text-align:right;font:600 13px var(--f-mono);color:var(--text)}
 .axln-b{height:10px;border-radius:10px;background:var(--line);overflow:hidden}.axln-b i{display:block;height:100%;width:var(--w);border-radius:10px;background:var(--muted);transform-origin:left}.axln-b.a i{background:var(--accent)}
+/* ===== 1.17 ===== */
+/* More sheet */
+.mo-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 14px}
+.mo-h h2{margin:0}.mo-ha{display:flex;gap:8px;align-items:center}
+.mo-x{transform:rotate(45deg)}
+.mo-q{margin-bottom:12px}
+#sheet:has(#fndq:placeholder-shown) .mo-res{display:none}
+#sheet:has(#fndq:not(:placeholder-shown)) .mo-body{display:none}
+.mo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(min-width:560px){.mo-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.mo-t{position:relative;display:grid;align-content:start;justify-items:start;gap:4px;padding:14px 14px 13px;border-radius:20px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;text-align:left;cursor:pointer;min-width:0;transition:transform .35s var(--spring),border-color .2s,background-color .2s}
+.mo-t:active{transform:scale(.96)}
+.mo-t b{font-size:15px;font-weight:650}.mo-t small{font-size:12px;line-height:1.35;color:var(--muted)}
+.mo-i{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);margin-bottom:6px}.mo-i svg{width:20px;height:20px}
+.mo-t:not(.ed)::after{content:'';position:absolute;top:22px;right:16px;width:7px;height:7px;border:solid var(--muted);border-width:1.8px 1.8px 0 0;transform:rotate(45deg);transition:transform .3s var(--spring)}
+.mo-t:not(.ed):hover::after{transform:translateX(3px) rotate(45deg)}
+.mo-t.ed em{font:600 10.5px var(--f-mono);font-style:normal;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:999px;border:1px dashed var(--line-2);color:var(--muted);margin-top:4px}
+.mo-t.ed.on{border-color:color-mix(in srgb,var(--accent) 50%,transparent);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}.mo-t.ed.on em{background:var(--accent);color:var(--on-accent);border:0}
+.mo-tip{margin:0 2px 12px}
+.mo-sec{margin:22px 2px 10px}
+.mo-bar{display:flex;flex-wrap:wrap;gap:8px}
+.mo-pin{display:inline-flex;gap:4px;align-items:center}
+.mo-pb{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 13px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text);font:600 13px var(--f-body);cursor:pointer}
+.mo-pb svg{width:17px;height:17px;color:var(--accent)}.mo-pb i{font-style:normal;color:var(--muted);margin-left:2px}
+.mo-set{display:flex;flex-wrap:wrap;gap:8px}.mo-set .chip svg{width:15px;height:15px}
+@media(max-width:820px){.tabbar .navs.n6 .nav{font-size:9.5px}}
+/* habit rows: the week's day marks, same language as the snapshot */
+.hweek{gap:5px;margin-top:10px}
+.hweek .hd{width:24px;gap:4px;padding:0}
+.hweek .hd em{order:-1;font:600 9.5px var(--f-mono);letter-spacing:.02em}
+.hweek .hd i{position:relative;width:20px;height:20px;border-radius:7px;box-shadow:inset 0 0 0 1.5px var(--line-2);display:grid;place-items:center}
+.hweek .hd.d i{background:var(--c);box-shadow:none}
+.hweek .hd.d i::after{content:'';width:4px;height:8px;border:solid var(--on-color);border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+.hweek .hd.p i{background:linear-gradient(to top,color-mix(in srgb,var(--c) 75%,transparent) 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px var(--c)}
+.hweek .hd.x i{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#FF6B6B 60%,transparent);background:color-mix(in srgb,#FF6B6B 9%,transparent)}
+.hweek .hd.x i::after{content:'';width:8px;height:8px;background:linear-gradient(45deg,transparent 42%,#FF7A7A 42% 58%,transparent 58%),linear-gradient(-45deg,transparent 42%,#FF7A7A 42% 58%,transparent 58%)}
+.hweek .hd.s i{background:repeating-linear-gradient(-45deg,color-mix(in srgb,var(--muted) 35%,transparent) 0 2px,transparent 2px 5px);box-shadow:none}
+.hweek .hd.n i{transform:none;background:none;box-shadow:none}.hweek .hd.n i::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--dim)}
+.hweek .hd.t i{box-shadow:inset 0 0 0 1.5px var(--c);background:color-mix(in srgb,var(--c) 10%,transparent);outline:1.5px dashed color-mix(in srgb,var(--c) 55%,transparent);outline-offset:2px}
+.hweek .hd.t em{color:var(--accent)}
+.hweek .hd:active i{transform:scale(.82)}
+/* text size: the page and sheets scale; canvas pages (Workbench, Map) keep 1:1 so dragging stays exact */
+html.tz-on:not(.tzx) #view,html.tz-on #sheet>*{zoom:var(--tz,1)}
+/* dialogs and floating panels stay solid on see-through (Glass) themes */
+html:is([data-theme=glass],[data-theme=glasslight]) :is(.vdlg-b,.cdp,.axday,.mo-t,.pg-t){background:color-mix(in srgb,var(--bg-2) 94%,var(--text) 6%)}
+html:is([data-theme=glass],[data-theme=glasslight]) .vdlg-b{-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%)}
+.vdlg{-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+
+/* list views */
+.lv{display:grid;gap:6px}
+.lv-r{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:11px 34px 11px 14px;margin-left:calc(var(--d,0) * 16px);width:calc(100% - var(--d,0) * 16px);border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;text-align:left;cursor:pointer;transition:border-color .2s,background-color .2s}
+.lv-r:hover{border-color:var(--line-2)}.lv-r:active{background:var(--surface-2)}
+.lv-dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--c,var(--accent));box-shadow:0 0 0 4px color-mix(in srgb,var(--c,var(--accent)) 18%,transparent)}
+.lv-e{flex:none;font-size:20px;width:28px;text-align:center}
+.lv-t{flex:1;min-width:0;display:grid;gap:2px}
+.lv-t b{font-size:14.5px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.lv-t small{font-size:12.5px;line-height:1.35;color:var(--muted);overflow-wrap:anywhere}.lv-t small svg{width:12px;height:12px;vertical-align:-1px;margin:0 2px}
+.lv-nx{color:var(--text)!important;opacity:.8}
+.lv-p{flex:none;display:grid;justify-items:end;gap:5px;min-width:48px}.lv-p b{font:600 13px var(--f-mono)}
+.lv-p i{width:48px;height:5px;border-radius:5px;background:linear-gradient(90deg,var(--c,var(--accent)) var(--p),var(--line) var(--p))}
+.lv-w{flex:none;font:500 11px/1.35 var(--f-mono);color:var(--muted);text-align:right}.lv-w.late{color:#FF8A7A}
+.lv-ch{position:absolute;right:15px;top:50%;width:7px;height:7px;margin-top:-4px;border:solid var(--muted);border-width:1.8px 1.8px 0 0;transform:rotate(45deg);transition:transform .3s var(--spring)}
+.lv-r:hover .lv-ch{transform:translateX(3px) rotate(45deg)}
+.lv-s .chk{flex:none}.lv-s.done .lv-t b{text-decoration:line-through;color:var(--muted)}
+.lv-day{font:500 10.5px var(--f-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:20px 4px 8px}.lv-wrap .lv-day:first-child{margin-top:4px}
+.fgrid:has(>.lv){display:block}
+.cal-lv{margin-top:6px}.cal-lv .cal-t{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.asg{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:5px 10px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--text);font:600 12px var(--f-body)}.asg svg{width:13px;height:13px;color:var(--accent)}
+.ci-b.asg{margin-top:0}
+
+/* habit calendar */
+.hh-mt{font-size:17px}
+.hh-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 16px}
+.hh-stats div{padding:10px 8px;border-radius:14px;background:var(--surface-2);text-align:center;display:grid;gap:1px}
+.hh-stats b{font:700 18px var(--f-body);font-variant-numeric:tabular-nums}.hh-stats b span{font-size:12px;color:var(--muted);font-weight:600}.hh-stats small{font-size:11px;color:var(--muted)}
+.hh-c2{aspect-ratio:1;border:0;padding:0;background:none;cursor:pointer;display:grid;place-items:center;border-radius:14px;transition:background-color .2s,transform .35s var(--spring)}
+.hh-c2:active{transform:scale(.9)}
+.hh-ring{width:min(42px,88%);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) var(--p),color-mix(in srgb,var(--text) 10%,transparent) 0);transition:background .4s}
+.hh-ring b{width:calc(100% - 7px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:var(--surface);font:650 13px var(--f-body);font-variant-numeric:tabular-nums}
+.hh-c2.full .hh-ring b{background:var(--accent);color:var(--on-accent)}
+.hh-c2.miss .hh-ring{background:conic-gradient(color-mix(in srgb,#FF6B6B 70%,transparent) 100%,transparent 0)}
+.hh-c2.none .hh-ring,.hh-c2.fut .hh-ring{background:none}.hh-c2.fut{opacity:.4}
+.hh-c2.today .hh-ring{box-shadow:0 0 0 2px var(--bg-2),0 0 0 3.5px var(--text)}
+.hh-c2.sel{background:color-mix(in srgb,var(--accent) 13%,transparent)}
+.hh-day{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.hh-day-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.hh-day-h>div{display:grid;gap:2px}.hh-day-h b{font-size:15px}
+.hh-leg{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
+
+/* long text wraps instead of being cut off */
+.hrow .t.ell,.hpill .t.ell,.li .t.ell,.agr .t,.cchip b,.dy-hx .hh-t b,.hsn-t b,.wb-card b,.fnd-r b,.mo-t b{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.li .s .ell,.hrow .s .ell{white-space:normal;overflow-wrap:anywhere}
+h1,h2,h3,.t,.hday-n .ell{overflow-wrap:anywhere}
+.hday-n .ell{white-space:normal}
+.now h2,.mini .t,.hq h3,.rcard h3{overflow-wrap:anywhere;hyphens:auto}
+/* contrast fixes (checked on every theme) */
+#view .hx-sub .chip.on{background:var(--text)!important;color:var(--bg)!important;border-color:transparent!important}
+.hsn-st.z,.hsn-hint{color:var(--muted)}
+.hsum .hb-d.sel span{color:var(--text)}
+.jw-d span{color:color-mix(in srgb,var(--muted) 70%,var(--text))}
+[data-mode=light] .axd.up{color:#0A6E3F;background:color-mix(in srgb,#0A6E3F 12%,transparent)}
+[data-mode=light] .axd.down{color:#B3261E;background:color-mix(in srgb,#B3261E 10%,transparent)}
+[data-mode=light] :is(#view,#sheet) .link{color:color-mix(in srgb,var(--accent) 72%,#000)}
+[data-mode=light] .kd{color:color-mix(in srgb,var(--c) 42%,#000)}
+html[data-theme=glass] .due.over{color:#FF9A8A}
+/* cards grow to fit their text instead of clipping or shrinking it */
+.fc{height:auto;min-height:264px}
+.fc-in{display:grid;height:auto;min-height:264px}
+.fc-face{position:relative;inset:auto;grid-area:1/1;min-height:264px}
+.fc-t,.fc-back .nx,.fc-back .bt span,.jf .jt-big,.jf.big .jt-big{-webkit-line-clamp:unset!important;display:block!important;overflow:visible!important;overflow-wrap:anywhere;hyphens:auto}
+.jf-face{overflow:visible}
+.mini{height:auto;min-height:156px}
 </style>
 </head>
 <body>
@@ -2821,7 +2932,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.16.1';
+const APP_VER='1.17.0';
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
@@ -5801,7 +5912,7 @@ function shPanelBody(x){const md=MODES[x.mode]||MODES.together,c=SHM[x.id],left=
  if(!others.length)return head+`<p class="small muted">${x.role==='owner'?'Nobody has joined yet. Once they do, you’ll see their progress here and can react with one tap.':'Waiting for the others.'}</p>`;
  const mine=reactsForMe(x.id);
  return head+others.map(m=>{const p=m.progress||{},kind=(x.local||{}).kind,last=mine.filter(r=>r.fe===m.email).slice(-1)[0],nm=m.name||m.email.split('@')[0];
-  const st=kind==='habit'?`${p.checks&&p.checks[td]?'✓ done today':'not yet today'} · ${weekChecks(p)} this week`:`${p.pct||0}% done`;
+  const st=kind==='habit'?`${p.checks&&p.checks[td]?'✓ done today':'not yet today'} · ${weekChecks(p)} this week`:kind==='thread'?`${p.n||0} update${p.n===1?'':'s'}${p.pct>=100?' · done':''}`:`${p.pct||0}% done`;
   return`<div class="shp-m"><div class="shp-who"><span class="sh-ava">${esc(nm[0].toUpperCase())}</span><div><b>${esc(nm)}</b><small>${st}</small>${last?`<small class="shp-last">${esc(last.e||'💬')} ${last.m?esc(last.m)+' · ':''}${esc(dayLabel(last.t).toLowerCase())}</small>`:''}</div></div>
   <div class="shp-r" role="group" aria-label="React to ${esc(nm)}">${PANEL_EMO.map(e=>`<button class="shp-e" data-act="shQuick" data-id="${x.id}" data-to="${esc(m.email)}" data-nm="${esc(nm)}" data-e="${e}" ${left?'':'disabled'} aria-label="Send ${e} to ${esc(nm)}">${e}</button>`).join('')}<button class="shp-e more" data-act="shReact" data-id="${x.id}" data-to="${esc(m.email)}" data-nm="${esc(nm)}" ${left?'':'disabled'} aria-label="More reactions and messages for ${esc(nm)}">💬<span>More</span></button></div></div>`}).join('')
   +`<p class="shp-f small muted">${left?`Tap to send · ${left} left today`:`That’s ${REACT_MAX} for today`}</p>`}
@@ -6800,28 +6911,46 @@ const FMT={int:v=>Math.round(v).toLocaleString(),min:v=>fmtMin(Math.round(v)),pc
 function cuAll(root,fromZero){(root||document).querySelectorAll('[data-cu]').forEach(el=>{if(fromZero)el.dataset.v=0;countUp(el,+el.dataset.cu,FMT[el.dataset.f]||FMT.int)})}
 function cutSec(o,m){const i=o.indexOf(m);if(i<0)return o;const j=o.indexOf('</section>',i);return j<0?o:o.slice(0,i)+o.slice(j+10)}
 
-/* ---------- bottom bar: up to 6 pages, no More ---------- */
+/* ---------- bottom bar: up to 5 pages you pick + More ----------
+   More is a sheet: every page you haven't pinned as a big tile (one tap), search at the top (it doesn't grab the
+   keyboard), your bar's pages, and settings shortcuts. Edit pins and orders pages in place. Tap More again, the
+   close button, the scrim or Back to close it. */
 const PG=[['today','Home','today','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['activity','Activity','flame','Steps, sleep, screen time, workouts'],['journal','Journal','journal','Moments and history'],['vista','Vista','map','Timeline and life map'],['ask','Ask','ai','Insights and AI planning'],['threads','Threads','thread','Conversations about goals and habits'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||p[0]==='bench'||VIEWS[p[0]]);
-const TMAX=6,TMIN=3;
+const TMAX=5,TMIN=2;
 const tDef=()=>['today','habits','cal','goals',NATIVE?'activity':'journal'];
-const tabs6=()=>{const t=(Array.isArray(S.settings.tabs)?S.settings.tabs:tDef()).filter((k,i,a)=>PG.some(p=>p[0]===k)&&a.indexOf(k)===i);return t.length>=2?t.slice(0,TMAX):tDef()};
+const tabs6=()=>{const t=(Array.isArray(S.settings.tabs)?S.settings.tabs:tDef()).filter((k,i,a)=>PG.some(p=>p[0]===k)&&a.indexOf(k)===i);return t.length>=TMIN?t.slice(0,TMAX):tDef()};
 function tabMigrate(){if(S.settings.v116tabs)return;S.settings.v116tabs=1;const t=Array.isArray(S.settings.tabs)?S.settings.tabs.slice():null;if(t&&t.length===4){const x=tDef().find(k=>!t.includes(k));if(x)t.push(x);S.settings.tabs=t}if(S.settings.layout)S.settings.layout.hcal=false;try{save()}catch(e){}}
-function tbHTML(){const t=tabs6();return`<div class="navs n${t.length}"><span class="nav-ind"></span>${t.map(k=>{const p=PG.find(x=>x[0]===k);return`<a class="nav" href="#/${k}" data-nav="${k}">${ic(p[2])}<span>${p[1]}</span></a>`}).join('')}</div>`}
+const moreOpen=()=>!!document.querySelector('#sheet.on .mo-h');
+function tbHTML(){const t=tabs6();return`<div class="navs n${t.length+1}"><span class="nav-ind"></span>${t.map(k=>{const p=PG.find(x=>x[0]===k);return`<a class="nav" href="#/${k}" data-nav="${k}">${ic(p[2])}<span>${p[1]}</span></a>`}).join('')}<button class="nav" data-act="navMore" data-nav="more" aria-haspopup="dialog" aria-label="More pages">${ic('menu')}<span>More</span></button></div>`}
 const NAVMAP={goal:'goals',habit:'habits',road:'vista',map:'vista',ai:'ask',thread:'threads',day:'cal'};
-function navMark(){const t=tabs6();let k=NAVMAP[cur.p]||cur.p;if(k==='threads'&&!t.includes('threads'))k='journal';if(cur.p==='activity'&&!t.includes('activity'))k='today';if(cur.p==='day'&&!t.includes('cal'))k='today';
+function navMark(){const t=tabs6();let k=NAVMAP[cur.p]||cur.p;if(k==='threads'&&!t.includes('threads')&&t.includes('journal'))k='journal';if(!t.includes(k))k='more';if(moreOpen())k='more';
  document.querySelectorAll('[data-nav]').forEach(a=>{const on=a.dataset.nav===k;a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});moveInd()}
 function tbPaint(){const tb=$('#tabbar');if(tb){tb.innerHTML=tbHTML();navMark()}}
 {const _b=buildChrome;buildChrome=function(){_b();tabMigrate();tbPaint()}}
+const MSET=[['account','Sync','rep'],['look','Look & feel','cards'],['notif','Notifications','bell'],['privacy','Privacy','lock'],['share','Sharing','link'],['data','Your data','down']];
+let MEDIT=false;
+function moreHTML(){const t=tabs6(),un=PG.filter(p=>!t.includes(p[0])),pg=k=>PG.find(x=>x[0]===k);
+ const tile=(p,ed)=>{const on=t.includes(p[0]);return ed?`<button class="mo-t ed${on?' on':''}" data-act="tabPin" data-k="${p[0]}" aria-pressed="${on}"><span class="mo-i">${ic(p[2])}</span><b>${p[1]}</b><em>${on?'In bar':'Add'}</em></button>`
+  :`<button class="mo-t" data-act="moGo" data-r="${p[0]}"><span class="mo-i">${ic(p[2])}</span><b>${p[1]}</b><small>${p[3]}</small></button>`};
+ return`<div class="mo-h"><h2>More</h2><div class="mo-ha"><button class="btn sm${MEDIT?' pri':''}" data-act="moEdit" aria-pressed="${MEDIT}">${MEDIT?'Done':'Edit bar'}</button><button class="ibtn sm" data-act="close" aria-label="Close">${ic('plus','mo-x')}</button></div></div>
+ <div class="fnd-in mo-q">${ic('search')}<input id="fndq" data-find type="search" placeholder="Search everything" autocomplete="off" enterkeyhint="search"></div><div class="fnd-res mo-res" id="fndr"></div>
+ <div class="mo-body">${MEDIT?`<p class="small muted mo-tip">Tap a page to add it to the bar or take it out (${TMIN} to ${TMAX}). Use the arrows to change the order.</p><div class="mo-grid">${PG.map(p=>tile(p,1)).join('')}</div>`
+  :un.length?`<div class="mo-grid">${un.map(p=>tile(p,0)).join('')}</div>`:`<p class="small muted mo-tip">Every page is in your bar.</p>`}
+ <div class="mo-sec data">In your bar</div><div class="mo-bar">${t.map((k,i)=>`<span class="mo-pin"><button class="mo-pb" data-act="${MEDIT?'tabPin':'moGo'}" data-k="${k}" data-r="${k}">${ic(pg(k)[2])}${pg(k)[1]}${MEDIT?'<i>−</i>':''}</button>${MEDIT&&i>0?`<button class="ibtn sm" data-act="tabUp" data-k="${k}" aria-label="Move ${pg(k)[1]} left">${ic('back')}</button>`:''}</span>`).join('')}</div>
+ ${MEDIT?'':`<div class="mo-sec data">Settings</div><div class="mo-set">${MSET.map(([k,n,i])=>`<button class="chip" data-act="moGo" data-r="settings/${k}">${ic(i)}${n}</button>`).join('')}</div>`}</div>`}
+function morePaint(){const sh=$('#sheet');if(!moreOpen())return;const y=sh.scrollTop,q=$('#fndq'),v=q?q.value:'';sh.innerHTML='<div class="grab"></div>'+moreHTML();sh.scrollTop=y;const q2=$('#fndq');if(v&&q2){q2.value=v;q2.dispatchEvent(new Event('input',{bubbles:true}))}}
 Object.assign(ACT,{
- navMore:()=>ACT.findOpen(),
- tabPin:d=>{let t=tabs6();if(t.includes(d.k)){if(t.length<=TMIN)return toast(`Keep at least ${TMIN} pages in the bar`);t=t.filter(x=>x!==d.k)}else{if(t.length>=TMAX)return toast(`The bar holds ${TMAX} pages. Unpin one first`);t.push(d.k)}S.settings.tabs=t;save();tbPaint();render(false)},
- tabUp:d=>{const t=tabs6(),i=t.indexOf(d.k);if(i<1)return;[t[i-1],t[i]]=[t[i],t[i-1]];S.settings.tabs=t;save();tbPaint();render(false)}});
-/* every page, one tap from search (the search button is on every header) */
+ navMore:()=>{if(moreOpen()){closeSheet();return}MEDIT=false;openSheet(moreHTML());navMark()},
+ moGo:d=>{closeSheet();go(d.r)},
+ moEdit:()=>{MEDIT=!MEDIT;morePaint()},
+ tabPin:d=>{let t=tabs6();if(t.includes(d.k)){if(t.length<=TMIN)return toast(`Keep at least ${TMIN} pages in the bar`);t=t.filter(x=>x!==d.k)}else{if(t.length>=TMAX)return toast(`The bar holds ${TMAX} pages plus More. Take one out first`);t.push(d.k)}S.settings.tabs=t;save();tbPaint();if(moreOpen())morePaint();else render(false)},
+ tabUp:d=>{const t=tabs6(),i=t.indexOf(d.k);if(i<1)return;[t[i-1],t[i]]=[t[i],t[i-1]];S.settings.tabs=t;save();tbPaint();if(moreOpen())morePaint();else render(false)}});
+{const _cs=closeSheet;closeSheet=function(){const r=_cs.apply(this,arguments);setTimeout(navMark,0);return r}}
+/* the search button on page headers: every page as a grid, and the keyboard stays down until you tap the field */
 function pgGrid(){const t=tabs6();return`<div class="pg-h"><span class="data">Go to</span><button class="link" data-act="fndGo" data-r="settings/look">Edit the bar</button></div><div class="pg-grid">${PG.map(p=>`<button class="pg-t${t.includes(p[0])?' pin':''}" data-act="fndGo" data-r="${p[0]}">${ic(p[2])}<b>${p[1]}</b></button>`).join('')}</div>`}
-{const _f=ACT.findOpen;ACT.findOpen=function(){_f.apply(this,arguments);const r=$('#fndr');if(r&&!$('#sheet .pg-grid'))r.insertAdjacentHTML('beforebegin',pgGrid())}}
+{const _f=ACT.findOpen;ACT.findOpen=function(){_f.apply(this,arguments);const q=$('#fndq');if(q)q.focus=()=>{};const r=$('#fndr');if(r&&!$('#sheet .pg-grid'))r.insertAdjacentHTML('beforebegin',pgGrid())}}
 /* Settings → Look & feel: the bar */
-{const _hp=homePanel;homePanel=function(){const t=tabs6();return _hp()+`<section class="panel wide rv" id="tabset"><h3>Bottom bar</h3><p class="small muted">On phones, pick ${TMIN} to ${TMAX} pages for the bar. Tap the arrow to move one left. Every other page is under search, at the top of each page.</p><div class="tbp">${PG.map(p=>{const i=t.indexOf(p[0]);return`<div class="tbp-r${i>=0?' on':''}"><button class="tbp-b" data-act="tabPin" data-k="${p[0]}" aria-pressed="${i>=0}">${ic(p[2])}<span><b>${p[1]}</b><small>${p[3]}</small></span><em>${i>=0?i+1:'+'}</em></button>${i>0?`<button class="ibtn sm" data-act="tabUp" data-k="${p[0]}" aria-label="Move ${p[1]} left">${ic('back')}</button>`:''}</div>`}).join('')}</div></section>`}}
-
+{const _hp=homePanel;homePanel=function(){const t=tabs6();return _hp()+`<section class="panel wide rv" id="tabset"><h3>Bottom bar</h3><p class="small muted">On phones, pick ${TMIN} to ${TMAX} pages for the bar. Everything else is in More, one tap away. Tap the arrow to move a page left.</p><div class="tbp">${PG.map(p=>{const i=t.indexOf(p[0]);return`<div class="tbp-r${i>=0?' on':''}"><button class="tbp-b" data-act="tabPin" data-k="${p[0]}" aria-pressed="${i>=0}">${ic(p[2])}<span><b>${p[1]}</b><small>${p[3]}</small></span><em>${i>=0?i+1:'+'}</em></button>${i>0?`<button class="ibtn sm" data-act="tabUp" data-k="${p[0]}" aria-label="Move ${p[1]} left">${ic('back')}</button>`:''}</div>`}).join('')}</div></section>`}}
 /* ---------- Back closes the open sheet (browser, PWA and Android) ---------- */
 let SHB=0,QGO=null;
 const shOpenNow=()=>$('#sheet').classList.contains('on');
@@ -7042,6 +7171,148 @@ async function check(){if(U&&Date.now()-U.t<6*36e5)return;try{const r=await fetc
 {const _vt=vToday;vToday=function(){const o=_vt();if(!avail())return o;const b=`<div class="demob upd rv"><span>${ic('down')}<span><b>Plotline ${esc(U.v)} is ready</b><small>You have ${esc(APP_VER)}. Download, then tap the file to install. Your data stays.</small></span></span><button class="btn sm pri" data-act="updGet">Download</button><button class="ibtn sm" data-act="updHide" aria-label="Not now">${ic('minus')}</button></div>`;const i=o.indexOf('</header>');return i<0?b+o:o.slice(0,i+9)+b+o.slice(i+9)};VIEWS.today=vToday}
 Object.assign(ACT,{updGet:()=>{try{NATIVE.openUrl(DL)}catch(e){location.href=DL}},updHide:()=>{if(U){U.hide=U.v;keep()}render(false)}});
 setTimeout(check,4000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check()});
+})();
+/* ===================== 1.17: text size, list views, print, sharing threads, habit calendar =====================
+   - Text size (Settings → Look & feel): scales the page and sheets; long titles wrap instead of being cut off.
+   - List view next to the card views: Goals, a goal's steps, Journal and Calendar.
+   - Print: goal, habit, day, calendar month, journal week, activity and the habit snapshot. The web prints
+     directly; the Android app saves a print-ready page you can open and print or save as PDF.
+   - Threads can be shared like goals, and goals and threads can be assigned to someone.
+   - Habit calendar: progress rings per day; tapping a day shows it underneath instead of leaving the page. */
+(()=>{
+const today=()=>ymd();
+Object.assign(IC,{print:'<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/>',list:'<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>'});
+const who=e=>e?String(e).split('@')[0]:'';
+
+/* ---------- text size ---------- */
+const TSZ=[['90','Small'],['100','Default'],['112','Large'],['125','Larger']];
+const tsz=()=>{const v=+S.settings.tsz||100;return TSZ.some(x=>+x[0]===v)?v:100};
+function tszApply(){const r=document.documentElement;r.style.setProperty('--tz',tsz()/100);r.classList.toggle('tz-on',tsz()!==100)}
+{const _at=applyTheme;applyTheme=function(a){_at(a);tszApply()}}tszApply();
+{const _hp=homePanel;homePanel=function(){return _hp()+`<section class="panel wide rv" id="tszset"><h3>Text size</h3><p class="small muted">Makes text and everything around it bigger or smaller. Long titles wrap onto the next line.</p>${segHTML('tsz','tszSet',TSZ,String(tsz()))}<p class="small" style="margin-top:12px;font-size:${tsz()*.15}px">Preview: Plan your week in ten minutes.</p></section>`}}
+ACT.tszSet=d=>{S.settings.tsz=+d.v;save();tszApply();render(false)};
+/* a tap in the calendar's hour grid still lands on the right half hour at any text size */
+ACT.calSlot=(d,el,e)=>{if(Date.now()-HSDRAG<300)return;const r=el.getBoundingClientRect(),z=r.height/(el.offsetHeight||r.height)||1,m=Math.max(0,Math.min(1410,Math.floor((e.clientY-r.top)/z/calPpm()/30)*30));openSheet(dayForm(null,CAL.d,pad2(Math.floor(m/60))+':'+pad2(m%60)))};
+
+/* ---------- list views ---------- */
+const chev=()=>`<span class="lv-ch" aria-hidden="true"></span>`;
+/* Goals */
+{const _gl=goalsList;goalsList=function(){if(S.settings.layout.goals!=='list')return _gl();const L=treeOrder(filteredGoals());if(!L.length)return _gl();
+ return`<div class="lv">${L.map(({g,d})=>{const nx=nextStep(g),p=pct(g);return`<button class="lv-r" style="${cvar(g)};--d:${d||0}" data-act="open" data-id="${g.id}"><span class="lv-dot"></span><span class="lv-t"><b>${esc(g.title)}</b><small>${esc(areaName(g.area))} · ${esc(hzName(g.horizon))}${g.targetDate?' · '+esc(fmtDate(g.targetDate)):''}${g.assignee?' · '+ic('user','ico-s')+esc(who(g.assignee)):''}</small>${nx?`<small class="lv-nx">Next: ${esc(nx.title)}${nx.due?' · '+esc(dayName(nx.due)):''}</small>`:''}</span><span class="lv-p"><b>${g.status==='done'?'✓':p+'%'}</b><i style="--p:${p}%"></i></span>${chev()}</button>`}).join('')}</div>`}}
+{const _vg=vGoals;vGoals=function(){return _vg().replace(/(<div class="seg-c ico" data-seg="lay-goals"[^>]*><span class="pill"><\/span>)([\s\S]*?)(<\/div>)/,(m,a,b,c)=>a+b+`<button role="tab" aria-selected="${S.settings.layout.goals==='list'}" aria-label="List" title="List" class="${S.settings.layout.goals==='list'?'on':''}" data-act="layout" data-k="goals" data-v="list">${ic('list')}</button>`+c)};VIEWS.goals=vGoals}
+/* a goal's steps */
+function stepsListHTML(g){const tn=today(),ST=subTree(g);if(!g.steps.length&&!ST.length)return`<div class="empty rv"><p>No steps yet.</p><div class="actions"><button class="btn pri" data-act="addStepSheet" data-id="${g.id}">${ic('plus')}Add a step</button></div></div>`;
+ return`<div class="lv rv" style="${cvar(g)}">${g.steps.map((s,i)=>{const late=!s.done&&s.due&&s.due<tn;return`<div class="lv-r lv-s${s.done?' done':''}" data-act="calItem" data-k="step" data-g="${g.id}" data-s="${s.id}" data-d="${s.due||tn}" role="button" tabindex="0"><button class="chk${s.done?' on':''}" data-act="toggleStep" data-g="${g.id}" data-s="${s.id}" aria-label="${s.done?'Mark not done':'Mark done'}: ${esc(s.title)}">${ic('check')}</button><span class="lv-t"><b>${i+1}. ${esc(s.title)}</b>${s.note?`<small>${esc(trunc(s.note,160))}</small>`:''}</span><span class="lv-w${late?' late':''}">${s.done?'Done':s.due?(late?'Late · ':'')+esc(dayName(s.due)):'No date'}${s.time?'<br>'+fmtTime(s.time):''}</span>${chev()}</div>`}).join('')}
+ ${ST.map(({x,d})=>`<button class="lv-r" style="${cvar(x)};--d:${d}" data-act="open" data-id="${x.id}"><span class="lv-dot"></span><span class="lv-t"><b>${esc(x.title)}</b><small>Sub-goal · ${pct(x)}%</small></span>${chev()}</button>`).join('')}</div>`}
+{const _ss=spineSteps;spineSteps=function(g){return S.settings.layout.goal==='list'?stepsListHTML(g):_ss(g)}}
+{const _vg=vGoal;vGoal=function(id){let o=_vg(id);const on=S.settings.layout.goal==='list';return o.replace(/(data-act="gvMode" data-v="orbit">[^<]*<\/button>)/,`$1<button role="tab" aria-selected="${on}" class="${on?'on':''}" data-act="gvMode" data-v="list">List</button>`)};VIEWS.goal=vGoal}
+/* Journal */
+const JEMO={habit:'🔥',step:'✅','goal-done':'🏆','goal-new':'🎯',note:'📝',focus:'⏱️'};
+function jListHTML(es){let last='',o='';es.forEach(e=>{const ds=dOf(e.t);if(ds!==last){if(last)o+='</div>';o+=`<div class="lv-day" data-jday="${ds}">${esc(dayLabel(e.t))}</div><div class="lv">`;last=ds}const g=G(e.goalId),h=entryHabit(e),txt=e.private?'Private entry':(e.title||e.text||JK[e.type]||'Moment');
+ o+=`<button class="lv-r" style="${g?cvar(g):h?cvar(h):''}" data-act="viewEntry" data-id="${e.id}"><span class="lv-e">${e.mood&&!e.private?e.mood:JEMO[e.type]||'📝'}</span><span class="lv-t"><b>${esc(trunc(txt,140))}</b><small>${esc(JK[e.type]||'Moment')}${g?' · '+esc(g.title):h?' · '+esc(h.title):''}${e.title&&e.text&&!e.private?' · '+esc(trunc(e.text,90)):''}</small></span><span class="lv-w">${tShort(e.t)}</span>${chev()}</button>`});return o+(last?'</div>':'')}
+{const _jc=jwCards;jwCards=function(es){return S.settings.layout.jw==='list'?`<div class="lv-wrap">${jListHTML(es)}</div>`:_jc(es)}}
+{const _vj=vJournalW;vJournalW=function(){const o=_vj(),v=S.settings.layout.jw==='list'?'list':'cards';return o.replace('<button class="btn pri" data-act="addEntry"',iconSeg('jw',[['cards','cards','Cards'],['list','list','List']],v)+'<button class="btn pri" data-act="addEntry"')};VIEWS.journal=vJournalW}
+/* Calendar */
+{const _vc=vCal;vCal=function(){const v=S.settings.layout.cal||'month';if(v!=='list'){return _vc().replace(/(data-act="calView" data-v="month">[^<]*<\/button>)/,`$1<button role="tab" aria-selected="false" class="" data-act="calView" data-v="list">List</button>`)}
+ S.settings.layout.cal='month';let o;try{o=_vc()}finally{S.settings.layout.cal='list'}
+ o=o.replace(/<button role="tab" aria-selected="true" class="on" data-act="calView" data-v="month">/,'<button role="tab" aria-selected="false" class="" data-act="calView" data-v="month">').replace(/(data-act="calView" data-v="month">[^<]*<\/button>)/,`$1<button role="tab" aria-selected="true" class="on" data-act="calView" data-v="list">List</button>`);
+ const i=o.indexOf('<section class="cal-card'),j=o.indexOf('</section>',i);const n=dnum(CAL.d),dd=dUTC(n);S.settings.layout.cal='month';let L;try{L=calList()}finally{S.settings.layout.cal='list'}
+ return o.slice(0,i)+`<section class="rv cal-lv"><div class="cal-t"><h2>${esc(dd.toLocaleDateString(undefined,{month:'long',year:'numeric',timeZone:'UTC'}))}</h2><div class="cal-nav"><button class="ibtn sm" data-act="calStep" data-d="-1" aria-label="Previous month">${ic('back')}</button><button class="ibtn sm" data-act="calStep" data-d="1" aria-label="Next month">${ic('next')}</button></div></div>${L}</section>`};VIEWS.cal=vCal}
+{const _cs=ACT.calStep;ACT.calStep=d=>{if(S.settings.layout.cal!=='list')return _cs(d);const x=dUTC(dnum(CAL.d));x.setUTCDate(1);x.setUTCMonth(x.getUTCMonth()+ +d.d);CAL.d=fromN(Math.round(x.getTime()/864e5));render(false)}}
+
+/* ---------- habit calendar: rings, and the picked day underneath ---------- */
+let HHS=null;
+hhCell=function(ds){const td=today(),fut=ds>td,r=dayRatio(ds),p=r.due?r.dn/r.due:0,k=fut?' fut':!r.due?' none':p>=1?' full':p>0||ds===td?' part':' miss';
+ return`<button class="hh-c2${k}${ds===td?' today':''}${ds===HHS?' sel':''}" data-act="hhSel" data-d="${ds}" style="--p:${Math.round(p*100)}%" aria-pressed="${ds===HHS}" aria-label="${esc(dayName(ds))}: ${fut?'upcoming':r.due?r.dn+' of '+r.due+' habits':'nothing due'}"><span class="hh-ring"><b>${+ds.slice(8)}</b></span></button>`};
+function hhDay(ds){const fut=ds>today(),L=S.habits.filter(h=>h.status!=='archived'&&h.kind!=='quit'&&(hDue(h,ds)||hVal(h,ds)>0||(h.skip&&h.skip[ds]))),r=dayRatio(ds);
+ return`<div class="hh-day"><div class="hh-day-h"><div><b>${esc(ds===today()?'Today':dayName(ds))}</b><span class="data">${fut?'upcoming':r.due?`${r.dn} of ${r.due} kept`:'nothing due'}</span></div><button class="link" data-act="dyOpen" data-d="${ds}">Open the day</button></div>
+ ${L.length?`<div class="cpeek-hb">${L.map(h=>{const d=hDone(h,ds),sk=h.skip&&h.skip[ds];return`<button class="cpk-h${d?' on':''}${sk?' s':''}" style="${cvar(h)}" ${fut?'disabled':`data-act="hhTog" data-id="${h.id}" data-d="${ds}"`} aria-pressed="${d}"><span>${esc(hIcon(h))}</span>${esc(h.title)}${d?ic('check'):sk?' · skipped':''}</button>`}).join('')}</div>`:'<p class="small muted">No habits on this day.</p>'}</div>`}
+hCal=function(){const[y,m]=HH.m.split('-').map(Number),first=new Date(y,m-1,1),n=new Date(y,m,0).getDate(),lead=(first.getDay()+6)%7,cells=[],P=s=>String(s).padStart(2,'0'),cm=today().slice(0,7);
+ for(let i=0;i<lead;i++)cells.push('<span class="hh-e"></span>');for(let d=1;d<=n;d++)cells.push(hhCell(`${y}-${P(m)}-${P(d)}`));
+ let done=0,due=0,perfect=0,run=0,best=0;for(let d=1;d<=n;d++){const ds=`${y}-${P(m)}-${P(d)}`;if(ds>today())break;const r=dayRatio(ds);due+=r.due;done+=r.dn;if(r.due&&r.dn>=r.due){perfect++;run++;best=Math.max(best,run)}else if(r.due&&ds!==today())run=0}
+ if(!HHS||HHS.slice(0,7)!==HH.m)HHS=HH.m===cm?today():`${y}-${P(m)}-01`;
+ return`<div class="hcal-in"><div class="hh-h"><button class="ibtn sm" data-act="hhMon" data-d="-1" aria-label="Previous month">${ic('back')}</button><b class="hh-mt">${first.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</b><button class="ibtn sm" data-act="hhMon" data-d="1" aria-label="Next month" ${HH.m>=cm?'disabled':''}>${ic('next')}</button></div>
+ <div class="hh-stats"><div><b>${due?Math.round(done/due*100)+'%':'–'}</b><small>kept</small></div><div><b>${done}<span>/${due}</span></b><small>check-ins</small></div><div><b>${perfect}</b><small>perfect</small></div><div><b>${best}</b><small>best run</small></div></div>
+ <div class="hh-w">${['M','T','W','T','F','S','S'].map(x=>`<span>${x}</span>`).join('')}</div><div class="hh-g">${cells.join('')}</div>
+ <div class="hh-leg"><span><i class="full"></i>All done</span><span><i class="part"></i>Some</span><span><i class="miss"></i>Missed</span></div><div id="hhDay">${hhDay(HHS)}</div></div>`};
+Object.assign(ACT,{
+ hhSel:d=>{HHS=d.d;document.querySelectorAll('#view .hh-c2').forEach(b=>{const on=b.dataset.d===d.d;b.classList.toggle('sel',on);b.setAttribute('aria-pressed',on)});const x=$('#hhDay');if(x){x.innerHTML=hhDay(d.d);if(!reduced())x.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'none'}],{duration:260,easing:'ease-out'})}},
+ hhTog:d=>{ACT.hDay(d)}});
+
+/* ---------- print ---------- */
+const PCSS=`*{box-sizing:border-box}body{font:13.5px/1.5 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#111;margin:24px}h1{font-size:24px;line-height:1.2;margin:0 0 4px}h2{font-size:15px;margin:22px 0 8px;padding-bottom:4px;border-bottom:1.5px solid #222}.m{color:#555;font-size:12px}p{margin:6px 0}table{border-collapse:collapse;width:100%;font-size:12.5px;page-break-inside:auto}tr{page-break-inside:avoid}td,th{border:1px solid #bbb;padding:5px 7px;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#f1f1f1;font-weight:600}.c{text-align:center}.ok{color:#0a7a3f;font-weight:700}.no{color:#b3261e;font-weight:700}.sk{color:#777}ul{padding-left:18px;margin:6px 0}li{margin:3px 0}.g td,.g th{text-align:center;padding:3px 2px;font-size:11px}.g td:first-child,.g th:first-child{text-align:left;padding-left:6px}.cal td{height:78px;width:14.28%}.cal .d{font-weight:700}.cal .o{color:#aaa}.cal small{display:block;font-size:10.5px;line-height:1.3}.e{padding:8px 0;border-bottom:1px solid #ddd;page-break-inside:avoid}@page{margin:14mm}`;
+function printDoc(title,body){const html=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${PCSS}</style></head><body>${body}<p class="m" style="margin-top:26px">Printed from Plotline · ${esc(new Date().toLocaleString())}</p></body></html>`;
+ if(NATIVE){download(title.replace(/[^\w\- ]+/g,'').trim().slice(0,60)+'.html','text/html',html);toast('Saved. Open it, then Print or Share → Save as PDF');return}
+ const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';f.srcdoc=html;f.onload=()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){toast('Couldn’t open printing')}setTimeout(()=>f.remove(),60000)};document.body.appendChild(f)}
+window.printDoc=printDoc;
+const yes=(c,t)=>`<span class="${c}">${t}</span>`;
+function hMark(h,ds){const tn=dnum(today()),k=dnum(ds);if(k>tn)return'';if(h.kind==='quit'){const sl=(h.slips||[]).some(s=>dOf(slipT(s))===ds);return sl?yes('no','✗'):yes('ok','✓')}if(ds<h.startDate)return'';if(h.skip&&h.skip[ds])return yes('sk','–');const v=hVal(h,ds),n=hTarget(h);if(v>=n)return yes('ok','✓');if(v>0)return`${v}/${n}`;if(!hDue(h,ds))return'·';return k===tn?'':yes('no','✗')}
+const PR={
+ goal:id=>{const g=G(id);if(!g)return;const tn=today();printDoc(g.title,`<h1>${esc(g.title)}</h1><p class="m">${esc(areaName(g.area))} · ${esc(hzName(g.horizon))}${g.startDate?' · started '+esc(fmtDate(g.startDate)):''}${g.targetDate?' · target '+esc(fmtDate(g.targetDate)):''} · ${g.status==='done'?'achieved':pct(g)+'% done'}${g.assignee?' · assigned to '+esc(g.assignee):''}</p>${g.why?`<h2>Why it matters</h2><p>${esc(g.why)}</p>`:''}
+  <h2>Steps</h2>${g.steps.length?`<table><tr><th class="c">#</th><th>Step</th><th>Due</th><th>Status</th><th>Notes</th></tr>${g.steps.map((s,i)=>`<tr><td class="c">${i+1}</td><td>${esc(s.title)}</td><td>${s.due?esc(fmtDate(s.due)):'–'}${s.time?' '+fmtTime(s.time):''}</td><td>${s.done?yes('ok','Done'):s.due&&s.due<tn?yes('no','Late'):'Open'}</td><td>${esc(s.note||'')}</td></tr>`).join('')}</table>`:'<p class="m">No steps yet.</p>'}
+  ${kids(g).length?`<h2>Sub-goals</h2><ul>${kids(g).map(k=>`<li>${esc(k.title)} · ${pct(k)}%</li>`).join('')}</ul>`:''}`)},
+ habit:id=>{const h=H(id);if(!h)return;const tn=dnum(today()),a=wkStart(tn)-7*11,W=[];for(let w=0;w<12;w++)W.push(a+7*w);
+  printDoc(h.title,`<h1>${esc(hIcon(h))} ${esc(h.title)}</h1><p class="m">${h.kind==='quit'?(h.mode==='limit'?'Cutting down':'Breaking'):esc(freqText(h))}${h.unit?' · '+hTarget(h)+' '+esc(h.unit):''} · streak ${h.kind==='quit'?Math.floor((Date.now()-qSince(h))/864e5)+' days':hStreak(h)}</p>${h.why?`<p>${esc(h.why)}</p>`:''}
+  <h2>Last 12 weeks</h2><table class="g"><tr><th>Week of</th>${[0,1,2,3,4,5,6].map(i=>`<th>${esc(dUTC(a+i).toLocaleDateString(undefined,{weekday:'short',timeZone:'UTC'}))}</th>`).join('')}</tr>${W.map(w=>`<tr><td>${esc(dUTC(w).toLocaleDateString(undefined,{month:'short',day:'numeric',timeZone:'UTC'}))}</td>${[0,1,2,3,4,5,6].map(i=>`<td>${hMark(h,fromN(w+i))}</td>`).join('')}</tr>`).join('')}</table><p class="m">✓ done · ✗ missed · – skipped · · not due</p>`)},
+ day:ds=>{ds=validDate(ds)||today();const k=dnum(ds),it=calItems(k,k)[k]||[],HS=dyHabits(ds),A=(S.settings.actLog||{})[ds],ents=S.entries.filter(e=>dOf(e.t)===ds&&!e.private&&e.type!=='step').sort((a,b)=>a.t-b.t);
+  printDoc(longDayName(ds),`<h1>${esc(longDayName(ds))}</h1><h2>Plan</h2>${it.length?`<table><tr><th>Time</th><th>Item</th><th>For</th><th>Status</th></tr>${it.map(x=>`<tr><td>${x.time?fmtTime(x.time):'Any time'}</td><td>${esc(x.t)}</td><td>${esc(x.sub||'')}</td><td>${x.done?yes('ok','Done'):x.k==='target'?'Target':'Open'}</td></tr>`).join('')}</table>`:'<p class="m">Nothing planned.</p>'}
+  <h2>Habits</h2>${HS.length?`<table><tr><th>Habit</th><th class="c">Status</th></tr>${HS.map(h=>`<tr><td>${esc(hIcon(h))} ${esc(h.title)}</td><td class="c">${hMark(h,ds)||'–'}</td></tr>`).join('')}</table>`:'<p class="m">No habits due.</p>'}
+  ${A?`<h2>Activity</h2><p>Steps ${A.s!=null?(+A.s).toLocaleString():'–'} · sleep ${A.z?fmtMin(A.z):'–'} · active ${wkMin(A)?fmtMin(wkMin(A)):'–'} · screen ${A.m!=null?fmtMin(A.m):'–'}</p>`:''}
+  ${ents.length?`<h2>Journal</h2>${ents.map(e=>`<div class="e"><b>${esc(e.title||JK[e.type]||'Moment')}</b> <span class="m">${tShort(e.t)}${e.mood?' · '+e.mood:''}</span>${e.text?`<p>${esc(e.text)}</p>`:''}</div>`).join('')}`:''}`)},
+ cal:()=>{const n=dnum(CAL.d),[f,l]=monthOf(n),a=f-dUTC(f).getUTCDay(),b=l+6-dUTC(l).getUTCDay(),M=calItems(a,b),t=dUTC(n).toLocaleDateString(undefined,{month:'long',year:'numeric',timeZone:'UTC'});let rows='';
+  for(let w=a;w<=b;w+=7){rows+='<tr>';for(let k=w;k<w+7;k++){const it=M[k]||[],r=k<=dnum(today())?dayRatio(fromN(k)):{due:0};rows+=`<td class="${k<f||k>l?'o':''}"><span class="d">${dUTC(k).getUTCDate()}</span>${r.due?` <span class="m">· habits ${r.dn}/${r.due}</span>`:''}${it.slice(0,5).map(x=>`<small>${x.done?'✓ ':x.k==='target'?'⚑ ':'• '}${x.time?fmtTime(x.time)+' ':''}${esc(trunc(x.t,40))}</small>`).join('')}${it.length>5?`<small>+${it.length-5} more</small>`:''}</td>`}rows+='</tr>'}
+  printDoc('Calendar '+t,`<h1>${esc(t)}</h1><table class="cal"><tr>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr>${rows}</table>`)},
+ journal:()=>{const R=jwRange(),jf=jFilter(),es=S.entries.filter(e=>jPass(e,jf)&&jwIn(e.t,R)&&!e.private).sort((a,b)=>a.t-b.t);
+  printDoc('Journal',`<h1>Journal</h1><p class="m">${esc(dayLabel(fromN(R.a)+'T12:00'))} – ${esc(dayLabel(fromN(R.b||R.a+6)+'T12:00'))}</p>${es.length?es.map(e=>`<div class="e"><b>${esc(e.title||JK[e.type]||'Moment')}</b> <span class="m">${esc(dayLabel(e.t))} · ${tShort(e.t)}${e.mood?' · '+e.mood:''}</span>${e.text?`<p>${esc(e.text)}</p>`:''}</div>`).join(''):'<p class="m">No entries.</p>'}`)},
+ activity:()=>{const L=S.settings.actLog||{},N=ACTV.days||30,tn=dnum(today()),rows=[];for(let k=tn;k>tn-N;k--){const ds=fromN(k),o=L[ds];if(!o)continue;rows.push(`<tr><td>${esc(dayName(ds))}</td><td>${o.s!=null?(+o.s).toLocaleString():'–'}</td><td>${o.z?fmtMin(o.z):'–'}</td><td>${wkMin(o)?fmtMin(wkMin(o)):'–'}</td><td>${o.m!=null?fmtMin(o.m):'–'}</td></tr>`)}
+  printDoc('Activity',`<h1>Activity</h1><p class="m">Last ${N} days</p><table><tr><th>Day</th><th>Steps</th><th>Sleep</th><th>Active</th><th>Screen</th></tr>${rows.join('')}</table>`)},
+ habits:()=>{const N=Math.max(14,+S.settings.layout.hsnN||14),tn=dnum(today()),K=[];for(let k=tn-N+1;k<=tn;k++)K.push(k);const L=S.habits.filter(h=>h.status==='active');
+  printDoc('Habits',`<h1>Habits</h1><p class="m">Last ${N} days</p><table class="g"><tr><th>Habit</th>${K.map(k=>`<th>${dUTC(k).getUTCDate()}</th>`).join('')}</tr>${L.map(h=>`<tr><td>${esc(hIcon(h))} ${esc(h.title)}</td>${K.map(k=>`<td>${hMark(h,fromN(k))}</td>`).join('')}</tr>`).join('')}</table><p class="m">✓ done · ✗ missed · – skipped · · not due</p>`)}};
+function longDayName(ds){return dUTC(dnum(ds)).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'UTC'})}
+ACT.printIt=d=>{const f=PR[d.k];if(f)f(d.id)};
+function printKey(){if(cur.p==='goal')return['goal',cur.id];if(cur.p==='habit')return['habit',cur.id];if(cur.p==='day')return['day',cur.id||today()];if(cur.p==='cal')return['cal'];if(cur.p==='journal')return['journal'];if(cur.p==='activity'&&$('#view .axgrid'))return['activity'];if(cur.p==='habits'&&S.habits.length)return['habits'];return null}
+function printBtn(){const k=printKey();if(!k)return;const r=document.querySelector('#view .crumb>.ph-r')||document.querySelector('#view header.ph .ph-r');if(!r||r.querySelector('[data-act=printIt]'))return;
+ r.insertAdjacentHTML('afterbegin',`<button class="ibtn" data-act="printIt" data-k="${k[0]}"${k[1]?` data-id="${esc(k[1])}"`:''} aria-label="Print" title="Print or save as PDF">${ic('print')}</button>`)}
+
+/* ---------- share and assign: goals and threads ---------- */
+const assignField=(K,o)=>`<div class="field"><label>Assign to · optional</label><input name="assign" type="email" placeholder="Their Google email" autocomplete="off" value="${esc((K==='goal'?o.assignee:o.to)||'')}"><small class="muted small">${K==='goal'?'They’ll see the goal as theirs. Open steps without their own person go to them.':'They’ll see the thread as assigned to them.'}</small></div>`;
+{const _sf=shareForm;shareForm=function(o){let h;if(SHN&&SHN.kind==='thread'){SHN.kind='step';try{h=_sf(o)}finally{SHN.kind='thread'}h=h.replace(/They’ll see the title[^<]*<\/small>/,'They’ll see the title and the updates so far, the mode, and your name and progress on this thread, live. Nothing else from your plan.</small>')}else h=_sf(o);
+ const K=SHN&&SHN.kind;if(K==='goal'||K==='thread')h=h.replace('<div class="sh-what">',assignField(K,o)+'<div class="sh-what">');return h}}
+{const _st=shareStart;shareStart=async function(kind,ref){if(kind!=='thread')return _st(kind,ref);const t=TH(ref.id);if(!t)return;if(!(await shReady()))return;SHN={kind:'thread',ref,mode:'together'};openSheet(shareForm(t))}}
+{const _go=FORM.shareGo;FORM.shareGo=async function(f){const K=SHN&&SHN.kind,as=emailsOf(f.elements.assign?f.elements.assign.value:'')[0]||'';
+ if(K==='goal'){const g=G(SHN.ref.id);if(g&&as){g.steps.forEach(s=>{const i=f.elements['as_'+s.id];if(i&&!i.value.trim())i.value=as})}if(g&&(g.assignee||'')!==as){g.assignee=as;g.u=Date.now();save()}return _go(f)}
+ if(K!=='thread')return _go(f);
+ const fd=new FormData(f),mode=fd.get('mode')||'together',emails=emailsOf(fd.get('emails'));if(as&&!emails.includes(as))emails.push(as);if(!emails.length)return toast('Add the Google email of who you’re sharing with');
+ const t=TH(SHN.ref.id);if(!t)return;const btn=f.querySelector('.btn.pri');btn.disabled=true;btn.textContent='Sharing…';
+ try{const id=await ensureIdent(),cid='c'+uid()+uid(),k=newKey(),item={kind:'thread',title:t.title,to:as,ups:thrUps(t).slice(0,40).map(u=>({id:u.id,k:u.k,x:u.x,t:u.t}))};
+  if((t.to||'')!==as){t.to=as;t.u=Date.now()}
+  const sh={id:cid,fs:1,k,role:'owner',mode,title:t.title,status:'joined',local:{kind:'thread',id:t.id},u:Date.now()};
+  const members=[fme(),...emails],keys=await shWrapMissing({members,keys:{}},sh,true)||{};
+  await fs(`/circles?documentId=${cid}`,{method:'POST',body:JSON.stringify(fsEnc({owner:fme(),members,opub:id.pub,locks:JSON.stringify(keys),enc:await encJ(k,{title:t.title,mode,item,ownerName:myName().slice(0,80)}),created:Date.now(),u:Date.now()}))});
+  shares().push(sh);save();await shPublish(sh).catch(()=>{});closeSheet();render(false);shSent(sh,emails,emails.filter(e=>!keys[e]))}
+ catch(e){btn.disabled=false;btn.textContent='Share';toast(shErr(e))}}}
+{const _si=shItem;shItem=function(sh){const L=sh.local||{};return L.kind==='thread'?TH(L.id):_si(sh)}}
+{const _sp=shProgress;shProgress=function(sh){const L=sh.local||{};if(L.kind!=='thread')return _sp(sh);const t=TH(L.id),out={u:Date.now()};if(!t)return out;const U=thrUps(t);out.pct=t.status==='done'?100:0;out.n=U.length;out.done=['n'+U.length,t.status||'open'];out.last=U[0]?trunc(U[0].x||'',80):'';return out}}
+{const _sj=shJoin;shJoin=async function(sh){let c,d;try{c=await fsCircle(sh.id);d=c&&await decJ(sh.k,c.enc)}catch(e){}const it=d&&d.item||{};if(it.kind!=='thread')return _sj(sh);
+ const btn=document.querySelector('[data-act=shJoin]');if(btn){btn.disabled=true;btn.textContent='Joining…'}
+ try{const now=Date.now(),t={id:uid(),title:it.title||d.title,link:null,status:'open',created:now,u:now,to:it.to||'',from:c.owner||'',ups:(it.ups||[]).map(u=>({id:uid(),k:u.k||'note',x:u.x||'',t:u.t||now,u:now}))};threads().push(t);
+  sh.local={kind:'thread',id:t.id};sh.mode=d.mode;sh.title=d.title;sh.status='joined';sh.u=now;sh.pub='';await shPublish(sh);save();closeSheet();render(false);toast(it.to===fme()?`“${esc(d.title)}” is assigned to you`:`Joined “${esc(d.title)}”`)}
+ catch(e){if(btn){btn.disabled=false;btn.textContent='Join'}toast(shErr(e))}}}
+ACT.shareThread=d=>shareStart('thread',{id:d.id});
+{const _vt=vThread;vThread=function(id){let o=_vt(id);const t=TH(id);if(!t)return o;
+ o=o.replace(`<button class="ibtn" data-act="thrEdit"`,`<button class="ibtn" data-act="shareThread" data-id="${t.id}" aria-label="Share or assign" title="Share or assign">${ic('share')}</button><button class="ibtn" data-act="thrEdit"`);
+ if(t.to)o=o.replace(/(<header class="ph thr-ph"[^>]*><div><h1>[\s\S]*?<\/h1>)/,`$1<span class="asg">${ic('user','ico-s')}${t.to===(typeof fme==='function'&&fme())?'Assigned to you':'Assigned to '+esc(who(t.to))}</span>`);
+ const p=typeof shPanel==='function'?shPanel('thread',id):'';if(p){const i=o.indexOf('</header>');if(i>0)o=o.slice(0,i+9)+p+o.slice(i+9)}return o};VIEWS.thread=vThread}
+/* goal page: share or assign from the header, and who it's assigned to */
+{const _vg=vGoal;vGoal=function(id){let o=_vg(id);const g=G(id);if(!g)return o;
+ o=o.replace(/(<div class="crumb">[\s\S]*?<div class="ph-r">)/,`$1<button class="ibtn" data-act="shareGoal" data-id="${g.id}" aria-label="Share or assign" title="Share or assign">${ic('share')}</button>`);
+ if(g.assignee)o=o.replace('<div class="ov-pace"',`<div class="ov-pace"><span class="ci-b asg">${ic('user','ico-s')}${g.assignee===(typeof fme==='function'&&fme())?'Assigned to you':'Assigned to '+esc(who(g.assignee))}</span>`);
+ return o};VIEWS.goal=vGoal}
+
+/* titles keep their size and wrap; the cards grow instead (1.17) */
+fitCards=function(){};
+/* ---------- after every render ---------- */
+{const _r=render;render=function(a){_r(a);const z=cur.p==='bench'||cur.p==='map';document.documentElement.classList.toggle('tzx',z);printBtn()}}
 })();
 </script>
 <script src="bench.js"></script>

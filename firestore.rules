@@ -4,7 +4,7 @@ rules_version = '2';
 //                        locks (the item key locked for each member), enc (the encrypted item)
 // circles/{cid}/ms/{em}  one person's encrypted progress for it; only that person can write it
 // keys/{em}              a person's PUBLIC key (the private half never leaves their own Drive)
-// benches/{id}           a shared Workbench board: owner (anonymous Firebase uid), kind ('edit' or 'view'),
+// benches/{id}           a shared Workbench board: owner (Firebase uid), kind ('edit' or 'view'),
 //                        enc (the board, AES-GCM sealed with a key that only lives in the link's #fragment)
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -51,16 +51,17 @@ service cloud.firestore {
     }
 
     // Workbench boards. Ids are random and can't be listed; without the key in the link the content is noise.
-    // Any signed-in session (anonymous is fine) may edit an 'edit' board; only the owner may update a 'view' copy.
+    // Editing needs a signed-in Google account (1.17): anonymous sessions can read, not write. Only the owner may
+    // update a 'view' copy (copies made before 1.17 are owned by that device's anonymous session).
     match /benches/{id} {
       allow get: if true;
       allow list: if false;
-      allow create: if request.auth != null && okBench(request.resource.data)
+      allow create: if signedIn() && okBench(request.resource.data)
         && request.resource.data.owner == request.auth.uid;
       allow update: if request.auth != null && okBench(request.resource.data)
         && request.resource.data.owner == resource.data.owner
         && request.resource.data.kind == resource.data.kind
-        && (resource.data.kind == 'edit' || resource.data.owner == request.auth.uid);
+        && ((resource.data.kind == 'edit' && signedIn()) || resource.data.owner == request.auth.uid);
       allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
     }
 
