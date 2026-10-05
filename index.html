@@ -2142,19 +2142,17 @@ html.stu-on #vin>.ph>.ph-r{align-self:center}
 /* ---- journal: one tidy row of controls, a week you can swipe, filter chips ---- */
 .jbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-14px 0 14px}
 .jbar>.data{color:var(--muted)}
-.jw{border-radius:24px;background:var(--surface);border:1px solid var(--line);padding:10px 10px 12px;touch-action:pan-y}
-.jw-top{display:flex;align-items:center;gap:8px}
-.jw-t{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center}
-.jw-t b{font:700 16px var(--f-body)}.jw-t .data{font-size:11px;margin-top:2px}
-.jw-top .ibtn:disabled{opacity:.35;cursor:default}
-.jw-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:10px}
-.jw-d{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 6px;border-radius:14px;border:1px solid transparent;background:none;color:inherit;font:inherit;cursor:pointer}
-.jw-d span{font:600 10px var(--f-mono);color:var(--muted)}.jw-d b{font:700 15px var(--f-body)}
-.jw-d i{height:20px;font-style:normal;font-size:16px;line-height:20px;display:grid;place-items:center}
-.jw-d i em{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.jw{display:flex;align-items:center;gap:6px;border-radius:22px;background:var(--surface);border:1px solid var(--line);padding:6px;touch-action:pan-y}
+.jw .ibtn{flex:none;width:34px;height:34px;border-radius:12px}.jw .ibtn:disabled{opacity:.3;cursor:default}
+.jw-days{flex:1;min-width:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.jw-d{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0;border-radius:12px;border:1px solid transparent;background:none;color:inherit;font:inherit;cursor:pointer}
+.jw-d span{font:600 9.5px var(--f-mono);color:var(--muted)}.jw-d b{font:700 14px var(--f-body)}
+.jw-d i{height:16px;font-style:normal;font-size:13px;line-height:16px;display:grid;place-items:center}
+.jw-d i em{width:5px;height:5px;border-radius:50%;background:var(--accent)}
 .jw-d.has{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .jw-d.today{border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
-.jw-d:disabled{cursor:default;opacity:.5}
+.jw-d:disabled{cursor:default}.jw-d:disabled b{color:var(--muted);font-weight:600}
+.jw-cap{text-align:center;margin-top:6px;font-size:11px}
 .jchips{overflow-x:auto;margin:12px 0 18px;scrollbar-width:none}.jchips .seg-c{width:max-content}
 .jw-cards.in-l{animation:jwInL .38s var(--ease)}.jw-cards.in-r{animation:jwInR .38s var(--ease)}
 @keyframes jwInL{from{opacity:0;transform:translateX(-28px)}}@keyframes jwInR{from{opacity:0;transform:translateX(28px)}}
@@ -2289,12 +2287,269 @@ html.stu-on #vin>.ph>.ph-r{align-self:center}
 @media(max-width:420px){.vtool .seg-c button{padding-left:12px;padding-right:12px}}
 .road .fl-row{position:relative;z-index:3}
 .road .fl-chip{background:color-mix(in srgb,var(--bg) 92%,transparent)}
+.rx-own{display:flex;gap:8px;margin-top:14px}.rx-own input{flex:1;min-width:0;height:46px}.rx-own .btn{width:46px;padding:0;justify-content:center;flex:none}
+/* ---- detail page button bars fit on phones ---- */
+@media(max-width:560px){.crumb{gap:8px}.crumb>.ph-r{min-width:0;flex:1;justify-content:flex-end;gap:6px}.crumb>.ph-r .fsb{display:none!important}.crumb .ibtn{width:40px;height:40px;border-radius:13px}.crumb .bell.pill{height:40px;width:40px;padding:0;justify-content:center}.crumb .bell.pill>span{display:none}}
+.ah-v i{font-style:normal;font-size:12px;margin-right:4px}
+@media(max-width:560px){.ah-v{font-size:12px}}
+.act-diag{margin-top:12px;display:grid;gap:8px;justify-items:start}
+.act-wk{height:28px;padding:0 10px;font-size:11.5px;margin-left:auto}.act-list>div:has(.act-wk) small{margin-left:0;flex-basis:100%;order:3}
+/* ---- Home ---- */
+.hmq{display:flex;gap:8px;overflow-x:auto;margin:-12px -16px 16px;padding:2px 16px 4px;scrollbar-width:none}
+.hmq-b{flex:none;display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 15px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);color:var(--text);font:600 13.5px var(--f-body);cursor:pointer;white-space:nowrap;transition:transform .2s}
+.hmq-b span{font-size:16px}.hmq-b:active{transform:scale(.96)}
+.hmq-b[data-act=aiStart]{background:color-mix(in srgb,var(--accent) 16%,var(--surface));border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+.hday{display:flex;align-items:center;gap:18px;padding:18px 20px;border-radius:26px;background:var(--surface);border:1px solid var(--line);margin-bottom:14px}
+.hday-r{--p:0;flex:none;width:76px;height:76px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p)*1%),var(--line-2) 0);display:grid;place-items:center;position:relative}
+.hday-r::before{content:'';position:absolute;inset:7px;border-radius:50%;background:var(--surface)}
+.hday-r b{position:relative;font:800 24px var(--f-display)}.hday-r small{font-size:13px;opacity:.6}
+.hday-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.hday-n{display:flex;align-items:center;gap:10px;width:100%;font:600 15px var(--f-body)}.hday-n .ell{flex:1;min-width:0}.hday-n .btn{flex:none}
+.hins{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.hin{display:flex;gap:12px;padding:14px 16px;border-radius:20px;background:var(--surface);border:1px solid var(--line)}
+.hin-e{font-size:22px;flex:none;line-height:1.2}.hin-b{flex:1;min-width:0}.hin-b p{margin:0;font-size:14.5px;line-height:1.45}
+.hin-a{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.aip{display:flex;gap:14px;padding:18px;border-radius:24px;margin:8px 0 18px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,var(--surface)),var(--surface));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line))}
+.aip-i{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--accent);color:var(--bg)}.aip-i svg{width:22px;height:22px}
+.aip-b{flex:1;min-width:0}.aip-b b{font:700 17px var(--f-body)}.aip-b p{margin:6px 0 0;font-size:14px;line-height:1.5;color:var(--muted)}
+.aip-a{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.aip.in-ask{margin-top:0}
+.pv-hh{margin:14px 0}.pv-hh>.data{margin-bottom:8px}
+.ask-comp{background:var(--bg)}
+.fstep>div{min-width:0}.aimain :is(input,select,textarea){min-width:0;max-width:100%}.aim-row{flex-wrap:wrap}.aim-row>*{flex:1 1 140px;min-width:0}
+/* ---- Ask overlay ---- */
+.aov{position:fixed;inset:0;z-index:90;pointer-events:none}
+.aov-dim{position:absolute;inset:0;background:rgba(0,0,0,.42);opacity:0;transition:opacity .3s;pointer-events:auto}
+.aov.on .aov-dim{opacity:1}
+.aov-s{position:absolute;left:0;right:0;bottom:0;height:min(76vh,720px);max-width:760px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg-2);border:1px solid var(--line-2);border-bottom:0;border-radius:28px 28px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.4);transform:translateY(105%);transition:transform .42s cubic-bezier(.2,.9,.25,1.08),height .35s var(--ease);pointer-events:auto;padding-bottom:var(--sab,env(safe-area-inset-bottom))}
+.aov.on .aov-s{transform:translateY(0)}.aov.full .aov-s{height:calc(100vh - var(--sat,0px) - 12px)}
+.aov-h{position:relative;display:flex;align-items:center;gap:6px;padding:18px 14px 10px 18px;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+.aov-grab{position:absolute;top:7px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:var(--line-2)}
+.aov-t{flex:1;min-width:0;display:flex;align-items:center;gap:10px}.aov-t b{font:700 17px var(--f-body)}.aov-t small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aov-t .ask-av{width:30px;height:30px}
+.aov-b{flex:1;min-height:0;overflow-y:auto;padding:4px 18px 12px;overscroll-behavior:contain}
+.aov-empty{padding:6px 0}.aov-sugs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:10px;margin-top:14px}
+.aov-comp{position:static!important;margin:0!important;padding:10px 14px 14px!important;border-top:1px solid var(--line);background:var(--bg-2)!important;box-shadow:none!important}
+.aov-go{display:contents}
+html.aov-on body{overflow:hidden}
+/* ---- Liquid Glass ---- */
+[data-theme=glass]{color-scheme:dark;--bg:#10141F;--bg-2:#181D2B;--surface:rgba(255,255,255,calc(.05 + var(--frost,.5) * .12));--surface-2:rgba(255,255,255,calc(.1 + var(--frost,.5) * .14));--line:rgba(255,255,255,.13);--line-2:rgba(255,255,255,.24);--text:#F6F8FF;--muted:rgba(232,238,255,.74);--dim:rgba(232,238,255,.46);--accent:#8FD8FF;--on-accent:#061430;--stars:0;--glow:rgba(143,216,255,.08);--mo:#A9C8FF}
+[data-theme=glasslight]{color-scheme:light;--bg:#E8EEF9;--bg-2:#F2F5FC;--surface:rgba(255,255,255,calc(.4 + var(--frost,.5) * .4));--surface-2:rgba(255,255,255,calc(.56 + var(--frost,.5) * .34));--line:rgba(30,45,90,.09);--line-2:rgba(30,45,90,.17);--text:#0D1428;--muted:#465071;--dim:#8C95AF;--accent:#0A5FE0;--on-accent:#fff;--stars:0;--glow:rgba(10,108,255,.06);--mo:#9CC3FF}
+/* Wallpaper (any theme; Liquid Glass themes default to Aurora). No CSS blur filter and no animation by default:
+   an animated blurred layer forces every frosted card above it to re-blur each frame, which made tab switches janky. */
+html{background:var(--bg)}
+html[data-wall]:not([data-wall=off]) body{background:transparent}
+html[data-wall]:not([data-wall=off]) body::before{content:'';position:fixed;inset:-12%;z-index:-1;pointer-events:none;--wm:var(--wmix,62%);background:radial-gradient(40% 32% at 18% 22%,color-mix(in srgb,var(--w1) var(--wm),var(--bg)) 0,transparent 72%),radial-gradient(36% 30% at 82% 18%,color-mix(in srgb,var(--w2) var(--wm),var(--bg)) 0,transparent 72%),radial-gradient(42% 36% at 75% 78%,color-mix(in srgb,var(--w3) var(--wm),var(--bg)) 0,transparent 72%),radial-gradient(38% 32% at 22% 82%,color-mix(in srgb,var(--w4) var(--wm),var(--bg)) 0,transparent 72%);opacity:var(--wop,.6)}
+html[data-mode=light]{--wmix:52%}html[data-mode=dark]{--wmix:58%}
+html[data-wallmove=on]:not([data-motion=reduced]) body::before{animation:lgDrift 60s ease-in-out infinite alternate;will-change:transform}
+[data-wall=aurora]{--w1:#5B6CFF;--w2:#A35CF0;--w3:#18B0A8;--w4:#E0745A}
+[data-wall=ocean]{--w1:#2E6BFF;--w2:#18A8D8;--w3:#22B894;--w4:#4C5FD6}
+[data-wall=sunset]{--w1:#FF7A59;--w2:#E8507E;--w3:#F5A83A;--w4:#9B5CE0}
+[data-wall=forest]{--w1:#2E9D63;--w2:#7DB043;--w3:#178F8F;--w4:#4F7F35}
+[data-wall=rose]{--w1:#F27FA6;--w2:#B977F2;--w3:#F2A493;--w4:#7F9BF2}
+[data-wall=mono]{--w1:#7D869A;--w2:#5A6275;--w3:#A1A8B6;--w4:#687287}
+[data-wall=accent]{--w1:var(--accent);--w2:color-mix(in srgb,var(--accent) 60%,#8A5CF0);--w3:color-mix(in srgb,var(--accent) 55%,#18B0A8);--w4:color-mix(in srgb,var(--accent) 70%,var(--bg))}
+@keyframes lgDrift{to{transform:translate3d(-3%,2%,0) scale(1.06)}}
+html:is([data-theme=glass],[data-theme=glasslight]) :is(.panel,.list,.hday,.hin,.aip,.jw,.hsum,.dy-h,.act-t,.ah-r,.dy-c,.hh-d,.hh-c,.thr-comp,.hnudge,.demob,.mstrip,.at-t,.ad-t,.seg-c,.hmq-b,.chip,.ibtn,.btn:not(.pri):not(.ink),.fl-chip,.tg-box,.li.rv,.hpill,.sh-panel,.ask-sug,.ins-st){background:var(--surface);border-color:var(--line-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(255,255,255,.05),0 10px 30px -12px rgba(0,0,0,.35);-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%)}
+html[data-theme=glasslight] :is(.panel,.list,.hday,.hin,.aip,.jw,.hsum,.dy-h,.act-t,.ah-r,.ibtn,.btn:not(.pri),.chip,.seg-c,.hmq-b){box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 10px 30px -14px rgba(30,45,90,.25)}
+html:is([data-theme=glass],[data-theme=glasslight]) :is(.tabbar,.rail,#sheet,.aov-s,.ask-comp:not(.aov-comp),.rxb,.toast){background:color-mix(in srgb,var(--bg-2) 55%,transparent)!important;-webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%);border-color:var(--line-2)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 20px 50px -18px rgba(0,0,0,.45)}
+html:is([data-theme=glass],[data-theme=glasslight]) .aov-comp{background:transparent!important}
+html:is([data-theme=glass],[data-theme=glasslight]) .btn.pri{box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 24px -10px var(--accent)}
+html:is([data-theme=glass],[data-theme=glasslight]) .sp-date span{background:var(--surface-2);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.fold>h3{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;margin:0;-webkit-user-select:none;user-select:none}
+.fold-c{width:20px;height:20px;flex:none;opacity:.6;transition:transform .3s var(--ease)}.fold.open .fold-c{transform:rotate(180deg)}
+.fold-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s var(--ease)}.fold-b>div{min-height:0;overflow:hidden}
+.fold.open .fold-b{grid-template-rows:1fr}.fold.open .fold-b>div{padding-top:12px}
+.set>section.fold{align-self:start}
+.lp-cur{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-top:12px;padding:12px 16px;border-radius:16px;border:1px solid var(--line-2);background:var(--surface-2);color:inherit;font:inherit;text-align:left;cursor:pointer}
+.lp-cur span{display:flex;flex-direction:column;min-width:0}.lp-cur small{color:var(--muted);font-size:12px}.lp-cur b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-g{margin-top:18px}.lp-g>.data{margin-bottom:8px}
+.lp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,140px),1fr));gap:8px}
+.lp-list{display:grid;gap:6px}
+.lp-o{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:10px 14px;border-radius:14px;border:1px solid var(--line-2);background:var(--surface);color:var(--text);font:600 14.5px var(--f-body);text-align:left;cursor:pointer}
+.lp-o span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-o.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface))}.lp-o.on svg{color:var(--accent);flex:none}
+.selp{position:fixed;inset:0;z-index:120}
+.selp-dim{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .25s}.selp.on .selp-dim{opacity:1}
+.selp-s{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;max-height:72vh;display:flex;flex-direction:column;background:var(--bg-2);border:1px solid var(--line-2);border-bottom:0;border-radius:24px 24px 0 0;padding:10px 14px calc(14px + var(--sab,env(safe-area-inset-bottom)));transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.9,.25,1.05);box-shadow:0 -16px 40px rgba(0,0,0,.35)}
+.selp.on .selp-s{transform:none}
+.selp-grab{align-self:center;width:40px;height:5px;border-radius:3px;background:var(--line-2);margin-bottom:8px}
+.selp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 4px 10px}.selp-h b{font:700 17px var(--f-body)}
+.selp-l{overflow-y:auto;display:grid;gap:6px;padding-bottom:4px;overscroll-behavior:contain}
+.selp-g{margin:10px 4px 2px}
+.selp-o{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:600 15px var(--f-body);text-align:left;cursor:pointer}
+.selp-o span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.selp-o.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface))}.selp-o.on svg{color:var(--accent);flex:none}
+.selp-o:disabled{opacity:.45}
+html:is([data-theme=glass],[data-theme=glasslight]) .selp-s{background:color-mix(in srgb,var(--bg-2) 60%,transparent);-webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%)}
 /* ---- script fonts ---- */
 html[data-fscript] :is(h1,h2,h3,h4,.jb-big,.jt-big,.jb-q,.st-hello span,.act-big,.hero-pct,.hsum .big b,.sn b,.fpcard b){text-transform:none!important;letter-spacing:0!important}
 html[data-fscript] .ph h1{line-height:1.05;padding-bottom:.06em}
 html[data-fscriptb] body{letter-spacing:0}
 .fchip{line-height:1.3}
+/* 1.13 readability */
+input::placeholder,textarea::placeholder,.tg-add input::placeholder{color:color-mix(in srgb,var(--muted) 90%,transparent)}
+.cd.out{opacity:.55}
+.cd-chips em.more{color:var(--text);opacity:.85}
+.agb .kd{color:color-mix(in srgb,var(--c) 55%,var(--text))}
+html:is([data-theme=glass],[data-theme=glasslight]) .hh-d i::after,html:is([data-theme=glass],[data-theme=glasslight]) .act-ring::before,html:is([data-theme=glass],[data-theme=glasslight]) .hday-r::before{background:var(--bg-2)}
+html:is([data-theme=glass],[data-theme=glasslight]) .hh-d.full i::after{background:color-mix(in srgb,var(--accent) 22%,var(--bg-2))}
+.aip.aip-min{padding:8px 8px 8px 10px;align-items:center;gap:6px}
+.aip-mb{flex:1;min-width:0;display:flex;align-items:center;gap:12px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:0}
+.aip.aip-min .aip-i{width:38px;height:38px;border-radius:12px}
+.aip-mt{display:flex;flex-direction:column;min-width:0}.aip-mt b{font:700 15px var(--f-body)}.aip-mt small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aip-x{flex:none}.aip-x svg{transform:rotate(0deg)}
+/* crumb action row never overlaps the back button: shrink, then scroll */
+.crumb>.ph-r{flex:1 1 auto;min-width:0;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:16px 2px 22px;margin:-16px -2px -22px}
+.crumb>.ph-r::-webkit-scrollbar{display:none}
+.crumb>.ph-r>:first-child{margin-left:auto}
+.crumb>.ph-r>*{flex:none}
+.crumb>.ph-r.ovf{-webkit-mask:linear-gradient(90deg,transparent 0,#000 22px);mask:linear-gradient(90deg,transparent 0,#000 22px)}
+@media(max-width:400px){.crumb>.ph-r{gap:5px}.crumb .ph-r .ibtn,.crumb .ph-r .bell.pill{width:38px;height:38px;border-radius:12px}}
+@media(max-width:370px){.crumb>.ph-r{gap:4px}.crumb .ph-r .ibtn,.crumb .ph-r .bell.pill{width:36px;height:36px;border-radius:12px}.crumb>a.ibtn{width:38px;height:38px}}
+/* 1.13 edge-to-edge top: no band. The scrim is invisible at the top of a page and becomes a soft
+   blur that fades out (no hard edge) once content scrolls under the status bar. */
+.sbar{height:calc(var(--sat,0px) + 26px);background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 62%,transparent) 0,color-mix(in srgb,var(--bg) 40%,transparent) var(--sat,0px),transparent 100%);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);-webkit-mask-image:linear-gradient(180deg,#000 0,#000 var(--sat,0px),transparent 100%);mask-image:linear-gradient(180deg,#000 0,#000 var(--sat,0px),transparent 100%);transition:opacity .35s}
+html.pg-top .sbar,html.aov-on .sbar{opacity:0}
+.aov-comp{padding-bottom:calc(14px + var(--sab,0px))!important}
+.aov-b{-webkit-overflow-scrolling:touch;touch-action:pan-y}
+/* Colours & background panel */
+.lk-sw{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 18px;padding:5px}
+.lk-c{position:relative;width:36px;height:36px;border-radius:50%;border:0;background:var(--sw);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);display:grid;place-items:center;color:#fff;padding:0}
+.lk-c.on{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--text)}
+.lk-c.auto{width:auto;padding:0 12px;border-radius:18px;background:var(--surface-2);color:var(--text);font:600 13px var(--f-body);box-shadow:inset 0 0 0 1px var(--line-2)}
+.lk-c.auto.on{box-shadow:inset 0 0 0 2px var(--text)}
+.lk-c.pick{background:conic-gradient(#FF5C5C,#FFB547,#E8E04B,#46C99B,#38BDF8,#8B7CFF,#FF5C8A,#FF5C5C)}.lk-c.pick svg{width:16px;height:16px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.lk-c.pick input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.lk-walls{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:8px 0 16px;padding:4px}
+.lk-w{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;color:var(--text);font:600 12.5px var(--f-body);cursor:pointer;padding:0}
+.lk-w i{width:100%;aspect-ratio:1;border-radius:14px;border:1px solid var(--line-2);background:radial-gradient(60% 50% at 25% 25%,var(--w1),transparent 72%),radial-gradient(60% 50% at 80% 20%,var(--w2),transparent 72%),radial-gradient(60% 55% at 75% 80%,var(--w3),transparent 72%),radial-gradient(55% 50% at 20% 85%,var(--w4),transparent 72%),var(--bg)}
+.lk-w[data-wp=off] i{background:var(--bg)}
+.lk-w.on i{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--text)}
+.lk-w[data-wp=aurora]{--w1:#5B6CFF;--w2:#A35CF0;--w3:#18B0A8;--w4:#E0745A}.lk-w[data-wp=ocean]{--w1:#2E6BFF;--w2:#18A8D8;--w3:#22B894;--w4:#4C5FD6}.lk-w[data-wp=sunset]{--w1:#FF7A59;--w2:#E8507E;--w3:#F5A83A;--w4:#9B5CE0}.lk-w[data-wp=forest]{--w1:#2E9D63;--w2:#7DB043;--w3:#178F8F;--w4:#4F7F35}.lk-w[data-wp=rose]{--w1:#F27FA6;--w2:#B977F2;--w3:#F2A493;--w4:#7F9BF2}.lk-w[data-wp=mono]{--w1:#7D869A;--w2:#5A6275;--w3:#A1A8B6;--w4:#687287}.lk-w[data-wp=accent]{--w1:var(--accent);--w2:color-mix(in srgb,var(--accent) 60%,#8A5CF0);--w3:color-mix(in srgb,var(--accent) 55%,#18B0A8);--w4:color-mix(in srgb,var(--accent) 70%,var(--bg))}
+.lk-r{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line)}
+.lk-r>span{flex:1;display:flex;flex-direction:column;font-weight:600}.lk-r small{font-weight:400;color:var(--muted);font-size:12.5px}
+.lk-r input[type=range]{flex:0 1 46%;accent-color:var(--accent)}
+.lk-r.dis{opacity:.62}
+.lk-p .btn.ghost{margin-top:10px}
+@media(max-width:560px){.tgrid{grid-template-columns:repeat(3,1fr);gap:9px}.tcard{padding:6px 6px 9px;border-radius:16px}.tprev{height:62px;border-radius:11px;margin-bottom:7px}.tcard .n{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+/* snappy: short, transform-free reveals */
+html[data-anim=snappy] .rv{transition:opacity .22s ease-out,transform .3s var(--ease);transform:translateY(8px)}
+html[data-anim=snappy] .sp-item.l.rv,html[data-anim=snappy] .sp-item.r.rv{transform:none}
+html[data-anim=snappy] .rv.in{transform:none}
+.lk-anim{display:inline-flex}
+/* glass performance: blur only big containers; small controls on top of them get a plain translucent fill
+   (blurring a chip that already sits on a blurred panel costs GPU time for no visible gain) */
+html:is([data-theme=glass],[data-theme=glasslight]) :is(.chip,.ibtn,.btn:not(.pri):not(.ink),.fl-chip,.hpill,.ask-sug,.ins-st,.hh-d,.seg-c,.hmq-b,.li.rv){-webkit-backdrop-filter:none;backdrop-filter:none}
+html[data-theme=glass] :is(.chip,.ibtn,.btn:not(.pri):not(.ink),.fl-chip,.hpill,.hh-d,.seg-c,.hmq-b){background:rgba(255,255,255,calc(.07 + var(--frost,.5) * .1))}
+html[data-theme=glasslight] :is(.chip,.ibtn,.btn:not(.pri):not(.ink),.fl-chip,.hpill,.hh-d,.seg-c,.hmq-b){background:rgba(255,255,255,calc(.5 + var(--frost,.5) * .35))}
+#view .aip.aip-min{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center;width:auto!important;max-width:none;grid-column:1/-1}
+#view .aip.aip-min .aip-mb{flex:1 1 auto;min-width:0}
+html[data-mode=light] .agt.late{color:#C2412D}
+.ph.ph-stack>div:first-child>h1{grid-column:1/-1;grid-row:2;margin-top:6px}
+.ph.ph-stack>.ph-r{grid-column:1/-1;grid-row:1;justify-self:end}
+/* the step-card reminder bell shares the old ".mini" class with pinned goal cards (210x156): keep it icon-sized */
+.bell.mini{position:static;width:auto;height:auto;flex-direction:row;justify-content:center;scroll-snap-align:none;border-radius:10px;padding:3px 8px;margin-left:6px;vertical-align:middle;font-size:11px}
+.bell.mini>span{display:none}.bell.mini{padding:4px}
+.hday-n{flex-wrap:wrap;row-gap:8px}.hday-n .ell{flex:1 1 120px}
+.fade-r{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
+.fade-l{-webkit-mask-image:linear-gradient(90deg,transparent,#000 36px);mask-image:linear-gradient(90deg,transparent,#000 36px)}
+.fade-l.fade-r{-webkit-mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent)}
 /* ==== END 1.10 CSS ==== */
+/* ===== 1.14 ===== */
+/* crisp text and icons */
+body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+svg{shape-rendering:geometricPrecision}
+html.fnat .data{letter-spacing:.06em;font-weight:500}
+html.fnat :is(.ph h1,.hero h1,.sheet h2,.st-h h3,.panel h3){letter-spacing:0}
+
+/* LED nodes: flat and crisp instead of 3D marbles */
+:is(.sp-item,.hs-item).done .node{background:var(--c);border-color:transparent;box-shadow:inset 0 0 0 2px color-mix(in srgb,#fff 30%,var(--c)),0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent),0 0 16px color-mix(in srgb,var(--c) 55%,transparent)}
+.jdot{background:var(--c,var(--muted));box-shadow:0 0 0 3px color-mix(in srgb,var(--c,var(--muted)) 22%,transparent),0 0 10px color-mix(in srgb,var(--c,transparent) 60%,transparent)}
+.spl.done b{background:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent),0 0 12px color-mix(in srgb,var(--c) 55%,transparent)}
+
+/* bottom bar: 4 pages + More */
+.tabbar button.nav{background:none;border:0;font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+.mnav{display:grid;gap:8px;margin-top:6px}
+.mnav-r{display:flex;align-items:center;gap:12px;padding:12px 12px;border-radius:18px;background:var(--surface);border:1px solid var(--line);color:var(--text);text-decoration:none;width:100%;text-align:left;font:inherit;cursor:pointer}
+.mnav-r>svg{width:22px;height:22px;flex:none;color:var(--accent)}
+.mnav-r b{display:block;font-weight:600;font-size:15px}
+.mnav-r small{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}
+.mnav-r .mnav-t{flex:1;min-width:0}
+.mnav-pin{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid var(--line-2);background:none;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.mnav-pin svg{width:18px;height:18px}
+.mnav-pin.on{color:var(--on-accent);background:var(--accent);border-color:transparent}
+.mnav-h{display:flex;align-items:center;justify-content:space-between;margin:14px 2px 2px}
+
+/* find anything */
+.fnd-in{display:flex;align-items:center;gap:10px;padding:0 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line-2)}
+.fnd-in svg{width:20px;height:20px;color:var(--muted);flex:none}
+.fnd-in input{flex:1;border:0;background:none;color:var(--text);font:500 16px var(--f-body);padding:14px 0;outline:none;min-width:0}
+.fnd-res{display:grid;gap:6px;margin-top:12px;min-height:120px}
+.fnd-g{margin:10px 2px 2px}
+.fnd-r{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--text);text-align:left;font:inherit;cursor:pointer}
+.fnd-r i{width:10px;height:10px;border-radius:50%;background:var(--c,var(--accent));flex:none}
+.fnd-r .t{flex:1;min-width:0}
+.fnd-r .t b{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fnd-r .t small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fnd-btn svg{width:20px;height:20px}
+
+/* calendar: one item on one day */
+.ci-st{display:flex;align-items:center;gap:10px;margin:12px 0 4px;flex-wrap:wrap}
+.ci-b{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font:600 13px var(--f-body);background:color-mix(in srgb,var(--c,var(--accent)) 16%,transparent);color:var(--text);border:1px solid color-mix(in srgb,var(--c,var(--accent)) 40%,transparent)}
+.ci-b.ok{background:color-mix(in srgb,#46C99B 18%,transparent);border-color:color-mix(in srgb,#46C99B 45%,transparent)}
+.ci-b.late{background:color-mix(in srgb,#FF6B6B 16%,transparent);border-color:color-mix(in srgb,#FF6B6B 45%,transparent)}
+.ci-kv{margin-top:12px;border-top:1px solid var(--line)}
+.ci-kv .kv{border-bottom:1px solid var(--line)}
+.ci-note{margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--surface);white-space:pre-wrap;font-size:14.5px;line-height:1.45}
+.ci-big{display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0 4px}
+.ci-big b{font:700 34px/1 var(--f-display);min-width:64px;text-align:center}
+.cd-chips em[data-act]{cursor:pointer}
+
+/* goal and habit overview */
+.ov{margin-top:14px}
+.ov-pace{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.ov-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media(min-width:700px){.ov-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.ov-t{padding:12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);min-width:0}
+.ov-t b{display:block;font:700 22px/1.1 var(--f-body);font-variant-numeric:tabular-nums}
+.ov-t small{display:block;color:var(--muted);font-size:12px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-t.late b{color:#FF7A7A}
+.ov-tl{display:grid;gap:6px;margin-top:12px}
+.ov-s{display:flex;align-items:center;gap:10px;padding:9px 10px 9px 8px;border-radius:14px;background:var(--surface);border:1px solid var(--line);cursor:pointer}
+.ov-s .chk{flex:none}
+.ov-s .t{flex:1;min-width:0;font-size:14.5px}
+.ov-s .t span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-s.d .t span{text-decoration:line-through;opacity:.6}
+.ov-s .w{flex:none;font:500 12px var(--f-mono);color:var(--muted)}
+.ov-s .w.late{color:#FF7A7A}
+.ov-a{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ov-more summary{cursor:pointer;color:var(--accent);font-size:13.5px;margin-top:8px;list-style:none}
+.ov-more summary::-webkit-details-marker{display:none}
+.hrd{display:grid;gap:6px}
+.hrd-r{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);width:100%;text-align:left;font:inherit;color:var(--text);cursor:pointer}
+.hrd-r .d{flex:1;min-width:0;font-size:14.5px}
+.hrd-r .v{font:500 12.5px var(--f-mono);color:var(--muted)}
+.hrd-r .s{width:12px;height:12px;border-radius:50%;flex:none;border:2px solid var(--line-2)}
+.hrd-r.ok .s{background:var(--c);border-color:var(--c)}
+.hrd-r.part .s{background:linear-gradient(90deg,var(--c) 50%,transparent 50%);border-color:var(--c)}
+.hrd-r.miss .s{border-color:#FF7A7A}
+.hrd-r.rest .s{border-style:dashed}
+
+/* journal: one card per item, with its history */
+.jh-n{display:inline-flex;align-items:center;gap:5px;margin-top:12px;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.18);font:600 11.5px var(--f-body);color:inherit}
+.jhist{display:grid;gap:0;margin-top:12px}
+.jhist-r{display:grid;grid-template-columns:16px 1fr;gap:10px;position:relative;padding-bottom:14px}
+.jhist-r:before{content:'';position:absolute;left:7px;top:14px;bottom:0;width:2px;background:var(--line-2)}
+.jhist-r:last-child:before{display:none}
+.jhist-r i{width:12px;height:12px;border-radius:50%;margin:3px 0 0 2px;background:var(--c,var(--accent))}
+.jhist-r b{display:block;font-weight:600;font-size:14.5px}
+.jhist-r small{display:block;color:var(--muted);font-size:12.5px}
+
+/* sharing: one tap */
+.shq{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
+.shq button{display:inline-flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);color:var(--text);font:600 14px var(--f-body);cursor:pointer}
+.shq button span{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font-size:13px}
 </style>
 </head>
 <body>
@@ -2411,7 +2666,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.10.3';
+const APP_VER='1.14.0';
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
@@ -2548,7 +2803,7 @@ const checkinTxt=g=>g.checkin==='daily'?`Daily check-in ${fmtTime(g.checkinTime)
 const dueKey=s=>s.due?daysUntil(s.due):9999;
 const urgency=(a,b)=>(dueKey(a.s)-dueKey(b.s))||(b.g.pinned-a.g.pinned)||(a.g.priority-b.g.priority);
 const dayLabel=t=>{const d=new Date(t),n=new Date();const k=Math.round((new Date(n.getFullYear(),n.getMonth(),n.getDate())-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);return k===0?'Today':k===1?'Yesterday':d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',...(d.getFullYear()!==n.getFullYear()?{year:'numeric'}:{})})};
-const gear=()=>`<button class="ibtn fsb" data-act="focusMode" aria-label="Full screen" title="Full screen (F)">${ic('full')}</button><a class="ibtn mob gearb" href="#/settings" aria-label="Settings">${ic('settings')}</a>`;
+let gear=()=>`<button class="ibtn fsb" data-act="focusMode" aria-label="Full screen" title="Full screen (F)">${ic('full')}</button><a class="ibtn mob gearb" href="#/settings" aria-label="Settings">${ic('settings')}</a>`;
 function iconSeg(key,items,val){return`<div class="seg-c ico" data-seg="lay-${key}" role="tablist"><span class="pill"></span>${items.map(([k,icn,l])=>`<button role="tab" aria-selected="${val===k}" aria-label="${l}" title="${l}" class="${val===k?'on':''}" data-act="layout" data-k="${key}" data-v="${k}">${ic(icn)}</button>`).join('')}</div>`}
 function hsShell(key,items,start,style=''){return`<div class="hs-shell rv" data-hs="${key}" data-start="${start}" style="${style}"><div class="hs" tabindex="0" data-zk="hs-${key.split('-')[0]}" style="${zoomCss('hs-'+key.split('-')[0])}" aria-label="Swipe or use arrow keys to move through cards"><div class="hs-row"><span class="hs-line"></span><span class="hs-fill"></span><span class="hs-sp"></span>${items}<span class="hs-sp"></span></div></div><div class="hs-foot"><button class="ibtn sm" data-act="hsNav" data-d="-1" aria-label="Previous">${ic('back')}</button><span class="data hs-count">··</span><button class="ibtn sm" data-act="hsNav" data-d="1" aria-label="Next">${ic('next')}</button></div></div>`}
 const hsItem=(style,card,cls,node,label)=>`<div class="hs-item ${cls}" style="${style}"><div class="hs-card">${card}</div><span class="hs-stem"></span>${node}<div class="hs-lab data">${label}</div></div>`;
@@ -2579,7 +2834,7 @@ function dayRow(x,carry){const g=x.goalId&&G(x.goalId);const sub=[g?`<i></i><spa
  return`<div class="li${x.done?' done':''}" style="--c:${colOf(g)}" data-act="editDay" data-id="${x.id}"><button class="chk${x.done?' on':''}" data-act="toggleDay" data-id="${x.id}" aria-label="${x.done?'Mark not done':'Mark done'}: ${esc(x.title)}">${ic('check')}</button><div style="flex:1;min-width:0"><div class="t ell">${esc(x.title)}</div>${sub?`<div class="s">${sub}</div>`:''}</div>${x.time?`<span class="data">${fmtTime(x.time)}</span>`:''}${carry?'':(x.auto&&x.auto.type?autoBtn('day',`data-id="${x.id}"`,x,'ic'):'')+dayBell(x,'ic')}${carry?`<button class="chip sm" data-act="dayMove" data-id="${x.id}">Move to today</button>`:''}</div>`}
 function todayGoals(){const td=ymd();const items=S.days.filter(x=>x.date===td).sort(byTime);const carry=S.days.filter(x=>!x.done&&x.date<td&&daysUntil(x.date)>=-14).sort((a,b)=>a.date<b.date?1:-1);const dn=items.filter(x=>x.done).length;const r=8,C=2*Math.PI*r;
  return`<section class="rv"><div class="st-h"><div class="tg-h"><h3>Today’s goals</h3>${items.length?`<svg class="tg-ring" viewBox="0 0 22 22"><circle class="a" cx="11" cy="11" r="${r}"/><circle class="b" cx="11" cy="11" r="${r}" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C*(1-dn/items.length)).toFixed(2)}"/></svg><span class="data">${dn} of ${items.length}</span>`:''}</div><a class="link" href="#/cal">Calendar</a></div>
- <div class="tg-box"><form class="tg-add" data-form="dayAdd" autocomplete="off"><input name="t" maxlength="90" placeholder="What do you want to achieve today?" aria-label="Add a goal for today"><button aria-label="Add">${ic('plus')}</button></form>${items.map(x=>dayRow(x)).join('')}${carry.length?`<div class="tg-sub data">Still open from earlier</div>${carry.slice(0,5).map(x=>dayRow(x,true)).join('')}`:''}</div></section>`}
+ <div class="tg-box"><form class="tg-add" data-form="dayAdd" autocomplete="off"><input name="t" maxlength="90" placeholder="Add a goal for today…" aria-label="Add a goal for today"><button aria-label="Add">${ic('plus')}</button></form>${items.map(x=>dayRow(x)).join('')}${carry.length?`<div class="tg-sub data">Still open from earlier</div>${carry.slice(0,5).map(x=>dayRow(x,true)).join('')}`:''}</div></section>`}
 function dayForm(x,date,time){const e=!!x;x=x||{title:'',date:validDate(date)||ymd(),time:time||'',dur:30,goalId:''};const gs=active();
  return`<div class="data">${esc(dayName(x.date))}</div><h2 style="margin-top:8px">${e?'Edit goal for the day':'A goal for the day'}</h2><form data-form="saveDay" ${e?`data-id="${x.id}"`:''}><div class="field"><label>What do you want to achieve?</label><input name="title" required maxlength="90" value="${esc(x.title)}" placeholder="Small enough to finish that day"></div>
  <div class="two"><div class="field"><label>Date</label><input type="date" name="date" required value="${x.date}"></div><div class="field"><label>Time · optional</label><input type="time" name="time" value="${x.time||''}"></div></div>
@@ -2599,7 +2854,7 @@ function calItems(a,b){const M={};const add=(n,it)=>{if(n<a||n>b)return;(M[n]=M[
    if(st.repeat&&!st.done&&g.status==='active'&&!g.steps.some(y=>y.from===st.id&&!y.done)){const d=dUTC(n0);for(let i=0;i<1500;i++){if(st.repeat==='daily')d.setUTCDate(d.getUTCDate()+1);else if(st.repeat==='weekly')d.setUTCDate(d.getUTCDate()+7);else d.setUTCMonth(d.getUTCMonth()+1);const n=Math.round(d.getTime()/864e5);if(n>b)break;add(n,{k:'rep',g,s:st,t:st.title,time:st.time||'',done:false,sub:g.title})}}});
   if(g.targetDate)add(dnum(g.targetDate),{k:'target',g,t:g.title,time:'',done:g.status==='done',sub:g.status==='done'?'Achieved':pct(g)+'% there'})});
  for(const k in M)M[k].sort((x,y)=>(x.k==='target')-(y.k==='target')||byTime(x,y));return M}
-const calOpen=x=>x.k==='day'?`data-act="editDay" data-id="${x.id}"`:x.k==='target'?`data-act="open" data-id="${x.g.id}"`:`data-act="editStep" data-g="${x.g.id}" data-s="${x.s.id}"`;
+const calOpen=x=>(typeof calOpenX==='function'&&x.dn!=null)?calOpenX(x):x.k==='day'?`data-act="editDay" data-id="${x.id}"`:x.k==='target'?`data-act="open" data-id="${x.g.id}"`:`data-act="editStep" data-g="${x.g.id}" data-s="${x.s.id}"`;
 const calChip=x=>`<button class="cchip k-${x.k}${x.done?' d':''}" style="--c:${colOf(x.g)}" ${calOpen(x)}><b>${x.k==='target'?'⚑ ':''}${esc(x.t)}</b>${x.time||x.k==='rep'?`<span>${x.time?fmtTime(x.time):''}${x.k==='rep'?(x.time?' · ':'')+'repeats':''}</span>`:''}</button>`;
 function calMonth(){const n=dnum(CAL.d),[f,l]=monthOf(n),a=f-dUTC(f).getUTCDay(),b=l+6-dUTC(l).getUTCDay(),M=calItems(a,b),tn=dnum(ymd());
  /* each day: its plan as tiny titled chips, a habit bar (done of due), the journal mood, and a ⚑ for goal targets */
@@ -2607,7 +2862,7 @@ function calMonth(){const n=dnum(CAL.d),[f,l]=monthOf(n),a=f-dUTC(f).getUTCDay()
  let h=`<div class="cal-dow">${DAYS.map(x=>`<span>${x}</span>`).join('')}</div><div class="cal-m" style="--rows:${(b-a+1)/7}">`;
  for(let k=a;k<=b;k++){const it=M[k]||[],ds=fromN(k),dd=dUTC(k),r=k<=tn?dayRatio(ds):{due:0,dn:0},tg=it.filter(x=>x.k==='target'),pl=it.filter(x=>x.k!=='target'),todo=pl.filter(x=>x.k!=='rep');
   const hb=r.due?`<span class="cd-hb${r.dn>=r.due?' full':''}" title="Habits ${r.dn} of ${r.due}"><i style="width:${Math.round(r.dn/r.due*100)}%"></i></span>`:'';
-  h+=`<button class="cd${k<f||k>l?' out':''}${k===tn?' now':''}${k===n?' pk':''}${k<tn&&todo.some(x=>!x.done)?' late':''}" data-act="calPick" data-d="${ds}" aria-label="${dd.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'})}${it.length?', '+it.length+' planned':''}${r.due?`, habits ${r.dn} of ${r.due}`:''}"><span class="cd-top"><span class="cd-n">${dd.getUTCDate()}</span>${mood[k]?`<span class="cd-mo">${mood[k][0]}</span>`:''}${tg.length?`<span class="cd-tg" style="--c:${colOf(tg[0].g)}">⚑</span>`:''}</span><span class="cd-chips">${pl.slice(0,2).map(x=>`<em style="--c:${colOf(x.g)}"${x.done?' class="d"':''}>${esc(x.t)}</em>`).join('')}${pl.length>2?`<em class="more">+${pl.length-2} more</em>`:''}</span>${hb}</button>`}
+  h+=`<button class="cd${k<f||k>l?' out':''}${k===tn?' now':''}${k===n?' pk':''}${k<tn&&todo.some(x=>!x.done)?' late':''}" data-act="calPick" data-d="${ds}" aria-label="${dd.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'})}${it.length?', '+it.length+' planned':''}${r.due?`, habits ${r.dn} of ${r.due}`:''}"><span class="cd-top"><span class="cd-n">${dd.getUTCDate()}</span>${mood[k]?`<span class="cd-mo">${mood[k][0]}</span>`:''}${tg.length?`<span class="cd-tg" style="--c:${colOf(tg[0].g)}">⚑</span>`:''}</span><span class="cd-chips">${pl.slice(0,2).map(x=>`<em ${calOpen(x)} style="--c:${colOf(x.g)}"${x.done?' class="d"':''}>${esc(x.t)}</em>`).join('')}${pl.length>2?`<em class="more">+${pl.length-2} more</em>`:''}</span>${hb}</button>`}
  return h+'</div>'+calPeek()}
 /* the picked day, right under the month: what's planned (tick it off) and which habits were done */
 function calPeek(){const ds=CAL.d,k=dnum(ds),tn=dnum(ymd()),it=calItems(k,k)[k]||[],hs=S.habits.filter(h=>h.kind!=='quit'&&h.status!=='archived'&&hDue(h,ds)),r=dayRatio(ds),dd=dUTC(k);
@@ -2895,6 +3150,7 @@ TOP LEVEL — all keys required
   "version": 1
   "mode":    "${mode}"
   "goals":   array of goal objects, at least 1
+  "habits":  array of habit objects, may be [] (optional key)
 
 GOAL OBJECT — all keys required, in this order${up?' (for "keep" and "remove" only "id" and "action" are read)':''}
   "id":           ${up?'an existing goal id from my plan, or "new-1", "new-2", … for new goals':'"new-1", "new-2", … unique per goal'}
@@ -2909,6 +3165,20 @@ GOAL OBJECT — all keys required, in this order${up?' (for "keep" and "remove" 
   "targetInDays": integer >= 1, days from today until the target date, greater than startInDays — or null for open-ended
   "steps":        array of step objects in the order they should be done, may be []
   "linksTo":      array of goal ids this goal supports, may be []
+
+HABIT OBJECT — all keys required, in this order. Habits are repeating practices that make the goals happen. Always new: never repeat a habit I already have.
+  "title":   string, 3 to 60 characters, the action itself ("Walk 20 minutes", "Read 10 pages")
+  "icon":    one emoji, or ""
+  "kind":    "build" (start doing it) | "quit" (stop doing it)
+  "freq":    "daily" | "days" | "times"
+  "days":    weekday numbers when freq is "days" (0=Sun … 6=Sat), e.g. [1,3,5]; otherwise []
+  "times":   times a week when freq is "times", 1 to 6; otherwise 0
+  "target":  integer 1 to 100, units per day (1 for a simple yes/no habit)
+  "unit":    string, e.g. "pages", "glasses", "minutes"; "" when target is 1
+  "part":    "morning" | "afternoon" | "evening" | "any"
+  "time":    "HH:MM" 24-hour for a daily reminder, or null
+  "why":     string, one sentence, may be ""
+  "goal":    id of the goal it supports ("new-2" or an existing goal id), or null
 
 STEP OBJECT — all keys required, in this order
   "id":         ${up?'an existing OPEN step id of that goal, or "new"':'"new"'}
@@ -2970,6 +3240,9 @@ const EX_CREATE=`{
       ],
       "linksTo": []
     }
+  ],
+  "habits": [
+    { "title": "Run 20 minutes", "icon": "🏃", "kind": "build", "freq": "times", "days": [], "times": 3, "target": 1, "unit": "", "part": "morning", "time": "07:00", "why": "Builds the base for the 10K.", "goal": "new-2" }
   ]
 }`;
 const GUIDE=`How to plan:
@@ -2979,7 +3252,8 @@ const GUIDE=`How to plan:
 - Mix short-term (week, month, quarter) and long-term (year, multi, life) goals where it fits.
 - 3 to 8 steps per goal, spaced realistically between start and target.
 - Priority 1 for at most 3 goals. Link goals that support each other.
-- Add reminders only where they genuinely help.`;
+- Add reminders only where they genuinely help.
+- Add 1 to 4 habits for the practices that repeat (daily reading, three runs a week, no phone after 10 pm). Use steps for one-off actions and habits for repeating ones.`;
 const createPrompt=t=>`You are a thoughtful, practical life-planning coach. Turn what I describe into goals for my planning app.
 
 ${GUIDE}
@@ -3026,7 +3300,7 @@ function extractPlan(t){t=String(t||'');const blocks=[...t.matchAll(/```[a-zA-Z]
  try{return JSON.parse(src)}catch(e){try{return JSON.parse(normQuotes(src))}catch(e2){throw{errs:['The JSON is not valid ('+e.message+'). Use straight double quotes, no comments and no trailing commas.']}}}}
 function validatePlan(o,mode){const E=[],isInt=Number.isInteger,str=v=>typeof v==='string';
  if(!o||typeof o!=='object'||Array.isArray(o))return['The top level must be one JSON object.'];
- Object.keys(o).forEach(k=>{if(!['format','version','mode','goals'].includes(k))E.push(`Unknown top-level key "${k}".`)});
+ Object.keys(o).forEach(k=>{if(!['format','version','mode','goals','habits'].includes(k))E.push(`Unknown top-level key "${k}".`)});
  if(o.format!==WP_FMT&&o.format!=='waypoints-plan')E.push('"format" must be "plotline-plan".');
  if(o.version!==1)E.push('"version" must be the number 1.');
  if(o.mode!==mode)E.push(`"mode" must be "${mode}".`);
@@ -3062,6 +3336,7 @@ function validatePlan(o,mode){const E=[],isInt=Number.isInteger,str=v=>typeof v=
     if(!str(s.note))E.push(`${sp}: "note" must be a string (may be "").`)})}
   if(!Array.isArray(g.linksTo))E.push(`${q}: "linksTo" must be an array.`);else g.linksTo.forEach(l=>{if(!known.has(l))E.push(`${q}: "linksTo" has unknown goal id "${l}".`);else if(l===g.id)E.push(`${q}: cannot link to itself.`)})});
  if(!E.length){const pm=new Map(o.goals.map(g=>[g.id,g.parent||(G(g.id)||{}).parent||null]));for(const g of o.goals){let p=pm.get(g.id),n=0;while(p&&n<60){if(p===g.id){E.push(`Goal "${trunc(g.title||g.id,30)}" ends up inside itself through "parent". Break the loop.`);break}p=pm.has(p)?pm.get(p):(G(p)||{}).parent||null;n++}}}
+ if(typeof planHabitsCheck==='function')planHabitsCheck(o,E);
  return E.slice(0,30)}
 /* the main (umbrella) goal of a new plan: the single top goal, or a new wrapper when the AI sent several */
 function aiMain(o){const ids=new Set(o.goals.map(g=>g.id)),roots=o.goals.filter(g=>!g.parent||!ids.has(g.parent));
@@ -3188,13 +3463,14 @@ function pushWidget(){if(!NATIVE||!NATIVE.widget||TOURING)return;const COL={heal
  const M=calItems(tn-7,tn+21),counts={};for(const k in M)counts[fromN(+k)]=M[k].length;
  const up=[];for(let k=tn;k<=tn+21&&up.length<8;k++)(M[k]||[]).forEach(x=>{if(!x.done&&up.length<8)up.push({t:x.t,d:fromN(k),time:x.time?fmtTime(x.time):'',c:cg(x.g),k:x.k,g:x.g?x.g.title:'',id:x.k==='day'?x.id:'',sid:x.s?x.s.id:''})});
  const goals=active().sort((a,b)=>(b.pinned-a.pinned)||(a.priority-b.priority)||(prog(b)-prog(a))).slice(0,4).map(g=>{const n=nextStep(g);return{id:g.id,t:g.title,p:pct(g),c:cg(g),a:areaName(g.area),n:n?n.title:'All steps done'}});
- try{NATIVE.widget(JSON.stringify({name:S.settings.name||'',items:nx,days,counts,up,goals,...widgetHabits()}))}catch(e){}}
+ try{NATIVE.widget(JSON.stringify({name:S.settings.name||'',items:nx,days,counts,up,goals,...widgetHabits(),...(typeof widgetThreads==='function'?widgetThreads():{})}))}catch(e){}}
 window.__route=r=>{closeSheet();RP=null;SHEET_LOCK=false;if(r==='hvista'){HV='vista';go('habits');return}const hu=/^(urge|routine|slip)-([a-z0-9]+)$/.exec(r||'');if(hu){go('habit/'+hu[2]);setTimeout(()=>{if(H(hu[2]))ACT[hu[1]==='routine'?'routineGo':hu[1]]({id:hu[2]})},450);return}const cd=/^cal-(\d{4}-\d{2}-\d{2})$/.exec(r||'');if(cd){CAL.d=cd[1];S.settings.layout.cal='day';go('cal');return}if(r==='add'){go('today');setTimeout(()=>{const i=$('.tg-add input');if(i){i.scrollIntoView({block:'center'});i.focus()}},450)}else if(r)go(r)};
 /* taps on home-screen widgets are queued natively and applied here */
 function applyWidgetQueue(){if(!NATIVE||!NATIVE.widgetQueue||TOURING)return;let q=[];const rq=[];try{q=JSON.parse(NATIVE.widgetQueue()||'[]')}catch(e){}if(!q.length)return;let n=0;
  q.forEach(a=>{if(a.k==='day'){const x=S.days.find(y=>y.id===a.id);if(x&&!!x.done!==!!a.done){x.done=!!a.done;x.doneAt=x.done?(a.at||Date.now()):null;n++}}
   else if(a.k==='step'){const g=G(a.g),st=g&&g.steps.find(y=>y.id===a.s);if(st&&!st.done){ACT.toggleStep({g:a.g,s:a.s});n++}}
   else if(a.k==='habit'){const h=H(a.id);if(h&&validDate(a.d)&&a.d<=ymd()){hSetVal(h,a.d,+a.v||0);n++}}
+  else if(a.k==='thr'||a.k==='thrnew'){if(typeof thrFromQueue==='function'&&thrFromQueue(a))n++}
   else if(a.k==='hskip'){const h=H(a.id);if(h&&validDate(a.d)){h.skip[a.d]=1;n++}}
   else if(a.k==='reply'&&a.text)rq.push(a)
   else if(a.k==='jnote'){/* replies stay with the reminder's history on the phone, never in the journal */}
@@ -3573,7 +3849,7 @@ function goalHabits(g){const L=S.habits.filter(h=>h.goalId===g.id&&h.status!=='a
 /* Today page strip */
 function habitsStrip(){const hs=todayHabits(),qs=S.habits.filter(h=>h.status==='active'&&h.kind==='quit');if(!hs.length&&!qs.length)return'';const td=ymd(),t=dayRatio(td),r=8,C=2*Math.PI*r;
  return`<section class="rv"><div class="st-h"><div class="tg-h"><h3>Habits</h3>${t.due?`<svg class="tg-ring" viewBox="0 0 22 22"><circle class="a" cx="11" cy="11" r="${r}"/><circle class="b" cx="11" cy="11" r="${r}" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C*(1-t.dn/t.due)).toFixed(2)}"/></svg><span class="data">${t.dn} of ${t.due}</span>`:''}</div><a class="link" href="#/habits">All habits</a></div><div class="hstrip">
- ${hs.map(h=>`<div class="hpill${hDone(h,td)?' on':''}${h.skip[td]?' off':''}" style="${cvar(h)}" data-act="openHabit" data-id="${h.id}"><div class="hp-top"><span class="hic sm">${esc(hIcon(h))}</span>${h.skip[td]?'':hChk(h)}</div><div class="t ell">${esc(h.title)}</div><div class="data">${h.skip[td]?'Rest day':hStreak(h)?`${ic('flame','ico-s')} ${hStreak(h)}${h.freq==='times'?' wk':' d'}`:h.kind==='routine'?`${h.steps.length} steps`:h.target>1?`${hVal(h,td)}/${h.target} ${esc(h.unit)}`:'Start today'}</div></div>`).join('')}
+ ${hs.map(h=>`<div class="hpill${hDone(h,td)?' on':''}${h.skip[td]?' off':''}" style="${cvar(h)}" data-act="openHabit" data-id="${h.id}"><div class="hp-top"><span class="hic sm">${esc(hIcon(h))}</span>${h.skip[td]?'':hChk(h)}</div><div class="t ell">${esc(h.title)}</div><div class="data">${h.skip[td]?'Rest day':hStreak(h)?`${ic('flame','ico-s')} ${hStreak(h)}${h.freq==='times'?' wk':' d'}`:h.kind==='routine'?`${h.steps.length} step${h.steps.length===1?'':'s'}`:h.target>1?`${hVal(h,td)}/${h.target} ${esc(h.unit)}`:'Start today'}</div></div>`).join('')}
  ${qs.map(h=>`<div class="hpill q" style="${cvar(h)}" data-act="openHabit" data-id="${h.id}"><div class="hp-top"><span class="hic sm">${esc(hIcon(h))}</span></div><div class="t ell">${esc(h.title)}</div><div class="data hp-clock"${h.mode==='limit'?'':` data-since="${qSince(h)}" data-short="1"`}>${h.mode==='limit'?`${+h.log[td]||0} of ${h.limit} today`:clockHTML(Date.now()-qSince(h),1)}</div></div>`).join('')}</div></section>`}
 /* ---- templates ---- */
 const HTPL=[
@@ -4002,7 +4278,7 @@ let cur={p:'today'},booted=false;
 const VIEWS={today:vToday,habits:vHabits,habit:vHabit,cal:vCal,goals:vGoals,goal:vGoal,road:vRoad,map:vMap,journal:vJournal,ai:vAI,ask:vAsk,settings:vSettings};
 function go(h){if(location.hash==='#/'+h)route();else location.hash='#/'+h}
 function route(){let[p,id]=(location.hash.slice(2)||'today').split('/');if(p==='join'&&id){shJoinRoute(id);history.replaceState(null,'','#/today');p='today';id=undefined}if(p==='timeline')p='journal';if(p==='insights')p='ask';if(p==='vista')p=S.settings.layout.vista==='map'?'map':'road';if(p==='road'||p==='map')S.settings.layout.vista=p;const doit=()=>{cur={p:VIEWS[p]?p:'today',id};render(true);window.scrollTo(0,0)};
- if(booted&&document.startViewTransition&&!reduced()&&!TOURING){const vt=document.startViewTransition(doit);vt.finished.finally(()=>document.querySelectorAll('[data-vt]').forEach(x=>x.style.viewTransitionName=''))}else doit();booted=true}
+ if(booted&&document.startViewTransition&&!reduced()&&!TOURING&&!(typeof navFast==='function'&&navFast(p))){const vt=document.startViewTransition(doit);vt.finished.finally(()=>document.querySelectorAll('[data-vt]').forEach(x=>x.style.viewTransitionName=''))}else doit();booted=true}
 let RANIM=true;
 /* the live home keeps its room in #stuHost and swaps only #vin (see LIVE HOME: STUDIO) */
 let viewSet=(v,h)=>{v.innerHTML=h};
@@ -4040,7 +4316,7 @@ function seedDemo0(){const day=864e5;const mk=(o,done,ago)=>{const g=newGoal(o);
  /* 1.9.0: notification replies no longer go to the journal; tidy away the ones earlier versions made (synced devices drop them too) */
  if(!S.settings.replyClean){S.dead=S.dead||{};S.entries=S.entries.filter(e=>{const r=e.type==='note'&&/^Reply to “/.test(e.title||'')&&!e.html&&!e.img&&!e.mood;if(r){S.dead[e.id]=Date.now();DIRTY=true}return!r});S.settings.replyClean=1;save()}
  primeSig();
- applyTheme();buildChrome();applyFocus(false);syncNative();pushWidget();scopeSync();fbNative();if(lockActive())showLock();try{if(NATIVE&&NATIVE.setSecure&&lockSet().on&&lockSet().secure)NATIVE.setSecure(true)}catch(e){}route();if(S.settings.onboarded&&S.settings.tourOffered&&!S.settings.setupDone&&!navigator.webdriver)setTimeout(()=>{if(!LOCKED&&!$('#sheet').classList.contains('on'))setupFlow()},1800);applyWidgetQueue();if(!S.settings.onboarded)welcome();else if(!S.settings.tourOffered&&!S.settings.pinHash)setTimeout(tourPrompt,1400);buildTimer();tick();setInterval(tick,20000);setInterval(paintTimer,1000);
+ applyTheme();buildChrome();applyFocus(false);syncNative();pushWidget();scopeSync();fbNative();if(lockActive())showLock();try{if(NATIVE&&NATIVE.setSecure&&lockSet().on&&lockSet().secure)NATIVE.setSecure(true)}catch(e){}if(typeof landHere==='function')landHere();route();if(S.settings.onboarded&&S.settings.tourOffered&&!S.settings.setupDone&&!navigator.webdriver)setTimeout(()=>{if(!LOCKED&&!$('#sheet').classList.contains('on'))setupFlow()},1800);applyWidgetQueue();if(!S.settings.onboarded)welcome();else if(!S.settings.tourOffered&&!S.settings.pinHash)setTimeout(tourPrompt,1400);buildTimer();tick();setInterval(tick,20000);setInterval(paintTimer,1000);
  try{matchMedia('(prefers-color-scheme: light)').addEventListener('change',()=>{if(S.settings.matchSystem)applyTheme(true)})}catch(e){}
  if(syncOn()){if(sessionStorage.getItem('plotline.after')==='sync'){sessionStorage.removeItem('plotline.after');connectDrive()}else syncNow(false)}
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){applyWidgetQueue();syncSoon(400)}});window.addEventListener('app-resume',()=>{applyWidgetQueue();syncSoon(400)});window.addEventListener('online',()=>syncSoon(400));setInterval(()=>syncSoon(0),5*60e3);
@@ -4302,14 +4578,13 @@ function vAsk(){setTimeout(natWarm,300);const s=insSet(),R=IN.res,nm=S.settings.
  let body;
  if(!R){const stats=insStats(IN.win,IN.goal),ideas=askIdeas();
   body=`<div class="ask-hero rv"><div class="ask-orb">${ic('ai')}</div><h2>${gr}${nm?', '+esc(nm):''}.</h2><p class="muted">Ask anything about your goals, habits and journal. Answers come from your own notes${s.engine==='local'?', on this device':''}.</p></div>
-  <div class="ask-sugs rv">${INS_PRE.map(p=>`<button class="ask-sug" data-act="askPre" data-k="${p.k}"><b>${p.n}</b><small>${p.d}</small></button>`).join('')}${ideas.map(q=>`<button class="ask-sug idea" data-act="askIdea" data-q="${esc(q)}"><b>${esc(q)}</b><small>From your plan</small></button>`).join('')}
-   <button class="ask-sug plan" data-act="askPlan"><b>${ic('flag')}Plan something new</b><small>Turn hopes into goals and steps with AI</small></button></div>
+  ${typeof aiPlanCard==='function'?aiPlanCard('ask'):''}<div class="ask-sugs rv">${INS_PRE.map(p=>`<button class="ask-sug" data-act="askPre" data-k="${p.k}"><b>${p.n}</b><small>${p.d}</small></button>`).join('')}${ideas.map(q=>`<button class="ask-sug idea" data-act="askIdea" data-q="${esc(q)}"><b>${esc(q)}</b><small>From your plan</small></button>`).join('')}</div>
   <div class="ask-sig rv"><div class="small muted">Signals${IN.win?` · last ${IN.win} days`:''}</div><div class="ins-stats">${stats.map(x=>`<div class="ins-st ${x.hl?'hl':''}" title="${esc(x.t)}"><b>${esc(String(x.v))}</b><span>${esc(x.k)}</span>${x.hl?`<small>${esc(x.t)}</small>`:''}</div>`).join('')}</div></div>`}
  else body=`<div class="ask-thread">${R.turns.map((t,i)=>askTurn(R,t,i)).join('')}</div>`;
  const scope=`${(INS_WIN.find(w=>w[0]===IN.win)||INS_WIN[3])[1]}${IN.goal&&G(IN.goal)?' · '+esc(trunc(G(IN.goal).title,22)):''}`;
  return`<section class="ask ${R?'has':''}">${head}${body}
  <div class="ask-comp"><button class="ask-scope" data-act="askScope" aria-label="Search scope">${ic('search','ico-s')}<span>${scope}</span></button>
-  <div class="ask-row"><textarea id="askIn" rows="1" placeholder="${R?'Ask a follow-up…':'Ask about your goals, habits, journal…'}" aria-label="Ask">${esc(IN.q)}</textarea>
+  <div class="ask-row"><textarea id="askIn" rows="1" placeholder="${R?'Ask a follow-up…':'Ask anything about your life…'}" aria-label="Ask">${esc(IN.q)}</textarea>
   ${IN.busy?`<button class="ask-go stop" data-act="insStop" aria-label="Stop"><i></i></button>`:`<button class="ask-go" data-act="askSend" aria-label="Send">${ic('up')}</button>`}</div></div></section>`}
 function askTurn(R,t,i){const last=i===R.turns.length-1,n=R.srcs.length,done=R.turns.every(x=>x.done);
  let a='';
@@ -5303,7 +5578,7 @@ function reactsSentToday(){const d=ymd(),ids=new Set();shares().forEach(x=>(x.my
 /* only the first 50 a day from each person count, whatever their app sent */
 function capReacts(L){const n={};return L.slice().sort((a,b)=>a.t-b.t).filter(r=>{const k=r.fe+'|'+dayOf(r.t);n[k]=(n[k]||0)+1;return n[k]<=REACT_MAX})}
 let SHR={};
-function shCollect(sh,ms){SHR[sh.id]=(ms||[]).filter(m=>m.email!==fme()&&m.status!=='left').flatMap(m=>(m.cheers||[]).filter(c=>c&&c.to===fme()&&+c.t>0&&+c.t<Date.now()+6e5).map(c=>({id:c.id||m.email+c.t,from:m.name,fe:m.email,e:String(c.emoji||'').slice(0,16),m:String(c.m||'').slice(0,60),t:+c.t,cid:sh.id})));shInbox()}
+function shCollect(sh,ms){SHR[sh.id]=(ms||[]).filter(m=>m.email!==fme()&&m.status!=='left').flatMap(m=>(m.cheers||[]).filter(c=>c&&c.to===fme()&&+c.t>0&&+c.t<Date.now()+6e5).map(c=>({id:c.id||m.email+c.t,from:m.name,fe:m.email,e:String(c.emoji||'').slice(0,16),m:String(c.m||'').slice(0,120),t:+c.t,cid:sh.id})));shInbox()}
 const reactsForMe=cid=>{const all=capReacts(Object.values(SHR).flat());return cid?all.filter(r=>r.cid===cid):all};
 const rxUnread=cid=>((shset().rx||{})[cid]||{}).n||0;
 function rxRead(cid){if(RB.q.some(r=>r.cid===cid)){RB.q=RB.q.filter(r=>r.cid!==cid);reactShow()}const rx={...(shset().rx||{})};if(rx[cid]&&rx[cid].n){rx[cid]={...rx[cid],n:0};shPatch({rx});render(false)}}
@@ -5336,10 +5611,10 @@ let RXT=null;
 function shReactSheet(sh,to,name){RXT={id:sh.id,to,nm:name};const left=Math.max(0,REACT_MAX-reactsSentToday()),dis=left?'':'disabled';
  openSheet(`<div class="data">${MODES[sh.mode]?.e||''} ${esc(sh.title)}</div><h2 style="margin-top:6px">React to ${esc(name)}</h2>
  <div class="rx-emo">${REACT_EMO.map(e=>`<button class="rx-b" data-act="shReactGo" data-e="${e}" ${dis} aria-label="Send ${e}">${e}</button>`).join('')}</div>
- <div class="data" style="margin-top:16px">Quick messages</div><div class="rx-msgs">${quickMsgs().map((m,i)=>`<button class="rx-m" data-act="shReactGo" data-i="${i}" ${dis}>${esc(m)}</button>`).join('')}</div>
+ <form class="rx-own" data-form="shReactTxt" autocomplete="off"><input name="m" maxlength="120" placeholder="Type your own message…" aria-label="Your message" ${dis}><button class="btn pri" type="submit" aria-label="Send" ${dis}>${ic('send')}</button></form><div class="data" style="margin-top:16px">Quick messages</div><div class="rx-msgs">${quickMsgs().map((m,i)=>`<button class="rx-m" data-act="shReactGo" data-i="${i}" ${dis}>${esc(m)}</button>`).join('')}</div>
  <p class="small muted rx-left">${left?`${left} of ${REACT_MAX} left today`:`That’s ${REACT_MAX} for today. Reactions open again tomorrow.`}</p>
  <div class="actions"><button class="btn ghost" data-act="shQuickEdit" data-back="1">Edit messages</button><button class="btn pri" data-act="shOpen" data-id="${sh.id}">Open the group</button></div>`)}
-function shQuickForm(back){const q=quickMsgs();openSheet(`<h2>Quick messages</h2><p class="small muted">Short messages you can send with one tap in a shared item. Up to 8, 40 characters each. There’s no free chat, so it stays a nudge.</p>
+function shQuickForm(back){const q=quickMsgs();openSheet(`<h2>Quick messages</h2><p class="small muted">Short messages you can send with one tap in a shared item. Up to 8, 40 characters each. You can also type your own message each time.</p>
  <form data-form="shQuick" data-back="${back?1:''}"><div class="rx-qf">${[...Array(8)].map((_,i)=>`<input name="q${i}" maxlength="40" value="${esc(q[i]||'')}" placeholder="${i<REACT_MSG.length?esc(REACT_MSG[i]):'Add one'}" autocomplete="off" aria-label="Quick message ${i+1}">`).join('')}</div>
  <div class="actions"><button type="button" class="btn ghost" data-act="shQuickReset">Reset to defaults</button><button class="btn pri">Save</button></div></form>`)}
 async function shPollReacts(){if(!shOn()||SHC.busy||SHC.rb||TOURING)return;const L=shares().filter(x=>x.fs&&x.k&&x.status==='joined');if(!L.length)return;SHC.rb=true;
@@ -5384,7 +5659,7 @@ function shInject(html,kind,id){const p=shPanel(kind,id);if(!p)return html;const
 const _vHabit=vHabit;vHabit=id=>shInject(_vHabit(id),'habit',id);VIEWS.habit=vHabit;
 const _vGoal=vGoal;vGoal=id=>shInject(_vGoal(id),'goal',id);VIEWS.goal=vGoal;
 async function reactSend(x,to,emoji,m){if(reactsSentToday()>=REACT_MAX){toast(`That’s ${REACT_MAX} reactions for today`);return false}
- const r={id:uid(),to,emoji:emoji||'',m:String(m||'').slice(0,60),t:Date.now()};if(!r.emoji&&!r.m)return false;
+ const r={id:uid(),to,emoji:emoji||'',m:String(m||'').slice(0,120),t:Date.now()};if(!r.emoji&&!r.m)return false;
  x.cheerOut=[...(x.cheerOut||[]),r];x.u=Date.now();save();reactBurst(r.emoji||'💬');await shPublish(x);return r}
 Object.assign(ACT,{shQuick:(d,el)=>{const x=shById(d.id);if(!x)return;if(el){el.classList.remove('sent');void el.offsetWidth;el.classList.add('sent')}
  reactSend(x,d.to,d.e,'').then(r=>{if(r){toast(`Sent ${r.emoji} to ${esc(d.nm||'')}`);shPanelPaint(x.id)}}).catch(e=>toast(shErr(e)))}});
@@ -5646,9 +5921,9 @@ let JW=0;const JW_SLIDE={d:0};
 const jwRange=()=>{const b=dnum(ymd())-7*JW;return{a:b-6,b}};
 const jwIn=(t,R)=>{const k=dnum(dOf(t));return k>=R.a&&k<=R.b};
 function jwBar(R,es){const td=ymd(),cells=[];for(let k=R.a;k<=R.b;k++){const ds=fromN(k),dayE=S.entries.filter(e=>dOf(e.t)===ds),n=es.filter(e=>dOf(e.t)===ds).length,md=dayE.filter(e=>e.mood).sort((a,b)=>b.t-a.t)[0];
-  cells.push(`<button class="jw-d${n?' has':''}${ds===td?' today':''}" data-act="jwDay" data-d="${ds}" ${n?'':'disabled'} aria-label="${esc(dayName(ds))}: ${n} entr${n===1?'y':'ies'}"><span>${new Date(ds+'T12:00').toLocaleDateString(undefined,{weekday:'narrow'})}</span><b>${+ds.slice(8)}</b><i>${md?md.mood:n?'<em></em>':''}</i></button>`)}
- const a=new Date(fromN(R.a)+'T12:00'),b=new Date(fromN(R.b)+'T12:00'),f=d=>d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
- return`<div class="jw rv" id="jwBar"><div class="jw-top"><button class="ibtn sm" data-act="jwGo" data-d="1" aria-label="Earlier 7 days">${ic('back')}</button><div class="jw-t"><b>${JW?f(a)+' – '+f(b):'Last 7 days'}</b><span class="data">${JW?(JW===1?'a week ago':JW+' weeks ago'):f(a)+' – '+f(b)} · ${es.length} entr${es.length===1?'y':'ies'}</span></div><button class="ibtn sm" data-act="jwGo" data-d="-1" aria-label="Later 7 days" ${JW?'':'disabled'}>${ic('next')}</button><label class="ibtn sm jdate" aria-label="Jump to a date" title="Jump to a date">${ic('cal')}<input type="date" data-jwdate max="${td}"></label></div><div class="jw-days">${cells.join('')}</div></div>`}
+  cells.push(`<button class="jw-d${n?' has':''}${ds===td?' today':''}" data-act="jwDay" data-d="${ds}" ${n?'':'disabled'} aria-label="${esc(dayName(ds))}"><span>${new Date(ds+'T12:00').toLocaleDateString(undefined,{weekday:'narrow'})}</span><b>${+ds.slice(8)}</b><i>${md?md.mood:n?'<em></em>':''}</i></button>`)}
+ const f=d=>new Date(fromN(d)+'T12:00').toLocaleDateString(undefined,{month:'short',day:'numeric'});
+ return`<div class="jw rv" id="jwBar"><button class="ibtn sm" data-act="jwGo" data-d="1" aria-label="Earlier 7 days">${ic('back')}</button><div class="jw-days">${cells.join('')}</div><button class="ibtn sm" data-act="jwGo" data-d="-1" aria-label="Later 7 days" ${JW?'':'disabled'}>${ic('next')}</button><label class="ibtn sm jdate" aria-label="Jump to a date" title="Jump to a date">${ic('cal')}<input type="date" data-jwdate max="${td}"></label></div>${JW?`<div class="jw-cap data">${f(R.a)} – ${f(R.b)} · <button class="link small" data-act="jwGo" data-d="${-JW}">Back to this week</button></div>`:''}`}
 function jwCards(es){if(S.settings.layout.journal==='h')return hsShell('journal-w',es.map(e=>{const g=G(e.goalId),hb=!g&&entryHabit(e);return hsItem(g?cvar(g):hb?cvar(hb):DEFC,journalBig(e),'done jd-'+dOf(e.t),`<span class="node static" aria-hidden="true"></span>`,dayLabel(e.t))}).join(''),0);
  let last='',html='',i=0;es.forEach(e=>{const d=dOf(e.t);if(d!==last){html+=`<div class="sp-date rv" data-jday="${d}"><span class="data">${dayLabel(e.t)}</span></div>`;last=d}const g=G(e.goalId),h=entryHabit(e);html+=`<div class="sp-item ${i++%2?'r':'l'} rv" data-jt="${e.id}" style="${g?cvar(g):h?cvar(h):DEFC}"><div class="sp-card">${journalCard(e)}</div><span class="jdot"></span></div>`});
  return`<div class="spine" id="jspine" data-zk="journal" style="${zoomCss('journal')}">${html}</div>`}
@@ -5790,7 +6065,7 @@ function vDay(ds){ds=validDate(ds)||ymd();const td=ymd(),fut=ds>td,k=dnum(ds),re
  const HS=dyHabits(ds),r=dayRatio(ds),A=(S.settings.actLog||{})[ds]||null,ents=S.entries.filter(e=>dOf(e.t)===ds).sort((a,b)=>a.t-b.t),moods=ents.filter(e=>e.mood),dg=S.days.filter(x=>x.date===ds).sort(byTime),notes=dyNotes(ds),reacts=dyReacts(ds),tu=threads().flatMap(t=>thrUps(t).filter(u=>dOf(u.t)===ds).map(u=>({t,u})));
  const stepsDone=ents.filter(e=>e.type==='step'),due=active().flatMap(g=>g.steps.filter(s=>s.due===ds&&!s.done).map(s=>({g,s})));
  const chip=(e,v,l,to)=>`<button class="dy-c" data-act="dyJump" data-to="${to.slice(1)}"><span>${e}</span><b>${v}</b><small>${l}</small></button>`;
- const sum=`<div class="dy-sum rv">${r.due?chip('✅',`${r.dn}/${r.due}`,'habits','#dyHab'):''}${A&&A.s?chip('👟',(+A.s).toLocaleString(),'steps','#dyAct'):''}${A&&A.z?chip('😴',fmtMin(A.z),'sleep','#dyAct'):''}${A&&A.x?chip('🏋️',fmtMin(A.x),'workout','#dyAct'):''}${A&&A.m?chip('📱',fmtMin(A.m),'screen','#dyAct'):''}${moods.length?chip(moods[moods.length-1].mood,moods.length,'mood','#dyJ'):''}${ents.length?chip('📓',ents.length,'entries','#dyJ'):''}${notes.length?chip('🔔',notes.length,'reminders','#dyN'):''}${reacts.length?chip('👏',reacts.length,'cheers','#dyN'):''}${dg.length?chip('🎯',`${dg.filter(x=>x.done).length}/${dg.length}`,'day goals','#dyG'):''}</div>`;
+ const sum=`<div class="dy-sum rv">${r.due?chip('✅',`${r.dn}/${r.due}`,'habits','#dyHab'):''}${A&&A.s?chip('👟',(+A.s).toLocaleString(),'steps','#dyAct'):''}${A&&A.z?chip('😴',fmtMin(A.z),'sleep','#dyAct'):''}${A&&wkMin(A)?chip('🏋️',fmtMin(wkMin(A)),'workout','#dyAct'):''}${A&&A.m?chip('📱',fmtMin(A.m),'screen','#dyAct'):''}${moods.length?chip(moods[moods.length-1].mood,moods.length,'mood','#dyJ'):''}${ents.length?chip('📓',ents.length,'entries','#dyJ'):''}${notes.length?chip('🔔',notes.length,'reminders','#dyN'):''}${reacts.length?chip('👏',reacts.length,'cheers','#dyN'):''}${dg.length?chip('🎯',`${dg.filter(x=>x.done).length}/${dg.length}`,'day goals','#dyG'):''}</div>`;
  let o=top+head+sum;
  o+=`<section class="rv dy-sec" id="dyHab"><div class="st-h"><h3>Habits</h3><span class="data">${r.due?`${r.dn} of ${r.due} kept`:''}</span></div>${HS.length?`<div class="dy-hl">${HS.map(h=>dyHabitRow(h,ds,fut)).join('')}</div>`:'<p class="small muted">No habits were due on this day.</p>'}${fut?'<p class="small muted" style="margin-top:8px">This day hasn’t happened yet.</p>':''}</section>`;
  if(NATIVE&&NATIVE.activityLoad||A)o+=`<section class="rv dy-sec" id="dyAct"><div class="st-h"><h3>Activity</h3><a class="link" href="#/activity">All activity</a></div>${A?actDayHTML(ds,A):'<p class="small muted">Nothing was recorded on the phone for this day.</p>'}</section>`;
@@ -5819,8 +6094,18 @@ Object.assign(FORM,{dySlip:f=>{const h=H(f.dataset.id);if(!h)return;const[hh,mm]
  /* every page gets the settings gear in the top-right corner, including detail pages */
  document.querySelectorAll('#view .crumb>.ph-r').forEach(r=>{if(!r.querySelector('.gearb'))r.insertAdjacentHTML('beforeend',gear())})}}
 /* page titles shrink to fit next to the buttons instead of breaking words */
-function fitH1(){document.querySelectorAll('#view .ph h1').forEach(h=>{h.style.fontSize='';if(!h.offsetParent)return;h.style.overflowWrap='normal';let s=parseFloat(getComputedStyle(h).fontSize),n=0;while(h.scrollWidth>h.clientWidth+1&&s>22&&n<14){s-=2;h.style.fontSize=s+'px';n++}h.style.overflowWrap=''})}
+/* Page titles never break inside a word: shrink to fit; if the title would get too small beside the action
+   buttons, the buttons move to their own row above it (large-title layout) and the title gets the full width. */
+function fitH1(){document.querySelectorAll('#view .ph h1').forEach(h=>{const ph=h.closest('.ph');if(ph)ph.classList.remove('ph-stack');h.style.fontSize='';if(!h.offsetParent)return;h.style.overflowWrap='normal';
+ const fit=min=>{let s=parseFloat(getComputedStyle(h).fontSize);if(h.scrollWidth<=h.clientWidth+1)return true;let lo=min,hi=s;for(let n=0;n<6;n++){const m=(lo+hi)/2;h.style.fontSize=m+'px';if(h.scrollWidth>h.clientWidth+1)hi=m;else lo=m}h.style.fontSize=Math.floor(lo)+'px';return h.scrollWidth<=h.clientWidth+1};
+ if(!fit(30)&&ph&&ph.querySelector(':scope>.ph-r')){h.style.fontSize='';ph.classList.add('ph-stack');fit(22)}h.style.overflowWrap=''})}
+if(document.fonts)document.fonts.ready.then(()=>{try{fitH1()}catch(e){}});
 {const _r=render;render=function(a){_r(a);fitH1()}}addEventListener('resize',()=>fitH1(),{passive:true});
+{const _nh=nhist;nhist=function(k){let r;try{r=_nh(k)}catch(e){r=[]}return Array.isArray(r)?r:[]}}
+/* card titles shrink to fit their card (long words, long titles) instead of spilling over the edge */
+function fitCards(root){(root||document).querySelectorAll('#view .fc-t, #view .sc-t, #view .jb-big, #view .jt-big').forEach(el=>{const face=el.closest('.fc-face,.sc-face,.jb,.jf-face');if(!face||!face.offsetParent)return;el.style.removeProperty('font-size');el.style.overflowWrap='normal';
+ let s=parseFloat(getComputedStyle(el).fontSize),n=0;const ft=[...face.children].find(c=>c!==el&&c.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_PRECEDING),box=el.closest('.hs-card')||face,over=()=>el.scrollWidth>el.clientWidth+1||el.scrollHeight>el.clientHeight+s*.35||face.scrollHeight>face.clientHeight+1||(ft&&el.getBoundingClientRect().bottom>ft.getBoundingClientRect().top-2);if(over()){let lo=14,hi=s;for(n=0;n<5;n++){const m=(lo+hi)/2;el.style.setProperty('font-size',m+'px','important');if(over())hi=m;else lo=m}el.style.setProperty('font-size',Math.floor(lo)+'px','important')}el.style.overflowWrap=''})}
+{const _r=render;render=function(a){_r(a);fitCards();if(document.fonts&&document.fonts.status!=='loaded')document.fonts.ready.then(()=>fitCards())}}addEventListener('resize',()=>fitCards(),{passive:true});
 /* the small habit sheets (Habit Vista, habit grid) can open the whole day */
 {const _h=ACT.hDaySheet;ACT.hDaySheet=d=>{_h(d);const a=$('#sheet .actions');const b=`<button class="btn" data-act="dyOpen" data-d="${d.d}">Everything on this day</button>`;if(a)a.insertAdjacentHTML('afterbegin',b);else $('#sheet').insertAdjacentHTML('beforeend',`<div class="actions">${b}</div>`)}}
 
@@ -5851,13 +6136,18 @@ let ACTV={data:null,at:0,busy:false,days:7,more:14,first:true};
 const actSet=()=>({goal:8000,sleep:7.5,scr:180,...(S.settings.act||{})});
 const actLog=()=>S.settings.actLog||(S.settings.actLog={});
 const nat=()=>NATIVE&&NATIVE.activityLoad;
+const WK_RX=/gym|fitness|work ?out|pool|swim|yoga|pilates|crossfit|dojo|boxing|martial|climb|sport|court|field|track|club|studio|🏋|💪|🏊|🧘|🥊|🧗|⚽|🏀|🎾/i;
+const wkPlace=p=>p&&(p.wk!=null?!!p.wk:WK_RX.test((p.name||'')+' '+(p.emoji||'')));
+const plWk=pm=>{let m=0;places().forEach(p=>{if(wkPlace(p))m+=+((pm||{})[p.id])||0});return m};
+const wkMin=o=>o?((+o.x||0)+plWk(o.p))||(o.x!=null?0:undefined):undefined;
+const fmtMinC=m=>fmtMin(m).replace(' ','');
 function actLoad(force){if(!nat()||ACTV.busy)return;if(!force&&ACTV.data&&Date.now()-ACTV.at<45000)return;ACTV.busy=true;const n=ACTV.first?30:Math.max(ACTV.days,14);ACTV.first=false;setTimeout(()=>{try{NATIVE.activityLoad(n)}catch(e){ACTV.busy=false}},0);setTimeout(()=>{ACTV.busy=false},25000)}
 window.__act=j=>{ACTV.busy=false;let d;try{d=JSON.parse(j)}catch(e){return}if(!d||d.err)return;ACTV.data=d;ACTV.at=Date.now();const L=actLog();
  Object.entries(d.days||{}).forEach(([k,v])=>{const o=L[k]||{};const st=Math.max(+v.steps||0,+v.hsteps||0);if(st||o.s==null)o.s=Math.max(st,o.s||0);if(v.sleep!=null)o.z=v.sleep;if(v.ex!=null)o.x=v.ex;if(v.scr!=null)o.m=v.scr;if(v.pl)o.p=v.pl;if(v.ap)o.a=v.ap;if(v.ss)o.ss=v.ss;if(v.w)o.w=v.w;L[k]=o});
  const keys=Object.keys(L).sort();while(keys.length>180)delete L[keys.shift()];save();
  if((cur.p==='activity'||cur.p==='day')&&!$('#sheet').classList.contains('on'))render(false);else actCardPaint()};
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&['activity','today','day'].includes(cur.p))actLoad(false)});
-function actDays(n){const t=dnum(ymd()),L=actLog(),out=[];for(let k=t-n+1;k<=t;k++){const ds=fromN(k),o=L[ds]||{};out.push({d:ds,s:o.s,z:o.z,x:o.x,m:o.m,p:o.p||{}})}return out}
+function actDays(n){const t=dnum(ymd()),L=actLog(),out=[];for(let k=t-n+1;k<=t;k++){const ds=fromN(k),o=L[ds]||{};out.push({d:ds,s:o.s,z:o.z,x:wkMin(o),m:o.m,p:o.p||{}})}return out}
 function actBars(days,key,goal,fmt){const n=days.length,W=n*30,H=86,vals=days.map(d=>+d[key]||0),mx=Math.max(goal||0,...vals,1),bw=n>14?14:20;
  const bars=days.map((d,i)=>{const v=vals[i],h=v?Math.max(3,v/mx*58):0,x=i*30+(30-bw)/2,t=d.d===ymd(),lab=n>14?(i%5===0||t?+d.d.slice(8):''):new Date(d.d+'T12:00').toLocaleDateString(undefined,{weekday:'narrow'});
   return`<g class="abg" data-act="dyOpen" data-d="${d.d}" role="button" tabindex="0" aria-label="${esc(dayName(d.d))}: ${v?fmt(v):'no data'}"><title>${esc(dayName(d.d))}: ${v?fmt(v):'no data'}</title><rect x="${i*30}" y="0" width="30" height="${H}" fill="transparent"/><rect x="${x}" y="${68-h}" width="${bw}" height="${Math.max(h,2)}" rx="5" class="ab${t?' t':''}${goal&&v>=goal?' ok':''}${v?'':' z'}"/><text x="${i*30+15}" y="82" text-anchor="middle" class="al${t?' t':''}">${lab}</text></g>`}).join('');
@@ -5867,12 +6157,12 @@ function actTile(id,ic0,title,big,sub,chart,extra,need){return`<section class="p
 const actNeed=(t,x,b)=>`<div class="act-need"><p class="small muted">${x}</p><button class="btn sm pri" data-act="autoPerm" data-t="${t}">${b}</button></div>`;
 const wkName=w=>`${ACT_EI[w.k]||'💪'} ${ACT_EX[w.k]||'Workout'}`;
 function actDayHTML(ds,A){const P=places(),A0=actSet();const tile=(e,v,l,p)=>`<div class="ad-t"><span>${e}</span><b>${v}</b><small>${l}</small>${p!=null?`<i style="--p:${Math.min(100,p)}"></i>`:''}</div>`;
- let o=`<div class="ad-grid">${tile('👟',A.s!=null?(+A.s).toLocaleString():'—','steps',A.s!=null?Math.round(A.s/A0.goal*100):null)}${tile('😴',A.z?fmtMin(A.z):'—','sleep',A.z?Math.round(A.z/(A0.sleep*60)*100):null)}${tile('🏋️',A.x?fmtMin(A.x):'—','workouts')}${tile('📱',A.m!=null?fmtMin(A.m):'—','screen time')}</div>`;
+ let o=`<div class="ad-grid">${tile('👟',A.s!=null?(+A.s).toLocaleString():'—','steps',A.s!=null?Math.round(A.s/A0.goal*100):null)}${tile('😴',A.z?fmtMin(A.z):'—','sleep',A.z?Math.round(A.z/(A0.sleep*60)*100):null)}${tile('🏋️',wkMin(A)?fmtMin(wkMin(A)):'—','workouts')}${tile('📱',A.m!=null?fmtMin(A.m):'—','screen time')}</div>`;
  const rows=[];
  (A.ss||[]).forEach(([s,e])=>rows.push(`<li><span>😴</span><b>Asleep ${tShort(s)} → ${tShort(e)}</b><small>${fmtMin((e-s)/6e4)}</small></li>`));
  (A.w||[]).forEach(w=>rows.push(`<li><span>${(ACT_EI[w.k]||'💪')}</span><b>${esc(ACT_EX[w.k]||'Workout')}</b><small>${fmtMin(w.m)} · ${tShort(w.t)}</small></li>`));
  (A.a||[]).forEach(([n,m])=>rows.push(`<li><span>📱</span><b>${esc(n)}</b><small>${fmtMin(m)}</small></li>`));
- Object.entries(A.p||{}).forEach(([id,m])=>{const p=P.find(x=>x.id===id);if(p&&m)rows.push(`<li><span>${esc(p.emoji||'📍')}</span><b>${esc(p.name)}</b><small>${fmtMin(m)} there</small></li>`)});
+ Object.entries(A.p||{}).forEach(([id,m])=>{const p=P.find(x=>x.id===id);if(p&&m)rows.push(`<li><span>${esc(p.emoji||'📍')}</span><b>${esc(p.name)}${wkPlace(p)?' · workout':''}</b><small>${fmtMin(m)} there</small></li>`)});
  return o+(rows.length?`<ul class="ad-list">${rows.join('')}</ul>`:'')}
 function vActivity(){actLoad(false);const A=actSet(),d=ACTV.data||{},ok=d.ok||{},N=ACTV.days,days=actDays(N),td=days[days.length-1],L=actLog(),avg=k=>{const v=days.map(x=>x[k]).filter(x=>x>0);return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):0};
  const head=`<header class="ph"><div><h1>Activity</h1><div class="data">${ACTV.at?'Updated '+tShort(ACTV.at)+' · ':''}read on this phone, never uploaded</div></div><div class="ph-r"><button class="ibtn" data-act="actRefresh" aria-label="Refresh" title="Refresh">${ic('rep')}</button><button class="ibtn" data-act="actGoals" aria-label="Daily goals" title="Daily goals">${ic('target')}</button>${gear()}</div></header>`;
@@ -5883,24 +6173,27 @@ function vActivity(){actLoad(false);const A=actSet(),d=ACTV.data||{},ok=d.ok||{}
  const st=td.s||0,pct0=Math.min(100,Math.round(st/A.goal*100)),hit=days.filter(x=>x.s>=A.goal).length,hasS=ok.steps||days.some(x=>x.s);
  const ring=`<div class="act-ring" style="--p:${pct0}"><b>${st.toLocaleString()}</b><small>steps today</small></div>`;
  const T=[];
+ const hci=d.hc||{},hcNote=(what,n,err)=>ok.hc&&ACTV.data?(err?`<p class="small muted act-diag">Couldn’t read ${what} from Health Connect: ${esc(trunc(err,120))}</p>`:!n?`<div class="act-diag"><p class="small muted">Health Connect is connected but has no ${what} from the last 30 days. If you use Samsung Health, Fitbit, Google Fit or a watch app, turn on syncing to Health Connect in that app.</p><button class="btn sm" data-act="hcOpen">Open Health Connect</button></div>`:''):'';
  T.push(actTile('steps','👟','Steps',hasS?ring:'—',hasS?`${pct0}% of ${A.goal.toLocaleString()} · avg ${avg('s').toLocaleString()} · goal met ${hit} of ${N} days`:'',hasS?actBars(days,'s',A.goal,v=>v.toLocaleString()+' steps'):'','',hasS?'':actNeed('steps','Allow physical activity so Plotline can read your phone’s step counter.','Allow')));
  const zl=days.slice().reverse().find(x=>x.z>0),hasZ=ok.hc||zl;
- T.push(actTile('sleep','😴','Sleep',hasZ?fmtMin(td.z||(zl?zl.z:0)):'—',hasZ?(td.z?'last night':zl?'last recorded · '+dayName(zl.d):'no sleep recorded yet')+` · avg ${fmtMin(avg('z'))}`:'',hasZ?actBars(days,'z',A.sleep*60,fmtMin):'','',hasZ?'':actNeed('sleep',ok.hcSupported===false?'Sleep and workouts come from Health Connect, built into Android 14 and newer.':'Connect Health Connect to see sleep and workouts from your fitness apps.',ok.hcSupported===false?'OK':'Connect')));
- const W=((d.work)||[]).slice().sort((a,b)=>b.t-a.t),wk=days.filter(x=>x.x>0).length,hasW=ok.hc||W.length||days.some(x=>x.x);
- T.push(actTile('work','🏋️','Workouts',hasW?fmtMin(td.x||0):'—',hasW?`today · active ${wk} of ${N} days`:'',hasW?actBars(days,'x',0,fmtMin):'',W.length?`<div class="act-list">${W.slice(0,6).map(w=>`<button data-act="dyOpen" data-d="${dOf(w.t)}"><span>${ACT_EI[w.k]||'💪'}</span><b>${esc(ACT_EX[w.k]||'Workout')}</b><small>${fmtMin(w.m)} · ${esc(dayName(dOf(w.t)))}</small></button>`).join('')}</div>`:(hasW?'<p class="small muted" style="margin-top:10px">No workouts in this period.</p>':''),hasW?'':actNeed('workout','Workouts come from any app that writes to Health Connect, like Samsung Health, Fitbit or Strava.','Connect')));
+ T.push(actTile('sleep','😴','Sleep',hasZ&&(td.z||zl)?fmtMin(td.z||zl.z):'—',hasZ?(td.z?'last night':zl?'last recorded · '+dayName(zl.d):'no sleep recorded yet')+` · avg ${fmtMin(avg('z'))}`:'',hasZ?actBars(days,'z',A.sleep*60,fmtMin):'',hcNote('sleep',hci.sleep,hci.errSleep),hasZ?'':actNeed('sleep',ok.hcSupported===false?'Sleep and workouts come from Health Connect, built into Android 14 and newer.':'Connect Health Connect to see sleep and workouts from your fitness apps.',ok.hcSupported===false?'OK':'Connect')));
+ const W=((d.work)||[]).slice().sort((a,b)=>b.t-a.t),wk=days.filter(x=>x.x>0).length,WP=places().filter(wkPlace),hasW=ok.hc||W.length||days.some(x=>x.x)||WP.length;
+ T.push(actTile('work','🏋️','Workouts',hasW&&td.x?fmtMin(td.x):'—',hasW?`today · active ${wk} of ${N} days`:'',hasW?actBars(days,'x',0,fmtMin):'',(W.length||WP.length?`<div class="act-list">${W.slice(0,6).map(w=>`<button data-act="dyOpen" data-d="${dOf(w.t)}"><span>${ACT_EI[w.k]||'💪'}</span><b>${esc(ACT_EX[w.k]||'Workout')}</b><small>${fmtMin(w.m)} · ${esc(dayName(dOf(w.t)))}</small></button>`).join('')}${WP.map(p=>{const m=days.reduce((a,x)=>a+(+(x.p||{})[p.id]||0),0);return`<div><span>${esc(p.emoji||'📍')}</span><b>${esc(p.name)}</b><small>${m?fmtMin(m)+' in '+N+' days':'counted when you leave'}</small></div>`}).join('')}</div>`:(hasW?'<p class="small muted" style="margin-top:10px">No workouts in this period.</p>':''))+hcNote('workouts',hci.ex,hci.errEx),hasW?'':actNeed('workout','Workouts come from any app that writes to Health Connect, like Samsung Health, Fitbit or Strava.','Connect')));
  const top=d.top||((L[ymd()]||{}).a||[]).map(([name,min])=>({name,min})),hasM=ok.screen||days.some(x=>x.m);
- T.push(actTile('screen','📱','Screen time',hasM?fmtMin(td.m||0):'—',hasM?`today · avg ${fmtMin(avg('m'))} a day`+(A.scr?` · limit ${fmtMin(A.scr)}`:''):'',hasM?actBars(days,'m',A.scr,fmtMin):'',top.length?`<div class="act-list">${top.map(a=>`<div><span>📱</span><b>${esc(a.name)}</b><small>${fmtMin(a.min)} today</small></div>`).join('')}</div>`:'',hasM?'':actNeed('screen','Turn on Usage access for Plotline to see how long you spend in apps. Only minutes are read.','Allow')));
+ T.push(actTile('screen','📱','Screen time',hasM&&td.m!=null?fmtMin(td.m):'—',hasM?`today · avg ${fmtMin(avg('m'))} a day`+(A.scr?` · limit ${fmtMin(A.scr)}`:''):'',hasM?actBars(days,'m',A.scr,fmtMin):'',top.length?`<div class="act-list">${top.map(a=>`<div><span>📱</span><b>${esc(a.name)}</b><small>${fmtMin(a.min)} today</small></div>`).join('')}</div>`:'',hasM?'':actNeed('screen','Turn on Usage access for Plotline to see how long you spend in apps. Only minutes are read.','Allow')));
  const P=places(),inside=d.inside||{};
- T.push(actTile('places','📍','Places',P.length?(P.some(p=>inside[p.id])?'At '+esc(P.filter(p=>inside[p.id]).map(p=>p.name).join(', ')):'Away'):'—',P.length?'time is counted when you leave a saved place':'',P.length?`<div class="act-list">${P.map(p=>{const wm=days.reduce((a,x)=>a+(+(x.p||{})[p.id]||0),0),tm=+(td.p||{})[p.id]||0;return`<div><span>${esc(p.emoji||'📍')}</span><b>${esc(p.name)}</b><small>${inside[p.id]?'here now · ':''}${tm?fmtMin(tm)+' today · ':''}${wm?fmtMin(wm)+' in '+N+' days':'no time yet'}</small></div>`}).join('')}</div>`:'',P.length&&!ok.bg&&ACTV.data?actNeed('place','Allow location “all the time” so visits count with the app closed.','Allow'):'',P.length?'':`<div class="act-need"><p class="small muted">Save the places you go often (home, work, the gym) and Plotline counts the time you spend at each. Location never leaves the phone.</p><button class="btn sm pri" data-act="placeNew">${ic('plus')}Add the place I’m at now</button></div>`));
+ T.push(actTile('places','📍','Places',P.length?(P.some(p=>inside[p.id])?'At '+esc(P.filter(p=>inside[p.id]).map(p=>p.name).join(', ')):'Away'):'—',P.length?'time is counted when you leave a saved place · places you mark count as workouts':'',P.length?`<div class="act-list">${P.map(p=>{const wm=days.reduce((a,x)=>a+(+(x.p||{})[p.id]||0),0),tm=+(td.p||{})[p.id]||0;return`<div><span>${esc(p.emoji||'📍')}</span><b>${esc(p.name)}</b><small>${inside[p.id]?'here now · ':''}${tm?fmtMin(tm)+' today · ':''}${wm?fmtMin(wm)+' in '+N+' days':'no time yet'}</small><button class="chip act-wk${wkPlace(p)?' on':''}" data-act="actWk" data-id="${p.id}" aria-pressed="${wkPlace(p)}">${wkPlace(p)?'✓ Counts as workout':'Count as workout'}</button></div>`}).join('')}</div>`:'',P.length&&!ok.bg&&ACTV.data?actNeed('place','Allow location “all the time” so visits count with the app closed.','Allow'):'',P.length?'':`<div class="act-need"><p class="small muted">Save the places you go often (home, work, the gym) and Plotline counts the time you spend at each. Location never leaves the phone.</p><button class="btn sm pri" data-act="placeNew">${ic('plus')}Add the place I’m at now</button></div>`));
  const keys=Object.keys(L).filter(k=>k<=ymd()).sort().reverse(),shown=keys.slice(0,ACTV.more);
- const hist=`<section class="rv"><div class="st-h"><h3>Day by day</h3><span class="data">${keys.length} day${keys.length===1?'':'s'} kept on this phone</span></div><div class="ah-list">${shown.map(k=>{const o=L[k]||{};return`<button class="ah-r" data-act="dyOpen" data-d="${k}"><span class="ah-d"><b>${esc(dayName(k))}</b><small>${new Date(k+'T12:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})}</small></span><span class="ah-v${o.s>=A.goal?' ok':''}">👟 ${o.s!=null?(+o.s).toLocaleString():'—'}</span><span class="ah-v">😴 ${o.z?fmtMin(o.z):'—'}</span><span class="ah-v">🏋️ ${o.x?fmtMin(o.x):'—'}</span><span class="ah-v">📱 ${o.m!=null?fmtMin(o.m):'—'}</span>${ic('next','ico-s')}</button>`}).join('')}</div>${keys.length>shown.length?`<div class="actions left"><button class="btn sm" data-act="actMore">Show older days</button></div>`:''}</section>`;
+ const hist=`<section class="rv"><div class="st-h"><h3>Day by day</h3><span class="data">${keys.length} day${keys.length===1?'':'s'} kept on this phone</span></div><div class="ah-list">${shown.map(k=>{const o=L[k]||{};return`<button class="ah-r" data-act="dyOpen" data-d="${k}"><span class="ah-d"><b>${esc(dayName(k))}</b><small>${new Date(k+'T12:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})}</small></span><span class="ah-v${o.s>=A.goal?' ok':''}"><i>👟</i>${o.s!=null?(+o.s).toLocaleString():'—'}</span><span class="ah-v"><i>😴</i>${o.z?fmtMinC(o.z):'—'}</span><span class="ah-v"><i>🏋️</i>${wkMin(o)?fmtMinC(wkMin(o)):'—'}</span><span class="ah-v"><i>📱</i>${o.m!=null?fmtMinC(o.m):'—'}</span>${ic('next','ico-s')}</button>`}).join('')}</div>${keys.length>shown.length?`<div class="actions left"><button class="btn sm" data-act="actMore">Show older days</button></div>`:''}</section>`;
  return head+bar+`<div class="act-grid">${T.join('')}</div>`+hist+`<p class="small muted" style="margin:18px 4px 0">Habits can use these too: tap ⚡ on a habit to check it off by itself.</p>`}
 function actCardHTML(){if(!nat())return'';const L=actLog(),t=L[ymd()]||{},A=actSet(),y=L[fromN(dnum(ymd())-1)]||{};
  const z=t.z||0,tile=(k,e,v,l,p)=>`<button class="at-t" data-act="actGo" data-k="${k}"><span class="at-e">${e}</span><b>${v}</b><small>${l}</small>${p!=null?`<i style="--p:${Math.max(2,Math.min(100,p))}"></i>`:''}</button>`;
- return`<section class="rv at" id="actCard"><div class="st-h"><h3>Activity</h3><a class="link" href="#/activity">Details</a></div><div class="at-g">${tile('steps','👟',(t.s||0).toLocaleString(),`steps · goal ${A.goal>=1000?A.goal/1000+'k':A.goal}`,Math.round((t.s||0)/A.goal*100))}${tile('sleep','😴',z?fmtMin(z):'—','sleep'+(z?'':' · not recorded'),z?Math.round(z/(A.sleep*60)*100):null)}${tile('work','🏋️',t.x?fmtMin(t.x):'—','workout'+(t.x?'':' today'))}${tile('screen','📱',t.m!=null?fmtMin(t.m):'—','screen time',A.scr&&t.m!=null?Math.round(t.m/A.scr*100):null)}</div>${y.s!=null?`<button class="at-y" data-act="dyOpen" data-d="${fromN(dnum(ymd())-1)}">Yesterday: ${(+y.s).toLocaleString()} steps${y.z?' · '+fmtMin(y.z)+' sleep':''}${y.m!=null?' · '+fmtMin(y.m)+' screen':''} ${ic('next','ico-s')}</button>`:''}</section>`}
+ return`<section class="rv at" id="actCard"><div class="st-h"><h3>Activity</h3><a class="link" href="#/activity">Details</a></div><div class="at-g">${tile('steps','👟',(t.s||0).toLocaleString(),`steps · goal ${A.goal>=1000?A.goal/1000+'k':A.goal}`,Math.round((t.s||0)/A.goal*100))}${tile('sleep','😴',z?fmtMin(z):'—','sleep'+(z?'':' · not recorded'),z?Math.round(z/(A.sleep*60)*100):null)}${tile('work','🏋️',wkMin(t)?fmtMin(wkMin(t)):'—','workout'+(wkMin(t)?'':' today'))}${tile('screen','📱',t.m!=null?fmtMin(t.m):'—','screen time',A.scr&&t.m!=null?Math.round(t.m/A.scr*100):null)}</div>${y.s!=null?`<button class="at-y" data-act="dyOpen" data-d="${fromN(dnum(ymd())-1)}">Yesterday: ${(+y.s).toLocaleString()} steps${y.z?' · '+fmtMin(y.z)+' sleep':''}${y.m!=null?' · '+fmtMin(y.m)+' screen':''} ${ic('next','ico-s')}</button>`:''}</section>`}
 function actCardPaint(){const e=document.getElementById('actCard');if(!e)return;const t=document.createElement('div');t.innerHTML=actCardHTML();const n=t.firstElementChild;if(n){n.classList.add('in');e.replaceWith(n)}}
 Object.assign(ACT,{
  actRefresh:()=>{actLoad(true);toast('Refreshing…')},
+ hcOpen:()=>{try{NATIVE.openHealthConnect()}catch(e){}},
+ actWk:d=>{const L=places(),p=L.find(x=>x.id===d.id);if(!p)return;p.wk=!wkPlace(p);S.settings.places=[...L];save();render(false);toast(p.wk?`Time at ${p.name} counts as a workout`:`${p.name} no longer counts as a workout`)},
  actRange:d=>{ACTV.days=+d.v;render(false)},
  actMore:()=>{ACTV.more+=30;render(false)},
  actGo:d=>{go('activity');setTimeout(()=>{const el=document.getElementById('act-'+d.k);if(el){document.querySelectorAll('#view .rv').forEach(x=>x.classList.add('in'));el.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'start'})}},120)},
@@ -5928,10 +6221,409 @@ SCRIPT_FONTS.forEach(x=>{if(!fontOf(x[0]))FONTS.push([x[0],x[1],x[2],x[3]])});
  [['d','--f-display'],['b','--f-body']].forEach(([k,v])=>{if(scriptFont(f[k]))r.style.setProperty(v,`'${fontOf(f[k])[2]}',cursive`)})}}
 applyFonts();
 
+/* ================= REACTIONS: your own words, and instant mode on Android ================= */
+Object.assign(FORM,{shReactTxt:f=>{const x=RXT&&shById(RXT.id),m=String(f.elements.m.value||'').replace(/\s+/g,' ').trim();if(!x||!m)return;if(reactsSentToday()>=REACT_MAX)return toast(`That’s ${REACT_MAX} reactions for today`);
+ const nm=RXT.nm,back=RXT.back;reactSend(x,RXT.to,'',m).then(r=>{if(!r)return;toast(`Sent to ${esc(nm)} · “${esc(trunc(r.m,40))}”`);if(back)shOpen(x);else{closeSheet();shPanelPaint(x.id)}}).catch(e=>toast(shErr(e)))}});
+const liveOK=()=>NATIVE&&NATIVE.liveShare;
+const liveOn=()=>{try{return liveOK()&&NATIVE.liveShareOn()}catch(e){return false}};
+function livePanel(){if(!liveOK())return'';const on=liveOn();return`<section class="panel rv"><h3>Instant reactions</h3><p class="small muted">Get reactions within about 30 seconds, even with Plotline closed. While you’re in a shared item, a small silent notification stays in your notification shade (Android needs it), and it checks the sharing space every 30 seconds. Off, reactions arrive within about 15 minutes.</p><label class="sw"><span>Instant reactions<small>${on?'On':'Off'} · uses a little more battery</small></span><input type="checkbox" data-act="liveT" ${on?'checked':''}><i></i></label></section>`}
+Object.assign(ACT,{liveT:(d,el)=>{if(!liveOK())return;const v=!!(el&&el.checked);try{NATIVE.liveShare(v)}catch(e){}toast(v?'Instant reactions on':'Instant reactions off')}});
+
+{const _sh=shareHTML;shareHTML=function(){return _sh()+livePanel()}}
+/* ================= AI PLAN: habits too =================
+ The plan format has an optional "habits" array (see SPEC). Each habit is checked, previewed with a tick box, and created
+ after the goals, linked to the goal it supports. */
+const HAB_KEYS=['title','icon','kind','freq','days','times','target','unit','part','time','why','goal'];
+function planHabitsCheck(o,E){if(!('habits' in o))return;if(!Array.isArray(o.habits)){E.push('"habits" must be an array (may be []).');return}
+ const gids=new Set([...(o.goals||[]).map(g=>g&&g.id),...S.goals.map(g=>g.id)]),have=new Set(S.habits.map(h=>lc(h.title)));
+ o.habits.slice(0,12).forEach((h,i)=>{const p=`habits[${i}]`+(h&&typeof h.title==='string'?` ("${trunc(h.title,30)}")`:'');if(!h||typeof h!=='object'||Array.isArray(h)){E.push(p+' must be an object.');return}
+  Object.keys(h).forEach(k=>{if(!HAB_KEYS.includes(k))E.push(`${p}: unknown key "${k}".`)});HAB_KEYS.forEach(k=>{if(!(k in h))E.push(`${p}: missing key "${k}".`)});
+  if(typeof h.title!=='string'||h.title.trim().length<3||h.title.length>60)E.push(`${p}: "title" must be 3 to 60 characters.`);else if(have.has(lc(h.title)))E.push(`${p}: I already have this habit. Leave it out.`);
+  if(typeof h.icon!=='string'||[...h.icon].length>8)E.push(`${p}: "icon" must be one emoji or "".`);
+  if(!['build','quit'].includes(h.kind))E.push(`${p}: "kind" must be "build" or "quit".`);
+  if(!['daily','days','times'].includes(h.freq))E.push(`${p}: "freq" must be "daily", "days" or "times".`);
+  if(!Array.isArray(h.days)||h.days.some(d=>!Number.isInteger(d)||d<0||d>6))E.push(`${p}: "days" must be an array of weekday numbers 0 to 6.`);else if(h.freq==='days'&&!h.days.length)E.push(`${p}: freq "days" needs at least one weekday in "days".`);
+  if(!Number.isInteger(h.times)||h.times<0||h.times>6)E.push(`${p}: "times" must be an integer 0 to 6.`);else if(h.freq==='times'&&h.times<1)E.push(`${p}: freq "times" needs "times" from 1 to 6.`);
+  if(!Number.isInteger(h.target)||h.target<1||h.target>100)E.push(`${p}: "target" must be an integer 1 to 100.`);
+  if(typeof h.unit!=='string'||h.unit.length>20)E.push(`${p}: "unit" must be a short string (may be "").`);
+  if(!['morning','afternoon','evening','any'].includes(h.part))E.push(`${p}: "part" must be "morning", "afternoon", "evening" or "any".`);
+  if(!(h.time===null||(typeof h.time==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(h.time))))E.push(`${p}: "time" must be "HH:MM" (24-hour) or null.`);
+  if(typeof h.why!=='string')E.push(`${p}: "why" must be a string (may be "").`);
+  if(!(h.goal===null||(typeof h.goal==='string'&&gids.has(h.goal))))E.push(`${p}: "goal" must be null or the id of a goal in the plan.`)})}
+{const _ps=planSchema;planSchema=function(m){const s=_ps(m);s.properties.habits={type:'array',maxItems:6,items:{type:'object',properties:{title:{type:'string',minLength:3,maxLength:60},icon:{type:'string',maxLength:8},kind:{enum:['build','quit']},freq:{enum:['daily','days','times']},days:{type:'array',items:{type:'integer',minimum:0,maximum:6},maxItems:7},times:{type:'integer',minimum:0,maximum:6},target:{type:'integer',minimum:1,maximum:100},unit:{type:'string',maxLength:20},part:{enum:['morning','afternoon','evening','any']},time:{type:['string','null'],pattern:'^([01][0-9]|2[0-3]):[0-5][0-9]$'},why:{type:'string',maxLength:200},goal:{type:['string','null'],maxLength:24}},required:HAB_KEYS,additionalProperties:false}};return s}}
+const planHabits=()=>AI.plan&&Array.isArray(AI.plan.habits)?AI.plan.habits:[];
+function aiHabSel(){if(AI.hfor!==AI.plan){AI.hfor=AI.plan;AI.hsel=new Set(planHabits().map((_,i)=>i))}return AI.hsel}
+const habFreqTxt=h=>h.freq==='days'?h.days.map(d=>DAYS[d].slice(0,3)).join(' '):h.freq==='times'?`${h.times}× a week`:'Every day';
+{const _pv=previewHTML;previewHTML=function(){let o=_pv();const L=planHabits();if(!L.length)return o;const sel=aiHabSel(),plan=AI.plan;
+ const gt=id=>{if(!id)return'';const g=plan.goals.find(x=>x.id===id)||G(id);return g?g.title:''};
+ const hs=`<div class="pv-hh"><div class="data">Habits · ${sel.size} of ${L.length} chosen</div>${L.map((h,i)=>`<label class="pv ${sel.has(i)?'on':''}" style="--c:var(--accent);--dp:0"><input type="checkbox" data-act="pvHab" data-i="${i}" ${sel.has(i)?'checked':''}><div style="min-width:0;flex:1"><div class="t">${esc(h.icon||'✅')} ${esc(h.title)}<span class="badge add">${h.kind==='quit'?'Break':'New habit'}</span></div><div class="m"><span class="data">${esc(habFreqTxt(h))}${h.target>1?` · ${h.target} ${esc(h.unit)}`:''}</span><span class="data">${esc(HPARTS.find(p=>p[0]===h.part)?.[1]||'Anytime')}${h.time?' · '+fmtTime(h.time):''}</span>${gt(h.goal)?`<span class="data">for ${esc(trunc(gt(h.goal),36))}</span>`:''}</div>${h.why?`<p class="small muted" style="margin-top:4px">${esc(h.why)}</p>`:''}</div></label>`).join('')}</div>`;
+ const k=o.lastIndexOf('<div class="actions left"><button class="btn pri" data-act="doImport"');return k<0?o+hs:o.slice(0,k)+hs+o.slice(k)}}
+Object.assign(ACT,{pvHab:d=>{const s=aiHabSel(),i=+d.i;s.has(i)?s.delete(i):s.add(i);render(false)}});
+{const _ap=applyPlan;applyPlan=function(){const o=AI.plan;if(!o)return _ap();const L=planHabits(),sel=aiHabSel(),M=AI.main;
+ const titleOf=id=>{if(!id)return'';if(M&&id===M.rid)return(M.title||'').trim();const g=o.goals.find(x=>x.id===id);return g?g.title.trim():(G(id)?G(id).title:'')};
+ const want=L.filter((_,i)=>sel.has(i)).map(h=>({h,gt:titleOf(h.goal)}));const before=new Set(S.goals.map(g=>g.id));_ap();if(!want.length)return;
+ const fresh=S.goals.filter(g=>!before.has(g.id));const gidFor=(gt,id)=>{const f=fresh.find(g=>g.title===gt)||fresh.find(g=>lc(g.title)===lc(gt));return f?f.id:(G(id)?id:'')};
+ want.forEach(({h,gt})=>{const g=gidFor(gt,h.goal),gg=g&&G(g);S.habits.push(normHabit({id:uid(),title:h.title.trim(),icon:oneEmoji(h.icon||''),kind:h.kind,mode:'quit',freq:h.freq,days:h.freq==='days'?h.days:[0,1,2,3,4,5,6],times:h.times||3,target:h.kind==='build'?h.target:1,unit:h.unit||'',part:h.part,time:h.time||'',remind:!!h.time,why:h.why||'',goalId:g||'',area:gg?gg.area:'personal',start:Date.now(),startDate:ymd(),createdAt:Date.now(),u:Date.now()}))});
+ save();syncNative();toast(`${want.length} habit${want.length===1?'':'s'} added too`)}}
+
+/* ================= HOME (was Today): quick actions, your day, insights, Plan with AI ================= */
+NAV[0]=['today','Home','home'];
+function aiPlanCard(where){if(where==='home'&&S.settings.aipHide)return`<section class="aip aip-min rv"><button class="aip-mb" data-act="aiStart"><span class="aip-i">${ic('ai')}</span><span class="aip-mt"><b>Plan with AI</b><small>Describe a goal, get steps and habits</small></span></button><button class="ibtn aip-x" data-act="aipShow" aria-label="Expand Plan with AI">${ic('chev')}</button></section>`;
+ return`<section class="aip rv${where==='ask'?' in-ask':''}"><span class="aip-i">${ic('ai')}</span><div class="aip-b"><b>Plan with AI</b><p>Say what you want in your own words, like “get fit by summer”, “save for a house” or “a calmer morning”. The AI drafts a goal with steps, dates and the habits to get there. You check and edit everything before anything is saved.</p><div class="aip-a"><button class="btn pri sm" data-act="aiStart">${ic('ai')}Start a plan</button><button class="btn sm" data-act="aiChangeStart">Rework my plan</button>${where==='home'?`<button class="btn ghost sm" data-act="aipHide">Minimize</button>`:''}</div></div></section>`}
+function homeQuick(){const Q=[['aiStart','✨','Plan with AI'],['newGoal','🎯','Goal'],['newHabit','✅','Habit'],['addEntry','✍️','Write'],['thrNew','🧵','Thread'],['askGo','💬','Ask'],['dayToday','📅','Today in full']];
+ return`<div class="hmq rv" role="toolbar" aria-label="Quick actions">${Q.map(([a,e,l])=>`<button class="hmq-b" data-act="${a}"><span>${e}</span>${l}</button>`).join('')}</div>`}
+function homeDay(){const td=ymd(),hs=S.habits.filter(h=>h.status==='active'&&h.kind!=='quit'&&hDue(h,td)&&!(h.skip&&h.skip[td])),dg=S.days.filter(x=>x.date===td),st=active().flatMap(g=>g.steps.filter(s=>s.due===td).map(s=>({g,s})));
+ const items=[...hs.map(h=>({k:'h',done:hDone(h,td),t:`${hIcon(h)} ${h.title}`,h})),...dg.map(x=>({k:'d',done:!!x.done,t:x.title,x})),...st.map(o=>({k:'s',done:!!o.s.done,t:o.s.title,o}))];
+ if(!items.length)return'';const dn=items.filter(i=>i.done).length,p=dn/items.length,nx=items.find(i=>!i.done);
+ const act=nx?(nx.k==='h'?`data-act="hTap" data-id="${nx.h.id}"`:nx.k==='d'?`data-act="toggleDay" data-id="${nx.x.id}"`:`data-act="toggleStep" data-g="${nx.o.g.id}" data-s="${nx.o.s.id}"`):'';
+ return`<section class="hday rv"><div class="hday-r" style="--p:${Math.round(p*100)}"><b>${dn}<small>/${items.length}</small></b></div><div class="hday-b"><div class="data">Your day · ${p>=1?'all done':Math.round(p*100)+'% done'}</div>${nx?`<div class="hday-n"><span class="ell">Next: ${esc(nx.t)}</span><button class="btn sm pri" ${act}>${ic('check')}Done</button></div>`:`<div class="hday-n"><span>Everything for today is done. Well played.</span></div>`}<button class="link small" data-act="dayToday">See everything for today ›</button></div></section>`}
+function homeInsights(){const out=[],td=ymd(),tn=dnum(td),hr=new Date().getHours(),A=S.settings.actLog||{};
+ S.habits.filter(h=>h.status==='active'&&h.kind!=='quit'&&hDue(h,td)&&!hDone(h,td)&&!(h.skip&&h.skip[td])).forEach(h=>{const n=hStreak(h);if(n>=3&&hr>=15)out.push({p:9,e:'🔥',t:`Your ${n}-${h.freq==='times'?'week':'day'} streak on “${h.title}” is on the line today.`,b:`<button class="btn sm" data-act="openHabit" data-id="${h.id}">Open habit</button>`,q:`My habit “${h.title}” has a ${n}-day streak and isn’t done yet today. What small version could I do right now to keep it going?`})});
+ {const W=[0,1,2,3,4,5,6].map(()=>({d:0,n:0}));for(let k=tn-56;k<tn;k++){const ds=fromN(k),r=dayRatio(ds),w=new Date(ds+'T12:00').getDay();W[w].d+=r.due;W[w].n+=r.dn}
+  const ok=W.map((x,i)=>({i,p:x.d>=6?x.n/x.d:null})).filter(x=>x.p!=null);if(ok.length>=5){const b=ok.reduce((a,x)=>x.p>a.p?x:a),w=ok.reduce((a,x)=>x.p<a.p?x:a);if(b.p-w.p>=.25){const nm=i=>new Date(2024,0,7+i).toLocaleDateString(undefined,{weekday:'long'});out.push({p:6,e:'📆',t:`You keep habits best on ${nm(b.i)}s (${Math.round(b.p*100)}%) and slip most on ${nm(w.i)}s (${Math.round(w.p*100)}%).`,q:`I keep my habits best on ${nm(b.i)}s and slip most on ${nm(w.i)}s. Looking at my habits and journal, why might that be, and what would make ${nm(w.i)}s easier?`})}}}
+ active().forEach(g=>{const open=g.steps.filter(s=>!s.done);if(!open.length)return;const last=Math.max(dnum(g.startDate||td),...g.steps.filter(s=>s.doneAt).map(s=>dnum(ymd(new Date(s.doneAt)))));const idle=tn-last;if(idle>=14)out.push({p:5+(g.priority===1?2:0),e:'🧭',t:`No progress on “${g.title}” for ${idle} days. Next step: ${nextStep(g)?nextStep(g).title:open[0].title}.`,b:`<button class="btn sm" data-act="open" data-id="${g.id}">Open goal</button>`,q:`I haven’t made progress on my goal “${g.title}” for ${idle} days. What in my notes suggests why, and what is one small step I can take today?`})});
+ {const S7=k=>{let a=0,n=0;for(let i=k;i<k+7;i++){const o=A[fromN(i)];if(o&&o.s!=null){a+=+o.s;n++}}return n>=4?a/n:null};const now=S7(tn-6),prev=S7(tn-13);if(now!=null&&prev&&Math.abs(now-prev)/prev>=.2)out.push({p:4,e:now>prev?'📈':'📉',t:`You’re averaging ${Math.round(now).toLocaleString()} steps a day this week, ${Math.round(Math.abs(now-prev)/prev*100)}% ${now>prev?'more':'less'} than last week.`,b:`<a class="btn sm" href="#/activity">Activity</a>`,q:`My steps went ${now>prev?'up':'down'} ${Math.round(Math.abs(now-prev)/prev*100)}% this week compared with last week. How does that line up with my habits, sleep and moods?`})}
+ {let g=[],b=[];for(let k=tn-30;k<tn;k++){const ds=fromN(k),o=A[ds],r=dayRatio(ds);if(!o||!o.z||!r.due)continue;(o.z>=420?g:b).push(r.dn/r.due)}if(g.length>=3&&b.length>=3){const av=x=>x.reduce((a,v)=>a+v,0)/x.length,d=av(g)-av(b);if(Math.abs(d)>=.15)out.push({p:7,e:'😴',t:`After 7+ hours of sleep you keep ${Math.round(av(g)*100)}% of your habits, against ${Math.round(av(b)*100)}% on shorter nights.`,q:`I keep more of my habits after 7+ hours of sleep. Based on my data, what could help me sleep longer more often?`})}}
+ threads().filter(t=>t.status!=='done'&&thrUps(t).length).forEach(t=>{const d=Math.floor((Date.now()-thrLast(t))/864e5);if(d>=7)out.push({p:3,e:'🧵',t:`Your thread “${t.title}” has been quiet for ${d} days.`,b:`<button class="btn sm" data-act="thrAddSheet" data-id="${t.id}">Add an update</button>`,q:`Summarize my thread “${t.title}” and suggest what I could do next with it.`})});
+ const pr=typeof perfectRun==='function'?perfectRun():0;if(pr>=3)out.push({p:8,e:'🏆',t:`${pr} perfect days in a row: every habit kept. Keep it rolling.`,q:`I’ve kept every habit ${pr} days in a row. What’s working, and what should I watch out for?`});
+ return out.sort((a,b)=>b.p-a.p).slice(0,3)}
+function homeInsightsHTML(){const L=homeInsights();if(!L.length)return'';return`<section class="rv"><div class="st-h"><h3>Insights</h3><button class="link" data-act="askGo">Ask AI</button></div><div class="hins">${L.map(x=>`<div class="hin"><span class="hin-e">${x.e}</span><div class="hin-b"><p>${esc(x.t)}</p><div class="hin-a">${x.b||''}<button class="btn sm ghost" data-act="askQ" data-q="${esc(x.q)}">${ic('ai')}Ask AI</button></div></div></div>`).join('')}</div></section>`}
+function homeTop(){return homeQuick()+homeDay()+homeInsightsHTML()}
+{const _vT3=vToday;vToday=function(){let o=_vT3();const i=o.indexOf('</header>');return i<0?o:o.slice(0,i+9)+homeTop()+o.slice(i+9)};VIEWS.today=vToday}
+{const _tx=todayExtras;todayExtras=function(){return aiPlanCard('home')+_tx()}}
+function askWith(q){if(IN.busy)return toast('Still answering the last question');if(IN.res){IN.ctl&&IN.ctl.abort();IN.res=null}IN.q=q;if(!aovOpen()){go('ask');setTimeout(()=>{const t=$('#askIn');if(t)t.value=q;ACT.askSend()},250);return}setTimeout(()=>ACT.askSend(),280)}
+Object.assign(ACT,{
+ aiStart:()=>{AI.tab='new';go('ai')},aiChangeStart:()=>{AI.tab=S.goals.length?'change':'new';go('ai')},
+ aipHide:()=>{S.settings.aipHide=true;save();render(false)},aipShow:()=>{S.settings.aipHide=false;save();render(false)},
+ askGo:()=>{if(!aovOpen())go('ask');setTimeout(()=>$('#aov #askIn')?.focus(),380)},askQ:d=>askWith(d.q),dayToday:()=>go('day/'+ymd()),
+ askAbout:d=>{const k=d.k;if(k==='goal'){const g=G(d.id);if(g)askWith(`How am I doing with my goal “${g.title}”? What’s working, what’s stuck, and what should I do next?`)}
+  else if(k==='habit'){const h=H(d.id);if(h)askWith(`How is my habit “${h.title}” going? When do I keep it, when do I slip, and how can I make it easier?`)}
+  else if(k==='thread'){const t=TH(d.id);if(t)askWith(`Look at my thread “${t.title}”. Summarize where it stands and suggest the next few steps.`)}}});
+/* threads and activity feed Ask, so answers can use them */
+{const _rd=ragDocs;ragDocs=function(){const out=_rd();
+ threads().forEach(t=>{const U=thrUps(t).slice().reverse(),lk=thrLink(t);if(!U.length)return;let body=U.map(u=>`${ymd(new Date(u.t))} ${thrTag(u.k)[2]}: ${u.x}`).join(' · ');const head=`Thread “${t.title}”${lk?` (about ${lk.n})`:''}${t.status==='done'?', done':''}`;
+  for(let i=0,n=0;i<body.length;i+=620,n++){out.push({id:'t'+t.id+'#'+n,kind:'thread',ref:t.id,gid:t.link&&t.link.k==='goal'?t.link.id:'',date:ymd(new Date(thrLast(t))),label:t.title,head,text:head+(n?' (cont.)':'')+': '+body.slice(i,i+800)});if(i+800>=body.length)break}});
+ const A=S.settings.actLog||{};Object.keys(A).sort().slice(-60).forEach(ds=>{const o=A[ds]||{},w=wkMin(o),b=[o.s!=null&&`${(+o.s).toLocaleString()} steps`,o.z&&`slept ${fmtMin(o.z)}`,w&&`worked out ${fmtMin(w)}`,o.m!=null&&`${fmtMin(o.m)} screen time`].filter(Boolean).join(', ');if(b)out.push({id:'a'+ds,kind:'day',ref:ds,gid:'',date:ds,label:'Activity '+ds,head:`${ds} · Activity`,text:`${ds} · Activity: ${b}`})});
+ return out}}
+{const _is=ACT.insSrc;ACT.insSrc=d=>{const x=IN.res&&IN.res.srcs[+d.i];if(x&&x.kind==='thread'){closeSheet();go('thread/'+x.ref);return}if(x&&x.kind==='day'&&/^a\d/.test(x.id||'')){closeSheet();go('day/'+x.ref);return}_is(d)}}
+if(typeof insOverview==='function'){const _io=insOverview;insOverview=function(max,q){let s=_io(max,q);const L=actDays(7).filter(x=>x.s!=null||x.z||x.m!=null);if(L.length){const av=k=>{const v=L.map(x=>x[k]).filter(x=>x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0};s+=`\nActivity, last 7 days: about ${Math.round(av('s')).toLocaleString()} steps a day${av('z')?`, ${fmtMin(av('z'))} sleep`:''}${av('x')?`, ${fmtMin(av('x'))} workouts on active days`:''}${av('m')?`, ${fmtMin(av('m'))} screen time`:''}.`}
+ const T=threads().filter(t=>t.status!=='done').slice(0,5);if(T.length)s+=`\nOpen threads: ${T.map(t=>`“${t.title}”${thrUps(t)[0]?` (latest: ${trunc(thrUps(t)[0].x,80)})`:''}`).join('; ')}.`;return max?s.slice(0,max+400):s}}
+/* where the app opens: Settings → Look & feel → Start page */
+function landOpts(){const pg=[['','Home'],['habits','Habits'],['cal','Calendar'],['goals','Goals'],['vista','Vista'],['journal','Journal'],['threads','Threads'],['ask','Ask'],['activity','Activity'],['day/__today','Today in full']];
+ return{pg,th:threads().filter(t=>t.status!=='done').map(t=>['thread/'+t.id,'🧵 '+t.title]),hb:S.habits.filter(h=>h.status!=='archived').map(h=>['habit/'+h.id,hIcon(h)+' '+h.title]),gl:active().map(g=>['goal/'+g.id,'🎯 '+g.title])}}
+function landName(v){if(!v)return'Home';const O=landOpts(),f=[...O.pg,...O.th,...O.hb,...O.gl].find(x=>x[0]===v);return f?f[1]:'Home'}
+function landPanel(){return`<section class="panel wide rv"><h3>Start page</h3><p class="small muted">The page Plotline opens on. Pick any page, or one thread, habit or goal you check every day.</p><button class="lp-cur" data-act="landPick"><span><small>Opens on</small><b>${esc(trunc(landName(S.settings.landing||''),46))}</b></span>${ic('next','ico-s')}</button></section>`}
+function landSheet(){const v=S.settings.landing||'',O=landOpts(),row=([k,n])=>`<button class="lp-o${k===v?' on':''}" data-act="landSet" data-v="${esc(k)}" aria-pressed="${k===v}"><span>${esc(n)}</span>${k===v?ic('check','ico-s'):''}</button>`;
+ const grp=(t,L,grid)=>L.length?`<div class="lp-g"><div class="data">${t}</div><div class="${grid?'lp-grid':'lp-list'}">${L.map(row).join('')}</div></div>`:'';
+ openSheet(`<div class="data">Start page</div><h2 style="margin-top:6px">Open Plotline on…</h2>${grp('Pages',O.pg,1)}${grp('A thread',O.th)}${grp('A habit',O.hb)}${grp('A goal',O.gl)}`)}
+Object.assign(ACT,{landPick:()=>landSheet(),landSet:d=>{S.settings.landing=d.v||'';save();closeSheet();render(false);toast(d.v?`Plotline will open on ${landName(d.v)}`:'Plotline will open on Home')}});
+{const _hp=homePanel;homePanel=function(){return landPanel()+_hp()}}
+document.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('[data-land]')){S.settings.landing=e.target.value;save();toast(e.target.value?'Plotline will open there':'Plotline will open on Home')}});
+function landHere(){const L=S.settings.landing;if(!L)return;const h=location.hash;if(h&&h!=='#'&&h!=='#/'&&h!=='#/today')return;let r=L==='day/__today'?'day/'+ymd():L;const[p,id]=r.split('/');
+ if((p==='thread'&&!TH(id))||(p==='habit'&&!H(id))||(p==='goal'&&!G(id)))return;history.replaceState(null,'','#/'+r)}
+/* "Ask about this" and "Make this my start page" on goal, habit and thread pages */
+{const _r=render;render=function(a){_r(a);const k={goal:'goal',habit:'habit',thread:'thread'}[cur.p];if(!k||!cur.id)return;const bar=document.querySelector('#view .crumb>.ph-r');if(!bar||bar.querySelector('[data-act=askAbout]'))return;
+ const g=bar.querySelector('.gearb'),html=`<button class="ibtn" data-act="askAbout" data-k="${k}" data-id="${cur.id}" aria-label="Ask AI about this" title="Ask AI about this">${ic('ai')}</button>`;if(g)g.insertAdjacentHTML('beforebegin',html);else bar.insertAdjacentHTML('beforeend',html)}}
+
+/* ================= reactions wait for the app lock ================= */
+{const _rs=reactShow;reactShow=function(){if((LOCKED||document.hidden)&&RB.q.length){clearTimeout(RB.tm);RB.wait=1;const el=$('#rxb');if(el)el.classList.remove('on');return}RB.wait=0;_rs()}}
+{const _rb=reactBurst;reactBurst=function(e){if(LOCKED||document.hidden)return;_rb(e)}}
+{const _ud=unlockDone;unlockDone=function(){_ud();if(RB.q.length)setTimeout(reactShow,650)}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&RB.wait)setTimeout(()=>{if(!LOCKED)reactShow()},700)});
+
+/* ================= ASK OVERLAY: answers slide up over the page you're on ================= */
+const AOV={open:false,full:false};
+function aovBody(){const R=IN.res;return R?`<div class="ask-thread">${R.turns.map((t,i)=>askTurn(R,t,i)).join('')}</div>`:`<div class="aov-empty"><p class="muted">Ask about your goals, habits, journal, threads and activity. Answers use your own data.</p><div class="aov-sugs">${INS_PRE.slice(0,4).map(p=>`<button class="ask-sug" data-act="askPre" data-k="${p.k}"><b>${p.n}</b><small>${p.d}</small></button>`).join('')}</div></div>`}
+function aovGo(){return IN.busy?`<button class="ask-go stop" data-act="insStop" aria-label="Stop"><i></i></button>`:`<button class="ask-go" data-act="askSend" aria-label="Send">${ic('up')}</button>`}
+function aovOpen(){if(cur.p==='ask')return false;let el=$('#aov');if(!el){el=document.createElement('div');el.id='aov';el.className='aov';el.innerHTML=`<div class="aov-dim" data-act="aovClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Ask"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="ask-av">${ic('ai')}</span><b>Ask</b><small>${esc(askEngineLabel())}</small></div><button class="ibtn sm" data-act="askNew" aria-label="New chat" title="New chat">${ic('plus')}</button><button class="ibtn sm" data-act="aovFull" aria-label="Open full page" title="Open full page">${ic('full')}</button><button class="ibtn sm" data-act="aovClose" aria-label="Close" title="Close">✕</button></div><div class="aov-b"></div><div class="ask-comp aov-comp"><div class="ask-row"><textarea id="askIn" rows="1" placeholder="Ask anything about your life…" aria-label="Ask"></textarea><span class="aov-go"></span></div></div></section>`;document.body.appendChild(el);aovDrag(el)}
+ AOV.open=true;document.documentElement.classList.add('aov-on');aovPaint(true);requestAnimationFrame(()=>el.classList.add('on'));setTimeout(()=>{if(typeof micDecorate==='function')micDecorate(el)},0);return true}
+function aovPaint(scroll){const el=$('#aov');if(!el||!AOV.open)return;const b=el.querySelector('.aov-b'),near=b.scrollHeight-b.scrollTop-b.clientHeight<120;b.innerHTML=aovBody();el.querySelector('.aov-go').innerHTML=aovGo();const t=el.querySelector('#askIn');if(t&&document.activeElement!==t)t.value=IN.q||'';if(t)t.placeholder=IN.res?'Ask a follow-up…':'Ask anything about your life…';if(scroll||near||ASK_STICK)b.scrollTop=b.scrollHeight}
+function aovClose(){const el=$('#aov');AOV.open=false;document.documentElement.classList.remove('aov-on');if(!el)return;el.classList.remove('on','full');el.querySelector('.aov-s').style.transform='';setTimeout(()=>{if(!AOV.open)el.remove()},360)}
+function aovDrag(el){const s=el.querySelector('.aov-s'),h=el.querySelector('.aov-h');let y0=null,dy=0;
+ h.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;y0=e.clientY;dy=0;s.style.transition='none';h.setPointerCapture(e.pointerId)});
+ h.addEventListener('pointermove',e=>{if(y0==null)return;dy=e.clientY-y0;s.style.transform=`translateY(${Math.max(dy,-40)}px)`});
+ const end=()=>{if(y0==null)return;y0=null;s.style.transition='';s.style.transform='';if(dy>110)aovClose();else if(dy<-50)el.classList.add('full');else if(dy>40&&el.classList.contains('full'))el.classList.remove('full')};
+ h.addEventListener('pointerup',end);h.addEventListener('pointercancel',end)}
+{const _r=render;render=function(a){_r(a);if(AOV.open){if(cur.p==='ask')aovClose();else aovPaint()}}}
+{const _f=askFollow;askFollow=function(){if(AOV.open){if(!ASK_STICK)return;const b=$('#aov .aov-b');if(b)b.scrollTop=b.scrollHeight;return}_f()}}
+{const _sc=askScroll;askScroll=function(f){if(AOV.open){if(f)ASK_STICK=true;const b=$('#aov .aov-b');if(b)requestAnimationFrame(()=>{b.scrollTop=b.scrollHeight});return}_sc(f)}}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&AOV.open&&!$('#sheet').classList.contains('on'))aovClose()});
+window.addEventListener('hashchange',()=>{if(AOV.open)aovClose()});
+document.addEventListener('scroll',e=>{const b=e.target;if(AOV.open&&b&&b.classList&&b.classList.contains('aov-b')&&IN.busy){if(b.scrollHeight-b.scrollTop-b.clientHeight>80)ASK_STICK=false}},true);
+Object.assign(ACT,{aovClose:()=>aovClose(),aovFull:()=>{aovClose();go('ask')}});
+
+{const _an=ACT.askNew;ACT.askNew=d=>{if(AOV.open){IN.ctl&&IN.ctl.abort();IN.res=null;IN.busy=false;IN.q='';IN.prog='';aovPaint(true);setTimeout(()=>$('#aov #askIn')?.focus(),60);return}_an(d)}}
+
+/* ================= LIQUID GLASS themes ================= */
+THEMES.push(['glass','Liquid Glass','#10141F','#2A3042','#8FD8FF',0],['glasslight','Liquid Glass Light','#E8EEF9','#FFFFFF','#0A84FF',0,1]);
+THEME_IDS.push('glass','glasslight');
+
+/* ================= THREADS WIDGET: data for the home screen, and what it typed or said ================= */
+function widgetThreads(){return{th:widgetTheme(),thr:threads().filter(t=>t.status!=='done').sort((a,b)=>thrLast(b)-thrLast(a)).slice(0,12).map(t=>{const u=thrUps(t)[0];return{id:t.id,t:t.title,x:u?trunc(u.x,90):'',e:u?thrTag(u.k)[1]:'🧵',at:thrLast(t)}})}}
+function thrFromQueue(a){const k=['note','idea','prog','block','done'].includes(a.kind)?a.kind:'note',x=String(a.x||'').trim().slice(0,2000),t0=+a.t||Date.now(),qid=String(a.qid||'');
+ if(a.k==='thrnew'){const title=String(a.title||'').trim().slice(0,80)||trunc(x,60);if(!title)return false;if(TH(a.nid))return false;const t={id:a.nid||uid(),title,link:null,status:'open',created:t0,u:Date.now(),ups:[]};if(x)t.ups.push({id:qid||uid(),t:t0,k,x,u:Date.now()});threads().push(t);return true}
+ const t=TH(a.id);if(!t||!x)return false;if(qid&&t.ups.some(u=>u.id===qid))return false;t.ups.push({id:qid||uid(),t:t0,k,x,u:Date.now()});if(t.status==='done')t.status='open';t.u=Date.now();return true}
+
+/* ================= SETTINGS: every area's sections fold to their titles ================= */
+const foldSet=()=>S.settings.fold||(S.settings.fold={});
+function foldSettings(){if(cur.p!=='settings'||!cur.id)return;const P=[...document.querySelectorAll('#view .set > section.panel')].filter(x=>x.firstElementChild&&x.firstElementChild.tagName==='H3');if(P.length<2)return;const F=foldSet();
+ P.forEach((sec,i)=>{if(sec.classList.contains('fold'))return;const h=sec.firstElementChild,key=cur.id+':'+h.textContent.trim().slice(0,40);const open=window.__allOpen||(key in F?F[key]:i===0);
+  const body=document.createElement('div');body.className='fold-b';const inner=document.createElement('div');while(h.nextSibling)inner.appendChild(h.nextSibling);body.appendChild(inner);sec.appendChild(body);
+  sec.classList.add('fold');sec.classList.toggle('open',open);sec.dataset.fk=key;h.setAttribute('role','button');h.setAttribute('tabindex','0');h.setAttribute('aria-expanded',open);h.insertAdjacentHTML('beforeend',ic('chev','fold-c'))})}
+function foldToggle(h){const sec=h.closest('.fold');if(!sec)return;const o=!sec.classList.contains('open');sec.classList.toggle('open',o);h.setAttribute('aria-expanded',o);foldSet()[sec.dataset.fk]=o;save()}
+document.addEventListener('click',e=>{const h=e.target.closest&&e.target.closest('.fold > h3');if(h)foldToggle(h)});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.fold > h3')){e.preventDefault();foldToggle(e.target)}});
+{const _r=render;render=function(a){_r(a);foldSettings()}}
+
+/* ================= dropdowns on phones open an in-app picker, not Android's system list ================= */
+const SELP_ON=()=>IS_PHONE||matchMedia('(pointer:coarse)').matches;
+function selLabel(sel){const id=sel.id&&document.querySelector(`label[for="${sel.id}"]`);const f=sel.closest('.field');const l=id||(f&&f.querySelector('label'));return(sel.getAttribute('aria-label')||(l&&l.textContent)||'Choose').trim()}
+function selOpen(sel){if(sel.disabled)return;const opt=o=>`<button class="selp-o${o.value===sel.value?' on':''}" data-v="${esc(o.value)}" ${o.disabled?'disabled':''}><span>${esc(o.textContent.trim())}</span>${o.value===sel.value?ic('check','ico-s'):''}</button>`;
+ let body='';[...sel.children].forEach(c=>{if(c.tagName==='OPTGROUP')body+=`<div class="selp-g data">${esc(c.label)}</div>`+[...c.children].map(opt).join('');else if(c.tagName==='OPTION')body+=opt(c)});
+ const el=document.createElement('div');el.className='selp';el.innerHTML=`<div class="selp-dim"></div><section class="selp-s" role="dialog" aria-modal="true" aria-label="${esc(selLabel(sel))}"><span class="selp-grab" aria-hidden="true"></span><div class="selp-h"><b>${esc(selLabel(sel))}</b><button class="ibtn sm" aria-label="Close">✕</button></div><div class="selp-l">${body}</div></section>`;
+ document.body.appendChild(el);requestAnimationFrame(()=>{el.classList.add('on');const on=el.querySelector('.selp-o.on');if(on)on.scrollIntoView({block:'center'})});
+ const close=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),300)};
+ el.addEventListener('click',e=>{const b=e.target.closest('.selp-o');if(b){if(sel.value!==b.dataset.v){sel.value=b.dataset.v;sel.dispatchEvent(new Event('input',{bubbles:true}));sel.dispatchEvent(new Event('change',{bubbles:true}))}close();return}if(e.target.closest('.selp-dim,.selp-h .ibtn'))close()})}
+{let T=null;document.addEventListener('touchstart',e=>{const s=e.target.closest&&e.target.closest('select');if(!s||s.multiple||s.disabled||!SELP_ON())return;e.preventDefault();T={s,x:e.touches[0].clientX,y:e.touches[0].clientY}},{capture:true,passive:false});
+ document.addEventListener('touchend',e=>{if(!T)return;const t=e.changedTouches[0],s=T.s,m=Math.hypot(t.clientX-T.x,t.clientY-T.y);T=null;if(m<12){e.preventDefault();selOpen(s)}},{capture:true,passive:false})}
+document.addEventListener('mousedown',e=>{const s=e.target.closest&&e.target.closest('select');if(!s||s.multiple||!SELP_ON())return;e.preventDefault();s.blur();selOpen(s)},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const p=document.querySelector('.selp.on');if(p){p.classList.remove('on');setTimeout(()=>p.remove(),300)}}});
+
 /* ================= wiring ================= */
 function todayExtras(){if(nat())actLoad(false);return actCardHTML()+thrToday()}
 VIEWS.journal=vJournalW;VIEWS.threads=vThreads;VIEWS.thread=vThread;VIEWS.day=vDay;VIEWS.activity=vActivity;
+/* 1.13: crumb action rows that don't fit scroll, starting at the right (gear visible) */
+function crumbFit(){document.querySelectorAll('#view .crumb>.ph-r').forEach(r=>{const o=r.scrollWidth>r.clientWidth+2;r.classList.toggle('ovf',o);if(o)r.scrollLeft=r.scrollWidth})}
+{const _r=render;render=function(a){_r(a);crumbFit()}}addEventListener('resize',()=>crumbFit(),{passive:true});
+function sbarTop(){document.documentElement.classList.toggle('pg-top',scrollY<6)}
+addEventListener('scroll',sbarTop,{passive:true});{const _r=render;render=function(a){_r(a);sbarTop()}}
+/* 1.13: pull-to-refresh must never start inside the Ask overlay, pickers or banners (it hijacked their scrolling) */
+document.addEventListener('touchstart',e=>{const t=e.target;if(document.documentElement.classList.contains('aov-on')||(t&&t.closest&&t.closest('#aov,.selp,.rxb,#sheet,.ovl,[data-noptr]')))PTR=null},{passive:true});
+/* ===== 1.13: Colours & background (accent, wallpaper, strength, frost, motion) ===== */
+const LK_WALLS=[['off','None'],['aurora','Aurora'],['ocean','Ocean'],['sunset','Sunset'],['forest','Forest'],['rose','Rose'],['mono','Mono'],['accent','Accent']];
+const LK_ACCENTS=['#FFB547','#FF7A59','#FF5C8A','#C77DFF','#8B7CFF','#2E6BFF','#0A84FF','#38BDF8','#2DD4BF','#46C99B','#84CC16','#E8E9EB'];
+function wallOf(){const st=S.settings,t=st.theme;if(st.wall&&LK_WALLS.some(w=>w[0]===st.wall))return st.wall;return(t==='glass'||t==='glasslight')?'aurora':'off'}
+function hexLum(h){const m=/^#?([0-9a-f]{6})$/i.exec(h||'');if(!m)return .5;const n=parseInt(m[1],16),f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(n>>16&255)+.7152*f(n>>8&255)+.0722*f(n&255)}
+function lookApply(){const st=S.settings,r=document.documentElement;r.dataset.wall=wallOf();r.dataset.wallmove=st.wallMove?'on':'off';
+ r.style.setProperty('--wop',((st.wallStr==null?55:+st.wallStr)/100).toFixed(2));r.style.setProperty('--frost',((st.frost==null?50:+st.frost)/100).toFixed(2));
+ if(st.accent&&/^#[0-9a-f]{6}$/i.test(st.accent)){r.style.setProperty('--accent',st.accent);r.style.setProperty('--on-accent',hexLum(st.accent)>.4?'#0B0F1A':'#FFFFFF')}else{r.style.removeProperty('--accent');r.style.removeProperty('--on-accent')}
+ if(typeof pushWidget==='function')clearTimeout(lookApply.t),lookApply.t=setTimeout(()=>{try{pushWidget()}catch(e){}},400)}
+{const _at=applyTheme;applyTheme=function(a){_at(a);lookApply();if(a&&document.startViewTransition)setTimeout(lookApply,30)}}
+function colorPanel(){const st=S.settings,w=wallOf(),glass=st.theme==='glass'||st.theme==='glasslight',ws=st.wallStr==null?55:+st.wallStr,fr=st.frost==null?50:+st.frost;
+ return`<section class="panel wide rv lk-p"><h3>Colours &amp; background</h3><p class="small muted">Make Plotline yours. These sit on top of any theme, and the widgets on your home screen follow them.</p>
+ <div class="data tgl">Accent</div><div class="lk-sw"><button class="lk-c auto${st.accent?'':' on'}" data-act="lkAccent" data-v="" aria-pressed="${!st.accent}" title="Theme colour"><span>Auto</span></button>${LK_ACCENTS.map(c=>`<button class="lk-c${st.accent===c?' on':''}" data-act="lkAccent" data-v="${c}" style="--sw:${c}" aria-label="Accent ${c}" aria-pressed="${st.accent===c}"></button>`).join('')}<label class="lk-c pick${st.accent&&!LK_ACCENTS.includes(st.accent)?' on':''}" style="--sw:${st.accent||'#888'}" title="Pick any colour"><input type="color" data-lk="accent" value="${st.accent||'#8FD8FF'}" aria-label="Custom accent">${ic('edit')}</label></div>
+ <div class="data tgl">Background</div><div class="lk-walls">${LK_WALLS.map(([k,n])=>`<button class="lk-w${w===k?' on':''}" data-act="lkWall" data-v="${k}" data-wp="${k}" aria-pressed="${w===k}"><i></i><span>${n}</span></button>`).join('')}</div>
+ <label class="lk-r${w==='off'?' dis':''}"><span>Background strength<small>${ws<30?'Subtle':ws<70?'Balanced':'Vivid'}</small></span><input type="range" min="10" max="100" step="5" value="${ws}" data-lk="wallStr" ${w==='off'?'disabled':''}></label>
+ ${glass?`<label class="lk-r"><span>Glass frost<small>${fr<35?'Clear':fr<70?'Frosted':'Milky'}</small></span><input type="range" min="0" max="100" step="5" value="${fr}" data-lk="frost"></label>`:''}
+ <label class="sw"><span>Move the background<small>A slow drift. Off saves battery and keeps scrolling smooth</small></span><input type="checkbox" data-lk="wallMove" ${st.wallMove?'checked':''} ${w==='off'?'disabled':''}><i></i></label>
+ ${st.accent||st.wall||st.wallStr!=null||st.frost!=null||st.wallMove?`<button class="btn ghost sm" data-act="lkReset">Reset to theme defaults</button>`:''}</section>`}
+{const _hp=homePanel;homePanel=function(){return colorPanel()+_hp()}}
+Object.assign(ACT,{lkAccent:(d)=>{S.settings.accent=d.v||'';save();applyTheme();render(false)},lkWall:(d)=>{S.settings.wall=d.v;save();applyTheme();render(false)},
+ lkReset:()=>{['accent','wall','wallStr','frost','wallMove'].forEach(k=>delete S.settings[k]);save();applyTheme();render(false)}});
+document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.lk)return;const k=t.dataset.lk;
+ if(k==='accent'){S.settings.accent=t.value;lookApply();const l=t.closest('.lk-c');if(l)l.style.setProperty('--sw',t.value)}
+ else if(k==='wallMove'){S.settings.wallMove=t.checked;lookApply()}
+ else{S.settings[k]=+t.value;lookApply();const sm=t.parentElement.querySelector('small');if(sm)sm.textContent=k==='wAlpha'?(t.value>=95?'Solid':t.value>=75?'Slightly see-through':'See-through'):k==='frost'?(t.value<35?'Clear':t.value<70?'Frosted':'Milky'):(t.value<30?'Subtle':t.value<70?'Balanced':'Vivid')}
+ clearTimeout(lookApply.s);lookApply.s=setTimeout(save,300)});
+document.addEventListener('change',e=>{const t=e.target;if(t&&t.dataset&&t.dataset.lk==='accent'){save();render(false)}});
+lookApply();
+/* ===== 1.13: snappy navigation =====
+   Tab switches used to run a full-page view transition (0.55s) and then fade every section in with a stagger
+   (0.8–1s each, up to 0.54s delay), so a page looked "slow" even though it rendered in ~20ms. Now, between top-level
+   pages, the swap is instant and what's on screen appears with one short fade. Below-the-fold sections still
+   reveal on scroll, just quicker. The hero morph (goal card -> goal page) keeps its view transition.
+   Settings > Look & feel > Animations can switch back to the expressive style. */
+const NAV_TOP=new Set(['today','habits','cal','goals','road','map','vista','journal','threads','ask','settings','activity']);
+function animRich(){return S.settings.anim==='rich'}
+function navFast(p){return !animRich()&&NAV_TOP.has(p)&&NAV_TOP.has(cur.p)}
+{const _rv=reveal;reveal=function(anim){_rv(anim);if(animRich()||!anim)return;const H=innerHeight;document.querySelectorAll('#view .rv:not(.in)').forEach(e=>{if(e.getBoundingClientRect().top<H){e.style.transitionDelay='0ms';e.classList.add('in')}})}}
+function animApply(){document.documentElement.dataset.anim=animRich()?'rich':'snappy'}
+{const _at=applyTheme;applyTheme=function(a){_at(a);animApply()}}animApply();
+{const _hp=homePanel;homePanel=function(){const st=S.settings;return _hp()+`<section class="panel wide rv"><h3>Animations</h3><p class="small muted">How pages appear when you move around.</p>${segHTML('anim','animSet',[['snappy','Snappy'],['rich','Expressive']],animRich()?'rich':'snappy')}<p class="small muted" style="margin-top:10px">${animRich()?'Pages slide and fade in, section by section.':'Pages switch instantly with a light fade. Best on older phones.'}</p></section>`}}
+ACT.animSet=(d)=>{S.settings.anim=d.v;save();animApply();render(false)};
+/* ===== 1.13: home-screen widgets follow the app's theme, accent and chosen widget opacity ===== */
+function cssRGBA(v){const pr=document.createElement('i');pr.style.cssText='position:absolute;visibility:hidden;color:'+v;document.body.appendChild(pr);const c=getComputedStyle(pr).color;pr.remove();
+ let m=c.match(/rgba?\(([^)]+)\)/);if(m){const p=m[1].split(/[ ,\/]+/).filter(Boolean).map(Number);return[p[0],p[1],p[2],p.length>3?p[3]:1]}
+ m=c.match(/color\(srgb ([^)]+)\)/);if(m){const p=m[1].split(/[ \/]+/).filter(Boolean).map(Number);return[p[0]*255,p[1]*255,p[2]*255,p.length>3?p[3]:1]}return[128,128,128,1]}
+function wArgb(c,a){const h=x=>Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,'0');return'#'+h((a==null?c[3]:a)*255)+h(c[0])+h(c[1])+h(c[2])}
+function wMix(a,b,t){return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t,1]}
+function widgetTheme(){const bg=cssRGBA('var(--bg-2)'),bg0=cssRGBA('var(--bg)'),tx=cssRGBA('var(--text)'),mu=cssRGBA('var(--muted)'),ac=cssRGBA('var(--accent)'),on=cssRGBA('var(--on-accent)');
+ const light=document.documentElement.dataset.mode==='light',op=(S.settings.wAlpha==null?94:+S.settings.wAlpha)/100,muO=wMix(bg,mu,mu[3]),dim=wMix(bg,tx,.32);
+ return{light,bg:wArgb(wMix(bg0,bg,.6),op),card:wArgb(wMix(bg,tx,light?.05:.07),1),row:wArgb(tx,light?.06:.07),chip:wArgb(tx,light?.09:.12),text:wArgb(tx,1),muted:wArgb(muO,1),dim:wArgb(dim,1),accent:wArgb(ac,1),on:wArgb(on,1)}}
+{const _cp=colorPanel;colorPanel=function(){const h=_cp(),wa=S.settings.wAlpha==null?94:+S.settings.wAlpha;return h.replace('<label class="sw"><span>Move the background',`<label class="lk-r"><span>Widget background<small>${wa>=95?'Solid':wa>=75?'Slightly see-through':'See-through'}</small></span><input type="range" min="40" max="100" step="2" value="${wa}" data-lk="wAlpha"></label><label class="sw"><span>Move the background`)}}
+/* Vista: an axis label sitting under the NOW pill is unreadable; nudge it to the right of the pill */
+function roadAxisFix(){const n=document.querySelector('#view .today-line>span');if(!n)return;const nr=n.getBoundingClientRect();document.querySelectorAll('#view .fl-ax .fl-tk').forEach(t=>{t.style.removeProperty('translate');const r=t.getBoundingClientRect();if(r.right>nr.left-4&&r.left<nr.right+4&&r.bottom>nr.top&&r.top<nr.bottom)t.style.translate=(nr.right+8-r.left)+'px 0'})}
+{const _r=render;render=function(a){_r(a);if(cur.p==='road')requestAnimationFrame(roadAxisFix)}}
+/* horizontal chip/tab rows that scroll: fade the edge that has more, so a cut-off tab reads as "scroll for more" */
+function edgeFade(){document.querySelectorAll('#view .jchips,#view .seg-c,#view .hmq').forEach(el=>{const sc=el.scrollWidth>el.clientWidth+2;if(!sc){el.classList.remove('fade-r','fade-l');return}const f=()=>{el.classList.toggle('fade-r',el.scrollLeft+el.clientWidth<el.scrollWidth-4);el.classList.toggle('fade-l',el.scrollLeft>4)};f();if(!el.__ef){el.__ef=1;el.addEventListener('scroll',f,{passive:true})}})}
+{const _r=render;render=function(a){_r(a);edgeFade()}}addEventListener('resize',()=>edgeFade(),{passive:true});
 /* ==== END 1.10 MODULES ==== */
+/* ===================== 1.14: native feel =====================
+   - No flicker: re-rendering the page you're on keeps it still (no fade-in replay, inner scroll kept, entrance
+     animations skipped). Only moving to another page animates.
+   - Changes show at once: any saved change repaints the page if nothing else did.
+   - Bottom bar: 4 pages you choose + More (every page, pin your favourites) and Find anything.
+   - Calendar: tapping an item opens that item on that day, not the whole goal or day.
+   - Goal page: "At a glance" (pace, steps, overdue, next, last progress, every step). Habit page: recent days.
+   - Journal: one card per goal/step/habit; later events become its history instead of new cards.
+   - Native fonts (Android system type) by default; crisp cards; flat LED nodes.
+   - Sharing: people you've shared with are one tap away; Live sharing on by default (Android). */
+(()=>{
+const today=()=>ymd();
+/* ---------- no flicker on same-page re-render ---------- */
+let LASTR='';
+function scrollSnap(){const v=$('#view'),out=[];if(!v)return out;const cnt={};v.querySelectorAll('*').forEach(el=>{if(el.id==='dgrid'||el.classList.contains('hs'))return;const k=el.tagName+'.'+(el.getAttribute('class')||'');const n=cnt[k]=(cnt[k]||0)+1;if(el.scrollLeft>0||el.scrollTop>0)out.push([k,n,el.scrollLeft,el.scrollTop])});return out}
+function scrollBack(L){if(!L.length)return;const v=$('#view'),cnt={},want={};L.forEach(x=>{want[x[0]+'|'+x[1]]=x});v.querySelectorAll('*').forEach(el=>{const k=el.tagName+'.'+(el.getAttribute('class')||'');const n=cnt[k]=(cnt[k]||0)+1;const w=want[k+'|'+n];if(w){el.scrollLeft=w[2];el.scrollTop=w[3]}})}
+function settle(){const v=$('#view');if(!v||!v.getAnimations)return;try{v.getAnimations({subtree:true}).forEach(a=>{const t=a.effect&&a.effect.getTiming&&a.effect.getTiming();if(t&&t.iterations!==Infinity)a.finish()})}catch(e){}}
+let RN=0,INR=0;
+{const _r=render;render=function(a){const key=cur.p+'/'+(cur.id||'');const same=key===LASTR&&booted;LASTR=key;RN++;INR++;
+ try{if(same){const sn=scrollSnap();_r(false);document.querySelectorAll('#view .rv:not(.in)').forEach(e=>{e.style.transitionDelay='';e.classList.add('in')});scrollBack(sn);settle()}else _r(a)}finally{INR--}
+ tabMark()}}
+/* any saved change shows right away, even where a handler forgot to repaint */
+{const _s=save;save=function(){_s.apply(this,arguments);if(INR||TOURING)return;const n=RN;setTimeout(()=>{if(RN!==n||INR)return;const ae=document.activeElement;if(ae&&ae.closest&&ae.closest('#view')&&/INPUT|TEXTAREA|SELECT/.test(ae.tagName))return;if(cur.p==='map'||PTR||DR||CDR||PZ)return;if(document.querySelector('.lock'))return;try{render(false)}catch(e){}},30)}}
+/* carousel cards: the card in the middle is drawn at exactly 1:1 so its text stays sharp */
+{const _f=hsFx;hsFx=function(sh){_f(sh);if(!sh)return;const hs=sh.querySelector('.hs');if(!hs)return;const r=hs.getBoundingClientRect(),cx=r.left+r.width/2;sh.querySelectorAll('.hs-item').forEach(it=>{const b=it.getBoundingClientRect();const d=(b.left+b.width/2-cx)/(b.width||1);if(Math.abs(d)<.04){const c=it.querySelector('.hs-card');if(c){c.style.transform='none';c.style.opacity='1'}}})}}
+
+/* ---------- native fonts ---------- */
+FONTS.push(['nsysd','Android condensed',"Roboto Condensed','sans-serif-condensed','Archivo Narrow",'d'],['nsysm','Android',"Roboto','Segoe UI','Helvetica Neue','Arial",'m']);
+FONT_PRE.unshift(['native','Native (Android)','nsysd','system','nsysm']);
+function fontNativeFlag(){const f=fontSet();document.documentElement.classList.toggle('fnat',f.b==='system'&&f.m==='nsysm')}
+{const _af=applyFonts;applyFonts=function(){if(!S.settings.v114font){S.settings.v114font=1;if(!S.settings.font)S.settings.font={d:'nsysd',b:'system',m:'nsysm'};try{save()}catch(e){}}_af();fontNativeFlag()}}
+
+/* ---------- bottom bar: 4 pages + More ---------- */
+const PAGES=[['today','Home','today','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['vista','Vista','map','Timeline and life map'],['journal','Journal','journal','Moments and history'],['ask','Ask','ai','Insights and AI planning'],['threads','Threads','thread','Conversations about goals and habits'],['activity','Activity','flame','Phone activity and automations'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||VIEWS[p[0]]);
+const tabs=()=>{const t=(S.settings.tabs||['today','habits','cal','goals']).filter(k=>PAGES.some(p=>p[0]===k));return t.length?t.slice(0,4):['today','habits','cal','goals']};
+const pg=k=>PAGES.find(p=>p[0]===k);
+function tabbarHTML(){return`<div class="navs"><span class="nav-ind"></span>${tabs().map(k=>{const p=pg(k);return`<a class="nav" href="#/${k}" data-nav="${k}">${ic(p[2])}<span>${p[1]}</span></a>`}).join('')}<button class="nav" data-act="navMore" data-nav="more" aria-label="More pages and search">${ic('menu')}<span>More</span></button></div>`}
+function tabMark(){const tb=$('#tabbar');if(!tb)return;const m=tb.querySelector('[data-nav=more]');if(!m)return;const on=!tb.querySelector('.nav.on:not([data-nav=more])');m.classList.toggle('on',on);if(on)m.setAttribute('aria-current','page');else m.removeAttribute('aria-current');moveInd()}
+{const _b=buildChrome;buildChrome=function(){_b();$('#tabbar').innerHTML=tabbarHTML();tabMark()}}
+function moreHTML(){const t=tabs();return`<div class="data">Plotline</div><h2 style="margin-top:6px">Go anywhere</h2>
+ <button class="fnd-in" data-act="findOpen" style="width:100%;cursor:text;text-align:left">${ic('search')}<span class="muted" style="padding:14px 0;font-size:16px">Find a goal, habit, step, entry or setting</span></button>
+ <div class="mnav-h"><span class="data">Pages · pin up to 4 to the bar</span></div>
+ <div class="mnav">${PAGES.map(p=>`<div style="display:flex;gap:8px;align-items:center"><button class="mnav-r" data-act="moreGo" data-r="${p[0]}">${ic(p[2])}<span class="mnav-t"><b>${p[1]}</b><small>${p[3]}</small></span></button><button class="mnav-pin${t.includes(p[0])?' on':''}" data-act="tabPin" data-k="${p[0]}" aria-pressed="${t.includes(p[0])}" aria-label="${t.includes(p[0])?'Unpin':'Pin'} ${p[1]}">${ic('pin')}</button></div>`).join('')}</div>`}
+Object.assign(ACT,{
+ navMore:()=>openSheet(moreHTML()),
+ moreGo:d=>{closeSheet();go(d.r)},
+ tabPin:d=>{let t=tabs();if(t.includes(d.k)){if(t.length<=2)return toast('Keep at least 2 pages in the bar');t=t.filter(x=>x!==d.k)}else{t.push(d.k);if(t.length>4){const out=t.shift();toast(pg(out)[1]+' moved to More')}}S.settings.tabs=t;save();$('#tabbar').innerHTML=tabbarHTML();render(false);const sh=$('#sheet');const y=sh.scrollTop;sh.innerHTML='<div class="grab"></div>'+moreHTML();sh.scrollTop=y},
+ findOpen:()=>{openSheet(findHTML());setTimeout(()=>{const i=$('#fndq');if(i)i.focus()},120)}
+});
+
+/* ---------- find anything ---------- */
+const SETS=[['account','You & sync','Google account, Drive sync, devices'],['look','Look & feel','Theme, fonts, colours, cards, animations, start page'],['notif','Notifications','Reminders, check-ins, quiet hours'],['privacy','Privacy & lock','App lock, fingerprint, hide content'],['auto','Automations','Auto-tick habits from your phone'],['share','Sharing','Share goals and habits, live cheers'],['voice','AI & voice','On-device AI, speech'],['data','Your data','Backup, import, export, sample data']];
+function findHTML(){return`<div class="data">Find anything</div><div class="fnd-in" style="margin-top:10px">${ic('search')}<input id="fndq" data-find type="search" placeholder="Goals, habits, steps, journal, settings" autocomplete="off" enterkeyhint="search"></div><div class="fnd-res" id="fndr">${findRes('')}</div>`}
+function fRow(act,attrs,c,t,s){return`<button class="fnd-r" data-act="${act}" ${attrs} style="${c?'--c:'+c:''}"><i></i><span class="t"><b>${esc(t)}</b>${s?`<small>${esc(s)}</small>`:''}</span>${ic('next','ico-s')}</button>`}
+function findRes(q){q=String(q||'').trim().toLowerCase();const hit=s=>s&&String(s).toLowerCase().includes(q);const out=[];
+ if(!q){const recent=[...S.goals.filter(g=>g.status==='active')].slice(0,5).map(g=>fRow('fndGo',`data-r="goal/${g.id}"`,colOf(g),g.title,pct(g)+'% · '+areaName(g.area)));
+  const hs=S.habits.filter(h=>h.status==='active').slice(0,5).map(h=>fRow('fndGo',`data-r="habit/${h.id}"`,colOf(h),hIcon(h)+' '+h.title,freqText(h)));
+  return(recent.length?`<div class="fnd-g data">Active goals</div>`+recent.join(''):'')+(hs.length?`<div class="fnd-g data">Habits</div>`+hs.join(''):'')+`<div class="fnd-g data">Settings</div>`+SETS.map(s=>fRow('fndGo',`data-r="settings/${s[0]}"`,'',s[1],s[2])).join('')}
+ const G1=S.goals.filter(g=>hit(g.title)||hit(g.why)).slice(0,8).map(g=>fRow('fndGo',`data-r="goal/${g.id}"`,colOf(g),g.title,(g.status==='done'?'Achieved':pct(g)+'%')+' · '+areaName(g.area)));
+ const St=[];S.goals.forEach(g=>g.steps.forEach(s=>{if(St.length<10&&(hit(s.title)||hit(s.note)))St.push(fRow('calItem',`data-k="step" data-g="${g.id}" data-s="${s.id}" data-d="${s.due||today()}"`,colOf(g),s.title,(s.done?'Done · ':s.due?dayName(s.due)+' · ':'')+g.title))}));
+ const Hb=S.habits.filter(h=>hit(h.title)||hit(h.why)||hit(h.cue)).slice(0,8).map(h=>fRow('fndGo',`data-r="habit/${h.id}"`,colOf(h),hIcon(h)+' '+h.title,freqText(h)+(h.status!=='active'?' · '+h.status:'')));
+ const Dy=S.days.filter(x=>hit(x.title)).slice(0,8).map(x=>fRow('calItem',`data-k="day" data-id="${x.id}" data-d="${x.date}"`,colOf(x.goalId&&G(x.goalId)),x.title,dayName(x.date)+(x.done?' · done':'')));
+ const En=S.entries.filter(e=>!e.private&&(hit(e.title)||hit(e.text))).sort((a,b)=>b.t-a.t).slice(0,8).map(e=>fRow('fndEntry',`data-id="${e.id}"`,'',e.title||trunc(e.text||'',70),(JK[e.type]||'Moment')+' · '+dayLabel(e.t)));
+ const Th=(S.threads||[]).filter(t=>hit(t.title)||hit(t.name)).slice(0,6).map(t=>fRow('fndGo',`data-r="thread/${t.id}"`,'',t.title||t.name||'Thread','Thread'));
+ const Se=SETS.filter(s=>hit(s[1])||hit(s[2])).map(s=>fRow('fndGo',`data-r="settings/${s[0]}"`,'',s[1],s[2]));
+ const Pg=PAGES.filter(p=>hit(p[1])||hit(p[3])).map(p=>fRow('fndGo',`data-r="${p[0]}"`,'',p[1],p[3]));
+ [['Pages',Pg],['Goals',G1],['Steps',St],['Habits',Hb],['Day plans',Dy],['Journal',En],['Threads',Th],['Settings',Se]].forEach(([n,L])=>{if(L.length)out.push(`<div class="fnd-g data">${n}</div>`+L.join(''))});
+ return out.join('')||`<p class="small muted" style="margin:16px 4px">Nothing matches “${esc(q)}”.</p>`}
+document.addEventListener('input',e=>{if(e.target&&e.target.matches&&e.target.matches('[data-find]')){const r=$('#fndr');if(r)r.innerHTML=findRes(e.target.value)}});
+Object.assign(ACT,{fndGo:d=>{closeSheet();go(d.r)},fndEntry:d=>{closeSheet();setTimeout(()=>ACT.viewEntry({id:d.id}),260)}});
+/* a search button on every page header (next to the gear) */
+{const _g=gear;gear=function(){return`<button class="ibtn fnd-btn" data-act="findOpen" aria-label="Find anything" title="Find anything">${ic('search')}</button>`+_g()}}
+
+/* ---------- calendar: an item on a day ---------- */
+{const _ci=calItems;calItems=function(a,b){const M=_ci(a,b);for(const k in M)M[k].forEach(x=>{x.dn=+k});return M}}
+function calOpenX(x){if(x.dn==null)return x.k==='day'?`data-act="editDay" data-id="${x.id}"`:x.k==='target'?`data-act="open" data-id="${x.g.id}"`:`data-act="editStep" data-g="${x.g.id}" data-s="${x.s.id}"`;
+ return`data-act="calItem" data-k="${x.k}" data-d="${fromN(x.dn)}"${x.k==='day'?` data-id="${x.id}"`:''}${x.g?` data-g="${x.g.id}"`:''}${x.s?` data-s="${x.s.id}"`:''}`}
+window.calOpenX=calOpenX;
+let CI=null;
+const longDay=ds=>dUTC(dnum(ds)).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'});
+const kv=(a,b)=>`<div class="kv"><span>${a}</span><span>${b}</span></div>`;
+function paceOf(g){const p=pct(g),tn=dnum(today());if(g.status==='done')return{t:'Achieved',c:'ok'};if(!g.targetDate)return{t:p+'% done · no target date',c:''};
+ const s=dnum(g.startDate||today()),e=dnum(g.targetDate);if(tn>e)return{t:`Overdue by ${tn-e} day${tn-e===1?'':'s'}`,c:'late'};
+ const el=e>s?Math.max(0,Math.min(100,Math.round((tn-s)/(e-s)*100))):100;if(p>=el+10)return{t:'Ahead of schedule',c:'ok'};if(p>=el-10)return{t:'On track',c:'ok'};return{t:`Behind · ${el}% of the time used, ${p}% done`,c:'late'}}
+function ciHTML(c){const ds=c.d,tn=today(),past=ds<tn,isT=ds===tn;
+ const when=`${longDay(ds)}${isT?' · today':''}`;
+ const doBtn=(a,attrs,lab,pri)=>`<button class="btn${pri?' pri':''}" data-act="ciDo" data-a="${a}" ${attrs}>${lab}</button>`;
+ if(c.k==='day'){const x=S.days.find(y=>y.id===c.id);if(!x)return`<h2>Not found</h2><p class="muted">This plan was removed.</p>`;const g=x.goalId&&G(x.goalId);
+  const st=x.done?`<span class="ci-b ok">${ic('check','ico-s')} Done${x.doneAt?' · '+new Date(x.doneAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):''}</span>`:past?`<span class="ci-b late">Not done · late</span>`:`<span class="ci-b">Planned</span>`;
+  return`<div class="data">Day goal · ${esc(when)}</div><h2 style="margin-top:6px">${esc(x.title)}</h2><div class="ci-st" style="${g?cvar(g):''}">${st}</div>
+  <div class="ci-kv">${kv('Date',esc(longDay(x.date)))}${x.time?kv('Time',fmtTime(x.time)+(x.dur?` · ${+x.dur>=60?(+x.dur/60)+' h':x.dur+' min'}`:'')):kv('Time','Any time')}${g?kv('Goal',`${esc(trunc(g.title,30))} · ${pct(g)}%`):''}</div>${x.note?`<div class="ci-note">${esc(x.note)}</div>`:''}
+  <div class="actions">${doBtn('editDay',`data-id="${x.id}"`,ic('edit')+'Edit')}${g?doBtn('open',`data-id="${g.id}"`,'Open goal'):''}${doBtn('toggleDay',`data-id="${x.id}"`,x.done?'Mark not done':ic('check')+'Mark done',!x.done)}</div>`}
+ if(c.k==='step'||c.k==='rep'){const g=G(c.g),s=g&&g.steps.find(y=>y.id===c.s);if(!s)return`<h2>Not found</h2><p class="muted">This step was removed.</p>`;const i=g.steps.indexOf(s)+1,rep=c.k==='rep';
+  const st=rep?`<span class="ci-b">${ic('rep','ico-s')} Repeats ${esc(s.repeat||'')} · upcoming</span>`:s.done?`<span class="ci-b ok">${ic('check','ico-s')} Done${s.doneAt?' '+dayName(ymd(new Date(s.doneAt))).toLowerCase():''}</span>`:s.due&&s.due<tn?`<span class="ci-b late">Late · was due ${esc(dayName(s.due))}</span>`:`<span class="ci-b">Planned</span>`;
+  return`<div class="data">Step ${i} of ${g.steps.length} · ${esc(when)}</div><h2 style="margin-top:6px">${esc(s.title)}</h2><div class="ci-st" style="${cvar(g)}">${st}<span class="ci-b">${esc(trunc(g.title,34))} · ${pct(g)}%</span></div>
+  <div class="ci-kv">${kv(rep?'This time':'Due',esc(longDay(rep?ds:s.due||ds)))}${kv('Time',s.time?fmtTime(s.time):'Any time')}${s.repeat?kv('Repeats',esc(s.repeat)):''}${s.remind!==''&&s.remind!=null?kv('Reminder',s.remind==='0'?'At the time':esc(s.remind)+' min before'):''}${s.focus?kv('Focus time',s.focus+' min'):''}${kv('Goal pace',paceOf(g).t)}</div>${s.note?`<div class="ci-note">${esc(s.note)}</div>`:''}
+  <div class="actions">${doBtn('editStep',`data-g="${g.id}" data-s="${s.id}"`,ic('edit')+'Edit')}${doBtn('open',`data-id="${g.id}"`,'Open goal')}${rep?'':doBtn('toggleStep',`data-g="${g.id}" data-s="${s.id}"`,s.done?'Mark not done':ic('check')+'Mark done',!s.done)}</div>`}
+ if(c.k==='target'){const g=G(c.g);if(!g)return`<h2>Not found</h2>`;const dn=g.steps.filter(s=>s.done).length,late=g.steps.filter(s=>!s.done&&s.due&&s.due<tn).length,nx=nextStep(g),pc=paceOf(g),left=daysUntil(g.targetDate);
+  return`<div class="data">Goal target · ${esc(when)}</div><h2 style="margin-top:6px">${esc(g.title)}</h2><div class="ci-st" style="${cvar(g)}"><span class="ci-b ${pc.c}">${esc(pc.t)}</span></div>
+  <div class="ci-kv">${kv('Progress',g.status==='done'?'Achieved':pct(g)+'%')}${kv('Steps',`${dn} of ${g.steps.length} done`)}${late?kv('Late steps',`<span class="due over">${late}</span>`):''}${g.status!=='done'&&left!=null?kv(left>=0?'Days left':'Days over',String(Math.abs(left))):''}${nx?kv('Next step',esc(trunc(nx.title,30))+(nx.due?' · '+esc(dayName(nx.due)):'')):''}</div>
+  <div class="actions">${doBtn('open',`data-id="${g.id}"`,'Open goal',true)}</div>`}
+ if(c.k==='habit'){const h=H(c.id);if(!h)return`<h2>Not found</h2>`;const v=hVal(h,ds),n=hTarget(h),due=hDue(h,ds),rest=!!h.skip[ds],fut=ds>tn;
+  const st=fut?`<span class="ci-b">Upcoming</span>`:rest?`<span class="ci-b">Rest day</span>`:hDone(h,ds)?`<span class="ci-b ok">${ic('check','ico-s')} Done</span>`:v>0?`<span class="ci-b">Partly · ${v} of ${n}</span>`:due?`<span class="ci-b late">${isT?'Not yet':'Missed'}</span>`:`<span class="ci-b">Not due this day</span>`;
+  return`<div class="data">Habit · ${esc(when)}</div><h2 style="margin-top:6px">${esc(hIcon(h))} ${esc(h.title)}</h2><div class="ci-st" style="${cvar(h)}">${st}</div>
+  ${!fut&&h.kind!=='quit'&&n>1?`<div class="ci-big"><button class="ibtn" data-act="ciDo" data-a="hAdj" data-id="${h.id}" data-d="${ds}" data-n="-1" aria-label="One less">${ic('minus')}</button><b>${v}<small style="font-size:15px;color:var(--muted)">/${n}</small></b><button class="ibtn" data-act="ciDo" data-a="hAdj" data-id="${h.id}" data-d="${ds}" data-n="1" aria-label="One more">${ic('plus')}</button></div>`:''}
+  <div class="ci-kv">${kv('How often',esc(freqText(h)))}${h.unit?kv('Target',n+' '+esc(h.unit)):''}${kv('Streak now',hStreak(h)+(h.freq==='times'?' wk':' d'))}${h.time?kv('Time',fmtTime(h.time)):''}</div>
+  <div class="actions">${doBtn('openHabit',`data-id="${h.id}"`,'Open habit')}${!fut&&h.kind!=='quit'?doBtn('hDay',`data-id="${h.id}" data-d="${ds}"`,hDone(h,ds)?'Mark not done':ic('check')+'Mark done',!hDone(h,ds)):''}</div>`}
+ return''}
+function ciOpen(){const sh=$('#sheet');if(sh.classList.contains('on')&&sh.dataset.ci){const y=sh.scrollTop;sh.innerHTML='<div class="grab"></div>'+ciHTML(CI);sh.scrollTop=y}else{openSheet(ciHTML(CI));sh.dataset.ci='1'}}
+{const _cs=closeSheet;closeSheet=function(){const sh=$('#sheet');if(sh)delete sh.dataset.ci;return _cs.apply(this,arguments)}}
+{const _os=openSheet;openSheet=function(){const sh=$('#sheet');if(sh)delete sh.dataset.ci;return _os.apply(this,arguments)}}
+Object.assign(ACT,{
+ calItem:d=>{CI={k:d.k,d:d.d||today(),id:d.id,g:d.g,s:d.s};ciOpen()},
+ ciDo:(d,el)=>{const a=d.a,f=ACT[a];if(!f)return;if(['editDay','editStep','open','openHabit'].includes(a)){closeSheet();setTimeout(()=>f(d,el||document.body),a==='open'||a==='openHabit'?0:260);return}f(d,el||document.body);if(CI)ciOpen()}
+});
+
+/* ---------- goal page: at a glance ---------- */
+function goalGlance(g){const tn=today(),dn=g.steps.filter(s=>s.done),late=g.steps.filter(s=>!s.done&&s.due&&s.due<tn),nx=nextStep(g),pc=paceOf(g);
+ const lastT=Math.max(0,...dn.map(s=>s.doneAt||0),...S.entries.filter(e=>e.goalId===g.id&&(e.type==='step'||e.type==='note')).map(e=>e.t));
+ const ago=lastT?(()=>{const d=Math.floor((Date.now()-lastT)/864e5);return d<=0?'Today':d===1?'Yesterday':d+' days ago'})():'Not yet';
+ const left=g.targetDate&&g.status!=='done'?daysUntil(g.targetDate):null;
+ const row=s=>{const isL=!s.done&&s.due&&s.due<tn;return`<div class="ov-s${s.done?' d':''}" data-act="calItem" data-k="step" data-g="${g.id}" data-s="${s.id}" data-d="${s.due||tn}"><button class="chk${s.done?' on':''}" data-act="toggleStep" data-g="${g.id}" data-s="${s.id}" aria-label="${s.done?'Mark not done':'Mark done'}: ${esc(s.title)}">${ic('check')}</button><span class="t"><span>${esc(s.title)}</span></span><span class="w${isL?' late':''}">${s.done?'Done':s.due?(isL?'Late · ':'')+esc(dayName(s.due)):'No date'}</span></div>`};
+ const L=g.steps,first=L.slice(0,6),rest=L.slice(6);
+ const share=typeof shareStart==='function'&&typeof fsOK==='function'&&fsOK()&&!(typeof shareChip==='function'&&shareChip('goal',g.id));
+ return`<section class="rv ov"><div class="st-h"><h3>At a glance</h3><span class="data">${g.status==='done'?'achieved':pct(g)+'% done'}</span></div>
+ <div class="ov-pace" style="${cvar(g)}"><span class="ci-b ${pc.c}">${esc(pc.t)}</span>${left!=null?`<span class="ci-b">${left>=0?left+' day'+(left===1?'':'s')+' left':'Target passed'}</span>`:''}</div>
+ <div class="ov-grid"><div class="ov-t"><b>${dn.length}/${L.length}</b><small>Steps done</small></div><div class="ov-t${late.length?' late':''}"><b>${late.length}</b><small>Late steps</small></div><div class="ov-t"><b style="font-size:16px;line-height:1.35">${nx?esc(nx.due?dayName(nx.due):'No date'):'—'}</b><small>${nx?'Next: '+esc(trunc(nx.title,40)):'No open steps'}</small></div><div class="ov-t"><b style="font-size:16px;line-height:1.35">${ago}</b><small>Last progress</small></div></div>
+ ${L.length?`<div class="ov-tl">${first.map(row).join('')}</div>${rest.length?`<details class="ov-more"><summary>Show all ${L.length} steps</summary><div class="ov-tl">${rest.map(row).join('')}</div></details>`:''}`:''}
+ <div class="ov-a"><button class="btn sm" data-act="addStepSheet" data-id="${g.id}">${ic('plus')}Add a step</button>${share?`<button class="btn sm" data-act="shareGoal" data-id="${g.id}">${ic('link')}Share</button>`:''}<button class="btn sm" data-act="addEntry" data-g="${g.id}">${ic('camera')}Add a moment</button></div></section>`}
+{const _vg=vGoal;vGoal=function(id){const h=_vg(id),g=G(id);if(!g)return h;const i=h.indexOf('class="hero tint');if(i<0)return h;const j=h.indexOf('</section>',i);if(j<0)return h;return h.slice(0,j+10)+goalGlance(g)+h.slice(j+10)};VIEWS.goal=vGoal}
+
+/* ---------- habit page: recent days ---------- */
+function habitRecent(h){if(h.kind==='quit')return'';const tn=dnum(today()),n=hTarget(h),rows=[];
+ for(let k=tn;k>tn-14&&k>=dnum(h.startDate);k--){const ds=fromN(k),v=hVal(h,ds),due=hDue(h,ds),rest=!!h.skip[ds];
+  const cls=hDone(h,ds)?'ok':v>0?'part':rest?'rest':due&&k<tn?'miss':'';const lab=hDone(h,ds)?'Done':v>0?`${v} of ${n}${h.unit?' '+h.unit:''}`:rest?'Rest day':!due?'Not due':k===tn?'Not yet':'Missed';
+  rows.push(`<button class="hrd-r ${cls}" style="${cvar(h)}" data-act="calItem" data-k="habit" data-id="${h.id}" data-d="${ds}"><span class="s"></span><span class="d">${esc(dayName(ds))}</span><span class="v">${lab}</span></button>`)}
+ if(!rows.length)return'';const first=rows.slice(0,7),rest=rows.slice(7);
+ return`<section class="rv ov"><div class="st-h"><h3>Recent days</h3><span class="data">tap a day for details</span></div><div class="hrd">${first.join('')}</div>${rest.length?`<details class="ov-more"><summary>Show 14 days</summary><div class="hrd" style="margin-top:6px">${rest.join('')}</div></details>`:''}</section>`}
+{const _vh=vHabit;vHabit=function(id){const o=_vh(id),h=H(id);if(!h)return o;const m='<section class="rv"><div class="st-h"><h3>Becoming automatic';const i=o.indexOf(m);const add=habitRecent(h);if(!add)return o;if(i<0){const k=o.indexOf('<section class="rv"><div class="st-h"><h3>History');return k<0?o+add:o.slice(0,k)+add+o.slice(k)}return o.slice(0,i)+add+o.slice(i)};VIEWS.habit=vHabit}
+
+/* ---------- journal: one card per item, events become its history ---------- */
+function jKey(e){if(e.type==='note')return null;if(e.type==='goal-new'||e.type==='goal-done')return e.goalId?'g:'+e.goalId:null;if(e.type==='step'||e.type==='focus')return e.sid?'s:'+e.sid:null;if(e.type==='habit'){const h=entryHabit(e);return h?'h:'+h.id:null}return null}
+let JHIST={};
+function jDedupe(L){JHIST={};const seen=new Set(),out=[];[...L].sort((a,b)=>b.t-a.t).forEach(e=>{const k=jKey(e);if(k){(JHIST[k]=JHIST[k]||[]).push(e);if(seen.has(k))return;seen.add(k)}out.push(e)});return out}
+['journal','timeline'].forEach(k=>{const v=VIEWS[k];if(!v)return;VIEWS[k]=function(){const all=S.entries;S.entries=jDedupe(all);try{return v.apply(this,arguments)}finally{S.entries=all}}});
+{const _ec=entryCard;entryCard=function(e,big){let h=_ec(e,big);const k=jKey(e),L=k&&JHIST[k];if(!L||L.length<2)return h;
+ const tag=`<span class="jh-n">${ic('rep','ico-s')} ${L.length} updates</span>`;
+ h=h.replace('<div class="jf-face jf-back','<!--b--><div class="jf-face jf-back');const fi=h.indexOf('<!--b-->');if(fi>0){const fr=h.lastIndexOf('</div>',fi);if(fr>0)h=h.slice(0,fr)+tag+h.slice(fr)}h=h.replace('<!--b-->','');
+ return h.replace('<div class="sc-act">',`<div class="sc-act"><button class="btn inkline sm" data-act="jHist" data-k="${k}">History</button>`)}}
+Object.assign(ACT,{jHist:d=>{const gid=d.k.startsWith('g:')?d.k.slice(2):null;const all=S.entries.filter(e=>jKey(e)===d.k||(gid&&e.goalId===gid&&(e.type==='step'||e.type==='focus'))).sort((a,b)=>a.t-b.t);if(!all.length)return;const e0=all.filter(e=>jKey(e)===d.k).pop()||all[all.length-1],g=G(e0.goalId),h=entryHabit(e0);
+ openSheet(`<div class="data">History</div><h2 style="margin-top:6px">${esc(g&&d.k[0]==='g'?g.title:h?h.title:e0.text||'')}</h2><div class="jhist" style="${g?cvar(g):h?cvar(h):''}">${all.map(e=>`<div class="jhist-r"><i></i><div><b>${esc(JK[e.type]||'Update')}${e.type==='step'||e.type==='habit'||e.type==='focus'?' · '+esc(trunc(e.text||'',60)):''}</b><small>${esc(dayLabel(e.t))} · ${new Date(e.t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</small></div></div>`).join('')}</div>
+ <div class="actions">${g?`<button class="btn" data-act="fndGo" data-r="goal/${g.id}">Open goal</button>`:''}${h?`<button class="btn" data-act="fndGo" data-r="habit/${h.id}">Open habit</button>`:''}<button class="btn pri" data-act="close">Done</button></div>`)}});
+
+/* ---------- sharing: one tap to people you've shared with ---------- */
+const shPeople=()=>Array.isArray(S.settings.shPeople)?S.settings.shPeople:[];
+function shRemember(emails){const L=[...emails.map(x=>String(x).toLowerCase()),...shPeople()].filter((x,i,a)=>x&&a.indexOf(x)===i).slice(0,8);S.settings.shPeople=L;save()}
+{const _ss=shSent;shSent=function(sh,emails,later){try{shRemember(emails||[])}catch(e){}return _ss.apply(this,arguments)}}
+{const _sf=shareForm;shareForm=function(o){const h=_sf(o),P=shPeople();if(!P.length)return h;
+ const q=`<div class="field"><label>One tap · share now</label><div class="shq">${P.map(e=>`<button type="button" data-act="shTo" data-e="${esc(e)}"><span>${esc(e[0].toUpperCase())}</span>${esc(e.split('@')[0])}</button>`).join('')}</div></div>`;
+ return h.replace('<form data-form="shareGo">','<form data-form="shareGo">'+q)}}
+Object.assign(ACT,{shTo:(d,el)=>{const f=el.closest('form');if(!f)return;const i=f.querySelector('input[name=emails]');if(i)i.value=d.e;if(f.requestSubmit)f.requestSubmit();else f.dispatchEvent(new Event('submit',{cancelable:true,bubbles:true}))}});
+/* live sharing panel (Android) */
+if(typeof livePanel==='function'){livePanel=function(){if(!liveOK())return'';const on=liveOn();return`<section class="panel rv"><h3>Live sharing</h3><p class="small muted">Cheers, reactions and invites arrive within seconds, even with Plotline closed. A quiet notification stays while it runs, as Android requires. For it to keep going while the phone sleeps, tap “Keep it instant” on that notification (or set Plotline’s battery use to Unrestricted). It uses more battery than checking once an hour.</p><label class="sw"><span>Live sharing<small>${on?'On':'Off'} · checks every 15 seconds</small></span><input type="checkbox" data-act="liveT" ${on?'checked':''}><i></i></label>${NATIVE&&NATIVE.openAppSettings?`<div class="actions left"><button class="btn sm" data-act="liveBatt">Battery settings</button></div>`:''}</section>`};
+ Object.assign(ACT,{liveBatt:()=>{try{NATIVE.openAppSettings()}catch(e){}}})}
+})();
+
 </script>
 </body>
 </html>
