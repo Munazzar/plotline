@@ -77,6 +77,8 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .wb-addb span{font-size:13px}
 .wb-signin{background:var(--accent);color:var(--on-accent)}.wb-signin:hover{background:var(--accent);filter:brightness(1.08)}
 .wb-pop{position:absolute;z-index:8;display:none;flex-direction:column;align-items:stretch;gap:6px;padding:12px;width:min(360px,calc(100% - 20px));max-height:min(70dvh,520px);overflow:auto;background:var(--bg-2)}
+.wb-pop:not(.on){display:none}
+html.wb-on .tprompt{display:none}
 .wb-pop.on{display:flex;animation:wbPop .22s cubic-bezier(.32,.72,0,1)}
 @keyframes wbPop{from{opacity:0;transform:translateY(6px) scale(.97)}}
 .wb-pt{font:600 10.5px var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:2px 4px 4px}
@@ -498,7 +500,7 @@ function zoomCenter(){const cv=$('#wbcv');return[cv.clientWidth/2,cv.clientHeigh
 /* pop-overs (Add, Background) */
 function popHTML(p){if(p==='add')return`<div class="wb-pt">Add to the board</div><div class="wb-pg">${Object.entries(TYPES).map(([k,v])=>`<button class="wb-po" data-act="wbAddPop" data-t="${k}">${ic(v[3])}<b>${v[0]}</b><small>${DESC[k]||''}</small></button>`).join('')}</div>`;
  if(p==='view')return`<div class="wb-pt">Background</div><div class="wb-pg g">${GRIDS.map(([k,n])=>`<button class="wb-po${gmode()===k?' on':''}" data-act="wbGrid" data-g="${k}" aria-pressed="${gmode()===k}"><i class="wb-gp" style="background-image:${gridSvg(k,14)[0].replace(/"/g,"'")};background-size:${gridSvg(k,14)[1]}px ${gridSvg(k,14)[2]}px"></i><b>${n}</b></button>`).join('')}</div><label class="wb-tg"><span>Snap items to the grid</span><input type="checkbox" id="wbsnapc" ${WB.snap?'checked':''}></label>`;return''}
-function popOpen(p,anchor){const el=$('#wbpop'),wb=$('#wb');if(!el||!wb)return;if(WB.pop===p)return popClose();popClose();WB.pop=p;el.innerHTML=popHTML(p);el.classList.add('on');
+function popOpen(p,anchor){const el=$('#wbpop'),wb=$('#wb');if(!el||!wb)return;if(WB.pop===p&&el.classList.contains('on'))return popClose();popClose();WB.pop=p;el.innerHTML=popHTML(p);el.classList.add('on');
  const r=anchor.getBoundingClientRect(),o=wb.getBoundingClientRect(),w=el.offsetWidth,h=el.offsetHeight;let x=r.left+r.width/2-o.left-w/2;x=Math.max(10,Math.min(o.width-w-10,x));let y=r.top-o.top-h-10;if(y<10)y=r.bottom-o.top+10;el.style.left=x+'px';el.style.top=y+'px';anchor.setAttribute('aria-expanded','true')}
 function popClose(){WB.pop=null;const el=$('#wbpop');if(el)el.classList.remove('on');document.querySelectorAll('[data-act=wbPop]').forEach(b=>b.setAttribute('aria-expanded','false'))}
 document.addEventListener('pointerdown',e=>{if(WB.pop&&!(e.target.closest&&e.target.closest('#wbpop,[data-act=wbPop]')))popClose()},true);
@@ -532,6 +534,7 @@ function placeSb(){const sb=$('#wbsb'),b=WB.B;if(!sb||!b||!sb.classList.contains
  sb.style.left=x+'px';sb.style.top=y+'px'}
 
 /* ---------------- panels ---------------- */
+function panelClose(){if(!WB.panel)return;WB.panel=null;panelDraw()}
 function panelDraw(soft){const el=$('#wbside'),b=WB.B;if(!el||!b)return;document.querySelectorAll('[data-act=wbPanel]').forEach(x=>{if(x.closest('#wbsb'))return;x.classList.toggle('on',x.dataset.p===WB.panel)});
  if(!WB.panel){el.classList.remove('on');return}
  if(soft&&el.contains(document.activeElement)&&document.activeElement.matches('input,textarea,select'))return;
@@ -606,12 +609,15 @@ function mount(){const cv=$('#wbcv');if(!cv||cv._m||!WB.B)return;cv._m=1;const b
  side.addEventListener('change',e=>{if(e.target.id==='wbprov'){wbs().prov=e.target.value;save();panelDraw();const d=$('#wbaiset');if(d)d.open=true}});
  $('#wbsb').addEventListener('change',e=>{if(e.target.id==='wbtype'&&e.target.value){const before=snap(b);[...WB.sel].forEach(id=>{const n=b.nodes[id];if(n)n.type=e.target.value});commit(before)}});
  const fresh=!b.vp;if(fresh)b.vp={x:0,y:0,z:1};draw();if(fresh)fitTo();applyView();panelDraw();
+ /* a re-render (e.g. after a setting is saved) rebuilds the board: keep an open pop-over open */
+ if(WB.pop){const k=WB.pop,a=document.querySelector(`[data-act=wbPop][data-p=${k}]`);WB.pop=null;if(a)popOpen(k,a)}
  if(b.cloud&&!pushing)pull(b,!b.ro&&!b.cloud.ut).catch(e=>setSt('err',e.message))}
 function pdown(e){const b=WB.B;if(!b||e.button===2)return;PTS.set(e.pointerId,{x:e.clientX,y:e.clientY});const cv=$('#wbcv');
- if(PTS.size===2){if(WB.G&&WB.G.before)commit(WB.G.before);const[a,c]=[...PTS.values()];WB.G={k:'pinch',d:Math.hypot(a.x-c.x,a.y-c.y),m:{x:(a.x+c.x)/2,y:(a.y+c.y)/2}};$('#wbmq').style.display='none';return}
+ if(PTS.size===2){WB.tap0=null;if(WB.G&&WB.G.before)commit(WB.G.before);const[a,c]=[...PTS.values()];WB.G={k:'pinch',d:Math.hypot(a.x-c.x,a.y-c.y),m:{x:(a.x+c.x)/2,y:(a.y+c.y)/2}};$('#wbmq').style.display='none';return}
  if(e.target.closest('.wn-t[contenteditable]'))return;if(WB.edit)finishEdit();
  const n=e.target.closest('.wn'),id=n&&n.dataset.id,p=world(e),ed=e.target.closest('[data-eid]');
  const panNow=WB.tool==='hand'||SPACE||e.button===1;
+ WB.tap0=!id&&!ed&&PTS.size===1?{x:e.clientX,y:e.clientY}:null;
  if(!panNow&&!b.ro){
   if(e.target.closest('[data-ck]')&&id){const before=snap(b);b.nodes[id].done=!b.nodes[id].done;commit(before);return}
   if(e.target.closest('[data-h]')&&id){WB.G={k:'link',from:id,p};cv.setPointerCapture(e.pointerId);return}
@@ -636,7 +642,7 @@ function pmove(e){const b=WB.B,G=WB.G;if(!b)return;if(PTS.has(e.pointerId))PTS.s
  if(G.k==='mq'){const x=Math.min(p.x,G.p0.x),y=Math.min(p.y,G.p0.y),w=Math.abs(p.x-G.p0.x),h=Math.abs(p.y-G.p0.y),v=b.vp,mq=$('#wbmq');
   Object.assign(mq.style,{display:'block',left:v.x+x*v.z+'px',top:v.y+y*v.z+'px',width:w*v.z+'px',height:h*v.z+'px'});
   WB.sel=new Set(G.base);Object.keys(b.nodes).forEach(id=>{const r=rectOf(id);if(r.x<x+w&&r.x+r.w>x&&r.y<y+h&&r.y+r.h>y&&b.nodes[id].type!=='frame')WB.sel.add(id)});drawSel()}}
-function pup(e){PTS.delete(e.pointerId);const b=WB.B,G=WB.G;if(!b||!G)return;const cv=$('#wbcv');cv.classList.remove('panning');
+function pup(e){PTS.delete(e.pointerId);const t0=WB.tap0;WB.tap0=null;if(t0&&WB.panel&&Math.hypot(e.clientX-t0.x,e.clientY-t0.y)<6)panelClose();const b=WB.B,G=WB.G;if(!b||!G)return;const cv=$('#wbcv');cv.classList.remove('panning');
  if(G.k==='pinch'){if(PTS.size===0)WB.G=null;else{const[q]=[...PTS.values()];WB.G={k:'pan',s:q,v:{...b.vp}}}return}
  WB.G=null;
  if(G.k==='pan'&&G.tap&&e.pointerType==='touch'){WB.sel.clear();WB.esel.clear();drawSel()}
@@ -670,6 +676,8 @@ addEventListener('keydown',e=>{if(!onBoard())return;const t=e.target,b=WB.B,k=e.
  if(e.code==='Space'&&!SPACE){SPACE=true;$('#wbcv').classList.add('pan');e.preventDefault();return}
  if(k==='!'||(e.shiftKey&&e.code==='Digit1')){e.preventDefault();fitTo();return}
  if(!mod&&(k==='='||k==='+')){zoomAt(1.2,innerWidth/2,innerHeight/2);return}if(!mod&&k==='-'){zoomAt(1/1.2,innerWidth/2,innerHeight/2);return}
+ if(k==='Escape'&&WB.pop){popClose();return}
+ if(k==='Escape'&&WB.panel&&!WB.sel.size&&!WB.esel.size){panelClose();return}
  if(b.ro)return;
  if(mod&&k.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo()}
  else if(mod&&k.toLowerCase()==='y'){e.preventDefault();redo()}
@@ -677,7 +685,7 @@ addEventListener('keydown',e=>{if(!onBoard())return;const t=e.target,b=WB.B,k=e.
  else if(mod&&k.toLowerCase()==='d'){e.preventDefault();ACT.wbDupSel()}
  else if(k==='Delete'||k==='Backspace'){if(WB.sel.size||WB.esel.size){e.preventDefault();ACT.wbDelSel()}}
  else if(k==='Enter'&&WB.sel.size===1){e.preventDefault();startEdit([...WB.sel][0])}
- else if(k==='Escape'&&WB.pop){popClose()}else if(k==='Escape'){WB.sel.clear();WB.esel.clear();WB.linkFrom=null;drawSel()}
+ else if(k==='Escape'){WB.sel.clear();WB.esel.clear();WB.linkFrom=null;drawSel()}
  else if(k.startsWith('Arrow')&&WB.sel.size){e.preventDefault();const s=e.shiftKey?GRID*2:WB.snap?GRID:1,dx=k==='ArrowLeft'?-s:k==='ArrowRight'?s:0,dy=k==='ArrowUp'?-s:k==='ArrowDown'?s:0,before=snap(b);WB.sel.forEach(id=>{b.nodes[id].x+=dx;b.nodes[id].y+=dy});commit(before)}
  else if(!mod&&!e.altKey&&k==='n'){e.preventDefault();addNode('sticky')}});
 addEventListener('keyup',e=>{if(e.code==='Space'){SPACE=false;const cv=$('#wbcv');if(cv)cv.classList.remove('pan')}});
