@@ -603,7 +603,7 @@ addEventListener('resize',()=>{if(onBoard())placeSb()});
 
 /* ---------------- actions ---------------- */
 const B=()=>WB.B;
-const dl=(name,txt,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
+const dl=(name,txt,type)=>download(name,txt,type);
 const fileName=b=>(b.title.replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-')||'board').slice(0,60);
 const exportJSON=b=>dl(fileName(b)+'.plotline-board.json',JSON.stringify({format:'plotline-board',version:1,title:b.title,nodes:b.nodes,edges:b.edges,comments:b.comments},null,1),'application/json');
 const md=b=>`# ${b.title}\n\n${outline(b,'board').replace(/^Board: .*\n\n/,'')}\n`;
