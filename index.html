@@ -2550,6 +2550,160 @@ html.fnat :is(.ph h1,.hero h1,.sheet h2,.st-h h3,.panel h3){letter-spacing:0}
 .shq{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
 .shq button{display:inline-flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);color:var(--text);font:600 14px var(--f-body);cursor:pointer}
 .shq button span{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font-size:13px}
+/* ===== 1.16 ===== */
+/* tappable text links look like buttons, with a live chevron */
+#view .link,#sheet .link{padding:8px 11px 8px 14px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);font-size:13px;line-height:1;white-space:nowrap;gap:6px;transition:background-color .2s,transform .35s var(--spring)}
+#view .link::after,#sheet .link::after{content:'';flex:none;width:6px;height:6px;border:solid currentColor;border-width:1.8px 1.8px 0 0;transform:rotate(45deg);margin:0 2px 0 -1px;animation:chevLive 3.6s var(--ease) infinite}
+#view .link:hover,#sheet .link:hover{background:color-mix(in srgb,var(--accent) 20%,transparent)}
+#view .link:hover::after,#view .link:focus-visible::after,#sheet .link:hover::after{animation:none;transform:translateX(3px) rotate(45deg);transition:transform .3s var(--spring)}
+#view .link:active,#sheet .link:active{transform:scale(.95)}
+@keyframes chevLive{0%,72%,100%{translate:0}80%{translate:3px}88%{translate:0}94%{translate:1.5px}}
+#view .fl-chip .link{padding:0;background:none;border:0}#view .fl-chip .link::after{display:none}
+#view .link.small{font-size:12.5px}
+.btn.cta::after{content:'';width:6px;height:6px;border:solid currentColor;border-width:1.8px 1.8px 0 0;transform:rotate(45deg);margin-left:2px;transition:transform .3s var(--spring)}
+.btn.cta:hover::after{transform:translateX(3px) rotate(45deg)}
+.at-t{position:relative}.at-t::after{content:'';position:absolute;top:14px;right:14px;width:6px;height:6px;border:solid var(--muted);border-width:1.6px 1.6px 0 0;transform:rotate(45deg);opacity:.8}
+@media (prefers-reduced-motion:reduce){#view .link::after,#sheet .link::after{animation:none}}
+:root[data-motion=reduced] #view .link::after{animation:none}
+.hday .link{margin-top:10px}
+
+/* bottom bar: room for up to six */
+@media(max-width:820px){.tabbar .navs.n6 .nav{font-size:9.5px}.tabbar .navs.n6 .nav svg{width:21px;height:21px}}
+.pg-h{display:flex;justify-content:space-between;align-items:center;margin:16px 2px 10px}
+.pg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-bottom:6px}
+.pg-t{display:grid;justify-items:center;gap:6px;padding:14px 6px 12px;border-radius:18px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:600 12.5px var(--f-body);cursor:pointer;transition:transform .35s var(--spring),border-color .2s}
+.pg-t svg{width:22px;height:22px;color:var(--accent)}.pg-t.pin{border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+.pg-t:active{transform:scale(.94)}
+#sheet:has(#fndq:not(:placeholder-shown)) :is(.pg-grid,.pg-h){display:none}
+.tbp{display:grid;gap:8px;margin-top:12px}
+.tbp-r{display:flex;gap:8px;align-items:center}
+.tbp-b{flex:1;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);font:inherit;text-align:left;cursor:pointer;min-width:0}
+.tbp-b svg{width:20px;height:20px;flex:none;color:var(--muted)}.tbp-b span{flex:1;min-width:0;display:grid}.tbp-b small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbp-b em{font:600 12px var(--f-mono);font-style:normal;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px dashed var(--line-2);color:var(--muted);flex:none}
+.tbp-r.on .tbp-b{border-color:color-mix(in srgb,var(--accent) 45%,transparent)}.tbp-r.on .tbp-b svg{color:var(--accent)}.tbp-r.on .tbp-b em{background:var(--accent);color:var(--on-accent);border:0}
+
+/* habit snapshot */
+.hsn-card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:14px 10px 12px;overflow:hidden}
+.hsn-sc{overflow-x:auto;scrollbar-width:none;margin:0 -10px;padding:0 10px}.hsn-sc::-webkit-scrollbar{display:none}
+.hsn-g{display:grid;gap:6px;min-width:min-content;--cw:minmax(26px,1fr)}
+.hsn-r{display:grid;grid-template-columns:minmax(84px,1.6fr) repeat(var(--n),var(--cw)) 24px;align-items:center;gap:3px}
+.hsnap .hsn-g[style*="--n:30"]{--cw:28px}.hsnap .hsn-g[style*="--n:14"]{--cw:minmax(28px,1fr)}
+.hsn-hd{position:sticky;top:0}
+.hsn-c0,.hsn-h{position:sticky;left:0;z-index:2;background:var(--surface)}
+.hsn-dh{display:grid;justify-items:center;line-height:1.1;color:var(--muted)}
+.hsn-dh small{font:500 9px var(--f-mono);text-transform:uppercase;letter-spacing:.04em}.hsn-dh b{font:600 13px var(--f-body);color:var(--text)}
+.hsn-dh.tdy b{color:var(--on-accent);background:var(--accent);border-radius:8px;padding:1px 5px;margin-top:2px}
+.hsn-sh{display:grid;place-items:center;color:var(--muted)}.hsn-sh svg{width:14px;height:14px}
+.hsn-h{display:flex;align-items:center;gap:7px;border:0;padding:4px 6px 4px 0;color:var(--text);font:inherit;text-align:left;cursor:pointer;min-width:0;border-radius:12px}
+.hsn-i{flex:none;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:15px;background:color-mix(in srgb,var(--c) 18%,transparent)}
+.hsn-t{display:grid;min-width:0}.hsn-t b{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hsn-t small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hsn-x{position:relative;justify-self:center;width:100%;max-width:34px;aspect-ratio:1;border-radius:10px;border:1.5px solid var(--line-2);background:transparent;padding:0;cursor:pointer;display:grid;place-items:center;transition:transform .45s var(--spring),background-color .25s,border-color .25s}
+.hsn-x:active{transform:scale(.86)}.hsn-x:disabled{cursor:default}
+.hsn-x i{width:42%;height:42%;display:block}
+.hsn-x.d{background:var(--c);border-color:var(--c)}
+.hsn-x.d i{border:solid var(--on-color);border-width:0 2.4px 2.4px 0;width:24%;height:44%;transform:translateY(-12%) rotate(45deg)}
+.hsn-x.p{border-color:var(--c);background:linear-gradient(to top,color-mix(in srgb,var(--c) 70%,transparent) var(--p),transparent var(--p))}
+.hsn-x.s{border-color:transparent;background:repeating-linear-gradient(-45deg,color-mix(in srgb,var(--muted) 30%,transparent) 0 3px,transparent 3px 7px)}
+.hsn-x.s i{height:2px;width:40%;background:var(--muted);border-radius:2px}
+.hsn-x.x{border-color:color-mix(in srgb,#FF6B6B 55%,transparent);background:color-mix(in srgb,#FF6B6B 9%,transparent)}
+.hsn-x.x i{width:34%;height:34%;background:linear-gradient(45deg,transparent 43%,#FF7A7A 43% 57%,transparent 57%),linear-gradient(-45deg,transparent 43%,#FF7A7A 43% 57%,transparent 57%)}
+.hsn-x.t{border-color:var(--c);border-style:dashed;animation:hsnPulse 2.4s var(--ease) infinite}
+.hsn-x.n{border-color:transparent}.hsn-x.n i{width:5px;height:5px;border-radius:50%;background:var(--dim)}
+.hsn-x.f{border-style:dotted;opacity:.4}
+.hsn-x.tdy{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent)}
+.hsn-x.pop{animation:hsnPop .55s var(--spring)}
+@keyframes hsnPop{0%{transform:scale(.6)}60%{transform:scale(1.14)}100%{transform:none}}
+@keyframes hsnPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 0%,transparent)}50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent)}}
+.hsn-st{font:600 12px var(--f-mono);text-align:center;color:var(--accent)}.hsn-st.z{color:var(--dim)}
+.hsn-ft{margin-top:2px}.hsn-pc{justify-self:center;width:62%;height:22px;border-radius:5px;background:var(--line);position:relative;overflow:hidden}
+.hsn-pc i{position:absolute;inset:auto 0 0;height:var(--p);background:color-mix(in srgb,var(--accent) 70%,transparent);border-radius:5px;transition:height .5s var(--spring)}.hsn-pc.full i{background:var(--accent)}
+.hsn-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:14px;font-size:11.5px;color:var(--muted)}
+.hsn-leg span{display:inline-flex;align-items:center;gap:6px}.hsn-leg i{width:12px;height:12px;border-radius:4px;border:1.5px solid var(--line-2)}
+.hsn-leg i.d{background:var(--accent);border-color:var(--accent)}.hsn-leg i.p{border-color:var(--accent);background:linear-gradient(to top,var(--accent) 50%,transparent 50%)}.hsn-leg i.s{border-color:transparent;background:repeating-linear-gradient(-45deg,var(--muted) 0 2px,transparent 2px 4px)}.hsn-leg i.x{border-color:#FF7A7A}.hsn-leg i.t{border-style:dashed;border-color:var(--accent)}
+@media(max-width:480px){.hsn-i{display:none}.hsn-t small{display:none}.hsn-t b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:12.5px;line-height:1.2;border-left:3px solid var(--c);padding-left:7px}}
+.hsn-hint{font-size:11.5px;color:var(--dim);margin-top:6px}
+.tg-h{display:flex;align-items:baseline;gap:10px;min-width:0}
+
+/* habits: Habits / Calendar / Progress */
+.hx-bar{margin-bottom:10px}
+.hx-sub{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 0 6px;padding:2px 0}.hx-sub::-webkit-scrollbar{display:none}
+.hx-sub .chip{flex:none}.hx-sub .chip.on{background:var(--text);color:var(--bg);border-color:transparent}
+.hx-pane{will-change:transform,opacity}
+.hcal-p{padding:18px 16px}
+.hsum-f{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}
+.hsum .hb-d{cursor:pointer;border-radius:10px;transition:background-color .25s}
+.hsum .hb-d.sel{background:color-mix(in srgb,var(--accent) 14%,transparent)}.hsum .hb-d.sel span{color:var(--accent);font-weight:700}
+.hsum .hb-d i{transition:height .5s var(--spring),background-color .25s}
+.hring .b{transition:stroke-dashoffset .7s var(--spring)}
+.hcons{display:grid;gap:4px;padding:12px}
+.hcn{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr auto;align-items:center;gap:12px;padding:10px;border:0;border-radius:14px;background:none;color:var(--text);font:inherit;cursor:pointer;text-align:left}
+.hcn:hover{background:var(--surface-2)}.hcn-t{display:flex;gap:8px;min-width:0;align-items:center}.hcn-t b{font-size:14px;font-weight:600}
+.hcn-b{height:8px;border-radius:8px;background:var(--line);overflow:hidden}.hcn-b i{display:block;height:100%;width:var(--p);background:var(--c);border-radius:8px;transform-origin:left;animation:axGrowX .9s var(--ease) both}
+.hcn-v{font:600 13px var(--f-mono);text-align:right;min-width:62px}.hcn-v small{display:block;font-size:10px;color:var(--muted);font-weight:500}
+@keyframes axGrowX{from{transform:scaleX(0)}}
+
+/* day page + calendar: one day view */
+.dy-pl-n{margin:-6px 0 10px}
+.dy-plan{display:grid;gap:8px}
+.cdp{margin-top:26px;padding:18px 16px 6px;border-radius:26px;background:var(--surface);border:1px solid var(--line);animation:cdpIn .45s var(--ease) both}
+@keyframes cdpIn{from{opacity:0;transform:translateY(10px)}}
+.cdp-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.cdp-h h2{font:700 30px/1 var(--f-display);text-transform:uppercase;letter-spacing:.01em}
+.cdp-h .data{margin-top:8px}.cdp-a{display:flex;gap:8px;align-items:center}
+.cdp .dy-sum{margin-top:16px}.cdp .dy-sec .st-h{margin-top:30px}
+.cdp-hours #dgrid{height:460px!important}
+.cd{transition:transform .35s var(--spring)}.cd:active{transform:scale(.95)}
+
+/* activity analytics */
+.axday{position:sticky;top:calc(8px + var(--sat,0px));z-index:5;display:flex;align-items:center;gap:8px;padding:8px;margin:4px 0 16px;border-radius:20px;background:color-mix(in srgb,var(--bg-2) 82%,transparent);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--line-2)}
+.axday-t{flex:1;display:grid;line-height:1.15;min-width:0}.axday-t b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.axday-t small{font-size:9.5px}
+.axgrid{display:grid;gap:14px}
+@media(min-width:900px){.axgrid{grid-template-columns:1fr 1fr}}
+.axcard{padding:18px 16px 16px}
+.axh{display:flex;align-items:center;gap:10px;margin-bottom:12px}.axh b{font-size:15px}
+.axbig{display:flex;align-items:baseline;gap:8px}.axbig b{font:700 40px/1 var(--f-display);letter-spacing:.01em;font-variant-numeric:tabular-nums}.axbig span{color:var(--muted);font-size:14px}
+.axsub{font-size:13px;color:var(--muted);margin-top:6px;min-height:1.3em}
+.axd{display:inline-block;font:600 10.5px var(--f-mono);padding:2px 7px;border-radius:999px;margin-left:4px;background:var(--surface-2);color:var(--muted)}
+.axd.up{color:#3DCB8F;background:color-mix(in srgb,#3DCB8F 14%,transparent)}.axd.down{color:#FF8A7A;background:color-mix(in srgb,#FF8A7A 14%,transparent)}
+.axc-w{margin:14px -4px 0}
+.axc{width:100%;height:auto;display:block;overflow:visible;-webkit-tap-highlight-color:transparent}
+.axhit{fill:transparent;cursor:pointer}
+.axr{fill:color-mix(in srgb,var(--accent) 38%,transparent);transform-box:fill-box;transform-origin:50% 100%;transition:fill .3s}
+.axr.ok{fill:color-mix(in srgb,var(--accent) 78%,transparent)}.axr.over{fill:color-mix(in srgb,#FF7A7A 70%,transparent)}.axr.z{fill:var(--line-2)}
+.axr.sl{transform-origin:50% 0;fill:color-mix(in srgb,#8C9BFF 55%,transparent)}.axr.sl.ok{fill:#8C9BFF}
+.axg.on .axr{fill:var(--accent)}.axg.on .axr.over{fill:#FF7A7A}.axg.on .axr.sl{fill:#B4BEFF}
+.axsel{fill:color-mix(in srgb,var(--text) 7%,transparent);transition:transform .5s var(--spring),opacity .3s}
+.axbase{stroke:var(--line-2);stroke-width:1}
+.axhl{stroke:var(--line);stroke-width:1}
+.axgl{stroke:color-mix(in srgb,var(--text) 45%,transparent);stroke-width:1.2;stroke-dasharray:3 4}.axgl.b,.axgl.w{stroke:color-mix(in srgb,#8C9BFF 70%,transparent)}
+.axgt{font:500 9px var(--f-mono);fill:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.axma{fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;opacity:.8;stroke-dasharray:1;stroke-dashoffset:0;pointer-events:none}
+.axl{font:500 9.5px var(--f-mono);fill:var(--muted)}.axl.t{fill:var(--accent);font-weight:700}.axl.ys{font-size:8.5px}
+.axkey{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 4px 0;font-size:11px;color:var(--muted)}
+.axkey span{display:inline-flex;align-items:center;gap:6px}.axkey i{display:inline-block}
+.axkey .kb{width:10px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--accent) 50%,transparent)}.axsl~.axkey .kb{background:color-mix(in srgb,#8C9BFF 55%,transparent)}.axsl~.axkey .kb.ok{background:#8C9BFF}
+.axkey .km{width:16px;height:2px;border-radius:2px;background:var(--text)}.axkey .kg{width:16px;border-top:1.5px dashed var(--muted)}
+.axstats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:16px}
+@media(min-width:520px){.axstats{grid-template-columns:repeat(4,1fr)}}
+.axs{padding:11px 12px;border-radius:15px;background:var(--surface-2);display:grid;gap:2px;min-width:0}
+.axs b{font:600 16px var(--f-body);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.axs small{font-size:11.5px;color:var(--muted)}.axs em{font-style:normal;font:500 10px var(--f-mono);color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
+.axsub2{font:500 10.5px var(--f-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:18px 2px 8px}
+.axapps{display:grid;gap:7px}
+.axapp{display:grid;grid-template-columns:minmax(80px,.9fr) 1.4fr auto;align-items:center;gap:10px;font-size:13px}
+.axapp i{height:8px;border-radius:8px;width:var(--w);background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 45%,transparent),var(--accent));transform-origin:left;animation:axGrowX .7s var(--ease) both;animation-delay:calc(var(--i,0) * 50ms)}
+.axapp b{font:600 12px var(--f-mono);color:var(--muted)}
+.axmix{display:flex;height:12px;border-radius:12px;overflow:hidden;gap:2px}.axmix i{width:var(--w);background:hsl(var(--h) 65% 62%);transform-origin:left}
+.axmix-l{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:11.5px;color:var(--muted)}.axmix-l i{display:inline-block;width:8px;height:8px;border-radius:50%;background:hsl(var(--h) 65% 62%);margin-right:5px}
+.axrh{display:grid;grid-template-columns:auto repeat(7,1fr);gap:5px;align-items:center;margin-top:12px}
+.axrh-d{text-align:center;font:500 10px var(--f-mono);color:var(--muted)}.axrh-l{font-size:12px;color:var(--muted);white-space:nowrap;padding-right:6px}
+.axrh-c{aspect-ratio:1;border-radius:9px;border:0;cursor:pointer;background:color-mix(in srgb,var(--accent) calc(var(--a) * 100%),var(--surface-2));transition:transform .35s var(--spring),box-shadow .2s}
+.axrh-c.z{background:var(--surface-2);opacity:.5}.axrh-c.on{box-shadow:0 0 0 2px var(--text);transform:scale(1.08)}
+.axrh-t{margin-top:12px;font-size:13px;color:var(--text);min-height:1.4em}
+.axln{padding:12px 0;border-top:1px solid var(--line)}.axcard p+.axln{border-top:0}
+.axln-t{display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:14px}
+.axln-r{display:grid;grid-template-columns:minmax(110px,1fr) 1.2fr 56px;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin-top:4px}
+.axln-r b{text-align:right;font:600 13px var(--f-mono);color:var(--text)}
+.axln-b{height:10px;border-radius:10px;background:var(--line);overflow:hidden}.axln-b i{display:block;height:100%;width:var(--w);border-radius:10px;background:var(--muted);transform-origin:left}.axln-b.a i{background:var(--accent)}
 </style>
 </head>
 <body>
@@ -2666,7 +2820,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.15.0';
+const APP_VER='1.16.0';
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
@@ -2684,9 +2838,9 @@ function mergeDocs(a,b){const dead={...(a.dead||{})};for(const[k,v]of Object.ent
  const cut=Date.now()-120*864e5;for(const k in dead)if(dead[k]<cut)delete dead[k];
  const pick=(xs,ys)=>{const m=new Map();(xs||[]).forEach(o=>m.set(o.id,o));(ys||[]).forEach(o=>{const c=m.get(o.id);if(!c||(o.u||0)>(c.u||0))m.set(o.id,o)});return[...m.values()].filter(o=>!(dead[o.id]>=(o.u||0)))};
  const goals=pick(a.goals,b.goals),ids=new Set(goals.map(g=>g.id));goals.forEach(g=>{g.links=(g.links||[]).filter(l=>ids.has(l))});
- return{goals,entries:pick(a.entries,b.entries),days:pick(a.days,b.days),habits:pick(a.habits,b.habits),chapters:pick(a.chapters,b.chapters),shares:pick(a.shares,b.shares),threads:mergeThreads(a.threads,b.threads,dead),ident:!a.ident?b.ident||null:!b.ident?a.ident:((a.ident.c||0)<=(b.ident.c||0)?a.ident:b.ident),dead}}
-const docOf=x=>({app:'plotline',v:1,goals:x.goals,entries:x.entries,days:x.days||[],habits:x.habits||[],chapters:x.chapters||[],shares:x.shares||[],threads:x.threads||[],ident:x.ident||null,dead:x.dead||{}});
-const sameDoc=(a,b)=>JSON.stringify([a.goals,a.entries,a.days||[],a.habits||[],a.chapters||[],a.shares||[],a.threads||[],a.ident||null,a.dead])===JSON.stringify([b.goals,b.entries,b.days||[],b.habits||[],b.chapters||[],b.shares||[],b.threads||[],b.ident||null,b.dead]);
+ return{goals,entries:pick(a.entries,b.entries),days:pick(a.days,b.days),habits:pick(a.habits,b.habits),chapters:pick(a.chapters,b.chapters),shares:pick(a.shares,b.shares),threads:mergeThreads(a.threads,b.threads,dead),benches:window.WBSYNC?WBSYNC.merge(a.benches,b.benches,dead):(b.benches||a.benches||[]),ident:!a.ident?b.ident||null:!b.ident?a.ident:((a.ident.c||0)<=(b.ident.c||0)?a.ident:b.ident),dead}}
+const docOf=x=>({app:'plotline',v:1,goals:x.goals,entries:x.entries,days:x.days||[],habits:x.habits||[],chapters:x.chapters||[],shares:x.shares||[],threads:x.threads||[],benches:x.benches||[],ident:x.ident||null,dead:x.dead||{}});
+const sameDoc=(a,b)=>JSON.stringify([a.goals,a.entries,a.days||[],a.habits||[],a.chapters||[],a.shares||[],a.threads||[],a.benches||[],a.ident||null,a.dead])===JSON.stringify([b.goals,b.entries,b.days||[],b.habits||[],b.chapters||[],b.shares||[],b.threads||[],b.benches||[],b.ident||null,b.dead]);
 
 /* ---- Google auth: web = popup/redirect (implicit flow), Android = device account with browser fallback ---- */
 const cfg=()=>({clientId:(S.settings.sync.clientId||PLOTLINE_CFG.googleClientId||'').trim(),webUrl:(S.settings.sync.webUrl||PLOTLINE_CFG.webUrl||'').trim()});
@@ -2737,7 +2891,9 @@ async function syncNow(manual){if(!syncOn()||TOURING)return;if(SYNCING){SYNC_AGA
   const who=await acctEmail();if(who&&ownerOf()&&lc(who)!==ownerOf()){S.settings.sync.on=false;S.settings.sync.fileId='';await DB.set('state',S).catch(()=>{});setSyncMsg('Paused · different account');acctChoice(who);return}
   let f=S.settings.sync.fileId?{id:S.settings.sync.fileId}:await driveFind();let remote=null;
   if(f){try{remote=await driveRead(f.id)}catch(e){if(String(e.message).includes('404')){S.settings.sync.fileId='';f=await driveFind();remote=f?await driveRead(f.id):null}else throw e}}
-  const local=docOf(S);const merged=remote?mergeDocs(local,remote):local;
+  const local=docOf(S);local.benches=window.WBSYNC?await WBSYNC.list():(remote&&remote.benches)||[];const merged=remote?mergeDocs(local,remote):local;
+  /* Workbench boards live in their own store, not in S */
+  if(window.WBSYNC&&JSON.stringify(merged.benches||[])!==JSON.stringify(local.benches))await WBSYNC.apply(merged.benches,merged.dead);
   const changedLocal=!sameDoc(merged,local);
   if(changedLocal){S.goals=merged.goals;S.entries=merged.entries;S.days=merged.days;S.habits=merged.habits.map(normHabit);S.chapters=merged.chapters||[];S.shares=merged.shares||[];S.threads=merged.threads||[];S.ident=merged.ident||S.ident||null;S.dead=merged.dead;primeSig();await DB.set('state',S).catch(()=>{});syncNative();pushWidget();if(!$('#sheet').classList.contains('on'))render(false)}
   if(!remote||!sameDoc(merged,remote)||DIRTY){S.settings.sync.fileId=await driveWrite(f&&f.id,docOf(merged))}else S.settings.sync.fileId=f.id;
@@ -6276,7 +6432,7 @@ function homeDay(){const td=ymd(),hs=S.habits.filter(h=>h.status==='active'&&h.k
  const items=[...hs.map(h=>({k:'h',done:hDone(h,td),t:`${hIcon(h)} ${h.title}`,h})),...dg.map(x=>({k:'d',done:!!x.done,t:x.title,x})),...st.map(o=>({k:'s',done:!!o.s.done,t:o.s.title,o}))];
  if(!items.length)return'';const dn=items.filter(i=>i.done).length,p=dn/items.length,nx=items.find(i=>!i.done);
  const act=nx?(nx.k==='h'?`data-act="hTap" data-id="${nx.h.id}"`:nx.k==='d'?`data-act="toggleDay" data-id="${nx.x.id}"`:`data-act="toggleStep" data-g="${nx.o.g.id}" data-s="${nx.o.s.id}"`):'';
- return`<section class="hday rv"><div class="hday-r" style="--p:${Math.round(p*100)}"><b>${dn}<small>/${items.length}</small></b></div><div class="hday-b"><div class="data">Your day · ${p>=1?'all done':Math.round(p*100)+'% done'}</div>${nx?`<div class="hday-n"><span class="ell">Next: ${esc(nx.t)}</span><button class="btn sm pri" ${act}>${ic('check')}Done</button></div>`:`<div class="hday-n"><span>Everything for today is done. Well played.</span></div>`}<button class="link small" data-act="dayToday">See everything for today ›</button></div></section>`}
+ return`<section class="hday rv"><div class="hday-r" style="--p:${Math.round(p*100)}"><b>${dn}<small>/${items.length}</small></b></div><div class="hday-b"><div class="data">Your day · ${p>=1?'all done':Math.round(p*100)+'% done'}</div>${nx?`<div class="hday-n"><span class="ell">Next: ${esc(nx.t)}</span><button class="btn sm pri" ${act}>${ic('check')}Done</button></div>`:`<div class="hday-n"><span>Everything for today is done. Well played.</span></div>`}<button class="link small" data-act="dayToday">See everything for today</button></div></section>`}
 function homeInsights(){const out=[],td=ymd(),tn=dnum(td),hr=new Date().getHours(),A=S.settings.actLog||{};
  S.habits.filter(h=>h.status==='active'&&h.kind!=='quit'&&hDue(h,td)&&!hDone(h,td)&&!(h.skip&&h.skip[td])).forEach(h=>{const n=hStreak(h);if(n>=3&&hr>=15)out.push({p:9,e:'🔥',t:`Your ${n}-${h.freq==='times'?'week':'day'} streak on “${h.title}” is on the line today.`,b:`<button class="btn sm" data-act="openHabit" data-id="${h.id}">Open habit</button>`,q:`My habit “${h.title}” has a ${n}-day streak and isn’t done yet today. What small version could I do right now to keep it going?`})});
  {const W=[0,1,2,3,4,5,6].map(()=>({d:0,n:0}));for(let k=tn-56;k<tn;k++){const ds=fromN(k),r=dayRatio(ds),w=new Date(ds+'T12:00').getDay();W[w].d+=r.due;W[w].n+=r.dn}
@@ -6624,6 +6780,253 @@ if(typeof livePanel==='function'){livePanel=function(){if(!liveOK())return'';con
  Object.assign(ACT,{liveBatt:()=>{try{NATIVE.openAppSettings()}catch(e){}}})}
 })();
 
+/* ===================== 1.16: clearer home, habit snapshot, one day view, analytics =====================
+   - Bottom bar: 3 to 6 pages you pick (5 by default), no More tray. Every page is under search, on every header.
+   - Back (browser or Android) closes any open sheet first: opening a sheet adds a history step.
+   - Home: your day, the habit snapshot, today's goals and what's next come first; Plan with AI goes last.
+   - Habit snapshot: habits down the side, days across the top. Tap a box: done → skipped → cleared.
+   - Day page = calendar day: the picked day in the calendar shows everything "See everything for today" shows,
+     future days included, with one Plan list (day goals, steps, repeats, targets). No repeated agenda.
+   - Habits opens on your habits; Calendar and Progress sit next to it and slide in.
+   - Bars and charts: a tap shows that day's numbers in place. Opening the day is its own button.
+   - Activity: analytics for steps, sleep, screen time and workouts, synced across every chart. */
+(()=>{
+const today=()=>ymd();
+const RM=()=>reduced();
+function countUp(el,to,fmt,dur=650){if(!el)return;fmt=fmt||(v=>Math.round(v).toLocaleString());const from=el.dataset.v!=null?+el.dataset.v:to;el.dataset.v=to;cancelAnimationFrame(el._cu);
+ if(RM()||from===to||!isFinite(from)){el.textContent=fmt(to);return}const t0=performance.now();const st=t=>{const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);el.textContent=fmt(from+(to-from)*e);if(k<1)el._cu=requestAnimationFrame(st)};el._cu=requestAnimationFrame(st)}
+const FMT={int:v=>Math.round(v).toLocaleString(),min:v=>fmtMin(Math.round(v)),pct:v=>Math.round(v)+''};
+function cuAll(root,fromZero){(root||document).querySelectorAll('[data-cu]').forEach(el=>{if(fromZero)el.dataset.v=0;countUp(el,+el.dataset.cu,FMT[el.dataset.f]||FMT.int)})}
+function cutSec(o,m){const i=o.indexOf(m);if(i<0)return o;const j=o.indexOf('</section>',i);return j<0?o:o.slice(0,i)+o.slice(j+10)}
+
+/* ---------- bottom bar: up to 6 pages, no More ---------- */
+const PG=[['today','Home','today','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['activity','Activity','flame','Steps, sleep, screen time, workouts'],['journal','Journal','journal','Moments and history'],['vista','Vista','map','Timeline and life map'],['ask','Ask','ai','Insights and AI planning'],['threads','Threads','thread','Conversations about goals and habits'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||p[0]==='bench'||VIEWS[p[0]]);
+const TMAX=6,TMIN=3;
+const tDef=()=>['today','habits','cal','goals',NATIVE?'activity':'journal'];
+const tabs6=()=>{const t=(Array.isArray(S.settings.tabs)?S.settings.tabs:tDef()).filter((k,i,a)=>PG.some(p=>p[0]===k)&&a.indexOf(k)===i);return t.length>=2?t.slice(0,TMAX):tDef()};
+function tabMigrate(){if(S.settings.v116tabs)return;S.settings.v116tabs=1;const t=Array.isArray(S.settings.tabs)?S.settings.tabs.slice():null;if(t&&t.length===4){const x=tDef().find(k=>!t.includes(k));if(x)t.push(x);S.settings.tabs=t}if(S.settings.layout)S.settings.layout.hcal=false;try{save()}catch(e){}}
+function tbHTML(){const t=tabs6();return`<div class="navs n${t.length}"><span class="nav-ind"></span>${t.map(k=>{const p=PG.find(x=>x[0]===k);return`<a class="nav" href="#/${k}" data-nav="${k}">${ic(p[2])}<span>${p[1]}</span></a>`}).join('')}</div>`}
+const NAVMAP={goal:'goals',habit:'habits',road:'vista',map:'vista',ai:'ask',thread:'threads',day:'cal'};
+function navMark(){const t=tabs6();let k=NAVMAP[cur.p]||cur.p;if(k==='threads'&&!t.includes('threads'))k='journal';if(cur.p==='activity'&&!t.includes('activity'))k='today';if(cur.p==='day'&&!t.includes('cal'))k='today';
+ document.querySelectorAll('[data-nav]').forEach(a=>{const on=a.dataset.nav===k;a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});moveInd()}
+function tbPaint(){const tb=$('#tabbar');if(tb){tb.innerHTML=tbHTML();navMark()}}
+{const _b=buildChrome;buildChrome=function(){_b();tabMigrate();tbPaint()}}
+Object.assign(ACT,{
+ navMore:()=>ACT.findOpen(),
+ tabPin:d=>{let t=tabs6();if(t.includes(d.k)){if(t.length<=TMIN)return toast(`Keep at least ${TMIN} pages in the bar`);t=t.filter(x=>x!==d.k)}else{if(t.length>=TMAX)return toast(`The bar holds ${TMAX} pages. Unpin one first`);t.push(d.k)}S.settings.tabs=t;save();tbPaint();render(false)},
+ tabUp:d=>{const t=tabs6(),i=t.indexOf(d.k);if(i<1)return;[t[i-1],t[i]]=[t[i],t[i-1]];S.settings.tabs=t;save();tbPaint();render(false)}});
+/* every page, one tap from search (the search button is on every header) */
+function pgGrid(){const t=tabs6();return`<div class="pg-h"><span class="data">Go to</span><button class="link" data-act="fndGo" data-r="settings/look">Edit the bar</button></div><div class="pg-grid">${PG.map(p=>`<button class="pg-t${t.includes(p[0])?' pin':''}" data-act="fndGo" data-r="${p[0]}">${ic(p[2])}<b>${p[1]}</b></button>`).join('')}</div>`}
+{const _f=ACT.findOpen;ACT.findOpen=function(){_f.apply(this,arguments);const r=$('#fndr');if(r&&!$('#sheet .pg-grid'))r.insertAdjacentHTML('beforebegin',pgGrid())}}
+/* Settings → Look & feel: the bar */
+{const _hp=homePanel;homePanel=function(){const t=tabs6();return _hp()+`<section class="panel wide rv" id="tabset"><h3>Bottom bar</h3><p class="small muted">On phones, pick ${TMIN} to ${TMAX} pages for the bar. Tap the arrow to move one left. Every other page is under search, at the top of each page.</p><div class="tbp">${PG.map(p=>{const i=t.indexOf(p[0]);return`<div class="tbp-r${i>=0?' on':''}"><button class="tbp-b" data-act="tabPin" data-k="${p[0]}" aria-pressed="${i>=0}">${ic(p[2])}<span><b>${p[1]}</b><small>${p[3]}</small></span><em>${i>=0?i+1:'+'}</em></button>${i>0?`<button class="ibtn sm" data-act="tabUp" data-k="${p[0]}" aria-label="Move ${p[1]} left">${ic('back')}</button>`:''}</div>`}).join('')}</div></section>`}}
+
+/* ---------- Back closes the open sheet (browser, PWA and Android) ---------- */
+let SHB=0,QGO=null;
+const shOpenNow=()=>$('#sheet').classList.contains('on');
+function flushGo(){if(QGO!=null){const h=QGO;QGO=null;go(h)}}
+{const _os=openSheet;openSheet=function(){const r=_os.apply(this,arguments);try{if(!SHB&&!(history.state&&history.state.psh))history.pushState({psh:1},'')}catch(e){}return r}}
+{const _cs=closeSheet;closeSheet=function(){const r=_cs.apply(this,arguments);try{if(!SHB&&history.state&&history.state.psh){SHB=1;history.back();setTimeout(()=>{if(SHB){SHB=0;flushGo()}},450)}}catch(e){}return r}}
+{const _go=go;go=function(h){if(SHB){QGO=h;return}return _go(h)}}
+addEventListener('popstate',()=>{if(SHB){SHB=0;if(shOpenNow())try{history.pushState({psh:1},'')}catch(e){}flushGo();return}
+ if(shOpenNow()){if(typeof RP!=='undefined'&&RP&&ACT.rpClose)ACT.rpClose();else if(!SHEET_LOCK)closeSheet();else try{history.pushState({psh:1},'')}catch(e){}}});
+
+/* ---------- habit snapshot: habits × days ---------- */
+function hsnState(h,ds,k,tn){if(k>tn)return['f','Upcoming'];
+ if(h.kind==='quit'){if(ds<dOf(h.start||Date.now()))return['n','Not started'];if(h.mode==='limit'){const v=+h.log[ds]||0;return v>h.limit?['x',`Over · ${v} of ${h.limit}`]:['d',v?`${v} of ${h.limit}`:'Under the limit']}
+  return(h.slips||[]).some(s=>dOf(slipT(s))===ds)?['x','Slip']:['d','Clean']}
+ if(ds<h.startDate)return['n','Not started'];if(h.skip&&h.skip[ds])return['s','Skipped'];const v=hVal(h,ds),n=hTarget(h);
+ if(v>=n)return['d','Done'];if(v>0)return['p',`${v} of ${n}${h.unit?' '+h.unit:''}`,Math.round(v/n*100)];if(!hDue(h,ds))return['n','Not due'];if(k===tn)return['t','To do'];if(h.freq==='times')return['n','Optional'];return['x','Missed']}
+const HSN_NEXT={d:'skip it',s:'clear it',p:'mark it done',x:'mark it done',t:'mark it done',n:'mark it done'};
+let HSNJ='';
+function hsnRows(){const L=S.habits.filter(h=>h.status==='active'),pr=h=>h.kind==='quit'?1:0;return L.sort((a,b)=>pr(a)-pr(b)||(a.time||'99').localeCompare(b.time||'99')||(a.createdAt||0)-(b.createdAt||0))}
+function hSnap(N,where){const L=hsnRows();if(!L.length)return'';const tn=dnum(today()),K=[];for(let k=tn-N+1;k<=tn;k++)K.push(k);const t=dayRatio(today());
+ const head=`<div class="hsn-r hsn-hd"><span class="hsn-c0"></span>${K.map(k=>{const d=dUTC(k);return`<span class="hsn-dh${k===tn?' tdy':''}"><small>${N>14?DAYS[d.getUTCDay()][0]:DAYS[d.getUTCDay()].slice(0,2)}</small><b>${d.getUTCDate()}</b></span>`}).join('')}<span class="hsn-sh">${ic('flame','ico-s')}</span></div>`;
+ const rows=L.map(h=>{const q=h.kind==='quit',st=q?(h.mode==='limit'?lStreak(h):Math.max(0,Math.floor((Date.now()-qSince(h))/864e5))):hStreak(h);
+  return`<div class="hsn-r" style="${cvar(h)}"><button class="hsn-h" data-act="openHabit" data-id="${h.id}"><span class="hsn-i">${esc(hIcon(h))}</span><span class="hsn-t"><b>${esc(h.title)}</b><small>${q?(h.mode==='limit'?'Cutting down':'Breaking'):esc(freqText(h))}</small></span></button>${K.map(k=>{const ds=fromN(k),[c,lab,p]=hsnState(h,ds,k,tn),can=!q&&k<=tn,j=HSNJ===h.id+ds;
+   return`<button class="hsn-x ${c}${k===tn?' tdy':''}${j?' pop':''}" ${can?`data-act="hsnTap" data-id="${h.id}" data-d="${ds}"`:q?`data-act="openHabit" data-id="${h.id}"`:'disabled'} ${p!=null?`style="--p:${p}%"`:''} aria-label="${esc(h.title)}, ${esc(dayName(ds))}: ${esc(lab)}${can?'. Tap to '+HSN_NEXT[c]:''}" title="${esc(dayName(ds))}: ${esc(lab)}"><i></i></button>`}).join('')}<span class="hsn-st${st?'':' z'}">${st||'–'}</span></div>`}).join('');
+ const foot=`<div class="hsn-r hsn-ft"><span class="hsn-c0 data">Kept</span>${K.map(k=>{const r=dayRatio(fromN(k)),p=r.due?Math.round(r.dn/r.due*100):null;return`<span class="hsn-pc${p===100?' full':''}" style="--p:${p||0}%" title="${p==null?'Nothing due':p+'% kept'}"><i></i></span>`}).join('')}<span></span></div>`;
+ const leg=`<div class="hsn-leg"><span><i class="d"></i>Done</span><span><i class="p"></i>Partly</span><span><i class="s"></i>Skipped</span><span><i class="x"></i>Missed</span><span><i class="t"></i>To do</span></div><p class="hsn-hint">Tap a box: done → skipped → cleared. Tap a habit to open it.</p>`;
+ const top=where==='home'?`<div class="st-h"><div class="tg-h"><h3>Habits</h3><span class="data">${t.due?`${t.dn} of ${t.due} today`:'Nothing due today'}</span></div><a class="link" href="#/habits">All habits</a></div>`:'';
+ return`<section class="hsnap rv" id="hsnap-${where}">${top}<div class="hsn-card"><div class="hsn-sc"><div class="hsn-g" style="--n:${N}">${head}${rows}${foot}</div></div>${leg}</div></section>`}
+function hsnScroll(){document.querySelectorAll('#view .hsn-sc').forEach(sc=>{if(sc.scrollWidth>sc.clientWidth&&!sc._at){sc._at=1;sc.scrollLeft=sc.scrollWidth}})}
+ACT.hsnTap=d=>{const h=H(d.id);if(!h||d.d>today()||h.kind==='quit')return;h.skip=h.skip||{};const n=hTarget(h),v=hVal(h,d.d),sk=!!h.skip[d.d];
+ if(sk){delete h.skip[d.d];hSetVal(h,d.d,0);delete h.skip[d.d]}else if(v>=n){hSetVal(h,d.d,0);h.skip[d.d]=1}else{hSetVal(h,d.d,n);delete h.skip[d.d];vib();JUST=d.d===today()?h.id:'';checkMilestones()}
+ HSNJ=h.id+d.d;save();render(false);setTimeout(()=>{HSNJ=''},400)};
+habitsStrip=function(){return hSnap(7,'home')};
+
+/* ---------- home: a clearer order ---------- */
+const HOME_ORDER=['head','demo','share','quick','day','weekly','snap','goals','next','act','insights','coming','pinned','threads','other','aip'];
+function homeKey(n){const c=n.classList,h=((n.querySelector(':scope>.st-h h3')||{}).textContent||'').trim().toLowerCase();
+ if(n.tagName==='HEADER')return'head';if(c.contains('demob'))return'demo';if(c.contains('sh-today'))return'share';if(c.contains('hmq'))return'quick';if(c.contains('hday'))return'day';if(c.contains('hsnap'))return'snap';if(n.id==='actCard')return'act';if(c.contains('aip'))return'aip';if(n.dataset&&n.dataset.act==='weekly')return'weekly';if(n.querySelector(':scope>.now'))return'next';
+ if(h.startsWith('insight'))return'insights';if(h.startsWith('today'))return'goals';if(h.startsWith('coming'))return'coming';if(h.startsWith('pinned'))return'pinned';if(h.startsWith('thread'))return'threads';return'other'}
+function homeOrder(html){const t=document.createElement('template');t.innerHTML=html;const N=[...t.content.children];if(N.length<3)return html;const L=N.map((n,i)=>({n,i,r:HOME_ORDER.indexOf(homeKey(n))}));L.sort((a,b)=>a.r-b.r||a.i-b.i);return L.map(x=>x.n.outerHTML).join('')}
+{const _vt=vToday;vToday=function(){return homeOrder(_vt())};VIEWS.today=vToday}
+
+/* ---------- habit summary: tap a bar to see that day ---------- */
+let HBS=null;
+const hbLab=(ds,r)=>`${ds===today()?'Today':esc(dayName(ds))} · ${r.due?`${r.dn} of ${r.due} done`:'nothing due'}`;
+hSummary=function(){const tn=dnum(today()),sel=HBS&&dnum(HBS)>tn-7&&dnum(HBS)<=tn?HBS:today(),r=dayRatio(sel),f=r.due?r.dn/r.due:0;let bars='';
+ for(let k=tn-6;k<=tn;k++){const ds=fromN(k),rr=dayRatio(ds),p=rr.due?rr.dn/rr.due:0;bars+=`<button class="hb-d${k===tn?' hb-now':''}${ds===sel?' sel':''}" data-act="hbSel" data-d="${ds}" aria-pressed="${ds===sel}" aria-label="${esc(dayName(ds))}: ${rr.due?rr.dn+' of '+rr.due+' done':'nothing due'}"><i class="${p?'':'z'}" style="height:${Math.max(6,p*100)}%"></i><span>${DAYS[dUTC(k).getUTCDay()][0]}</span></button>`}
+ const pr=perfectRun(),wk=[...Array(7)].map((_,i)=>dayRatio(fromN(tn-i))).reduce((a,x)=>({due:a.due+x.due,dn:a.dn+x.dn}),{due:0,dn:0});
+ return`<section class="hsum rv" id="hsum"><div class="big" style="--c:var(--accent)">${hRing(f,104,9)}<b><span data-cu="${Math.round(f*100)}" data-f="pct">${Math.round(f*100)}</span><small>%</small></b></div><div><div class="data" id="hsumL">${hbLab(sel,r)}</div><div class="hbars">${bars}</div><div class="hsum-f"><span class="data">${wk.due?Math.round(wk.dn/wk.due*100)+'% kept this week':'This week'}${pr>1?` · ${pr} perfect days`:''}</span><button class="link" data-act="dyOpen" data-d="${sel}" id="hsumO">Open the day</button></div></div></section>`};
+ACT.hbSel=d=>{HBS=d.d;const s=$('#hsum');if(!s)return render(false);const r=dayRatio(d.d),f=r.due?r.dn/r.due:0;
+ s.querySelectorAll('.hb-d').forEach(b=>{const on=b.dataset.d===d.d;b.classList.toggle('sel',on);b.setAttribute('aria-pressed',on)});
+ const c=s.querySelector('.hring .b');if(c){const C=parseFloat(c.getAttribute('stroke-dasharray'));c.style.strokeDashoffset=(C*(1-f)).toFixed(1)}
+ countUp(s.querySelector('[data-cu]'),Math.round(f*100),FMT.pct);$('#hsumL').innerHTML=hbLab(d.d,r);$('#hsumO').dataset.d=d.d};
+/* the week strip on Habits duplicated the summary bars */
+hWeekStrip=function(){return''};
+
+/* ---------- Habits: your habits first; Calendar and Progress one tap away ---------- */
+const HG=['habits','cal','progress'];
+const hGroup=v=>v==='hcal'||v==='history'?'cal':v==='progress'||v==='vista'?'progress':'habits';
+let HLAST='habits',HANIM=0;
+const HSUB=[['today','Today'],['build','Build'],['quit','Break'],['routine','Routines'],['templates','Templates']];
+function hProgress(){const N=+S.settings.layout.hsnN||14,tn=dnum(today());
+ const L=S.habits.filter(h=>h.status==='active'&&h.kind!=='quit').map(h=>{let due=0,dn=0;for(let k=tn-29;k<=tn;k++){const ds=fromN(k);if(ds<h.startDate||!hDue(h,ds)||(h.skip&&h.skip[ds]))continue;if(h.freq==='times'&&!hDone(h,ds))continue;if(k===tn&&!hDone(h,ds))continue;due++;if(hDone(h,ds))dn++}return{h,due,dn,p:due?dn/due:null}}).filter(x=>x.p!=null).sort((a,b)=>b.p-a.p);
+ const cons=L.length?`<section class="rv"><div class="st-h"><h3>Consistency</h3><span class="data">last 30 days</span></div><div class="panel hcons">${L.map(x=>`<button class="hcn" style="${cvar(x.h)};--p:${Math.round(x.p*100)}%" data-act="openHabit" data-id="${x.h.id}"><span class="hcn-t"><span>${esc(hIcon(x.h))}</span><b class="ell">${esc(x.h.title)}</b></span><span class="hcn-b"><i></i></span><span class="hcn-v"><b data-cu="${Math.round(x.p*100)}" data-f="pct">${Math.round(x.p*100)}</b>%<small>${x.dn}/${x.due}</small></span></button>`).join('')}</div></section>`:'';
+ return hSummary()+`<section class="rv"><div class="st-h"><h3>Snapshot</h3>${segHTML('hsn','hsnN',[['7','7 d'],['14','14 d'],['30','30 d']],String(N))}</div></section>`+hSnap(N,'prog')+cons+(typeof hVista==='function'?`<section class="rv"><div class="st-h"><h3>Habit Vista</h3></div></section>`+hVista():'')}
+function hCalPane(){return`<section class="panel hcal-p rv">${hCal()}</section>`}
+{const _vH=vHabits;vHabits=function(){if(!S.habits.length)return _vH();const g=hGroup(HV);
+ const main=`<div class="bar hx-bar">${segHTML('hx','hxGo',[['habits','Habits'],['cal','Calendar'],['progress','Progress']],g)}</div>`;
+ let o;if(g==='habits'){o=_vH();const i=o.indexOf('<div class="bar"><div class="seg-c" data-seg="hv"');const sub=`<div class="hx-sub" role="tablist">${HSUB.map(([k,n])=>`<button role="tab" class="chip${HV===k?' on':''}" aria-selected="${HV===k}" data-act="hView" data-v="${k}">${n}</button>`).join('')}</div>`;
+  if(i>=0){const j=o.indexOf('</div></div>',i)+12;o=o.slice(0,i)+main+`<div class="hx-pane">`+sub+o.slice(j)+`</div>`}}
+ else{const sv=HV;HV='templates';let h0;try{h0=_vH()}finally{HV=sv}const i=h0.indexOf('</header>');o=h0.slice(0,i+9)+main+`<div class="hx-pane">${g==='cal'?hCalPane():hProgress()}</div>`}
+ return o.replace(/<button class="ibtn[^"]*" data-act="hcalT"[^>]*>[\s\S]*?<\/button>/,'')};VIEWS.habits=vHabits}
+function hxSlide(dir){if(RM())return;const p=document.querySelector('#view .hx-pane');if(p)p.animate([{opacity:0,transform:`translateX(${dir*34}px)`},{opacity:1,transform:'none'}],{duration:420,easing:'cubic-bezier(.32,.72,0,1)'});cuAll(p,true)}
+Object.assign(ACT,{
+ hxGo:d=>{const from=HG.indexOf(hGroup(HV)),to=HG.indexOf(d.v);if(from===to)return;HV=d.v==='habits'?'today':d.v==='cal'?'hcal':'progress';render(false);hxSlide(to>from?1:-1)},
+ hcalT:()=>ACT.hxGo({v:'cal'}),
+ hsnN:d=>{S.settings.layout.hsnN=+d.v;save();render(false);hsnScroll()}});
+{const _hv=ACT.hView;ACT.hView=d=>{const a=HSUB.findIndex(x=>x[0]===HV),b=HSUB.findIndex(x=>x[0]===d.v);_hv(d);if(a>=0&&b>=0&&a!==b&&!RM()){const p=document.querySelector('#view .hx-pane');if(p)p.animate([{opacity:.2,transform:`translateX(${b>a?18:-18}px)`},{opacity:1,transform:'none'}],{duration:320,easing:'cubic-bezier(.32,.72,0,1)'})}}}
+{const _r=window.__route;if(_r)window.__route=r=>{if(r==='hvista'){closeSheet();HV='progress';go('habits');return}return _r(r)}}
+
+/* ---------- the day page: every day, one plan ---------- */
+function dyPlan(ds){const k=dnum(ds),tn=dnum(today()),it=calItems(k,k)[k]||[],ents=S.entries.filter(e=>e.type==='step'&&dOf(e.t)===ds&&!it.some(x=>x.s&&x.s.id===e.sid));
+ const tog=it.filter(x=>x.k==='day'||x.k==='step'),dn=tog.filter(x=>x.done).length;
+ return`<section class="rv dy-sec" id="dyG"><div class="st-h"><h3>Plan</h3><button class="link" data-act="addDay" data-d="${ds}">Add</button></div>${tog.length?`<div class="data dy-pl-n">${dn} of ${tog.length} done</div>`:''}${it.length?`<div class="cpeek-i dy-plan">${it.map(x=>agRow(x,k<tn)).join('')}</div>`:`<p class="small muted">Nothing planned for this day${k>=tn?' yet. Tap Add to plan something.':'.'}</p>`}
+ ${ents.length?`<div class="dy-sub">Also done this day</div><div class="list">${ents.map(e=>{const g=G(e.goalId);return`<div class="li" style="${g?cvar(g):''}"><span class="chk on">${ic('check')}</span><div style="flex:1;min-width:0"><div class="t">${esc(e.text||'Step')}</div><div class="s"><i></i><span class="ell">${g?esc(g.title)+' · ':''}${tShort(e.t)}</span></div></div></div>`}).join('')}</div>`:''}</section>`}
+{const _vd=vDay;vDay=function(ds){const d0=validDate(ds)||today();let o=_vd(d0);
+ o=o.replace(/ data-dydate max="[\d-]+"/,' data-dydate').replace('aria-label="Day after" disabled','aria-label="Day after"');
+ o=cutSec(o,'<section class="rv dy-sec" id="dyG">');o=cutSec(o,'<section class="rv dy-sec"><div class="st-h"><h3>Steps</h3>');
+ const at=o.indexOf('<section class="rv dy-sec" id="dyHab">'),p=dyPlan(d0);return at<0?o+p:o.slice(0,at)+p+o.slice(at)};VIEWS.day=vDay}
+ACT.dyGo=d=>go('day/'+fromN(dnum(validDate(cur.id)||today())+ +d.d));
+document.addEventListener('change',e=>{const t=e.target;if(t&&t.matches&&t.matches('[data-dydate]')&&t.value>today())go('day/'+t.value)});
+
+/* ---------- calendar: the picked day in full, no repeated agenda ---------- */
+calPeek=function(){return''};
+{const _cd=calDay;calDay=function(){const o=_cd();const i=o.search(/<div class="tg-(all|tools)">/);return i<0?o:o.slice(0,i)}}
+function calDayPanel(ds){const k=dnum(ds),tn=dnum(today()),rel=k-tn,dd=dUTC(k),nm=rel===0?'Today':rel===-1?'Yesterday':rel===1?'Tomorrow':dd.toLocaleDateString(undefined,{weekday:'long',timeZone:'UTC'});
+ let b=vDay(ds);const i=b.indexOf('</header>');b=i<0?b:b.slice(i+9);
+ return`<section class="cdp" id="cdp" data-d="${ds}"><div class="cdp-h"><div><h2>${esc(nm)}</h2><div class="data">${dd.toLocaleDateString(undefined,{weekday:Math.abs(rel)<=1?'long':undefined,month:'long',day:'numeric',...(dd.getUTCFullYear()!==new Date().getFullYear()?{year:'numeric'}:{}),timeZone:'UTC'})}${rel<-1?` · ${-rel} days ago`:rel>1?` · in ${rel} days`:''}</div></div><div class="cdp-a"><button class="ibtn sm" data-act="addDay" data-d="${ds}" aria-label="Plan something for this day">${ic('plus')}</button><button class="btn sm cta" data-act="dyOpen" data-d="${ds}">Full page</button></div></div>${b}</section>`}
+{const _vc=vCal;vCal=function(){const o=_vc(),m='<section class="rv"><div class="st-h"><h3>',i=o.lastIndexOf(m),n=dnum(CAL.d),v=S.settings.layout.cal||'month';
+ let tail=calDayPanel(CAL.d);if(v==='day')tail+=`<section class="rv cdp-hours"><div class="st-h"><h3>Hours</h3><span class="data">tap a slot to plan it</span></div>${dayGrid(n,calItems(n,n)[n]||[])}</section>`;
+ return(i<0?o:o.slice(0,i))+tail};VIEWS.cal=vCal}
+
+/* ---------- activity analytics ---------- */
+const AX={sel:null,anim:1,rh:null};
+const AW=340,AH=170,APT=18,APB=24;
+const axL=()=>S.settings.actLog||{};
+function axDays(n){const t=dnum(today()),L=axL(),out=[];for(let k=t-n+1;k<=t;k++){const ds=fromN(k),o=L[ds]||{};out.push({d:ds,k,s:o.s!=null&&+o.s>0?+o.s:null,z:+o.z>0?+o.z:null,x:wkMin(o)||null,m:o.m!=null?+o.m:null,ss:o.ss||[],a:o.a||[],w:o.w||[]})}return out}
+const axVal=(ds,key)=>{const o=axL()[ds]||{};return key==='x'?(wkMin(o)||null):key==='s'?(+o.s>0?+o.s:null):key==='z'?(+o.z>0?+o.z:null):(o[key]!=null?+o[key]:null)};
+const axAvg=(D,key)=>{const v=D.map(d=>d[key]).filter(x=>x!=null&&x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0};
+function axMA(D,key){return D.map(d=>{const v=[];for(let i=0;i<7;i++){const x=axVal(fromN(d.k-i),key);if(x!=null&&x>0)v.push(x)}return v.length>=3?v.reduce((a,b)=>a+b,0)/v.length:null})}
+function smooth(P){if(P.length<2)return'';const f=n=>n.toFixed(1);let d=`M${f(P[0][0])},${f(P[0][1])}`;for(let i=0;i<P.length-1;i++){const p0=P[i-1]||P[i],p1=P[i],p2=P[i+1],p3=P[i+2]||p2;d+=` C${f(p1[0]+(p2[0]-p0[0])/6)},${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)},${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])},${f(p2[1])}`}return d}
+function axLabels(D,x0,bw,y){const n=D.length,tn=today();return D.map((d,i)=>{const dd=+d.d.slice(8);let t='';if(n<=14)t=new Date(d.d+'T12:00').toLocaleDateString(undefined,{weekday:'narrow'});else if(n<=31)t=(i%5===0||d.d===tn)?String(dd):'';else t=dd===1?new Date(d.d+'T12:00').toLocaleDateString(undefined,{month:'short'}):dd===15?'15':'';
+ return t?`<text x="${(x0+i*bw+bw/2).toFixed(1)}" y="${y}" text-anchor="middle" class="axl${d.d===tn?' t':''}">${esc(t)}</text>`:''}).join('')}
+function axBars(id,D,key,o){const n=D.length,x0=0,bw=(AW-x0)/n,ch=AH-APT-APB,vals=D.map(d=>d[key]||0),mx=Math.max(o.line||0,...vals,1)*1.12,y=v=>APT+ch-v/mx*ch,gap=n>45?.2:n>20?.26:.34,w=bw*(1-gap),rx=Math.min(6,w/2);
+ const bars=D.map((d,i)=>{const v=vals[i],x=x0+i*bw+(bw-w)/2,h=v?Math.max(2.5,v/mx*ch):2,cls=v?(o.good&&o.good(v)?' ok':'')+(o.bad&&o.bad(v)?' over':''):' z';
+  return`<g class="axg" data-act="axSel" data-d="${d.d}" data-x="${(x0+i*bw).toFixed(2)}"><rect class="axhit" x="${(x0+i*bw).toFixed(2)}" y="0" width="${bw.toFixed(2)}" height="${AH}"/><rect class="axr${cls}" x="${x.toFixed(2)}" y="${(APT+ch-h).toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" rx="${rx.toFixed(1)}"/></g>`}).join('');
+ const gl=o.line?`<line class="axgl" x1="0" x2="${AW}" y1="${y(o.line).toFixed(1)}" y2="${y(o.line).toFixed(1)}"/><text class="axgt" x="${AW-3}" y="${(y(o.line)-5).toFixed(1)}" text-anchor="end">${esc(o.lineLab)}</text>`:'';
+ let ma='';if(n>=7){const M=axMA(D,key),runs=[];let cur0=[];M.forEach((v,i)=>{if(v==null){if(cur0.length>1)runs.push(cur0);cur0=[];return}cur0.push([x0+i*bw+bw/2,y(v)])});if(cur0.length>1)runs.push(cur0);ma=runs.map(r=>`<path class="axma" pathLength="1" d="${smooth(r)}"/>`).join('')}
+ return`<div class="axc-w"><svg class="axc" viewBox="0 0 ${AW} ${AH}" role="group" aria-label="${esc(o.aria)}"><line class="axbase" x1="0" x2="${AW}" y1="${APT+ch+.5}" y2="${APT+ch+.5}"/><rect class="axsel" x="0" y="${APT-8}" width="${bw.toFixed(2)}" height="${ch+12}" rx="${Math.min(9,bw/2).toFixed(1)}"/>${gl}${bars}${ma}${axLabels(D,x0,bw,AH-6)}</svg>${n>=7?`<div class="axkey"><span><i class="kb"></i>${esc(o.unit)}</span><span><i class="km"></i>7-day average</span>${o.line?`<span><i class="kg"></i>${esc(o.lineLab)}</span>`:''}</div>`:''}</div>`}
+/* sleep: when you fell asleep and woke up, night by night */
+const rel18=t=>{const d=new Date(t);return(d.getHours()*60+d.getMinutes()-1080+1440)%1440};
+const clockOf=m=>{const c=((Math.round(m)+1080)%1440+1440)%1440;return fmtTime(pad2(Math.floor(c/60))+':'+pad2(c%60))};
+function mainSleep(d){const ss=(d.ss||[]).filter(x=>Array.isArray(x)&&x[1]>x[0]);if(!ss.length)return null;const m=ss.reduce((a,b)=>(b[1]-b[0])>(a[1]-a[0])?b:a),bed=rel18(m[0]),dur=(m[1]-m[0])/6e4;return{bed,wake:bed+dur,dur,s:m[0],e:m[1]}}
+function axSleep(D,goal){const Z=D.map(mainSleep),ok=Z.filter(Boolean);if(ok.length<2)return null;const n=D.length,x0=40,bw=(AW-x0)/n,ch=AH-APT-APB;
+ let lo=Math.min(...ok.map(z=>z.bed))-40,hi=Math.max(...ok.map(z=>z.wake))+40;lo=Math.floor(lo/60)*60;hi=Math.ceil(hi/60)*60;const y=m=>APT+(m-lo)/(hi-lo)*ch,w=bw*(n>45?.8:n>20?.74:.62);
+ let grid='';const step=hi-lo>600?180:120;for(let m=Math.ceil(lo/step)*step;m<=hi;m+=step)grid+=`<line class="axhl" x1="${x0}" x2="${AW}" y1="${y(m).toFixed(1)}" y2="${y(m).toFixed(1)}"/><text class="axl ys" x="${x0-5}" y="${(y(m)+3).toFixed(1)}" text-anchor="end">${esc(clockOf(m).replace(':00',''))}</text>`;
+ const ab=ok.reduce((a,z)=>a+z.bed,0)/ok.length,aw=ok.reduce((a,z)=>a+z.wake,0)/ok.length;
+ const bars=D.map((d,i)=>{const z=Z[i],x=x0+i*bw+(bw-w)/2;return`<g class="axg" data-act="axSel" data-d="${d.d}" data-x="${(x0+i*bw).toFixed(2)}"><rect class="axhit" x="${(x0+i*bw).toFixed(2)}" y="0" width="${bw.toFixed(2)}" height="${AH}"/>${z?`<rect class="axr sl${z.dur>=goal?' ok':''}" x="${x.toFixed(2)}" y="${y(z.bed).toFixed(2)}" width="${w.toFixed(2)}" height="${Math.max(3,y(z.wake)-y(z.bed)).toFixed(2)}" rx="${Math.min(6,w/2).toFixed(1)}"/>`:''}</g>`}).join('');
+ return`<div class="axc-w"><svg class="axc axsl" viewBox="0 0 ${AW} ${AH}" role="group" aria-label="Bedtime and wake-up, night by night"><rect class="axsel" x="0" y="${APT-8}" width="${bw.toFixed(2)}" height="${ch+12}" rx="${Math.min(9,bw/2).toFixed(1)}"/>${grid}<line class="axgl b" x1="${x0}" x2="${AW}" y1="${y(ab).toFixed(1)}" y2="${y(ab).toFixed(1)}"/><line class="axgl w" x1="${x0}" x2="${AW}" y1="${y(aw).toFixed(1)}" y2="${y(aw).toFixed(1)}"/>${bars}${axLabels(D,x0,bw,AH-6)}</svg><div class="axkey"><span><i class="kb"></i>Asleep</span><span><i class="kb ok"></i>Met your goal</span><span><i class="kg"></i>Usual bed and wake time</span></div></div>`}
+function sd(a){if(a.length<2)return 0;const m=a.reduce((x,y)=>x+y,0)/a.length;return Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/a.length)}
+const axS=(v,l,x)=>`<div class="axs"><b>${v}</b><small>${l}</small>${x?`<em>${x}</em>`:''}</div>`;
+const pctDiff=(v,a)=>a?Math.round((v-a)/a*100):0;
+const diffTag=(v,a,goodUp=true)=>{if(!v||!a)return'';const p=pctDiff(v,a);if(Math.abs(p)<3)return`<span class="axd">about your average</span>`;const up=p>0;return`<span class="axd ${up===goodUp?'up':'down'}">${up?'▲':'▼'} ${Math.abs(p)}% vs average</span>`};
+function axRead(key,ds){const D=AX.D||[],A=actSet(),o=axL()[ds]||{},nm=ds===today()?'Today':esc(dayName(ds));
+ if(key==='steps'){const v=+o.s||0,a=axAvg(D,'s'),km=(v*.000762).toFixed(1);return`<div class="axbig"><b data-cu="${v}" data-f="int">${v.toLocaleString()}</b><span>steps</span></div><div class="axsub">${nm}${v?` · ${v<A.goal?Math.min(99,Math.round(v/A.goal*100)):Math.round(v/A.goal*100)}% of ${A.goal.toLocaleString()} · ≈ ${km} km`:' · no steps recorded'} ${diffTag(v,a)}</div>`}
+ if(key==='sleep'){const v=+o.z||0,z=mainSleep({ss:o.ss||[]}),a=axAvg(D,'z');return`<div class="axbig"><b data-cu="${v}" data-f="min">${fmtMin(v)}</b><span>asleep</span></div><div class="axsub">${ds===today()?'Last night':'Night before '+nm}${z?` · ${esc(clockOf(z.bed))} → ${esc(clockOf(z.wake))}`:v?'':' · not recorded'} ${diffTag(v,a)}</div>`}
+ if(key==='screen'){const v=o.m!=null?+o.m:0,a=axAvg(D,'m');return`<div class="axbig"><b data-cu="${v}" data-f="min">${fmtMin(v)}</b><span>on screen</span></div><div class="axsub">${nm}${A.scr?` · ${v>A.scr?fmtMin(v-A.scr)+' over':fmtMin(A.scr-v)+' under'} your ${fmtMin(A.scr)} limit`:''} ${diffTag(v,a,false)}</div>`}
+ if(key==='work'){const v=wkMin(o)||0,ws=o.w||[];return`<div class="axbig"><b data-cu="${v}" data-f="min">${fmtMin(v)}</b><span>active</span></div><div class="axsub">${nm}${ws.length?' · '+ws.map(w=>esc(wkName(w))).join(', '):v?'':' · rest day'}</div>`}
+ return''}
+function axApps(ds){const L=((axL()[ds]||{}).a||[]).slice().sort((a,b)=>b[1]-a[1]).slice(0,6);if(!L.length)return`<p class="small muted">No app details for this day.</p>`;const mx=L[0][1]||1;
+ return L.map(([n,m],i)=>`<div class="axapp" style="--w:${Math.max(4,m/mx*100).toFixed(1)}%;--i:${i}"><span class="ell">${esc(n)}</span><i></i><b>${fmtMin(m)}</b></div>`).join('')}
+function axWkDay(ds){const ws=(axL()[ds]||{}).w||[];return ws.length?ws.map(w=>`<div class="axapp" style="--w:100%"><span class="ell">${esc(wkName(w))}</span><b>${fmtMin(w.m)} · ${tShort(w.t)}</b></div>`).join(''):`<p class="small muted">No workouts logged this day.</p>`}
+function axRhythm(D){const M=[['s','👟','Steps',v=>Math.round(v).toLocaleString()],['z','😴','Sleep',fmtMin],['x','🏋️','Active',fmtMin],['m','📱','Screen',fmtMin]],W=[1,2,3,4,5,6,0];
+ const T=M.map(([k])=>W.map(w=>{const v=D.filter(d=>new Date(d.d+'T12:00').getDay()===w).map(d=>d[k]).filter(x=>x!=null&&x>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}));
+ if(!T.some(r=>r.filter(x=>x!=null).length>=3))return'';
+ const cells=M.map(([k,e,l,f],ri)=>{const r=T[ri],mx=Math.max(...r.filter(x=>x!=null),1),mn=Math.min(...r.filter(x=>x!=null),mx);return`<span class="axrh-l">${e} ${l}</span>${r.map((v,ci)=>{const wn=new Date(2024,0,1+ci).toLocaleDateString(undefined,{weekday:'long'}),t=v==null?`${wn}: no data`:`${wn}: ${f(v)} on average`;return`<button class="axrh-c${v==null?' z':''}" style="--a:${v==null?0:(.18+.82*((v-mn)/((mx-mn)||1))).toFixed(2)};--i:${ri*7+ci}" data-act="axRh" data-t="${esc(t)}" data-k="${ri}-${ci}" aria-label="${esc(l)}, ${esc(t)}"></button>`}).join('')}`}).join('');
+ return`<section class="panel axcard rv" id="act-rhythm"><div class="axh"><span class="act-i">🗓️</span><b>Weekly rhythm</b></div><p class="small muted">Your average for each weekday. Darker is more.</p><div class="axrh"><span></span>${W.map(w=>`<span class="axrh-d">${new Date(2024,0,w===0?7:w).toLocaleDateString(undefined,{weekday:'narrow'})}</span>`).join('')}${cells}</div><div class="axrh-t" id="axrhT">Tap a square to see the number.</div></section>`}
+function axLinks(){const D=axDays(60),A=actSet(),out=[],av=x=>x.reduce((a,b)=>a+b,0)/x.length;
+ {const g=[],b=[];D.forEach(d=>{const r=dayRatio(d.d);if(!d.z||!r.due||d.d===today())return;(d.z>=A.sleep*60?g:b).push(r.dn/r.due*100)});if(g.length>=3&&b.length>=3)out.push({e:'😴',a:av(g),b:av(b),la:`After ${A.sleep}h+ sleep`,lb:'Shorter nights',t:'Habits kept',f:v=>Math.round(v)+'%'})}
+ {const v=D.filter(d=>d.m!=null&&d.d!==today()),md=v.map(d=>d.m).sort((a,b)=>a-b)[Math.floor(v.length/2)],g=[],b=[];v.forEach(d=>{const r=dayRatio(d.d);if(!r.due)return;(d.m<=md?g:b).push(r.dn/r.due*100)});if(g.length>=3&&b.length>=3)out.push({e:'📱',a:av(g),b:av(b),la:`Under ${fmtMin(md)} on screen`,lb:'More screen time',t:'Habits kept',f:v=>Math.round(v)+'%'})}
+ {const g=[],b=[];D.forEach((d,i)=>{const nx=D[i+1];if(!nx||!nx.z||!d.s)return;(d.s>=A.goal?g:b).push(nx.z)});if(g.length>=3&&b.length>=3)out.push({e:'👟',a:av(g),b:av(b),la:`Days with ${A.goal.toLocaleString()}+ steps`,lb:'Quieter days',t:'Sleep that night',f:fmtMin})}
+ if(!out.length)return'';
+ return`<section class="panel axcard rv" id="act-links"><div class="axh"><span class="act-i">🔗</span><b>What goes together</b></div><p class="small muted">From your last 60 days. A pattern, not proof.</p>${out.map(x=>{const mx=Math.max(x.a,x.b)||1;return`<div class="axln"><div class="axln-t"><span>${x.e}</span><b>${esc(x.t)}</b></div><div class="axln-r"><small>${esc(x.la)}</small><span class="axln-b a" style="--w:${(x.a/mx*100).toFixed(1)}%"><i></i></span><b>${esc(x.f(x.a))}</b></div><div class="axln-r"><small>${esc(x.lb)}</small><span class="axln-b" style="--w:${(x.b/mx*100).toFixed(1)}%"><i></i></span><b>${esc(x.f(x.b))}</b></div></div>`}).join('')}</section>`}
+function axCard(id,em,title,chart,stats,extra){return`<section class="panel axcard rv" id="act-${id}"><div class="axh"><span class="act-i">${em}</span><b>${title}</b></div><div class="axread" data-axr="${id}">${axRead(id,AX.sel)}</div>${chart}<div class="axstats">${stats}</div>${extra||''}</section>`}
+function axHist(N){const A=actSet(),L=axL(),keys=Object.keys(L).filter(k=>k<=today()).sort().reverse(),shown=keys.slice(0,ACTV.more);
+ return`<section class="rv"><div class="st-h"><h3>Day by day</h3><span class="data">${keys.length} day${keys.length===1?'':'s'} kept</span></div><div class="ah-list">${shown.map(k=>{const o=L[k]||{};return`<button class="ah-r" data-act="dyOpen" data-d="${k}"><span class="ah-d"><b>${esc(dayName(k))}</b><small>${new Date(k+'T12:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})}</small></span><span class="ah-v${o.s>=A.goal?' ok':''}"><i>👟</i>${o.s!=null?(+o.s).toLocaleString():'—'}</span><span class="ah-v"><i>😴</i>${o.z?fmtMinC(o.z):'—'}</span><span class="ah-v"><i>🏋️</i>${wkMin(o)?fmtMinC(wkMin(o)):'—'}</span><span class="ah-v"><i>📱</i>${o.m!=null?fmtMinC(o.m):'—'}</span>${ic('next','ico-s')}</button>`}).join('')}</div>${keys.length>shown.length?`<div class="actions left"><button class="btn sm" data-act="actMore">Show older days</button></div>`:''}</section>`}
+{const _va=vActivity;vActivity=function(){const L=axL();if(!Object.keys(L).length||(NATIVE&&!nat()))return _va();
+ const base=NATIVE?_va():'',N=ACTV.days||7,D=axDays(N),A=actSet(),d=ACTV.data||{},ok=d.ok||{};AX.D=D;if(!AX.sel||!D.some(x=>x.d===AX.sel))AX.sel=today();
+ const head=`<header class="ph"><div><h1>Activity</h1><div class="data">${NATIVE?(ACTV.at?'Updated '+tShort(ACTV.at)+' · ':'')+'read on this phone, never uploaded':'synced from your phone'}</div></div><div class="ph-r">${NATIVE?`<button class="ibtn" data-act="actRefresh" aria-label="Refresh" title="Refresh">${ic('rep')}</button>`:''}<button class="ibtn" data-act="actGoals" aria-label="Daily goals" title="Daily goals">${ic('target')}</button>${gear()}</div></header>`;
+ const bar=`<div class="bar">${segHTML('actd','axRange',[['7','7 d'],['14','14 d'],['30','30 d'],['90','90 d']],String(N))}</div>`;
+ const sel=`<div class="axday" id="axday"><button class="ibtn sm" data-act="axStep" data-d="-1" aria-label="Day before">${ic('back')}</button><div class="axday-t"><small class="data">Showing</small><b id="axdayT">${AX.sel===today()?'Today':esc(dayName(AX.sel))}</b></div><button class="ibtn sm" data-act="axStep" data-d="1" aria-label="Day after">${ic('next')}</button><button class="btn sm cta" data-act="axOpen">Open day</button></div>`;
+ const need=(t,x,b)=>NATIVE?actNeed(t,x,b):`<p class="small muted">Nothing synced yet.</p>`;
+ const T=[];
+ const sv=D.filter(x=>x.s),hasS=sv.length||ok.steps;
+ if(hasS){const best=sv.reduce((a,x)=>x.s>(a?a.s:0)?x:a,null),hit=sv.filter(x=>x.s>=A.goal).length,tot=sv.reduce((a,x)=>a+x.s,0);let run=0;for(let i=D.length-1;i>=0;i--){if(D[i].s>=A.goal)run++;else if(D[i].d===today())continue;else break}
+  T.push(axCard('steps','👟','Steps',axBars('s',D,'s',{line:A.goal,lineLab:'goal '+A.goal.toLocaleString(),good:v=>v>=A.goal,unit:'Steps',aria:`Steps, last ${N} days. Tap a bar to see that day.`}),axS(Math.round(axAvg(D,'s')).toLocaleString(),'daily average')+axS(best?best.s.toLocaleString():'—','best day',best?esc(dayName(best.d)):'')+axS(`${hit}/${sv.length}`,'goal met',run>1?run+' in a row':'')+axS((tot*.000762).toFixed(1)+' km','walked, about')))}
+ else T.push(`<section class="panel axcard rv" id="act-steps"><div class="axh"><span class="act-i">👟</span><b>Steps</b></div>${need('steps','Allow physical activity so Plotline can read your phone’s step counter.','Allow')}</section>`);
+ const zv=D.filter(x=>x.z),hasZ=zv.length||ok.hc;
+ if(hasZ){const Z=D.map(mainSleep).filter(Boolean),debt=zv.reduce((a,x)=>a+Math.max(0,A.sleep*60-x.z),0),met=zv.filter(x=>x.z>=A.sleep*60).length,cons=Z.length>=3?Math.round(sd(Z.map(z=>z.bed))):null;
+  const chart=axSleep(D,A.sleep*60)||axBars('z',D,'z',{line:A.sleep*60,lineLab:'goal '+fmtMin(A.sleep*60),good:v=>v>=A.sleep*60,unit:'Sleep',aria:`Sleep, last ${N} nights. Tap a bar to see that night.`});
+  T.push(axCard('sleep','😴','Sleep',chart,axS(fmtMin(axAvg(D,'z')),'average night')+axS(Z.length?esc(clockOf(Z.reduce((a,z)=>a+z.bed,0)/Z.length)):'—','usual bedtime',Z.length?'up '+esc(clockOf(Z.reduce((a,z)=>a+z.wake,0)/Z.length)):'')+axS(cons!=null?'± '+fmtMin(cons):'—','bedtime spread',cons!=null?(cons<=30?'very steady':cons<=60?'fairly steady':'all over'):'')+axS(fmtMin(debt),'short of your goal',`${met}/${zv.length} nights met`),(!zv.length&&NATIVE&&ok.hc)?`<div class="act-diag"><p class="small muted">Health Connect is connected but has no sleep from the last 30 days. Turn on syncing to Health Connect in your sleep or watch app.</p><button class="btn sm" data-act="hcOpen">Open Health Connect</button></div>`:''))}
+ else T.push(`<section class="panel axcard rv" id="act-sleep"><div class="axh"><span class="act-i">😴</span><b>Sleep</b></div>${need('sleep',ok.hcSupported===false?'Sleep and workouts come from Health Connect, built into Android 14 and newer.':'Connect Health Connect to see sleep and workouts from your fitness apps.',ok.hcSupported===false?'OK':'Connect')}</section>`);
+ const mv=D.filter(x=>x.m!=null),hasM=mv.length||ok.screen;
+ if(hasM){const lo=mv.reduce((a,x)=>!a||x.m<a.m?x:a,null),under=A.scr?mv.filter(x=>x.m<=A.scr).length:null;
+  T.push(axCard('screen','📱','Screen time',axBars('m',D,'m',{line:A.scr||0,lineLab:'limit '+fmtMin(A.scr),bad:v=>A.scr&&v>A.scr,good:v=>A.scr&&v<=A.scr,unit:'Screen time',aria:`Screen time, last ${N} days. Tap a bar to see that day.`}),axS(fmtMin(axAvg(D,'m')),'daily average')+axS(lo?fmtMin(lo.m):'—','lightest day',lo?esc(dayName(lo.d)):'')+axS(under!=null?`${under}/${mv.length}`:'—','under your limit')+axS(fmtMin(axAvg(D,'m')*7),'a week, about'),`<div class="axsub2">Top apps</div><div class="axapps" data-axx="apps">${axApps(AX.sel)}</div>`))}
+ else T.push(`<section class="panel axcard rv" id="act-screen"><div class="axh"><span class="act-i">📱</span><b>Screen time</b></div>${need('screen','Turn on Usage access for Plotline to see how long you spend in apps. Only minutes are read.','Allow')}</section>`);
+ const xv=D.filter(x=>x.x),hasW=xv.length||ok.hc;
+ if(hasW){const types={};D.forEach(x=>(x.w||[]).forEach(w=>{const n=ACT_EX[w.k]||'Workout';types[n]=(types[n]||0)+(+w.m||0)}));const TT=Object.entries(types).sort((a,b)=>b[1]-a[1]),tsum=TT.reduce((a,x)=>a+x[1],0)||1,long=xv.reduce((a,x)=>!a||x.x>a.x?x:a,null);
+  const mix=TT.length?`<div class="axsub2">Mix</div><div class="axmix">${TT.map(([n,m],i)=>`<i style="--w:${(m/tsum*100).toFixed(1)}%;--h:${(i*67)%360}" title="${esc(n)} ${fmtMin(m)}"></i>`).join('')}</div><div class="axmix-l">${TT.slice(0,5).map(([n,m],i)=>`<span><i style="--h:${(i*67)%360}"></i>${esc(n)} · ${fmtMin(m)}</span>`).join('')}</div>`:'';
+  T.push(axCard('work','🏋️','Workouts',axBars('x',D,'x',{line:0,good:v=>v>=30,unit:'Active minutes',aria:`Workouts, last ${N} days. Tap a bar to see that day.`}),axS(`${xv.length}/${N}`,'active days')+axS(fmtMin(xv.reduce((a,x)=>a+x.x,0)),'total')+axS(long?fmtMin(long.x):'—','longest',long?esc(dayName(long.d)):'')+axS(fmtMin(xv.length?xv.reduce((a,x)=>a+x.x,0)/xv.length:0),'per active day'),mix+`<div class="axsub2">This day</div><div class="axapps" data-axx="work">${axWkDay(AX.sel)}</div>`))}
+ const pl=base?(()=>{const i=base.indexOf('<section class="panel act-t rv" id="act-places">');if(i<0)return'';const j=base.indexOf('</section>',i);return j<0?'':base.slice(i,j+10)})():'';
+ return head+bar+sel+`<div class="axgrid">${T.join('')}${axRhythm(D)}${axLinks()}${pl}</div>`+axHist(N)+`<p class="small muted" style="margin:18px 4px 0">Habits can use these too: tap ⚡ on a habit to check it off by itself.</p>`};VIEWS.activity=vActivity}
+function axPick(ds,anim){AX.sel=ds;document.querySelectorAll('#view svg.axc').forEach(svg=>{svg.querySelectorAll('.axg.on').forEach(x=>x.classList.remove('on'));const g=svg.querySelector(`.axg[data-d="${ds}"]`),s=svg.querySelector('.axsel');if(!s)return;if(!g){s.style.opacity=0;return}g.classList.add('on');s.style.opacity=1;if(!anim)s.style.transition='none';s.style.transform=`translateX(${g.dataset.x}px)`;if(!anim){s.getBoundingClientRect();s.style.transition=''}});
+ document.querySelectorAll('#view [data-axr]').forEach(el=>{const old=el.querySelector('[data-cu]'),ov=old?+old.dataset.cu:0;el.innerHTML=axRead(el.dataset.axr,ds);const nw=el.querySelector('[data-cu]');if(nw&&anim){nw.dataset.v=ov;countUp(nw,+nw.dataset.cu,FMT[nw.dataset.f])}if(anim&&!RM())el.animate([{opacity:.55},{opacity:1}],{duration:260})});
+ const ap=document.querySelector('#view [data-axx="apps"]');if(ap)ap.innerHTML=axApps(ds);const wk=document.querySelector('#view [data-axx="work"]');if(wk)wk.innerHTML=axWkDay(ds);
+ const t=$('#axdayT');if(t)t.textContent=ds===today()?'Today':dayName(ds)}
+function axAnimate(){if(RM())return;document.querySelectorAll('#view svg.axc').forEach(svg=>{const R=[...svg.querySelectorAll('.axr')],n=R.length||1;R.forEach((r,i)=>r.animate([{transform:'scaleY(0)',opacity:.2},{transform:'scaleY(1)',opacity:1}],{duration:760,delay:Math.round(i*Math.min(28,420/n)),easing:'cubic-bezier(.34,1.36,.5,1)',fill:'backwards'}));
+  svg.querySelectorAll('.axma').forEach(p=>p.animate([{strokeDashoffset:1},{strokeDashoffset:0}],{duration:1200,delay:300,easing:'cubic-bezier(.32,.72,0,1)',fill:'backwards'}));svg.querySelectorAll('.axgl').forEach(l=>l.animate([{opacity:0},{opacity:1}],{duration:600,delay:500,fill:'backwards'}))});
+ document.querySelectorAll('#view .axrh-c').forEach(c=>c.animate([{transform:'scale(.3)',opacity:0},{transform:'none',opacity:1}],{duration:480,delay:(+c.style.getPropertyValue('--i')||0)*12,easing:'cubic-bezier(.34,1.36,.5,1)',fill:'backwards'}));
+ document.querySelectorAll('#view .axln-b i,#view .axapp i,#view .axmix i').forEach((c,i)=>c.animate([{transform:'scaleX(0)'},{transform:'none'}],{duration:800,delay:200+i*40,easing:'cubic-bezier(.32,.72,0,1)',fill:'backwards'}));
+ cuAll($('#view .axgrid'),true)}
+Object.assign(ACT,{
+ axSel:d=>axPick(d.d,true),
+ axStep:d=>{const D=AX.D||[],i=D.findIndex(x=>x.d===AX.sel),j=i+ +d.d;if(j<0||j>=D.length)return;axPick(D[j].d,true)},
+ axOpen:()=>go('day/'+(AX.sel||today())),
+ axRange:d=>{ACTV.days=+d.v;AX.anim=1;if(nat())actLoad(true);render(false)},
+ axRh:(d,el)=>{document.querySelectorAll('#view .axrh-c.on').forEach(x=>x.classList.remove('on'));el.classList.add('on');const t=$('#axrhT');if(t){t.textContent=d.t;if(!RM())t.animate([{opacity:0,transform:'translateY(4px)'},{opacity:1,transform:'none'}],{duration:240})}}});
+let AXP='';
+/* ---------- after every render ---------- */
+{const _r=render;render=function(a){_r(a);navMark();
+ if(cur.p==='activity'&&$('#view .axgrid')){axPick(AX.sel||today(),false);if(AXP!=='activity'||AX.anim){AX.anim=0;requestAnimationFrame(axAnimate)}}
+ if(cur.p==='habits'||cur.p==='today')hsnScroll();
+ AXP=cur.p}}
+/* boot already happened by the time this runs: paint the new bar now */
+try{tabMigrate();tbPaint()}catch(e){}
+})();
 </script>
 <script src="bench.js"></script>
 </body>

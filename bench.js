@@ -146,7 +146,7 @@ input.wb-ttl:focus{background:var(--surface);box-shadow:none}
 let LIST=null,saveT=null;
 const loadList=async()=>{if(LIST)return LIST;try{LIST=(await DB.get('benches'))||[]}catch(e){LIST=[]}return LIST};
 loadList();
-function persist(){clearTimeout(saveT);saveT=setTimeout(()=>{if(LIST)DB.set('benches',LIST).catch(()=>toast('Couldn’t save the board on this device'))},250)}
+function persist(){clearTimeout(saveT);saveT=setTimeout(()=>{if(LIST)DB.set('benches',LIST).catch(()=>toast('Couldn’t save the board on this device'))},250);if(typeof syncSoon==='function')syncSoon(5000)}
 const blank=title=>({id:uid(),title:title||'Untitled board',tu:now(),created:now(),u:now(),nodes:{},edges:{},comments:{},dead:{},who:{},cloud:null,pub:null});
 function put(b,type,text,x,y,color,extra){const id=uid(),[,w,h]=TYPES[type];b.nodes[id]={id,type,text,x,y,w,h,color:color||(type==='sticky'?'amber':'none'),u:now(),...extra};return id}
 function link(b,a,c,label){const id=uid();b.edges[id]={id,a,b:c,label:label||'',u:now()};return id}
@@ -185,6 +185,22 @@ function mergeInto(b,r){let ch=false;const dead=b.dead;
  for(const k in b.who)if(b.who[k].t<now()-5*60e3)delete b.who[k];
  return ch}
 const payload=b=>({title:b.title,tu:b.tu,nodes:b.nodes,edges:b.edges,comments:b.comments,dead:b.dead,who:b.who});
+/* Drive sync: boards travel in plotline.json next to goals and habits. Same per-item merge as live sharing;
+   a deleted board leaves a tombstone in S.dead. Keys are sorted so an unchanged board compares equal. */
+const sortK=o=>Object.keys(o||{}).sort().reduce((a,k)=>(a[k]=o[k],a),{});
+const syncForm=b=>({id:b.id,created:b.created||0,u:b.u||0,title:b.title,tu:b.tu||0,nodes:sortK(b.nodes),edges:sortK(b.edges),comments:sortK(b.comments),dead:sortK(b.dead)});
+const byId=(x,y)=>x.id<y.id?-1:x.id>y.id?1:0;
+window.WBSYNC={
+ list:async()=>(await loadList()).map(syncForm).sort(byId),
+ merge:(A,B,dead)=>{const m=new Map();(A||[]).forEach(x=>m.set(x.id,JSON.parse(JSON.stringify(x))));
+  (B||[]).forEach(r=>{const b=m.get(r.id);if(!b){m.set(r.id,r);return}['nodes','edges','comments','dead','who'].forEach(k=>{b[k]=b[k]||{}});mergeInto(b,r);b.u=Math.max(b.u||0,r.u||0)});
+  return[...m.values()].filter(x=>!(dead&&dead[x.id]>=(x.u||0))).map(syncForm).sort(byId)},
+ apply:async(rs,dead)=>{await loadList();let ch=false;
+  (rs||[]).forEach(r=>{let b=LIST.find(x=>x.id===r.id);if(!b){b={...blank(r.title),id:r.id,created:r.created||now(),tu:0,u:0};LIST.push(b);ch=true}
+   if(mergeInto(b,r))ch=true;if((r.u||0)>(b.u||0)){b.u=r.u;ch=true}});
+  const keep=LIST.filter(b=>!(dead&&dead[b.id]>=(b.u||0)));if(keep.length!==LIST.length){LIST.splice(0,LIST.length,...keep);ch=true}
+  if(!ch)return;LIST.sort((a,b)=>(b.u||0)-(a.u||0));DB.set('benches',LIST).catch(()=>{});
+  if(cur.p==='bench'){if(cur.id&&WB.B&&LIST.includes(WB.B))draw();else render(false)}}};
 const edgesOk=b=>Object.values(b.edges).filter(e=>b.nodes[e.a]&&b.nodes[e.b]);
 function delNodes(b,ids){const s=new Set(ids);ids.forEach(id=>delete b.nodes[id]);Object.values(b.edges).forEach(e=>{if(s.has(e.a)||s.has(e.b))delete b.edges[e.id]});Object.values(b.comments).forEach(c=>{if(s.has(c.on))delete b.comments[c.id]})}
 const snapv=v=>WB.snap?Math.round(v/GRID)*GRID:Math.round(v);
@@ -608,8 +624,8 @@ const fileName=b=>(b.title.replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-')||
 const exportJSON=b=>dl(fileName(b)+'.plotline-board.json',JSON.stringify({format:'plotline-board',version:1,title:b.title,nodes:b.nodes,edges:b.edges,comments:b.comments},null,1),'application/json');
 const md=b=>`# ${b.title}\n\n${outline(b,'board').replace(/^Board: .*\n\n/,'')}\n`;
 function dupBoard(b){const n={...blank(b.title+' (copy)'),nodes:JSON.parse(JSON.stringify(b.nodes)),edges:JSON.parse(JSON.stringify(b.edges)),comments:JSON.parse(JSON.stringify(b.comments))};LIST.unshift(n);persist();return n}
-function delBoard(b,cloudToo){const i=LIST.indexOf(b);if(i>=0)LIST.splice(i,1);persist();if(cloudToo&&b.cloud&&b.cloud.owner===myUid()){cdel(b.cloud.doc);if(b.pub)cdel(b.pub.doc)}
- toast(`Deleted “${esc(trunc(b.title,30))}”`,cloudToo?null:()=>{LIST.splice(Math.max(0,i),0,b);persist();if(cur.p==='bench')render(false)})}
+function delBoard(b,cloudToo){const i=LIST.indexOf(b);if(i>=0)LIST.splice(i,1);S.dead=S.dead||{};S.dead[b.id]=now();save();persist();if(cloudToo&&b.cloud&&b.cloud.owner===myUid()){cdel(b.cloud.doc);if(b.pub)cdel(b.pub.doc)}
+ toast(`Deleted “${esc(trunc(b.title,30))}”`,cloudToo?null:()=>{LIST.splice(Math.max(0,i),0,b);b.u=now();delete S.dead[b.id];save();persist();if(cur.p==='bench')render(false)})}
 Object.assign(ACT,{
  wbNew:d=>{const t=TPLS.find(x=>x[0]===d.tpl)||TPLS[0],b=blank(t[0]==='blank'?'Untitled board':t[1]);t[4](b);LIST.unshift(b);persist();go('bench/'+b.id)},
  wbOpen:(d,el,e)=>{if(e&&e.target.closest('[data-act=wbCardMenu]'))return;go('bench/'+d.id)},
