@@ -1244,6 +1244,7 @@ html,body{overscroll-behavior-y:contain}
 .demob{display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:10px 10px 10px 16px;border-radius:18px;border:1px dashed color-mix(in srgb,var(--accent) 55%,transparent);background:color-mix(in srgb,var(--accent) 6%,var(--surface));font-size:14px}
 .demob span{flex:1;display:flex;align-items:center;gap:8px;min-width:0}.demob span svg{width:17px;height:17px;color:var(--accent);flex:none}
 .demob .ibtn.sm{width:36px;height:36px;border-radius:12px}
+.upd>span>span{display:grid;gap:2px;min-width:0}.upd small{color:var(--muted);font-size:12.5px;line-height:1.35}
 .aig{margin-top:16px;padding:14px;border-radius:20px;border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
 .aig.on{border-color:var(--accent)}
 .aig-h{display:flex;gap:10px;align-items:center}.aig-h b{display:block;font-size:15px}.aig-h small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
@@ -2820,7 +2821,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.16.0';
+const APP_VER='1.16.1';
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
@@ -7026,6 +7027,21 @@ let AXP='';
  AXP=cur.p}}
 /* boot already happened by the time this runs: paint the new bar now */
 try{tabMigrate();tbPaint()}catch(e){}
+})();
+/* ===== 1.16.1: "a new version is ready" on Android =====
+   Checks the latest GitHub release at most every 6 hours. If its tag is newer than APP_VER, Home shows a banner;
+   Download opens the fixed latest-release link in the browser, and tapping the file installs it over this one. */
+(()=>{if(!NATIVE)return;
+const K='plotline.upd',REL='https://api.github.com/repos/Munazzar/plotline/releases/latest',DL='https://github.com/Munazzar/plotline/releases/latest/download/Plotline.apk';
+const newer=(a,b)=>{const x=a.split('.').map(Number),y=b.split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)!==(y[i]||0))return(x[i]||0)>(y[i]||0)}return false};
+let U=null;try{U=JSON.parse(localStorage.getItem(K)||'null')}catch(e){}
+const keep=()=>{try{localStorage.setItem(K,JSON.stringify(U))}catch(e){}};
+const avail=()=>!!(U&&U.v&&newer(U.v,APP_VER)&&U.hide!==U.v);
+async function check(){if(U&&Date.now()-U.t<6*36e5)return;try{const r=await fetch(REL,{headers:{Accept:'application/vnd.github+json'}});if(!r.ok)return;const j=await r.json(),was=avail();
+ U={t:Date.now(),v:String(j.tag_name||'').replace(/^v/,''),hide:U&&U.hide};keep();if(avail()!==was&&cur.p==='today'&&!$('#sheet').classList.contains('on'))render(false)}catch(e){}}
+{const _vt=vToday;vToday=function(){const o=_vt();if(!avail())return o;const b=`<div class="demob upd rv"><span>${ic('down')}<span><b>Plotline ${esc(U.v)} is ready</b><small>You have ${esc(APP_VER)}. Download, then tap the file to install. Your data stays.</small></span></span><button class="btn sm pri" data-act="updGet">Download</button><button class="ibtn sm" data-act="updHide" aria-label="Not now">${ic('minus')}</button></div>`;const i=o.indexOf('</header>');return i<0?b+o:o.slice(0,i+9)+b+o.slice(i+9)};VIEWS.today=vToday}
+Object.assign(ACT,{updGet:()=>{try{NATIVE.openUrl(DL)}catch(e){location.href=DL}},updHide:()=>{if(U){U.hide=U.v;keep()}render(false)}});
+setTimeout(check,4000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check()});
 })();
 </script>
 <script src="bench.js"></script>
