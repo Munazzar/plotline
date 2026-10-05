@@ -4262,7 +4262,7 @@ window.addEventListener('pointerup',()=>{if(!DR)return;const d=DR;DR=null;if(d.m
 /* ---- pull down to sync (touch) ---- */
 let PTR=null;const PTR_MAX=130;
 function ptrEl(){let e=$('#ptr');if(!e){e=document.createElement('div');e.id='ptr';e.setAttribute('aria-hidden','true');e.innerHTML=`<svg class="rg" viewBox="0 0 38 38"><circle class="t" cx="19" cy="19" r="15"/><circle class="a" cx="19" cy="19" r="15" pathLength="100"/></svg>${ic('reset','ico')}`;document.body.appendChild(e)}return e}
-document.addEventListener('touchstart',e=>{PTR=null;if(e.touches.length!==1||scrollY>2||$('#sheet').classList.contains('on')||document.querySelector('.lock'))return;const t=e.target;if(t.closest&&t.closest('#map,.dgrid,input,textarea,select,[contenteditable]'))return;PTR={x:e.touches[0].clientX,y:e.touches[0].clientY,d:0,on:false}},{passive:true});
+document.addEventListener('touchstart',e=>{PTR=null;if(e.touches.length!==1||scrollY>2||$('#sheet').classList.contains('on')||document.querySelector('.lock'))return;const t=e.target;if(t.closest&&t.closest('#map,.dgrid,.wb,input,textarea,select,[contenteditable]'))return;PTR={x:e.touches[0].clientX,y:e.touches[0].clientY,d:0,on:false}},{passive:true});
 document.addEventListener('touchmove',e=>{if(!PTR)return;if(e.touches.length!==1||PZ){PTR=null;return}const t=e.touches[0],dy=t.clientY-PTR.y,dx=Math.abs(t.clientX-PTR.x);
  if(!PTR.on){if(dy>10&&dy>dx*1.5&&scrollY<=0)PTR.on=true;else{if(dy<-4||dx>14)PTR=null;return}}
  e.preventDefault();PTR.d=Math.max(0,dy-10);const p=Math.min(1,PTR.d/PTR_MAX),el=ptrEl();el.classList.add('on');el.style.setProperty('--p',p);el.style.transform=`translate(-50%,${Math.min(96,PTR.d*.55).toFixed(1)}px) rotate(${(p*220).toFixed(0)}deg)`;
@@ -6491,7 +6491,7 @@ function fontNativeFlag(){const f=fontSet();document.documentElement.classList.t
 {const _af=applyFonts;applyFonts=function(){if(!S.settings.v114font){S.settings.v114font=1;if(!S.settings.font)S.settings.font={d:'nsysd',b:'system',m:'nsysm'};try{save()}catch(e){}}_af();fontNativeFlag()}}
 
 /* ---------- bottom bar: 4 pages + More ---------- */
-const PAGES=[['today','Home','today','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['vista','Vista','map','Timeline and life map'],['journal','Journal','journal','Moments and history'],['ask','Ask','ai','Insights and AI planning'],['threads','Threads','thread','Conversations about goals and habits'],['activity','Activity','flame','Phone activity and automations'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||VIEWS[p[0]]);
+const PAGES=[['today','Home','today','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['vista','Vista','map','Timeline and life map'],['journal','Journal','journal','Moments and history'],['ask','Ask','ai','Insights and AI planning'],['threads','Threads','thread','Conversations about goals and habits'],['activity','Activity','flame','Phone activity and automations'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||p[0]==='bench'||VIEWS[p[0]]);
 const tabs=()=>{const t=(S.settings.tabs||['today','habits','cal','goals']).filter(k=>PAGES.some(p=>p[0]===k));return t.length?t.slice(0,4):['today','habits','cal','goals']};
 const pg=k=>PAGES.find(p=>p[0]===k);
 function tabbarHTML(){return`<div class="navs"><span class="nav-ind"></span>${tabs().map(k=>{const p=pg(k);return`<a class="nav" href="#/${k}" data-nav="${k}">${ic(p[2])}<span>${p[1]}</span></a>`}).join('')}<button class="nav" data-act="navMore" data-nav="more" aria-label="More pages and search">${ic('menu')}<span>More</span></button></div>`}
@@ -6625,5 +6625,6 @@ if(typeof livePanel==='function'){livePanel=function(){if(!liveOK())return'';con
 })();
 
 </script>
+<script src="bench.js"></script>
 </body>
 </html>
