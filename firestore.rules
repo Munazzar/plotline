@@ -1,0 +1,69 @@
+rules_version = '2';
+// Plotline sharing. Only shared items live here, end-to-end encrypted; everyone's plan stays in their own Google Drive.
+// circles/{cid}          one shared item: owner, members (emails), opub (owner's public key),
+//                        locks (the item key locked for each member), enc (the encrypted item)
+// circles/{cid}/ms/{em}  one person's encrypted progress for it; only that person can write it
+// keys/{em}              a person's PUBLIC key (the private half never leaves their own Drive)
+// benches/{id}           a shared Workbench board: owner (anonymous Firebase uid), kind ('edit' or 'view'),
+//                        enc (the board, AES-GCM sealed with a key that only lives in the link's #fragment)
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function me() { return request.auth.token.email.lower(); }
+    function circle(cid) { return get(/databases/$(database)/documents/circles/$(cid)).data; }
+    function okCircle(d) {
+      return d.keys().hasOnly(['owner', 'members', 'opub', 'locks', 'enc', 'created', 'u'])
+        && d.owner == me() && d.members is list && me() in d.members && d.members.size() <= 21
+        && d.opub is string && d.opub.size() <= 200
+        && d.locks is string && d.locks.size() <= 20000
+        && d.enc is string && d.enc.size() <= 60000;
+    }
+    function okBench(d) {
+      return d.keys().hasOnly(['owner', 'kind', 'enc', 'u', 'v'])
+        && d.owner is string && d.kind in ['edit', 'view']
+        && d.enc is string && d.enc.size() < 1000000
+        && d.u is int;
+    }
+
+    match /circles/{cid} {
+      allow read: if signedIn() && me() in resource.data.members;
+      allow create: if signedIn() && okCircle(request.resource.data);
+      allow update: if signedIn() && resource.data.owner == me() && okCircle(request.resource.data);
+      allow delete: if signedIn() && resource.data.owner == me();
+
+      match /ms/{em} {
+        allow read: if signedIn() && me() in circle(cid).members;
+        allow create, update: if signedIn() && em == me() && me() in circle(cid).members
+          && request.resource.data.keys().hasOnly(['status', 'enc', 'u'])
+          && request.resource.data.status in ['joined', 'declined', 'left']
+          && request.resource.data.enc is string && request.resource.data.enc.size() <= 40000;
+        allow delete: if signedIn() && (em == me() || circle(cid).owner == me());
+      }
+    }
+
+    match /keys/{em} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && em == me()
+        && request.resource.data.keys().hasOnly(['pub', 'fp', 'u'])
+        && request.resource.data.pub is string && request.resource.data.pub.size() <= 200
+        && request.resource.data.fp is string && request.resource.data.fp.size() <= 64;
+      allow delete: if signedIn() && em == me();
+    }
+
+    // Workbench boards. Ids are random and can't be listed; without the key in the link the content is noise.
+    // Any signed-in session (anonymous is fine) may edit an 'edit' board; only the owner may update a 'view' copy.
+    match /benches/{id} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if request.auth != null && okBench(request.resource.data)
+        && request.resource.data.owner == request.auth.uid;
+      allow update: if request.auth != null && okBench(request.resource.data)
+        && request.resource.data.owner == resource.data.owner
+        && request.resource.data.kind == resource.data.kind
+        && (resource.data.kind == 'edit' || resource.data.owner == request.auth.uid);
+      allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
+    }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}

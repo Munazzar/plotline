@@ -4,17 +4,7 @@
    random 256-bit key that only travels in the link's #fragment. Browsers never send a fragment to a server, so
    Firestore, Google, link previews and crawlers only ever see ciphertext under an unguessable id.
 
-   Firestore rules this needs (add next to the existing circles/keys rules), plus Authentication → Anonymous enabled:
-     match /benches/{id} {
-       allow get: if true;            // ciphertext only; without the key in the link it is noise
-       allow list: if false;          // no enumerating boards
-       allow create: if request.auth != null && request.resource.data.owner == request.auth.uid
-                     && request.resource.data.kind in ['edit','view'] && request.resource.data.enc.size() < 1000000;
-       allow update: if request.auth != null && request.resource.data.owner == resource.data.owner
-                     && request.resource.data.kind == resource.data.kind && request.resource.data.enc.size() < 1000000
-                     && (resource.data.kind == 'edit' || resource.data.owner == request.auth.uid);
-       allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
-     }
+   Needs: the benches block in firestore.rules, and Firebase Authentication → Anonymous turned on.
 */
 (()=>{
 'use strict';
