@@ -3093,7 +3093,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.20.0';
+const APP_VER='1.21.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -5803,7 +5803,7 @@ async function fbSession(){let s=fbGet();if(s&&s.email&&me()&&s.email!==me()){fb
 /* the Android background check: finds new invites, and (for items you share) locks the item key for people who
    install Plotline after you invited them, so their invite unlocks without you opening the app */
 function fbNative(){try{if(!NATIVE||!NATIVE.shareCfg)return;const s=fbGet()||{},c=fbc(),id=S.ident||{};
- NATIVE.shareCfg(JSON.stringify({on:!!(shOn()&&s.rt),key:c.key,pid:c.pid,rt:s.rt||'',email:s.email||'',seen:shares().map(x=>x.id),priv:id.priv||'',owned:shares().filter(x=>x.fs&&x.role==='owner'&&x.status==='joined'&&x.k).map(x=>({cid:x.id,k:x.k})),
+ NATIVE.shareCfg(JSON.stringify({on:!!(shOn()&&s.rt),key:c.key,pid:c.pid,rtdb:RTDB(),rt:s.rt||'',email:s.email||'',seen:shares().map(x=>x.id),priv:id.priv||'',owned:shares().filter(x=>x.fs&&x.role==='owner'&&x.status==='joined'&&x.k).map(x=>({cid:x.id,k:x.k})),
   joined:shares().filter(x=>x.fs&&x.status==='joined'&&x.k).map(x=>({cid:x.id,k:x.k,title:String(x.title||'').slice(0,60)})),rx:Object.fromEntries(Object.entries(shset().rx||{}).map(([k,v])=>[k,v.t||0]))}))}catch(e){}}
 async function shAllow(){shPatch({lite:false});scopeSync();tokDrop();
  try{const t=NATIVE&&S.settings.sync.native?await nativeAuth(true):await(NATIVE?browserAuthFromApp():webAuth('consent'));await fbSignIn(t);shPatch({allow:false});render(false);toast('Done. Invites will show up here');await shRefresh(true)}
@@ -5820,6 +5820,30 @@ window.LASTACT=Date.now();['pointerdown','keydown','wheel','touchstart'].forEach
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')window.LASTACT=Date.now()});
 window.plAwake=()=>document.visibilityState==='visible'&&Date.now()-window.LASTACT<180000&&!fsCool();
 const awake=window.plAwake;
+/* ---- Realtime Database inbox (1.21): instant cheers and messages without polling ----
+   Sending a cheer or a group message also drops a note into each recipient's inbox: inbox/{email, . as ,}/{id} =
+   {c: shared item id, e: the note sealed with that item's key, t: server time}. Only the item's members can read it.
+   The phone's live service and an open app each keep one streaming connection to their own inbox; the database pushes
+   new notes as they're written. Nothing is read while nothing happens. Rules: database.rules.json in this repo. */
+const RTDB=()=>{if(window.RT_OFF)return'';const c=PLOTLINE_CFG.firebase||{};return String(c.databaseURL||(fbc().pid?`https://${fbc().pid}-default-rtdb.firebaseio.com`:'')).replace(/\/$/,'')};
+const emKey=e=>lc(e).replace(/\./g,',');
+async function rtRing(sh,r){const db=RTDB();if(!db||!sh||!sh.k)return;const s=await fbSession();if(!s||!s.id)return;
+ let to=[r.to];if(r.to==='*'){const G=typeof SHGD!=='undefined'&&SHGD[sh.id],C=shCacheGet(sh.id);to=(G&&G.c&&G.c.members)||(C&&C.c&&C.c.members)||[]}
+ to=[...new Set(to.map(lc))].filter(e=>e&&e!==fme()&&!/[\/#$\[\]]/.test(e)).slice(0,20);if(!to.length)return;
+ const e=await encJ(sh.k,{f:fme(),n:myName().slice(0,80),e:r.emoji||'',m:r.m||'',to:r.to,t:r.t});
+ await Promise.all(to.map(em=>fetch(`${db}/inbox/${emKey(em)}.json?auth=${encodeURIComponent(s.id)}`,{method:'POST',body:JSON.stringify({c:sh.id,e,t:{'.sv':'timestamp'}})}).then(x=>{if(x.status===404)window.RT_OFF=1}).catch(()=>{})))}
+let RTES=null,RTON=false,RTFAIL=0;
+async function rtListen(){if(RTES||!shOn()||!RTDB()||document.visibilityState!=='visible'||!shares().some(x=>x.fs&&x.k&&x.status==='joined'))return;let s;try{s=await fbSession()}catch(e){return}if(!s||!s.id||RTES)return;
+ const es=new EventSource(`${RTDB()}/inbox/${emKey(fme())}.json?auth=${encodeURIComponent(s.id)}`),t0=Date.now();RTES=es;let got=false;
+ const stop=bad=>{try{es.close()}catch(e){}if(RTES===es){RTES=null;RTON=false}if(bad&&!got&&++RTFAIL>3)window.RT_OFF=1};
+ const on=ev=>{got=true;RTON=true;RTFAIL=0;let o;try{o=JSON.parse(ev.data)}catch(e){return}const v=o&&o.data;if(!v||typeof v!=='object')return;
+  const E=o.path==='/'?v:{[String(o.path).slice(1)]:v},cids=new Set(Object.values(E).filter(x=>x&&x.c&&(+x.t||0)>t0-5000).map(x=>x.c));
+  cids.forEach(cid=>{const sh=shById(cid);if(sh&&sh.status==='joined'&&sh.k)fsMembers(sh).then(ms=>shCollect(sh,ms)).catch(()=>{})})};
+ es.addEventListener('put',on);es.addEventListener('patch',on);es.addEventListener('auth_revoked',()=>stop(false));es.addEventListener('cancel',()=>{stop(true);window.RT_OFF=1});
+ es.onerror=()=>{if(es.readyState===2)stop(true)};setTimeout(()=>stop(false),45*60000)}
+setInterval(()=>{if(!RTES&&awake())rtListen()},30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(rtListen,1200);else if(RTES){try{RTES.close()}catch(e){}RTES=null;RTON=false}});
+setTimeout(rtListen,4000);
 /* the last group data each device saw, so shared items open instantly and still show something when the cloud is busy */
 const shTrim=m=>({...m,cheers:(m.cheers||[]).slice(-12)});
 const shCacheGet=id=>{try{return JSON.parse(localStorage.getItem('shg:'+id)||'null')}catch(e){return null}};
@@ -5986,6 +6010,7 @@ function shGroupHTML(sh,{c,d,ms,all}){SHGD[sh.id]={c,d,ms,all};const it=d.item||
  <div class="sh-ms">${rows.map((m,i)=>`<div class="sh-mr${m.mine?' me':''}"><span class="sh-ava">${d.mode==='compete'?['🥇','🥈','🥉'][i]||i+1:esc((m.name||m.email||'?')[0].toUpperCase())}</span><div><b>${m.mine?'You':esc(m.name||m.email)}</b><small>${kind==='habit'?`${weekChecks(m.progress)} this week · ${(m.progress&&m.progress.streak)||0} day streak`:`${(m.progress&&m.progress.pct)||0}% done`}${m.progress&&m.progress.u?' · '+esc(dayLabel(m.progress.u)):''}</small>${kind==='habit'?`<div class="sh-wk">${[...Array(7)].map((_,k)=>{const ds=fromN(dnum(ymd())-6+k);return`<i class="${m.progress&&m.progress.checks&&m.progress.checks[ds]?'on':''}"></i>`}).join('')}</div>`:`<div class="pbar"><i style="width:${(m.progress&&m.progress.pct)||0}%"></i></div>`}</div>${m.mine?'':`<button class="btn sm rx-go" data-act="shReact" data-id="${sh.id}" data-to="${esc(m.email)}" data-nm="${esc(m.name||m.email.split('@')[0])}" aria-label="React to ${esc(m.name||'')}"><span aria-hidden="true">👏</span>React</button>`}</div>`).join('')}
  ${pending.map(e=>`<div class="sh-mr pend"><span class="sh-ava">${esc(e[0].toUpperCase())}</span><div><b>${esc(e)}</b><small>${st(e)==='declined'?'Declined':st(e)==='left'?'Left':c.keys[e]||c.owner===e?'Invited · hasn’t joined yet':'Invited · not on Plotline yet'}</small></div></div>`).join('')}</div>
  ${feed}
+ <form class="rx-own sh-say" data-form="shSay" data-id="${sh.id}" autocomplete="off"><input name="m" maxlength="120" placeholder="Say something to everyone…" aria-label="Message to everyone"><button class="btn pri" type="submit" aria-label="Send">${ic('send')}</button></form>
  ${kind==='goal'&&it.steps?`<details class="sh-asg"><summary class="small">Steps and who’s on them</summary><div class="sh-steps">${it.steps.map(s=>{const by=ms.find(m=>m.progress&&(m.progress.done||[]).includes(s.id));return`<div class="${by?'d':''} ${s.to===fme()?'me':''}"><i></i><span>${esc(s.title)}</span><em>${by?'✓ '+esc(by.mine?'you':by.name):s.to?esc(s.to===fme()?'you':s.to.split('@')[0]):'anyone'}</em></div>`}).join('')}</div></details>`:''}
  <button class="btn shc-open" data-act="shCal" data-id="${sh.id}">${ic('cal')}Everyone’s calendar</button>
  <div class="actions">${sh.role==='owner'?`<button class="btn danger ghost" data-act="shStop" data-id="${sh.id}">Stop sharing</button><button class="btn ghost" data-act="shInvite" data-id="${sh.id}">Invite more</button>`:`<button class="btn danger ghost" data-act="shLeave" data-id="${sh.id}">Leave</button>`}<button class="btn pri" data-act="close">Done</button></div>`}
@@ -6052,7 +6077,7 @@ function reactsSentToday(){const d=ymd(),ids=new Set();shares().forEach(x=>(x.my
 /* only the first 50 a day from each person count, whatever their app sent */
 function capReacts(L){const n={};return L.slice().sort((a,b)=>a.t-b.t).filter(r=>{const k=r.fe+'|'+dayOf(r.t);n[k]=(n[k]||0)+1;return n[k]<=REACT_MAX})}
 let SHR={};
-function shCollect(sh,ms){SHR[sh.id]=(ms||[]).filter(m=>m.email!==fme()&&m.status!=='left').flatMap(m=>(m.cheers||[]).filter(c=>c&&c.to===fme()&&+c.t>0&&+c.t<Date.now()+6e5).map(c=>({id:c.id||m.email+c.t,from:m.name,fe:m.email,e:String(c.emoji||'').slice(0,16),m:String(c.m||'').slice(0,120),t:+c.t,cid:sh.id})));shInbox()}
+function shCollect(sh,ms){SHR[sh.id]=(ms||[]).filter(m=>m.email!==fme()&&m.status!=='left').flatMap(m=>(m.cheers||[]).filter(c=>c&&(c.to===fme()||c.to==='*')&&+c.t>0&&+c.t<Date.now()+6e5).map(c=>({id:c.id||m.email+c.t,all:c.to==='*',from:m.name,fe:m.email,e:String(c.emoji||'').slice(0,16),m:String(c.m||'').slice(0,120),t:+c.t,cid:sh.id})));shInbox()}
 const reactsForMe=cid=>{const all=capReacts(Object.values(SHR).flat());return cid?all.filter(r=>r.cid===cid):all};
 const rxUnread=cid=>((shset().rx||{})[cid]||{}).n||0;
 function rxRead(cid){if(RB.q.some(r=>r.cid===cid)){RB.q=RB.q.filter(r=>r.cid!==cid);reactShow()}const rx={...(shset().rx||{})};if(rx[cid]&&rx[cid].n){rx[cid]={...rx[cid],n:0};shPatch({rx});render(false)}}
@@ -6074,9 +6099,9 @@ function reactBurst(e){if(reduced&&reduced())return;const w=document.createEleme
  w.innerHTML=[...Array(7)].map((_,i)=>`<span style="--x:${Math.round((Math.random()-.5)*220)}px;--d:${i*70}ms;--s:${(.8+Math.random()*.7).toFixed(2)}">${esc(e)}</span>`).join('');document.body.appendChild(w);setTimeout(()=>w.remove(),2200)}
 /* in the group view: recent reactions both ways, newest first */
 function rxFeed(sh,ms){const mine=(ms.find(m=>m.mine)||{}).cheers||[],nm=e=>{const m=ms.find(x=>x.email===e);return m?m.name:(e||'').split('@')[0]};
- const L=[...reactsForMe(sh.id).map(r=>({...r,dir:'in'})),...mine.filter(c=>c&&c.t).map(c=>({e:c.emoji,m:c.m,t:+c.t,to:nm(c.to),dir:'out'}))].sort((a,b)=>b.t-a.t).slice(0,6);
+ const L=[...reactsForMe(sh.id).map(r=>({...r,dir:'in'})),...mine.filter(c=>c&&c.t).map(c=>({e:c.emoji,m:c.m,t:+c.t,to:c.to==='*'?'everyone':nm(c.to),dir:'out'}))].sort((a,b)=>b.t-a.t).slice(0,6);
  if(!L.length)return`<p class="small muted rx-none">No reactions yet. Tap <b>React</b> next to someone to cheer them on.</p>`;
- return`<div class="rx-feed"><div class="data">Reactions · live</div>${L.map(r=>`<div class="rx-i ${r.dir}"><span class="rx-ie">${esc(r.e||'💬')}</span><span class="rx-it"><b>${r.dir==='in'?esc(r.from)+' → you':'You → '+esc(r.to)}</b>${r.m?`<span>${esc(r.m)}</span>`:''}</span><small>${esc(dayLabel(r.t))} ${new Date(r.t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</small></div>`).join('')}</div>`}
+ return`<div class="rx-feed"><div class="data">Reactions · live</div>${L.map(r=>`<div class="rx-i ${r.dir}"><span class="rx-ie">${esc(r.e||'💬')}</span><span class="rx-it"><b>${r.dir==='in'?esc(r.from)+(r.all?' → everyone':' → you'):'You → '+esc(r.to)}</b>${r.m?`<span>${esc(r.m)}</span>`:''}</span><small>${esc(dayLabel(r.t))} ${new Date(r.t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</small></div>`).join('')}</div>`}
 /* Today: unread reactions get a row next to invites */
 function rxTodayRows(){const rx=shset().rx||{};return shares().filter(x=>x.status==='joined'&&(rx[x.id]||{}).n).slice(0,2).map(x=>{const r=reactsForMe(x.id).slice(-1)[0],n=rx[x.id].n;
  return`<div class="sh-inv rx-row"><span class="sh-ava rx-ava">${esc(r&&r.e||'💬')}</span><div><b>${r?esc(r.from)+(r.m?': '+esc(r.m):' sent you '+esc(r.e)):n+' new reaction'+(n===1?'':'s')}</b><small>${n>1?n+' new · ':''}on “${esc(x.title)}”</small></div><div class="sh-inv-a"><button class="btn sm pri" data-act="shOpen" data-id="${x.id}">Open</button></div></div>`}).join('')}
@@ -6093,7 +6118,7 @@ function shQuickForm(back){const q=quickMsgs();openSheet(`<h2>Quick messages</h2
  <div class="actions"><button type="button" class="btn ghost" data-act="shQuickReset">Reset to defaults</button><button class="btn pri">Save</button></div></form>`)}
 async function shPollReacts(){if(!shOn()||SHC.busy||SHC.rb||TOURING||fsCool()||Date.now()-(SHC.rt||0)<60000)return;SHC.rt=Date.now();const L=shares().filter(x=>x.fs&&x.k&&x.status==='joined');if(!L.length)return;SHC.rb=true;
  try{for(const sh of L){if(openGroup()===sh.id)continue;shCollect(sh,await fsMembers(sh))}}catch(e){}finally{SHC.rb=false}}
-setInterval(()=>{if(awake())shPollReacts()},120000);
+setInterval(()=>{if(awake()&&!RTON)shPollReacts()},120000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(shPollReacts,1500)});
 Object.assign(ACT,{
  shReact:(d,el)=>{const x=shById(d.id);if(!x||x.status!=='joined')return;if(RB.q.length){RB.q=[];reactShow()}const fromGroup=!!(el&&el.closest&&el.closest('[data-shg]'));shReactSheet(x,d.to,d.nm||(d.to||'').split('@')[0]);RXT.back=fromGroup},
@@ -6134,7 +6159,7 @@ const _vHabit=vHabit;vHabit=id=>shInject(_vHabit(id),'habit',id);VIEWS.habit=vHa
 const _vGoal=vGoal;vGoal=id=>shInject(_vGoal(id),'goal',id);VIEWS.goal=vGoal;
 async function reactSend(x,to,emoji,m){if(reactsSentToday()>=REACT_MAX){toast(`That’s ${REACT_MAX} reactions for today`);return false}
  const r={id:uid(),to,emoji:emoji||'',m:String(m||'').slice(0,120),t:Date.now()};if(!r.emoji&&!r.m)return false;
- x.cheerOut=[...(x.cheerOut||[]),r];x.u=Date.now();save();reactBurst(r.emoji||'💬');await shPublish(x);return r}
+ x.cheerOut=[...(x.cheerOut||[]),r];x.u=Date.now();save();reactBurst(r.emoji||'💬');await shPublish(x);rtRing(x,r).catch(()=>{});return r}
 Object.assign(ACT,{shQuick:(d,el)=>{const x=shById(d.id);if(!x)return;if(el){el.classList.remove('sent');void el.offsetWidth;el.classList.add('sent')}
  reactSend(x,d.to,d.e,'').then(r=>{if(r){toast(`Sent ${r.emoji} to ${esc(d.nm||'')}`);shPanelPaint(x.id)}}).catch(e=>toast(shErr(e)))}});
 /* ================= LIVE HOME: STUDIO =================*/
@@ -6707,6 +6732,9 @@ document.addEventListener('change',e=>{const t=e.target;if(t&&t.dataset&&t.datas
 applyFonts();
 
 /* ================= REACTIONS: your own words, and instant mode on Android ================= */
+Object.assign(FORM,{shSay:async f=>{const x=shById(f.dataset.id),i=f.elements.m,m=String(i.value||'').replace(/\s+/g,' ').trim();if(!x||!m)return;
+ const r=await reactSend(x,'*','',m);if(!r)return;i.value='';toast('Sent to everyone');const C=shCacheGet(x.id),el=document.querySelector(`#sheet.on [data-shg="${x.id}"]`);
+ if(el&&(SHGD[x.id]||C)){const g=SHGD[x.id]||C,me=g.ms.find(mm=>mm.mine);if(me)me.cheers=[...(me.cheers||[]),r];el.innerHTML=shGroupHTML(x,g)}}});
 Object.assign(FORM,{shReactTxt:f=>{const x=RXT&&shById(RXT.id),m=String(f.elements.m.value||'').replace(/\s+/g,' ').trim();if(!x||!m)return;if(reactsSentToday()>=REACT_MAX)return toast(`That’s ${REACT_MAX} reactions for today`);
  const nm=RXT.nm,back=RXT.back;reactSend(x,RXT.to,'',m).then(r=>{if(!r)return;toast(`Sent to ${esc(nm)} · “${esc(trunc(r.m,40))}”`);if(back)shOpen(x);else{closeSheet();shPanelPaint(x.id)}}).catch(e=>toast(shErr(e)))}});
 const liveOK=()=>NATIVE&&NATIVE.liveShare;

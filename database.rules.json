@@ -1,0 +1,17 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "inbox": {
+      "$em": {
+        ".read": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') === $em",
+        ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') === $em",
+        "$id": {
+          ".write": "auth != null && auth.token.email_verified == true && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['c', 'e', 't']) && newData.child('c').isString() && newData.child('c').val().length <= 60 && newData.child('e').isString() && newData.child('e').val().length <= 4000 && newData.child('t').isNumber() && newData.child('t').val() <= now",
+          "$other": { ".validate": "$other === 'c' || $other === 'e' || $other === 't'" }
+        }
+      }
+    }
+  }
+}
