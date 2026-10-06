@@ -3193,7 +3193,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.30.0';
+const APP_VER='1.30.1';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -6031,10 +6031,14 @@ const FSM={},FSW=(()=>{try{return JSON.parse(localStorage.getItem('plotline.fsw'
 async function fsMembersFs(sh){const j=await fs(`/circles/${sh.id}/ms?pageSize=100`);const out=[];
  for(const d of j&&j.documents||[]){const m=fsDec(d);m.email=lc(m._id);let p={};if(m.enc&&sh.k){try{p=await decJ(sh.k,m.enc)}catch(e){}}m.name=p.name||m.email.split('@')[0];m.progress=p.progress||{};m.cheers=p.cheers||[];out.push(m)}return out}
 async function fsMembers(sh){const R=await rtMembers(sh),C=shCacheGet(sh.id),G0=typeof SHGD!=='undefined'&&SHGD[sh.id],members=((G0&&G0.c)||(C&&C.c)||{}).members||[];
- const have=new Set((R||[]).map(m=>m.email)),missing=members.filter(e=>!have.has(e)),old=()=>((C&&C.all)||[]).filter(m=>!have.has(m.email));
- if(R&&R.length&&(!missing.length||fsCool()||Date.now()-(FSM[sh.id]||0)<30*60000))return[...R,...old()];
- let F;try{F=await fsMembersFs(sh);FSM[sh.id]=Date.now()}catch(e){if(R&&R.length)return[...R,...old()];throw e}
- return[...(R||[]),...F.filter(m=>!have.has(m.email))]}
+ const have=new Set((R||[]).map(m=>m.email)),missing=members.filter(e=>!have.has(e));
+ /* 1.30.1: never forget someone because one read came back short (Firestore skipped, at its daily limit, or offline):
+    start from the last saved list and let newer readings replace a person, so joined members don't turn back into
+    "hasn't joined yet" */
+ const keep=L=>{const m=new Map(((C&&C.all)||[]).map(x=>[x.email,x]));for(const x of L){const o=m.get(x.email);if(!o||(+x.u||0)>=(+o.u||0))m.set(x.email,x)}return[...m.values()].filter(x=>!members.length||members.includes(x.email))};
+ if(R&&R.length&&(!missing.length||fsCool()||Date.now()-(FSM[sh.id]||0)<30*60000))return keep(R);
+ let F;try{F=await fsMembersFs(sh);FSM[sh.id]=Date.now()}catch(e){if(R&&R.length||C)return keep(R||[]);throw e}
+ return keep([...(R||[]),...F.filter(m=>!have.has(m.email))])}
 async function fsSetMe(sh,o){const enc=sh.k&&o.status==='joined'?await encJ(sh.k,{name:myName().slice(0,80),progress:o.progress||{},cheers:o.cheers||[]}):'';
  const a=await rtAuth(),k=emKey(fme());let ok=false;
  if(a&&okKey(k)){try{const r=await fetch(`${a.db}/gm/${sh.id}/${k}.json?${a.q}`,{method:'PUT',body:JSON.stringify({s:o.status,e:enc,u:{'.sv':'timestamp'}})});ok=r.ok}catch(e){}}
@@ -6195,7 +6199,7 @@ function shGroupHTML(sh,{c,d,ms,all}){SHGD[sh.id]={c,d,ms,all};const it=d.item||
  return`<div class="data">${MODES[d.mode]?.e||''} ${MODES[d.mode]?.n||''} · <span title="End-to-end encrypted">🔒 live</span></div><h2 style="margin-top:6px">${esc(d.title)}</h2>
  ${d.mode==='together'?`<div class="sh-tot"><b>${tot}${kind==='habit'?'':'%'}</b><span>${kind==='habit'?'check-ins together this week':'done together'}</span></div>`:''}
  <div class="sh-ms">${rows.map((m,i)=>`<div class="sh-mr${m.mine?' me':''}"><span class="sh-ava">${d.mode==='compete'?['🥇','🥈','🥉'][i]||i+1:esc((m.name||m.email||'?')[0].toUpperCase())}</span><div><b>${m.mine?'You':esc(m.name||m.email)}</b><small>${kind==='habit'?`${weekChecks(m.progress)} this week · ${(m.progress&&m.progress.streak)||0} day streak`:`${(m.progress&&m.progress.pct)||0}% done`}${m.progress&&m.progress.u?' · '+esc(dayLabel(m.progress.u)):''}</small>${kind==='habit'?`<div class="sh-wk">${[...Array(7)].map((_,k)=>{const ds=fromN(dnum(ymd())-6+k);return`<i class="${m.progress&&m.progress.checks&&m.progress.checks[ds]?'on':''}"></i>`}).join('')}</div>`:`<div class="pbar"><i style="width:${(m.progress&&m.progress.pct)||0}%"></i></div>`}</div>${m.mine?'':`<button class="btn sm rx-go" data-act="shReact" data-id="${sh.id}" data-to="${esc(m.email)}" data-nm="${esc(m.name||m.email.split('@')[0])}" aria-label="React to ${esc(m.name||'')}"><span aria-hidden="true">👏</span>React</button>`}</div>`).join('')}
- ${pending.map(e=>`<div class="sh-mr pend"><span class="sh-ava">${esc(e[0].toUpperCase())}</span><div><b>${esc(e)}</b><small>${st(e)==='declined'?'Declined':st(e)==='left'?'Left':c.keys[e]||c.owner===e?'Invited · hasn’t joined yet':'Invited · not on Plotline yet'}</small></div></div>`).join('')}</div>
+ ${pending.map(e=>`<div class="sh-mr pend"><span class="sh-ava">${esc(e[0].toUpperCase())}</span><div><b>${esc(e)}</b><small>${st(e)==='declined'?'Declined':st(e)==='left'?'Left':fsCool()&&!st(e)?'Couldn’t check right now (the cloud’s daily limit). Try again later':c.keys[e]||c.owner===e?'Invited · hasn’t joined yet':'Invited · not on Plotline yet'}</small></div></div>`).join('')}</div>
  ${feed}
  <form class="rx-own sh-say" data-form="shSay" data-id="${sh.id}" autocomplete="off"><input name="m" maxlength="120" placeholder="Say something to everyone…" aria-label="Message to everyone"><button class="btn pri" type="submit" aria-label="Send">${ic('send')}</button></form>
  ${kind==='goal'&&it.steps?`<details class="sh-asg"><summary class="small">Steps and who’s on them</summary><div class="sh-steps">${it.steps.map(s=>{const by=ms.find(m=>m.progress&&(m.progress.done||[]).includes(s.id));return`<div class="${by?'d':''} ${s.to===fme()?'me':''}"><i></i><span>${esc(s.title)}</span><em>${by?'✓ '+esc(by.mine?'you':by.name):s.to?esc(s.to===fme()?'you':s.to.split('@')[0]):'anyone'}</em></div>`}).join('')}</div></details>`:''}
@@ -6344,7 +6348,7 @@ function shPanelBody(x){const md=MODES[x.mode]||MODES.together,c=SHM[x.id],left=
  const head=`<div class="shp-h"><span class="shp-t">${md.e} <b>Shared</b> · ${esc(md.n)}</span><button class="btn sm ghost" data-act="shOpen" data-id="${x.id}">Group${ic('next','ico-s')}</button></div>`;
  if(!c||!c.ms)return head+`<p class="small muted">${fsCool()?'Group details are paused for a while (the cloud’s daily limit). Your own progress is saved and goes out later.':'Loading who’s in it…'}</p>`;
  const others=c.ms.filter(m=>m.email!==fme()&&m.status==='joined');
- if(!others.length)return head+`<p class="small muted">${x.role==='owner'?'Nobody has joined yet. Once they do, you’ll see their progress here and can react with one tap.':'Waiting for the others.'}</p>`;
+ if(!others.length)return head+`<p class="small muted">${fsCool()?'Group details are paused for a while (the cloud’s daily limit). Your own progress is saved and goes out later.':x.role==='owner'?'Nobody has joined yet. Once they do, you’ll see their progress here and can react with one tap.':'Waiting for the others.'}</p>`;
  const mine=reactsForMe(x.id);
  return head+others.map(m=>{const p=m.progress||{},kind=(x.local||{}).kind,last=mine.filter(r=>r.fe===m.email).slice(-1)[0],nm=m.name||m.email.split('@')[0];
   const st=kind==='habit'?`${p.checks&&p.checks[td]?'✓ done today':'not yet today'} · ${weekChecks(p)} this week`:kind==='thread'?`${p.n||0} update${p.n===1?'':'s'}${p.pct>=100?' · done':''}`:`${p.pct||0}% done`;
