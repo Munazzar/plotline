@@ -3074,6 +3074,12 @@ html.thr-focus #tabbar,html.thr-focus .tabbar{display:none}
 .csum-t{display:grid;gap:2px;padding:12px 14px;border-radius:16px;background:var(--surface-2)}
 .csum-t b{font:700 20px/1.1 var(--f-body)}.csum-t span{font-size:12.5px;color:var(--muted)}.csum-t em{font-style:normal;font-size:11.5px;color:var(--muted)}
 @media(max-width:600px){.csum-g{grid-template-columns:repeat(2,minmax(0,1fr))}.cd-act b.zz{display:none}}
+/* 1.30.2 spacing: cards keep their shadows; stacks of them get enough room that one shadow doesn't run into the next card */
+.shp{margin:14px 0 30px;padding:16px 18px}
+.dy-hl,.dy-plan,.setup,.tgrid,.fpre,.ins-stats{gap:12px}
+.dy-sum,.ask-sugs{gap:10px}
+.ask-scope{margin-bottom:12px}
+.hpc+.hpc{margin-top:16px}
 </style>
 </head>
 <body>
@@ -3193,7 +3199,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.30.1';
+const APP_VER='1.30.2';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
