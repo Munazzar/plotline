@@ -279,7 +279,7 @@ async function push(b){if(pushing){again=true;return}pushing=true;setSt('saving'
    if(enc.length>950000)throw new Error('This board is too big to share (about 1 MB). Split it into two boards.');
    const r=await cput(b.cloud.doc,{owner:b.cloud.owner,kind:'edit',enc,u:now(),v:1},b.cloud.ut||'new');
    if(r.conflict){await pull(b,true);continue}
-   b.cloud.ut=r.ut;b.cloud.sent=now();persist();setSt('ok');pubSoon(b);return}
+   b.cloud.ut=r.ut;b.cloud.sent=now();WB.pushedAt=now();persist();setSt('ok');pubSoon(b);if(window.rtPing)rtPing(b.cloud.doc);return}
   throw new Error('Too many people saving at once, retrying')}
  catch(e){setSt('err',e.message||String(e))}finally{pushing=false;if(again){again=false;pushSoon(50)}}}
 async function pull(b,force){const d=await cget(b.cloud.doc);if(!d){b.cloud.gone=1;setSt('err','This board is no longer shared');return}
@@ -291,7 +291,10 @@ let pubT;function pubSoon(b){if(!b.pub||!mine(b.cloud.owner))return;clearTimeout
 async function publish(b,first){const v=b.pub,{who:_,...p}=payload(b);for(let i=0;i<3;i++){const r=await cput(v.doc,{owner:b.cloud.owner,kind:'view',enc:await encJ(v.key,p),u:now(),v:1},first?'new':v.ut);
   if(r.conflict){const d=await cget(v.doc);v.ut=d&&d.ut;first=!d;continue}v.ut=r.ut;persist();return}}
 // ponytail: polls one doc every 6s while a shared board is busy (30s when quiet, paused on quota); switch to Firestore's Listen channel if read quota matters
-let tick=0;setInterval(()=>{const b=WB.B;tick++;if(!b||!b.cloud||cur.p!=='bench'||pushing||WB.G||WB.edit||(window.plAwake&&!window.plAwake()))return;
+/* live: the Realtime Database pings an open shared board on every change (rtWatch); polling only without it */
+let BW=null;function benchWatch(){const b=cur.p==='bench'?WB.B:null,doc=b&&b.cloud&&!b.cloud.gone?b.cloud.doc:null;if(BW&&BW.doc===doc)return;if(BW){BW.w.close();BW=null}
+ if(doc&&window.rtWatch)BW={doc,w:rtWatch(doc,()=>{const x=WB.B;if(!x||!x.cloud||x.cloud.doc!==doc||pushing||now()-(WB.pushedAt||0)<1500)return;pull(x).catch(e=>setSt('err',e.message))})}}
+let tick=0;setInterval(()=>{const b=WB.B;tick++;benchWatch();if(BW&&BW.w.on)return;if(!b||!b.cloud||cur.p!=='bench'||pushing||WB.G||WB.edit||(window.plAwake&&!window.plAwake()))return;
  if(tick%2||now()-(WB.lastRemote||0)>60e3&&tick%10)return;pull(b).catch(e=>setSt('err',e.message))},3000);
 setInterval(()=>{const b=WB.B;if(b&&b.cloud&&!b.ro&&cur.p==='bench'&&(!window.plAwake||window.plAwake()))pushSoon(0)},120e3);
 const linkOf=(k,doc,key)=>`${webBase()}#/bench/${k}~${doc}~${toUrl(key)}`;

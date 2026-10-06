@@ -2,6 +2,13 @@
   "rules": {
     ".read": false,
     ".write": false,
+    "ping": {
+      "$doc": {
+        ".read": "auth != null",
+        ".write": "auth != null && $doc.length >= 20 && $doc.length <= 40",
+        ".validate": "newData.isNumber() && newData.val() <= now"
+      }
+    },
     "inbox": {
       "$em": {
         ".read": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') === $em",

@@ -28,20 +28,30 @@ const linkOf=L=>`${C().webBase()}#/list/j~${L.cloud.doc}~${C().toUrl(L.cloud.key
 const ro=L=>!!(L.cloud&&!C().signedIn());
 function merge(L,r){let ch=false;for(const[id,it]of Object.entries(r.items||{})){const a=L.items[id];if(!a||(it.u||0)>(a.u||0)){L.items[id]=it;ch=true}}
  if((r.mu||0)>(L.mu||0)){L.title=r.title;L.emoji=r.emoji;L.due=r.due||'';L.mu=r.mu;ch=true}return ch}
-let pT={};function pushSoon(L,d=700){clearTimeout(pT[L.id]);pT[L.id]=setTimeout(()=>push(L),d)}
+let pT={};function pushSoon(L,d=250){clearTimeout(pT[L.id]);pT[L.id]=setTimeout(()=>push(L),d)}
 async function push(L){const s=st(L);if(!L.cloud||ro(L))return;if(s.pushing){s.again=1;return}s.pushing=1;paintSt(L,'saving');
  try{for(let i=0;i<4;i++){const enc=await encJ(L.cloud.key,payload(L));const r=await C().cput(L.cloud.doc,{owner:L.cloud.owner,kind:'edit',enc,u:now(),v:1},L.cloud.ut||'new');
-   if(r.conflict){await pull(L,true);continue}L.cloud.ut=r.ut;L.cloud.sent=now();save();paintSt(L,'ok');return}throw new Error('Too many people saving at once, retrying')}
+   if(r.conflict){await pull(L,true);continue}L.cloud.ut=r.ut;L.cloud.sent=now();s.pushedAt=now();save();paintSt(L,'ok');if(window.rtPing)rtPing(L.cloud.doc);return}throw new Error('Too many people saving at once, retrying')}
  catch(e){paintSt(L,'err');toast(esc(e.message||String(e)))}finally{s.pushing=0;if(s.again){s.again=0;pushSoon(L,50)}}}
 async function pull(L,force){const d=await C().cget(L.cloud.doc);if(!d){L.cloud.gone=1;save();paintSt(L,'err');return}
  if(!force&&d.ut===L.cloud.ut)return;const r=await decJ(L.cloud.key,d.enc);L.cloud.owner=d.owner;L.cloud.ut=d.ut;st(L).remote=now();
  const ch=merge(L,r);const mineNewer=Object.values(L.items).some(i=>(i.u||0)>(L.cloud.sent||0))||(L.mu||0)>(L.cloud.sent||0);
- if(ch){save();if(cur.p==='list'&&cur.id===L.id&&!document.activeElement?.closest?.('.ls-it,.ls-add,.ls-hero'))render(false)}
+ if(ch){save();if(cur.p==='list'&&cur.id===L.id)repaint()}
  if(mineNewer&&!ro(L))pushSoon(L,200);paintSt(L,'ok')}
+/* redraw the open list in place, keeping whatever you're typing (and the cursor) */
+function repaint(){const a=document.activeElement,k=a&&a.dataset?(a.dataset.lsedit?'[data-lsedit="'+a.dataset.lsedit+'"]':a.dataset.lstitle?'[data-lstitle]':a.closest&&a.closest('.ls-add')?'.ls-add input':null):null;
+ const v=k&&a.value,ss=k&&a.selectionStart,se=k&&a.selectionEnd,y=scrollY;render(false);window.scrollTo(0,y);
+ if(k){const n=document.querySelector('#view '+k);if(n){n.value=v;n.focus();try{n.setSelectionRange(ss,se)}catch(e){}}}}
 function paintSt(L,k){const e=document.getElementById('lsst');if(e&&cur.p==='list'&&cur.id===L.id){e.className='ls-st '+k;e.textContent=k==='ok'?'Synced':k==='saving'?'Saving…':k==='err'?(L.cloud&&L.cloud.gone?'No longer shared':'Not synced'):''}}
 /* while a shared list is open and someone is using the app: every 6 s right after a change from someone else, else every 30 s */
-let tick=0;setInterval(()=>{tick++;if(cur.p!=='list')return;const L=LBY(cur.id);if(!L||!L.cloud||L.cloud.gone||st(L).pushing||(window.plAwake&&!window.plAwake()))return;
- if(tick%2||(now()-(st(L).remote||0)>60e3&&tick%10))return;pull(L).catch(()=>paintSt(L,'err'))},3000);
+/* live: while a shared list is open, the Realtime Database pushes a ping on every change and we fetch it at once.
+   Without that (not set up yet), it checks every 6 s right after a change, else every 30 s. */
+let WATCH=null;
+function watchFor(L){const doc=L&&L.cloud&&!L.cloud.gone?L.cloud.doc:null;if(WATCH&&WATCH.doc===doc)return;if(WATCH){WATCH.w.close();WATCH=null}
+ if(doc&&window.rtWatch)WATCH={doc,w:rtWatch(doc,()=>{const x=LBY(cur.id);if(!x||!x.cloud||x.cloud.doc!==doc||now()-(st(x).pushedAt||0)<1500)return;pull(x).catch(()=>paintSt(x,'err'))})}}
+let tick=0;setInterval(()=>{tick++;const L=cur.p==='list'?LBY(cur.id):null;watchFor(L);if(!L||!L.cloud||L.cloud.gone||st(L).pushing||(window.plAwake&&!window.plAwake()))return;
+ if(WATCH&&WATCH.w.on)return;if(tick%2||(now()-(st(L).remote||0)>60e3&&tick%10))return;pull(L).catch(()=>paintSt(L,'err'))},3000);
+addEventListener('hashchange',()=>setTimeout(()=>watchFor(cur.p==='list'?LBY(cur.id):null),50));
 async function ensureCloud(L){if(L.cloud)return L.cloud;if(!C()||!C().signedIn())throw new Error('Sign in (Settings → Sync) to share a list');
  const s=await C().gs();L.cloud={doc:C().rnd(24),key:newKey(),owner:s.uid,ut:null,sent:0};save();await push(L);if(!L.cloud.ut){L.cloud=null;save();throw new Error('Couldn’t share the list. Try again in a moment.')}return L.cloud}
 async function share(L){if(L.cloud)return showLink(L);
