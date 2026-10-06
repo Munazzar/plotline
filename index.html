@@ -3220,7 +3220,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.30.3';
+const APP_VER='1.30.4';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -3260,7 +3260,7 @@ function authUrl(state,prompt){const c=cfg();const redirect=NATIVE?c.webUrl:(loc
 /* every caller waiting for a token gets the answer; a sign-in that never answers fails after a while instead of freezing sync */
 let AUTHWAIT=null,AUTHQ=[];
 function authWait(ms){return new Promise((res,rej)=>{const w={res,rej,t:setTimeout(()=>{AUTHQ=AUTHQ.filter(x=>x!==w);rej({auth:true,timeout:true})},ms||120000)};AUTHQ.push(w);AUTHWAIT=w})}
-function authDone(a){if(a&&a.token){ownerMigrate();tokSet(a.token,a.exp);if(a.email)S.settings.sync.email=a.email;if(S.settings.sync.err==='auth'){S.settings.sync.err='';authBanner()}}const q=AUTHQ;AUTHQ=[];AUTHWAIT=null;q.forEach(w=>{clearTimeout(w.t);a&&a.token?w.res(a.token):w.rej(new Error((a&&a.err)||'Sign-in cancelled'))})}
+function authDone(a){if(a&&a.token){try{localStorage.removeItem('plotline.silentNo')}catch(e){}ownerMigrate();tokSet(a.token,a.exp);if(a.email)S.settings.sync.email=a.email;if(S.settings.sync.err==='auth'){S.settings.sync.err='';authBanner()}}const q=AUTHQ;AUTHQ=[];AUTHWAIT=null;q.forEach(w=>{clearTimeout(w.t);a&&a.token?w.res(a.token):w.rej(new Error((a&&a.err)||'Sign-in cancelled'))})}
 window.__gauth=json=>{let a;try{a=typeof json==='string'?JSON.parse(json):json}catch(e){a={err:'bad_response'}}if(a.token&&a.native)S.settings.sync.native=true;authDone(a)};
 try{const bc=new BroadcastChannel('plotline-auth');bc.onmessage=e=>{if(e.data&&e.data.plotlineAuth)authDone(e.data.plotlineAuth)}}catch(e){}
 window.addEventListener('storage',e=>{if(e.key==='plotline.authmsg'&&e.newValue){try{authDone(JSON.parse(e.newValue))}catch(_){}}});
@@ -3272,9 +3272,24 @@ async function token(interactive){const t=tokGet();if(t)return t;
   /* signed in before sharing needed the email permission: keep syncing quietly, and ask for it in Sharing instead */
   if(!interactive&&/needs_consent/.test(String(e&&e.message))&&DRIVE_SCOPE!==SCOPE_APP){S.settings.share={...shset(),lite:true,allow:true};scopeSync();save();try{return await nativeAuth(false)}catch(e2){}}
   if(!interactive)throw{auth:true};throw e}}
- if(!interactive)throw{auth:true};
+ if(!interactive){if(await silentRenew())await new Promise(()=>{});throw{auth:true}}
  return NATIVE?browserAuthFromApp():webAuth()}
 
+/* 1.30.4: Google's browser sign-in gives a Drive token that lasts one hour and can't be refreshed. Instead of asking
+   for a click every hour, renew it quietly: when it's about to run out (or has, and you come back to the tab) and you
+   aren't typing or in a sheet, save, hop to Google with prompt=none and come straight back to the same page. Google
+   answers without showing anything when you're signed in to Google and already allowed Plotline; only if it can't
+   (signed out of Google, access removed) does the "Sign in again" banner appear. At most one try per 10 minutes. */
+const SILK='plotline.silent';let LASTIN=0;
+['pointerdown','keydown'].forEach(e=>addEventListener(e,()=>{LASTIN=Date.now()},{capture:true,passive:true}));
+function silentOk(){if(localStorage.getItem('plotline.silentNo')||NATIVE||S.settings.sync.native||!S.settings.sync.on||!cfg().clientId||TOURING||document.visibilityState!=='visible')return false;
+ const a=document.activeElement;if(a&&a.matches&&a.matches('input,textarea,select,[contenteditable],[contenteditable] *'))return false;
+ const sh=document.getElementById('sheet');if(sh&&sh.classList.contains('on'))return false;
+ return Date.now()-LASTIN>8000&&Date.now()-(+sessionStorage.getItem(SILK)||0)>10*60000}
+async function silentRenew(){if(!silentOk())return false;sessionStorage.setItem(SILK,Date.now());sessionStorage.setItem('plotline.ret',location.hash||'#/today');
+ clearTimeout(saveT);try{stamp()}catch(e){}await DB.set('state',S).catch(()=>{});location.href=authUrl('webs'+uid(),'none');return true}
+setInterval(()=>{let t=null;try{t=JSON.parse(localStorage.getItem(TOKK)||'null')}catch(e){}if(t&&t.exp-Date.now()<3*60000)silentRenew()},30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!tokGet())setTimeout(silentRenew,1500)});
 /* ---- Drive appDataFolder ---- */
 const DRV='https://www.googleapis.com/drive/v3',UPL='https://www.googleapis.com/upload/drive/v3';
 async function gfetch(url,opt={},retry=true){const t=await token(false);const r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+t}});
@@ -4913,7 +4928,7 @@ function seedDemo0(){const day=864e5;const mk=(o,done,ago)=>{const g=newGoal(o);
   if(st.startsWith('app')){document.body.innerHTML=`<div class="lock"><div class="box">${LOGO}<h2>${a.token?'Signed in':'Sign-in failed'}</h2><p class="muted small">${a.token?'Return to the Plotline app to finish connecting Google Drive.':esc(a.err||'')}</p>${a.token?`<a class="btn pri" style="width:100%;margin-top:16px" href="plotline://auth#access_token=${encodeURIComponent(a.token)}&expires_in=${a.exp}">Return to Plotline</a>`:''}</div></div>`;if(a.token)setTimeout(()=>{location.href=`plotline://auth#access_token=${encodeURIComponent(a.token)}&expires_in=${a.exp}`},300);return}
   let sent=false;try{new BroadcastChannel('plotline-auth').postMessage({plotlineAuth:a});sent=true}catch(e){}try{localStorage.setItem('plotline.authmsg',JSON.stringify({...a,n:Math.random()}))}catch(e){}
   if(window.opener||window.name==='plotline-auth'){setTimeout(()=>window.close(),150);document.body.innerHTML='<p style="font:16px sans-serif;padding:24px">Signed in. You can close this window.</p>';return}
-  if(a.token)tokSet(a.token,a.exp);history.replaceState(null,'',location.pathname+'#/settings')}
+  if(a.token){tokSet(a.token,a.exp);try{localStorage.removeItem('plotline.silentNo')}catch(e){}}if(st.startsWith('webs')&&!a.token)try{localStorage.setItem('plotline.silentNo','1')}catch(e){}const back=st.startsWith('webs')?sessionStorage.getItem('plotline.ret')||'#/today':'#/settings';history.replaceState(null,'',location.pathname+back)}
  try{const d=await DB.get('state');if(d&&d.goals)S=norm(d)}catch(e){}
  /* 1.9.0: notification replies no longer go to the journal; tidy away the ones earlier versions made (synced devices drop them too) */
  if(!S.settings.replyClean){S.dead=S.dead||{};S.entries=S.entries.filter(e=>{const r=e.type==='note'&&/^Reply to “/.test(e.title||'')&&!e.html&&!e.img&&!e.mood;if(r){S.dead[e.id]=Date.now();DIRTY=true}return!r});S.settings.replyClean=1;save()}
