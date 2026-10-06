@@ -88,7 +88,7 @@ html.wb-on .tprompt{display:none}
 .wb-pg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .wb-po{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;text-align:left;padding:10px;border-radius:13px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;cursor:pointer;transition:border-color .2s,transform .3s var(--spring)}
 .wb-po:hover{border-color:var(--accent)}.wb-po:active{transform:scale(.96)}.wb-po.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.wb-po svg{grid-row:1/3;width:20px;height:20px;color:var(--accent)}.wb-po b{font-size:13px}.wb-po small{font-size:11.5px;color:var(--muted);line-height:1.3}
+.wb-po svg{grid-row:1/3;width:20px;height:20px;color:var(--acc-ink,var(--accent))}.wb-po b{font-size:13px}.wb-po small{font-size:11.5px;color:var(--muted);line-height:1.3}
 .wb-pg.g .wb-po{grid-template-columns:1fr;justify-items:start;gap:6px}
 .wb-gp{display:block;width:100%;height:38px;border-radius:9px;border:1px solid var(--line);background-color:var(--bg)}
 .wb-tg{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 6px 2px;font-size:13.5px}.wb-tg input{width:20px;height:20px;accent-color:var(--accent)}
@@ -127,7 +127,7 @@ html.wb-fs .wb-top{top:10px}html.wb-fs .wb-tools,html.wb-fs .wb-zm{bottom:14px}
 .wb-top>*{pointer-events:auto;min-width:0}
 .wb-b{height:36px;min-width:36px;padding:0 10px;border:0;border-radius:11px;background:none;color:var(--text);display:inline-flex;align-items:center;justify-content:center;gap:6px;font:600 13px var(--f-body);cursor:pointer;white-space:nowrap;text-decoration:none;flex:none}
 .wb-b svg{width:18px;height:18px}
-.wb-b:hover{background:var(--surface-2)}.wb-b.on{background:var(--surface-2);color:var(--accent)}
+.wb-b:hover{background:var(--surface-2)}.wb-b.on{background:var(--surface-2);color:var(--acc-ink,var(--accent))}
 .wb-b[disabled]{opacity:.35;pointer-events:none}
 .wb-b .n{font:600 10px var(--f-mono);color:var(--muted)}
 input.wb-ttl,.wb-ttl{background:none;border:0;border-radius:8px;color:var(--text);font:700 16px var(--f-body);padding:4px 8px;width:clamp(110px,24vw,320px);min-width:0;outline:none;text-overflow:ellipsis;overflow:hidden;white-space:nowrap}
@@ -161,7 +161,7 @@ input.wb-ttl:focus{background:var(--surface);box-shadow:none}
 .wb-tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
 .wb-tpl{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:16px;border-radius:20px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer;font:inherit;transition:transform .4s var(--spring),border-color .2s}
 .wb-tpl:hover{border-color:var(--accent);transform:translateY(-2px)}
-.wb-tpl svg{width:24px;height:24px;color:var(--accent)}.wb-tpl small{color:var(--muted);font-size:12.5px;line-height:1.35}
+.wb-tpl svg{width:24px;height:24px;color:var(--acc-ink,var(--accent))}.wb-tpl small{color:var(--muted);font-size:12.5px;line-height:1.35}
 .wb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
 .wb-card{position:relative;display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:22px;background:var(--surface);border:1px solid var(--line);cursor:pointer;transition:transform .4s var(--spring),border-color .2s}
 .wb-card:hover{border-color:var(--line-2);transform:translateY(-2px)}
@@ -261,14 +261,15 @@ const mine=o=>!!o&&(o===myUid()||o===(gSess()||{}).uid);
 const needLogin=b=>!!(b&&b.cloud&&!signedIn()&&!(WB.views[b.cloud.doc]===b));
 async function gs(){if(typeof fbSession!=='function')throw new Error('Sign in to edit shared boards');try{return await fbSession()}catch(e){throw new Error('Sign in to edit shared boards')}}
 const sessFor=(kind,owner)=>kind==='view'&&owner&&owner===myUid()?anon():gs();
+const QUOTA='The cloud’s daily limit is used up. Changes stay on this device and sync again by themselves later.';
 async function cget(doc){let r;try{r=await fetch(`${FSD()}/${doc}?key=${fbc().key}`,{cache:'no-store'})}catch(e){throw new Error('You’re offline')}
- if(r.status===404)return null;if(!r.ok)throw new Error('Cloud error '+r.status);const d=await r.json();return{ut:d.updateTime,...fsDec(d)}}
+ if(r.status===404)return null;if(r.status===429){window.FS_COOL=Date.now()+15*60000;throw new Error(QUOTA)}if(!r.ok)throw new Error('Cloud error '+r.status);const d=await r.json();return{ut:d.updateTime,...fsDec(d)}}
 async function cput(doc,fields,pre,retry=true){const s=await sessFor(fields.kind,fields.owner);const q=pre==='new'?'currentDocument.exists=false':pre?'currentDocument.updateTime='+encodeURIComponent(pre):'';let r;
  try{r=await fetch(`${FSD()}/${doc}?${q}`,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.id},body:JSON.stringify(fsEnc(fields))})}catch(e){throw new Error('You’re offline')}
  if(r.status===401&&retry){if(fields.kind==='view'&&fields.owner===myUid())await anon(true);else{const g=gSess();if(g&&typeof fbPut==='function')fbPut({...g,exp:0})}return cput(doc,fields,pre,false)}
  if(r.status===400||r.status===409||r.status===404){const t=await r.text();if(/FAILED_PRECONDITION|ABORTED|ALREADY_EXISTS|NOT_FOUND/.test(t))return{conflict:true};throw new Error('Cloud error '+r.status)}
  if(r.status===403)throw new Error(signedIn()?'The cloud refused this board. Check the Firestore rules for “benches”.':'Sign in to edit shared boards');
- if(!r.ok)throw new Error('Cloud error '+r.status);const d=await r.json();return{ut:d.updateTime}}
+ if(r.status===429){window.FS_COOL=Date.now()+15*60000;throw new Error(QUOTA)}if(!r.ok)throw new Error('Cloud error '+r.status);const d=await r.json();return{ut:d.updateTime}}
 async function cdel(doc,owner){let s;try{s=await(owner&&owner===myUid()?anon():gs())}catch(e){return}await fetch(`${FSD()}/${doc}`,{method:'DELETE',headers:{Authorization:'Bearer '+s.id}}).catch(()=>{})}
 function setSt(k,m=''){WB.st={k,m};const el=$('#wbst');if(el){el.className='wb-st '+k;el.title=k==='ok'?'Synced':k==='saving'?'Saving…':k==='err'?m:'On this device only'}if(k==='err'&&m&&m!==WB.lastErr){WB.lastErr=m;toast(esc(m))}}
 let pushT,pushing=false,again=false;
@@ -289,10 +290,10 @@ async function pull(b,force){const d=await cget(b.cloud.doc);if(!d){b.cloud.gone
 let pubT;function pubSoon(b){if(!b.pub||!mine(b.cloud.owner))return;clearTimeout(pubT);pubT=setTimeout(()=>publish(b).catch(e=>setSt('err',e.message)),2500)}
 async function publish(b,first){const v=b.pub,{who:_,...p}=payload(b);for(let i=0;i<3;i++){const r=await cput(v.doc,{owner:b.cloud.owner,kind:'view',enc:await encJ(v.key,p),u:now(),v:1},first?'new':v.ut);
   if(r.conflict){const d=await cget(v.doc);v.ut=d&&d.ut;first=!d;continue}v.ut=r.ut;persist();return}}
-// ponytail: polls one doc every 3s while a shared board is open (12s when quiet); switch to Firestore's Listen channel if read quota matters
-let tick=0;setInterval(()=>{const b=WB.B;tick++;if(!b||!b.cloud||cur.p!=='bench'||document.hidden||pushing||WB.G||WB.edit)return;
- if(now()-(WB.lastRemote||0)>60e3&&tick%4)return;pull(b).catch(e=>setSt('err',e.message))},3000);
-setInterval(()=>{const b=WB.B;if(b&&b.cloud&&!b.ro&&!document.hidden&&cur.p==='bench')pushSoon(0)},30e3);
+// ponytail: polls one doc every 6s while a shared board is busy (30s when quiet, paused on quota); switch to Firestore's Listen channel if read quota matters
+let tick=0;setInterval(()=>{const b=WB.B;tick++;if(!b||!b.cloud||cur.p!=='bench'||document.hidden||pushing||WB.G||WB.edit||Date.now()<(window.FS_COOL||0))return;
+ if(tick%2||now()-(WB.lastRemote||0)>60e3&&tick%10)return;pull(b).catch(e=>setSt('err',e.message))},3000);
+setInterval(()=>{const b=WB.B;if(b&&b.cloud&&!b.ro&&!document.hidden&&cur.p==='bench'&&Date.now()>=(window.FS_COOL||0))pushSoon(0)},120e3);
 const linkOf=(k,doc,key)=>`${webBase()}#/bench/${k}~${doc}~${toUrl(key)}`;
 async function shareOn(b){if(!fsOK())throw new Error('Sharing isn’t available in this version');if(!signedIn()&&!(typeof shReady==='function'&&await shReady()))throw new Error('Sign in first to share a board');const s=await gs();
  b.cloud={doc:rnd(24),key:newKey(),owner:s.uid,ut:null,sent:0};persist();await push(b);if(WB.st.k==='err'){b.cloud=null;persist();throw new Error(WB.st.m)}}
@@ -533,7 +534,7 @@ function drawSel(){const b=WB.B;if(!b)return;WB.els.forEach((el,id)=>el.classLis
  if(key!==SBK){SBK=key;if(WB.sel.size){const ns=[...WB.sel].map(id=>b.nodes[id]),c0=ns[0].color,t0=ns.every(n=>n.type===ns[0].type)?ns[0].type:'';
    sb.innerHTML=Object.entries(COLORS).map(([k,v])=>`<button class="wb-dot${ns.every(n=>n.color===k)?' on':''}" style="--c:${k==='none'?'var(--surface-2)':v}" data-act="wbColor" data-c="${k}" aria-label="Color ${k}" title="${k}"></button>`).join('')
    +`<span class="wb-sep"></span><select id="wbtype" aria-label="Item type">${t0?'':'<option value="">Mixed</option>'}${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${k===t0?'selected':''}>${v[0]}</option>`).join('')}</select><span class="wb-sep"></span>`
-   +btn('wbHalo','',  'wbglow',ns.every(n=>n.halo)?'Turn off the glow':'Glow: highlight with a halo',ns.every(n=>n.halo)?'aria-pressed="true" style="color:var(--accent)"':'aria-pressed="false"')+(WB.sel.size>1?'<span class="wb-sep"></span>'+[['l','wbal','Align left'],['c','wbac','Align centres'],['r','wbar','Align right'],['t','wbat','Align tops'],['m','wbam','Align middles'],['b','wbab','Align bottoms']].map(([a,i,l])=>btn('wbAlign',`data-a="${a}"`,i,l)).join('')+(WB.sel.size>2?btn('wbAlign','data-a="dh"','wbdh','Space evenly across')+btn('wbAlign','data-a="dv"','wbdv','Space evenly down'):'')+'<span class="wb-sep"></span>':'')+(WB.sel.size===1?btn('wbEdit','','edit','Edit text (Enter)'):'')+btn('wbPanel','data-p="comments"','wbcom','Comment')+btn('wbAskSel','','wbspark','Ask AI about the selection')+btn('wbDupSel','','copy','Duplicate (Ctrl+D)')+btn('wbDelSel','','trash','Delete (Del)');void c0}
+   +btn('wbHalo','',  'wbglow',ns.every(n=>n.halo)?'Turn off the glow':'Glow: highlight with a halo',ns.every(n=>n.halo)?'aria-pressed="true" style="color:var(--acc-ink,var(--accent))"':'aria-pressed="false"')+(WB.sel.size>1?'<span class="wb-sep"></span>'+[['l','wbal','Align left'],['c','wbac','Align centres'],['r','wbar','Align right'],['t','wbat','Align tops'],['m','wbam','Align middles'],['b','wbab','Align bottoms']].map(([a,i,l])=>btn('wbAlign',`data-a="${a}"`,i,l)).join('')+(WB.sel.size>2?btn('wbAlign','data-a="dh"','wbdh','Space evenly across')+btn('wbAlign','data-a="dv"','wbdv','Space evenly down'):'')+'<span class="wb-sep"></span>':'')+(WB.sel.size===1?btn('wbEdit','','edit','Edit text (Enter)'):'')+btn('wbPanel','data-p="comments"','wbcom','Comment')+btn('wbAskSel','','wbspark','Ask AI about the selection')+btn('wbDupSel','','copy','Duplicate (Ctrl+D)')+btn('wbDelSel','','trash','Delete (Del)');void c0}
   else sb.innerHTML=btn('wbEdgeLabel','','edit','Edit label')+btn('wbEdgeRev','','horz','Reverse direction')+btn('wbDelSel','','trash','Delete link');}
  sb.classList.toggle('on',!WB.G);placeSb()}
 function placeSb(){const sb=$('#wbsb'),b=WB.B;if(!sb||!b||!sb.classList.contains('on'))return;const v=b.vp;let bb;
@@ -799,6 +800,8 @@ FILE.wbImport=inp=>{const f=inp.files&&inp.files[0];if(!f)return;const r=new Fil
 /* ---------------- wiring into the app ---------------- */
 VIEWS.bench=vBench;
 NAV.push(['bench','Workbench','wbbench']);
+/* the side rail may already be drawn without this tab (this file loads after boot on slow starts): redraw it */
+if(document.querySelector('#rail .nav')&&!document.querySelector('#rail [data-nav=bench]')){buildChrome();if(typeof navMark==='function')navMark()}
 {const _r=render;render=function(){if(cur.p!=='bench'){WB.B=null;if(WB.edit)WB.edit=null}_r.apply(this,arguments);const on=cur.p==='bench'&&!!WB.B;document.documentElement.classList.toggle('wb-on',on);if(on)mount();
  let m=document.querySelector('meta[name=robots][data-wb]');if(cur.p==='bench'&&cur.id){if(!m){m=document.createElement('meta');m.name='robots';m.content='noindex,nofollow';m.dataset.wb=1;document.head.appendChild(m)}}else if(m)m.remove()}}
 /* people opening a shared link go straight to the board, not the first-run welcome */
