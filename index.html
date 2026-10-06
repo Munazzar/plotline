@@ -2847,6 +2847,23 @@ html[data-theme=glass] .due.over{color:#FF9A8A}
  .rv{opacity:1!important;transform:none!important}
  .wb-top,.wb-tools,.wb-zm,.wb-sb,.wb-side,.wb-pop{display:none!important}
 }
+/* 1.17.3: Settings and its pages share one layout and one size for every kind of field */
+#view .set{grid-template-columns:minmax(0,1fr)}
+#view .set>*{grid-column:1/-1}
+#view .set :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]),select){height:48px;min-height:48px;padding-top:0;padding-bottom:0;font-size:15px;border-radius:14px}
+#view .set textarea{font-size:15px;border-radius:14px}
+#view .set .btn,#view .set .btn.sm{height:44px;padding:0 18px;font-size:14px;border-radius:14px}
+#view .set .field>label,#view .set .lbl{display:block;margin-bottom:6px}
+#view .set .sw{min-height:64px;padding:10px 0}
+#view .set .sw>span{font-size:15px;line-height:1.35}
+#view .set .sw small{font-size:13px;margin-top:2px}
+#view .set .radios span,#view .set .radios.sm span,#view .set .radios.sm.wrap span{min-height:44px;display:flex;align-items:center;justify-content:center;padding:0 14px;font-size:14px;border-radius:13px}
+#view .set .seg-c button{min-height:40px;padding:0 16px;font-size:14px}
+#view .set .seg-c{padding:4px}
+#view .set .actions{gap:10px;flex-wrap:wrap}
+#view .set .btn.ghost{border-color:var(--line-2)}
+#sheet .field :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]),select){height:48px;min-height:48px;padding-top:0;padding-bottom:0;font-size:15px;border-radius:14px}
+#sheet .actions .btn{height:44px;font-size:14px;border-radius:14px}
 </style>
 </head>
 <body>
@@ -2963,7 +2980,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.17.2';
+const APP_VER='1.17.3';
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
