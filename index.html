@@ -1154,7 +1154,7 @@ html,body{overscroll-behavior-y:contain}
 .ph.cph{margin-bottom:18px}
 .ph.cph h1{font-size:clamp(36px,5.2vw,54px)}
 .ph.cph .data{margin-top:8px}
-@media(min-width:821px){.cal-body.dv{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:center}.cal-body.dv>:nth-child(n+3){grid-column:1/-1}.cal-body.dv .cdh{margin:0}.cal-body.dv .dstrip{margin:0}}
+@media(min-width:821px){.cal-body.dv{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:22px;align-items:center}.cal-body.dv>:nth-child(n+3){grid-column:1/-1}.cal-body.dv .cdh{margin:0}.cal-body.dv .dstrip{margin:0;grid-column:1/-1}}
 /* ================= focus (full-screen) mode ================= */
 :root[data-focus=on] #app{grid-template-columns:1fr}
 :root[data-focus=on] .rail,:root[data-focus=on] .tabbar,:root[data-focus=on] .fsb,:root[data-focus=on] .gearb{display:none!important}
@@ -2982,6 +2982,9 @@ html[data-tcase=lower] :is(h1,h2,h3,h4,.jb-big,.jt-big,.fc-t,.sc-t,.fc-back .nx,
 .thr-ed-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .thr-ed-done{justify-items:start}
 .fmt-bar{display:flex;flex-wrap:wrap;gap:6px}
+.field>.fmt-bar{margin-bottom:12px}
+#sheet .thr-tags{margin-bottom:4px}
+#sheet form .actions{margin-top:22px;gap:10px}
 .fmt-b{height:34px;min-width:34px;padding:0 11px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text);font:600 13px var(--f-body);cursor:pointer}
 .fmt-b:hover{border-color:var(--text)}.fmt-b:active{transform:scale(.94)}
 .fmt-bar .fmt-b{font-family:var(--f-body)!important;text-transform:none!important;letter-spacing:0!important}.fmt-bar .fmt-b[data-f=b]{font-weight:800}.fmt-i{font-style:italic}.fmt-u{text-decoration:underline}.fmt-h{background:color-mix(in srgb,#FFE066 45%,var(--surface-2))}
@@ -2991,8 +2994,12 @@ html[data-tcase=lower] :is(h1,h2,h3,h4,.jb-big,.jt-big,.fc-t,.sc-t,.fc-back .nx,
 @media(max-width:600px){.thr-kb{display:none}.thr-ed{padding:14px;border-radius:22px}.fmt-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px}.fmt-bar::-webkit-scrollbar{display:none}.fmt-b{flex:none;height:32px;font-size:12.5px;padding:0 10px}.thr-ta{min-height:160px}}
 /* focus mode: the editor fills the screen */
 html.thr-focus{overflow:hidden}
-html.thr-focus .thr-ed{position:fixed;inset:0;z-index:70;border-radius:0;padding:calc(18px + var(--sat,0px)) max(18px,calc(50vw - 420px)) calc(18px + var(--sab,0px));grid-template-rows:auto auto 1fr auto;background:var(--bg)}
-html.thr-focus .thr-ta{height:100%!important;min-height:0;resize:none;font-size:18px;background:transparent;border:0;box-shadow:none;padding:8px 2px}
+html.thr-focus form.fz{position:fixed;inset:0;z-index:95;margin:0;border-radius:0;border:0;display:flex;flex-direction:column;gap:12px;padding:calc(20px + var(--sat,0px)) max(20px,calc(50vw - 420px)) calc(20px + var(--sab,0px));background:var(--bg)}
+html.thr-focus form.fz .field{flex:1;display:flex;flex-direction:column;min-height:0;margin:0}
+html.thr-focus form.fz textarea{flex:1;height:auto!important;min-height:0;resize:none;font-size:18px;line-height:1.65;background:transparent;border:0;box-shadow:none;padding:8px 2px}
+html.thr-focus form.fz>.thr-ed-f,html.thr-focus form.fz>.actions{margin:0}
+html.thr-focus #sheet.on{transform:none!important;left:0;top:0;right:0;bottom:0;width:100%;max-width:none;max-height:none;height:100dvh;border-radius:0;padding:0;overflow:hidden}
+html.thr-focus #sheet.on>:not(form){display:none}
 html.thr-focus #tabbar,html.thr-focus .tabbar{display:none}
 /* the updates */
 .thr-feed{min-width:0}
@@ -3133,7 +3140,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.25.0';
+const APP_VER='1.25.1';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -3365,7 +3372,7 @@ function dayGrid(n,it){const tn=dnum(ymd()),ppm=calPpm();const all=it.filter(x=>
  <div class="dgrid" id="dgrid" style="--ppm:${ppm}px" data-day="${fromN(n)}"><div class="tg-body" data-act="calSlot" style="height:calc(1440 * var(--ppm))">${h}<div class="tghost" id="tghost"></div>${evs}${n===tn?`<div class="tnow" style="top:calc(${nowM} * var(--ppm))"></div>`:''}</div></div>`}
 function calDay(){const n=dnum(CAL.d),tn=dnum(ymd()),M=calItems(n-3,n+3),it=M[n]||[],tog=it.filter(x=>x.k==='day'||x.k==='step'),dn=tog.filter(x=>x.done).length,dd=dUTC(n),r=31,C=2*Math.PI*r,p=tog.length?dn/tog.length:0;
  const strip=[...Array(7)].map((_,i)=>{const k=n-3+i,d=dUTC(k),c=(M[k]||[]).length;return`<button class="ds${k===n?' pk':''}${k===tn?' now':''}" data-act="calPick" data-d="${fromN(k)}"><span class="data">${DAYS[d.getUTCDay()]}</span><b>${d.getUTCDate()}</b><i>${'<u></u>'.repeat(Math.min(c,3))}</i></button>`}).join('');
- return`<div class="cdh"><div><div class="data">${dd.toLocaleDateString(undefined,{weekday:'long',timeZone:'UTC'})}${n===tn?' · today':''}</div><div class="cdh-n">${dd.toLocaleDateString(undefined,{month:'short',day:'numeric',timeZone:'UTC'})}</div><div class="data">${it.length?`${it.length} planned${tog.length?` · ${dn} of ${tog.length} done`:''}`:'Nothing planned yet'}</div></div><svg class="ring" viewBox="0 0 76 76" style="--full:${C.toFixed(1)}"><circle cx="38" cy="38" r="${r}"/><circle cx="38" cy="38" r="${r}" class="rf" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-p)).toFixed(1)}"/></svg></div><div class="dstrip">${strip}</div>${dayGrid(n,it)}`}
+ return`<div class="dstrip">${strip}</div>${dayGrid(n,it)}`}
 /* grid: keep scroll per day, zoom with buttons / pinch / ctrl+wheel, preview slot on hover */
 const TGS={};
 function initDayGrid(){const g=$('#dgrid');if(!g)return;const day=g.dataset.day,ppm=calPpm();
@@ -6610,16 +6617,25 @@ document.addEventListener('input',e=>{if(!e.target.matches||!e.target.matches('[
 Object.assign(ACT,{
  thrKf:d=>{THQ.k=d.k||'';render(false)},
  thrSort:()=>{THQ.old=!THQ.old;render(false)},
- thrFocus:()=>{const r=document.documentElement,on=!r.classList.contains('thr-focus');r.classList.toggle('thr-focus',on);const ta=$('#view .thr-ta');if(ta){ta.style.height='';ta.focus()}},
+ thrFocus:(d,el)=>{if(document.documentElement.classList.contains('thr-focus')){thrUnfocus();return}const f=(el&&el.closest&&el.closest('form'))||$('#view .thr-ed');if(!f)return;document.documentElement.classList.add('thr-focus');f.classList.add('fz');try{history.pushState({fz:1},'')}catch(e){}const ta=f.querySelector('textarea');if(ta){ta.style.height='';ta.focus()}},
  thrExport:d=>{const t=TH(d.id);if(!t)return;openSheet(`<div class="data">Thread</div><h2 style="margin-top:6px">${esc(t.title)}</h2><div class="menu"><button data-act="thrMd" data-id="${t.id}">${ic('down')}Download as a Markdown file</button><button data-act="thrCopy" data-id="${t.id}">${ic('copy')}Copy everything as text</button><button data-act="printIt" data-k="thread" data-id="${t.id}">${ic('print')}Print or save as PDF</button></div>`)},
  thrMd:d=>{const t=TH(d.id);if(!t)return;closeSheet();download((t.title.replace(/[^\w\- ]+/g,'').trim()||'thread')+'.md',thrMd(t),'text/markdown');toast('Saved')},
  thrCopy:async d=>{const t=TH(d.id);if(!t)return;closeSheet();if(await copyText(thrMd(t)))toast('Copied')}});
 function thrMd(t){return`# ${t.title}\n\n`+thrUps(t).slice().reverse().map(u=>{const g=thrTag(u.k);return`## ${new Date(u.t).toLocaleString()} · ${g[1]} ${g[2]}\n\n${u.x}\n`}).join('\n')}
-document.addEventListener('submit',e=>{if(e.target.classList&&e.target.classList.contains('thr-ed'))setTimeout(()=>document.documentElement.classList.remove('thr-focus'),0)},true);
-addEventListener('hashchange',()=>document.documentElement.classList.remove('thr-focus'));
+/* Back (Android button, browser, Esc) leaves Focus first and keeps you where you were: entering Focus adds one
+   history step; leaving it any other way takes that step back quietly */
+let FZB=0;
+const thrUnfocus=(fromPop)=>{const r=document.documentElement;if(!r.classList.contains('thr-focus'))return;r.classList.remove('thr-focus');document.querySelectorAll('form.fz').forEach(x=>x.classList.remove('fz'));
+ if(!fromPop&&history.state&&history.state.fz){FZB=1;try{history.back()}catch(e){FZB=0}}};
+addEventListener('popstate',e=>{if(FZB){FZB=0;e.stopImmediatePropagation();return}if(document.documentElement.classList.contains('thr-focus')){thrUnfocus(true);e.stopImmediatePropagation()}});
+{const _b=window.__back;window.__back=function(){if(document.documentElement.classList.contains('thr-focus')){thrUnfocus();return true}return _b.apply(this,arguments)}}
+document.addEventListener('submit',e=>{if(e.target.querySelector&&e.target.querySelector('textarea[data-fmt]'))setTimeout(thrUnfocus,0)},true);
+/* closing a sheet that is in Focus: step out of Focus's history entry first, then close (one Back each, in order) */
+{const _cs=closeSheet;closeSheet=function(){if(document.querySelector('#sheet form.fz')){const fz=history.state&&history.state.fz;thrUnfocus();if(fz){const t=this,a=arguments;setTimeout(()=>{_cs.apply(t,a);if(history.state&&history.state.psh)try{history.back()}catch(e){}},120);return}}return _cs.apply(this,arguments)}}
+addEventListener('hashchange',()=>thrUnfocus());
 function thrNewSheet(link,ttl){openSheet(`<div class="data">Thread</div><h2 style="margin-top:6px">Start a thread</h2><p class="small muted">A running log. Add a first thought now and keep adding as it grows.</p><form data-form="thrNew" autocomplete="off"><div class="field"><label>Name it</label><input name="title" maxlength="80" required placeholder="App idea, Moving plans, Learning guitar…" value="${esc(ttl||'')}"></div><div class="field"><label>First update <span class="muted">(optional)</span></label>${thrTags('note')}<textarea name="x" rows="3" maxlength="2000" placeholder="What’s on your mind?" style="margin-top:10px"></textarea></div><div class="field"><label>Link it to</label>${thrLinkSel(link)}<p class="small muted" style="margin-top:6px">Optional. A linked thread also shows on that goal or habit.</p></div><div class="actions"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn pri" type="submit">Start thread</button></div></form>`);
  setTimeout(()=>{const i=$('#sheet input[name=title]');if(i&&!i.value)i.focus()},350)}
-function thrAddSheet(id){const t=TH(id);if(!t)return;openSheet(`<div class="data">${esc(t.title)}</div><h2 style="margin-top:6px">Add an update</h2><form data-form="thrAdd" data-id="${t.id}" data-sheet="1" autocomplete="off">${thrTags('note')}<div class="field" style="margin-top:12px">${fmtBar()}<textarea name="x" rows="6" maxlength="10000" data-fmt required placeholder="What’s new?"></textarea></div><div class="actions"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn pri" type="submit">Add update</button></div></form>`);setTimeout(()=>$('#sheet textarea')?.focus(),350)}
+function thrAddSheet(id){const t=TH(id);if(!t)return;openSheet(`<div class="data">${esc(t.title)}</div><h2 style="margin-top:6px">Add an update</h2><form data-form="thrAdd" data-id="${t.id}" data-sheet="1" autocomplete="off">${thrTags('note')}<div class="field" style="margin-top:12px">${fmtBar()}<textarea name="x" rows="6" maxlength="10000" data-fmt required placeholder="What’s new?"></textarea></div><div class="actions"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn ghost" type="button" data-act="thrFocus" title="Write full screen">${ic('full')}Focus</button><button class="btn pri" type="submit">Add update</button></div></form>`);setTimeout(()=>$('#sheet textarea')?.focus(),350)}
 Object.assign(FORM,{
  thrNew:f=>{const E=f.elements,title=E.title.value.trim();if(!title)return;const now=Date.now(),t={id:uid(),title,link:thrPick(E.link&&E.link.value),status:'open',created:now,u:now,ups:[]};const x=E.x.value.trim();if(x)t.ups.push({id:uid(),t:now,k:E.k.value||'note',x,u:now});threads().push(t);save();closeSheet();go('thread/'+t.id);toast('Thread started')},
  thrAdd:f=>{const t=TH(f.dataset.id);if(!t)return;const x=f.elements.x.value.trim();if(!x)return;const now=Date.now();t.ups.push({id:uid(),t:now,k:f.elements.k.value||'note',x,u:now});if(t.status==='done')t.status='open';t.u=now;save();if(f.dataset.sheet)closeSheet();render(false);toast('Added')},
@@ -6641,7 +6657,7 @@ Object.assign(ACT,{
  thrDel:d=>askConfirm('Delete this thread?','Its updates go with it. Your goals, habits and journal stay as they are.','Delete',()=>{S.threads=threads().filter(x=>x.id!==d.id);save();closeSheet();go('threads');toast('Thread deleted')}),
  thrDone:d=>{const t=TH(d.id);if(!t)return;t.status='done';t.u=Date.now();save();render(false);toast('Thread marked done')},
  thrReopen:d=>{const t=TH(d.id);if(!t)return;t.status='open';t.u=Date.now();save();render(false)},
- thrUpEdit:d=>{const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u);if(!u)return;openSheet(`<div class="data">${new Date(u.t).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div><h2 style="margin-top:6px">Edit update</h2><form data-form="thrUpEdit" data-id="${t.id}" data-u="${u.id}" autocomplete="off">${thrTags(u.k)}<div class="field" style="margin-top:12px">${fmtBar()}<textarea name="x" rows="8" maxlength="10000" data-fmt required>${esc(u.x)}</textarea></div><div class="actions"><button class="btn danger" type="button" data-act="thrUpDel" data-id="${t.id}" data-u="${u.id}">Delete</button><button class="btn pri" type="submit">Save</button></div></form>`)},
+ thrUpEdit:d=>{const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u);if(!u)return;openSheet(`<div class="data">${new Date(u.t).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div><h2 style="margin-top:6px">Edit update</h2><form data-form="thrUpEdit" data-id="${t.id}" data-u="${u.id}" autocomplete="off">${thrTags(u.k)}<div class="field" style="margin-top:12px">${fmtBar()}<textarea name="x" rows="8" maxlength="10000" data-fmt required>${esc(u.x)}</textarea></div><div class="actions"><button class="btn danger" type="button" data-act="thrUpDel" data-id="${t.id}" data-u="${u.id}">Delete</button><button class="btn ghost" type="button" data-act="thrFocus" title="Write full screen">${ic('full')}Focus</button><button class="btn pri" type="submit">Save</button></div></form>`)},
  thrUpDel:d=>{const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u);if(!u)return;u.del=1;u.u=Date.now();t.u=u.u;save();closeSheet();render(false);toast('Update removed')}});
 /* the quick box grows as you type; Enter sends on a keyboard, Shift+Enter is a new line */
 document.addEventListener('input',e=>{const t=e.target;if(t.matches&&t.matches('.thr-in textarea')){t.style.height='auto';t.style.height=Math.min(160,t.scrollHeight)+'px'}});
