@@ -2893,6 +2893,87 @@ html[data-theme=glass] .due.over{color:#FF9A8A}
 .shc-all .shc-cal>i.on{background:color-mix(in srgb,var(--accent) var(--pa),var(--surface-2));color:var(--text)}
 .shc-cal>i.fut{opacity:.35}.shc-cal>i.td{box-shadow:inset 0 0 0 1.5px var(--text)}
 @media(min-width:821px){#sheet.wide{width:min(860px,calc(100vw - 48px));max-width:none}.shc-all .shc-cal{max-width:340px}}
+
+/* ================= 1.19 polish ================= */
+/* habit snapshot: one solid card; the name column sticks with the card's own colour (no pill, no second panel, nothing showing through on glass themes) */
+.hsn-card{--hsnbg:var(--bg-2);background:var(--hsnbg)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.hsn-c0,.hsn-h{background:var(--hsnbg)!important;border-radius:0!important}
+.hsn-h{padding:0 8px 0 0;height:100%;box-shadow:10px 0 12px -12px rgba(0,0,0,.6)}
+.hsn-ft .hsn-c0{box-shadow:10px 0 12px -12px rgba(0,0,0,.6);font:600 10px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);align-self:stretch;display:flex;align-items:center}
+.hsn-hd .hsn-c0{align-self:stretch}
+.hsn-r{min-height:38px}
+.hsn-x{max-width:32px;border-radius:9px}
+.hsn-pc{width:56%;height:18px;border-radius:5px}
+/* phones: each habit gets a name line, then its days across the full width. 7 and 14 days are big tap targets;
+   30 days becomes a compact strip you read at a glance (tap the name to open the habit). No sideways scrolling. */
+@media(max-width:600px){
+ .hsn-sc{overflow:visible;margin:0;padding:0}
+ .hsn-g{min-width:0;gap:4px}
+ .hsn-r{grid-template-columns:repeat(var(--n),minmax(0,1fr)) 28px;gap:4px;row-gap:6px;min-height:0}
+ .hsn-r+.hsn-r:not(.hsn-ft){padding-top:8px;border-top:1px solid var(--line)}
+ .hsn-hd{border:0!important;padding:0!important}
+ .hsn-hd .hsn-c0{display:none}
+ .hsn-h{grid-column:1/-1;box-shadow:none;height:auto;padding:0;gap:8px}
+ .hsn-i{display:grid!important;width:24px;height:24px;font-size:13px;border-radius:8px}
+ .hsn-t b{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;border:0!important;padding:0!important;font-size:14px!important;line-height:1.3!important}
+ .hsn-ft{border-top:1px solid var(--line);padding-top:8px}
+ .hsn-ft .hsn-c0{grid-column:1/-1;box-shadow:none}
+ .hsn-x{max-width:none;width:100%;border-radius:9px}
+ .hsn-g[style*="--n:30"]{gap:3px}
+ .hsn-g[style*="--n:30"] .hsn-r{gap:2px;row-gap:6px}
+ .hsn-g[style*="--n:30"] .hsn-x{aspect-ratio:auto;height:22px;border-radius:4px;border-width:1px}
+ .hsn-g[style*="--n:30"] .hsn-x i{display:none}
+ .hsn-g[style*="--n:30"] .hsn-x.n{background:color-mix(in srgb,var(--text) 5%,transparent)}
+ .hsn-g[style*="--n:30"] .hsn-dh small{display:none}
+ .hsn-g[style*="--n:30"] .hsn-dh b{font:500 9px var(--f-mono);color:var(--muted)}
+ .hsn-g[style*="--n:30"] .hsn-hd .hsn-dh:not(:nth-child(7n+2)):not(.tdy) b{visibility:hidden}
+ .hsn-g[style*="--n:30"] .hsn-pc{width:100%;height:14px;border-radius:3px}
+}
+/* a day opened inside the habit calendar is part of that card, not a second card inside it */
+.hcal-p .cdp{background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:18px 0 0!important;margin-top:18px!important;border-top:1px solid var(--line)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;animation:none}
+.sh-note{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.4;color:var(--muted);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:14px;padding:10px 12px;margin-bottom:12px}
+
+/* activity charts */
+.axr{fill:color-mix(in srgb,var(--accent) 42%,transparent)}
+.axr.ok{fill:var(--accent)}
+.axr.over{fill:#FF7A7A}
+.axr.z{fill:color-mix(in srgb,var(--text) 10%,transparent)}
+.axav{stroke:color-mix(in srgb,var(--text) 55%,transparent);stroke-width:1.2;pointer-events:none}
+.axgl{stroke:color-mix(in srgb,var(--accent) 80%,var(--text));stroke-width:1.4;stroke-dasharray:5 5;pointer-events:none}
+.axv{font:600 11px var(--f-mono);fill:var(--text);pointer-events:none;paint-order:stroke;stroke:var(--bg-2);stroke-width:4px;stroke-linejoin:round}
+.axkey{gap:6px 16px;margin-top:12px;font-size:12px}
+.axkey .ka{width:16px;height:0;border-top:1.5px solid color-mix(in srgb,var(--text) 55%,transparent)}
+.axkey .kg{width:16px;height:0;border-top:1.5px dashed color-mix(in srgb,var(--accent) 80%,var(--text))}
+.axkey .kb{width:10px;height:10px;border-radius:3px;background:var(--accent)}
+
+/* long text: a few lines, then … and "more" */
+#view .clampx{display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden!important;white-space:normal!important}
+#view .clampx.open{-webkit-line-clamp:unset;display:block!important}
+.more-t{background:none;border:0;padding:2px 0;font:600 12.5px var(--f-body);color:var(--acc-ink,var(--accent));cursor:pointer}
+#view .thr-li{align-items:flex-start}#view .thr-li>.data,#view .thr-li>.ibtn{align-self:center}
+
+/* settings footer: three quiet links in one row, the version under them */
+.shub-f2{margin:22px 0 8px;display:grid;justify-items:center;gap:10px}
+.shub-fl{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 6px}
+.shub-fl>*{background:none;border:0;padding:8px 10px;font:500 13.5px var(--f-body);color:var(--muted);text-decoration:none;cursor:pointer;border-radius:10px}
+.shub-fl>*:hover{color:var(--text);background:var(--surface)}
+
+/* script headings never in capitals (capital script letters don't join) */
+[data-fscript] :is(.fc-t,.sc-t,.fc-back .nx,.now h2,.mini .t,.hq h3,.rcard h3,.cdp-h h2,.mo-h h2,.hero h1){text-transform:none!important;letter-spacing:0!important}
+/* letter case for headings and labels (Settings → Look & feel → Fonts) */
+html[data-tcase] :is(h1,h2,h3,h4,.jb-big,.jt-big,.fc-t,.sc-t,.fc-back .nx,.fpcard b,.st-hello span,.now h2,.mini .t,.hq h3,.rcard h3,.cdp-h h2,.mo-h h2,.data,.lbl,.field>label,.axgt,.hsn-c0){letter-spacing:.01em!important}
+html[data-tcase=upper] :is(h1,h2,h3,h4,.jb-big,.jt-big,.fc-t,.sc-t,.fc-back .nx,.fpcard b,.st-hello span,.now h2,.mini .t,.hq h3,.rcard h3,.cdp-h h2,.mo-h h2,.data,.lbl,.field>label,.axgt,.hsn-c0){text-transform:uppercase!important}
+html[data-tcase=title] :is(h1,h2,h3,h4,.jb-big,.jt-big,.fc-t,.sc-t,.fc-back .nx,.fpcard b,.st-hello span,.now h2,.mini .t,.hq h3,.rcard h3,.cdp-h h2,.mo-h h2,.data,.lbl,.field>label,.axgt,.hsn-c0){text-transform:capitalize!important}
+html[data-tcase=none] :is(h1,h2,h3,h4,.jb-big,.jt-big,.fc-t,.sc-t,.fc-back .nx,.fpcard b,.st-hello span,.now h2,.mini .t,.hq h3,.rcard h3,.cdp-h h2,.mo-h h2,.data,.lbl,.field>label,.axgt,.hsn-c0){text-transform:none!important}
+html[data-tcase=lower] :is(h1,h2,h3,h4,.jb-big,.jt-big,.fc-t,.sc-t,.fc-back .nx,.fpcard b,.st-hello span,.now h2,.mini .t,.hq h3,.rcard h3,.cdp-h h2,.mo-h h2,.data,.lbl,.field>label,.axgt,.hsn-c0){text-transform:lowercase!important}
+/* font preview cards keep long script names inside the card */
+.fpcard{overflow:hidden;min-width:0}.fpcard b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+/* day page: the previous / pick / next buttons are one stepper, so they don't look like a second Back */
+.dy-step{display:inline-flex;align-items:center;border:1px solid var(--line-2);border-radius:16px;background:var(--surface);overflow:hidden}
+.dy-step>.ibtn{border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;width:42px}
+.dy-step>.ibtn+.ibtn{border-left:1px solid var(--line)!important}
+.dy-step>[data-d="-1"] svg{transform:rotate(180deg)}
 </style>
 </head>
 <body>
@@ -3012,13 +3093,13 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.18.0';
+const APP_VER='1.19.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
- return{v:2,dead:d.dead||{},goals:(d.goals||[]).map(g=>({links:[],steps:[],parent:'',why:'',targetDate:'',pinned:false,status:'active',priority:2,checkin:'',checkinTime:'19:00',checkinDay:1,lastCheckin:'',...g,startDate:g.startDate||ymd(new Date(g.createdAt||Date.now()))})),entries:d.entries||[],days:(d.days||[]).filter(x=>x&&x.id&&validDate(x.date)),habits:(d.habits||[]).filter(x=>x&&x.id).map(normHabit),chapters:(d.chapters||[]).filter(x=>x&&x.id&&validDate(x.start)),shares:(d.shares||[]).filter(x=>x&&x.id),threads:(d.threads||[]).filter(x=>x&&x.id).map(t=>({ups:[],status:'open',link:null,...t})),ident:d.ident&&d.ident.pub&&d.ident.priv?d.ident:null,settings:st}}
+ return{v:2,dead:d.dead||{},goals:(d.goals||[]).map(g=>({links:[],steps:[],parent:'',why:'',targetDate:'',pinned:false,status:'active',priority:2,checkin:'',checkinTime:'19:00',checkinDay:1,lastCheckin:'',...g,startDate:g.startDate||ymd(new Date(g.createdAt||Date.now()))})),entries:d.entries||[],days:(d.days||[]).filter(x=>x&&x.id&&validDate(x.date)),habits:(d.habits||[]).filter(x=>x&&x.id).map(normHabit),chapters:(d.chapters||[]).filter(x=>x&&x.id&&validDate(x.start)),shares:(d.shares||[]).filter(x=>x&&x.id),lists:(d.lists||[]).filter(x=>x&&x.id&&x.items),threads:(d.threads||[]).filter(x=>x&&x.id).map(t=>({ups:[],status:'open',link:null,...t})),ident:d.ident&&d.ident.pub&&d.ident.priv?d.ident:null,settings:st}}
 let saveT;function save(){if(TOURING)return;clearTimeout(saveT);saveT=setTimeout(()=>{stamp();DB.set('state',S).catch(()=>toast('Couldn’t save on this device'));syncNative();pushWidget();if(DIRTY)syncSoon()},200)}
 /* ---- change tracking: every goal/entry carries u (last changed); deletions become tombstones ---- */
 const SIG=new Map();let DIRTY=false;
@@ -3032,9 +3113,9 @@ function mergeDocs(a,b){const dead={...(a.dead||{})};for(const[k,v]of Object.ent
  const cut=Date.now()-120*864e5;for(const k in dead)if(dead[k]<cut)delete dead[k];
  const pick=(xs,ys)=>{const m=new Map();(xs||[]).forEach(o=>m.set(o.id,o));(ys||[]).forEach(o=>{const c=m.get(o.id);if(!c||(o.u||0)>(c.u||0))m.set(o.id,o)});return[...m.values()].filter(o=>!(dead[o.id]>=(o.u||0)))};
  const goals=pick(a.goals,b.goals),ids=new Set(goals.map(g=>g.id));goals.forEach(g=>{g.links=(g.links||[]).filter(l=>ids.has(l))});
- return{goals,entries:pick(a.entries,b.entries),days:pick(a.days,b.days),habits:pick(a.habits,b.habits),chapters:pick(a.chapters,b.chapters),shares:pick(a.shares,b.shares),threads:mergeThreads(a.threads,b.threads,dead),benches:window.WBSYNC?WBSYNC.merge(a.benches,b.benches,dead):(b.benches||a.benches||[]),ident:!a.ident?b.ident||null:!b.ident?a.ident:((a.ident.c||0)<=(b.ident.c||0)?a.ident:b.ident),dead}}
-const docOf=x=>({app:'plotline',v:1,goals:x.goals,entries:x.entries,days:x.days||[],habits:x.habits||[],chapters:x.chapters||[],shares:x.shares||[],threads:x.threads||[],benches:x.benches||[],ident:x.ident||null,dead:x.dead||{}});
-const sameDoc=(a,b)=>JSON.stringify([a.goals,a.entries,a.days||[],a.habits||[],a.chapters||[],a.shares||[],a.threads||[],a.benches||[],a.ident||null,a.dead])===JSON.stringify([b.goals,b.entries,b.days||[],b.habits||[],b.chapters||[],b.shares||[],b.threads||[],b.benches||[],b.ident||null,b.dead]);
+ return{goals,entries:pick(a.entries,b.entries),days:pick(a.days,b.days),habits:pick(a.habits,b.habits),chapters:pick(a.chapters,b.chapters),shares:pick(a.shares,b.shares),lists:pick(a.lists,b.lists),threads:mergeThreads(a.threads,b.threads,dead),benches:window.WBSYNC?WBSYNC.merge(a.benches,b.benches,dead):(b.benches||a.benches||[]),ident:!a.ident?b.ident||null:!b.ident?a.ident:((a.ident.c||0)<=(b.ident.c||0)?a.ident:b.ident),dead}}
+const docOf=x=>({app:'plotline',v:1,goals:x.goals,entries:x.entries,days:x.days||[],habits:x.habits||[],chapters:x.chapters||[],shares:x.shares||[],lists:x.lists||[],threads:x.threads||[],benches:x.benches||[],ident:x.ident||null,dead:x.dead||{}});
+const sameDoc=(a,b)=>JSON.stringify([a.lists||[],a.goals,a.entries,a.days||[],a.habits||[],a.chapters||[],a.shares||[],a.threads||[],a.benches||[],a.ident||null,a.dead])===JSON.stringify([b.lists||[],b.goals,b.entries,b.days||[],b.habits||[],b.chapters||[],b.shares||[],b.threads||[],b.benches||[],b.ident||null,b.dead]);
 
 /* ---- Google auth: web = popup/redirect (implicit flow), Android = device account with browser fallback ---- */
 const cfg=()=>({clientId:(S.settings.sync.clientId||PLOTLINE_CFG.googleClientId||'').trim(),webUrl:(S.settings.sync.webUrl||PLOTLINE_CFG.webUrl||'').trim()});
@@ -3089,7 +3170,7 @@ async function syncNow(manual){if(!syncOn()||TOURING)return;if(SYNCING){SYNC_AGA
   /* Workbench boards live in their own store, not in S */
   if(window.WBSYNC&&JSON.stringify(merged.benches||[])!==JSON.stringify(local.benches))await WBSYNC.apply(merged.benches,merged.dead);
   const changedLocal=!sameDoc(merged,local);
-  if(changedLocal){S.goals=merged.goals;S.entries=merged.entries;S.days=merged.days;S.habits=merged.habits.map(normHabit);S.chapters=merged.chapters||[];S.shares=merged.shares||[];S.threads=merged.threads||[];S.ident=merged.ident||S.ident||null;S.dead=merged.dead;primeSig();await DB.set('state',S).catch(()=>{});syncNative();pushWidget();if(!$('#sheet').classList.contains('on'))render(false)}
+  if(changedLocal){S.goals=merged.goals;S.entries=merged.entries;S.days=merged.days;S.habits=merged.habits.map(normHabit);S.chapters=merged.chapters||[];S.shares=merged.shares||[];S.threads=merged.threads||[];S.lists=merged.lists||[];S.ident=merged.ident||S.ident||null;S.dead=merged.dead;primeSig();await DB.set('state',S).catch(()=>{});syncNative();pushWidget();if(!$('#sheet').classList.contains('on'))render(false)}
   if(!remote||!sameDoc(merged,remote)||DIRTY){S.settings.sync.fileId=await driveWrite(f&&f.id,docOf(merged))}else S.settings.sync.fileId=f.id;
   DIRTY=false;S.settings.sync.last=Date.now();S.settings.sync.err='';if(who)S.settings.sync.owner=lc(who);await DB.set('state',S).catch(()=>{});
   setSyncMsg('Synced '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}));if(typeof shRefresh==='function'&&shOn()&&Date.now()-SHC.t>5*60000)setTimeout(()=>shRefresh(false),400);if(manual)toast(changedLocal?'Synced · changes pulled in':'Synced · everything is up to date')}
@@ -3768,7 +3849,7 @@ function setSecs(){const st=S.settings;const np=('Notification'in window)?Notifi
  {k:'voice',t:'AI & voice',ic:'ai',sub:()=>voiceSub(),html:()=>voiceHTML()},
  {k:'data',t:'Your data',ic:'archive',sub:()=>'Backup, import, sample data',html:()=>` <section class="panel rv"><h3>Your data</h3><p class="small muted">Everything is stored on this device. Export a backup before switching devices or browsers.</p><div class="actions left">${demoCount()?`<button class="btn" data-act="demoRemove">${ic('trash')}Remove sample data</button>`:''}<button class="btn" data-act="exportData">Export backup</button><label class="btn">Import backup<input type="file" accept="application/json,.json" data-file="backup" hidden></label><label class="btn">Import MQC journal<input type="file" accept="application/json,.json" data-file="mqc" hidden></label><button class="btn danger" data-act="wipe">Erase everything</button></div></section>`}]}
 function vSettings(id){const S2=setSecs(),sec=S2.find(x=>x.k===id);
- if(!sec)return`<header class="ph"><div><h1>Settings</h1><div class="data">Everything in one place, one area at a time</div></div></header><nav class="shub rv">${S2.map(x=>`<a class="shub-r${x.warn&&x.warn()?' warn':''}" href="#/settings/${x.k}"><span class="shub-i">${ic(x.ic)}</span><span class="shub-t"><b>${x.t}</b><small>${esc(x.sub())}</small></span>${ic('next','ico-s')}</a>`).join('')}</nav><p class="small muted shub-f">Plotline ${APP_VER} · <a class="link" style="font-size:12px" href="${NATIVE?esc(cfg().webUrl||PLOTLINE_CFG.webUrl)+'privacy.html':'privacy.html'}" target="_blank" rel="noopener">Privacy policy</a> · <button class="link" style="font-size:12px" data-act="tourGo">Take the tour</button> · <button class="link" style="font-size:12px" data-act="setupOpen">Setup checklist</button></p>`;
+ if(!sec)return`<header class="ph"><div><h1>Settings</h1><div class="data">Everything in one place, one area at a time</div></div></header><nav class="shub rv">${S2.map(x=>`<a class="shub-r${x.warn&&x.warn()?' warn':''}" href="#/settings/${x.k}"><span class="shub-i">${ic(x.ic)}</span><span class="shub-t"><b>${x.t}</b><small>${esc(x.sub())}</small></span>${ic('next','ico-s')}</a>`).join('')}</nav><div class="shub-f2"><div class="shub-fl"><button data-act="setupOpen">Setup checklist</button><button data-act="tourGo">Take the tour</button><a href="${NATIVE?esc(cfg().webUrl||PLOTLINE_CFG.webUrl)+'privacy.html':'privacy.html'}" target="_blank" rel="noopener">Privacy policy</a></div><p class="data">Plotline ${APP_VER}</p></div>`;
  return`<div class="crumb"><a href="#/settings" class="ibtn" aria-label="Back to settings">${ic('back')}</a></div><header class="ph" style="margin-top:4px"><div><h1>${sec.t}</h1><div class="data">${esc(sec.sub())}</div></div></header><div class="set">${sec.html()}</div>`}
 function syncPanel(){const sy=S.settings.sync,c=cfg();const conn=syncOn();
  const adv=PLOTLINE_CFG.googleClientId?'':`<details style="margin-top:14px"><summary class="small muted" style="cursor:pointer">Google setup${c.clientId?' · configured':''}</summary><form data-form="syncCfg" style="margin-top:12px"><div class="field"><label>OAuth client ID (Web application)</label><input name="cid" value="${esc(sy.clientId||PLOTLINE_CFG.googleClientId)}" placeholder="1234-abc.apps.googleusercontent.com" autocomplete="off" spellcheck="false"></div><div class="field"><label>Web app address</label><input name="url" value="${esc(sy.webUrl||PLOTLINE_CFG.webUrl||(NATIVE?'':location.origin+location.pathname))}" placeholder="https://you.github.io/plotline/" autocomplete="off" spellcheck="false"></div><div class="actions left"><button class="btn sm">Save setup</button></div></form></details>`;
@@ -5732,6 +5813,17 @@ async function shAllow(){shPatch({lite:false});scopeSync();tokDrop();
 const FSB=()=>`https://firestore.googleapis.com/v1/projects/${fbc().pid}/databases/(default)/documents`;
 /* the cloud's daily quota (429 / RESOURCE_EXHAUSTED): background sharing traffic pauses for 15 minutes instead of retrying */
 window.FS_COOL=0;const fsCool=()=>Date.now()<window.FS_COOL;
+/* cloud reads only happen while someone is actually using the app: the page is visible AND there was a tap, key or
+   scroll in the last 3 minutes. A phone left on a page (the Android web view can stay "visible" in the background)
+   stops reading after 3 minutes instead of polling all night. */
+window.LASTACT=Date.now();['pointerdown','keydown','wheel','touchstart'].forEach(t=>addEventListener(t,()=>{window.LASTACT=Date.now()},{passive:true,capture:true}));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')window.LASTACT=Date.now()});
+window.plAwake=()=>document.visibilityState==='visible'&&Date.now()-window.LASTACT<180000&&!fsCool();
+const awake=window.plAwake;
+/* the last group data each device saw, so shared items open instantly and still show something when the cloud is busy */
+const shTrim=m=>({...m,cheers:(m.cheers||[]).slice(-12)});
+const shCacheGet=id=>{try{return JSON.parse(localStorage.getItem('shg:'+id)||'null')}catch(e){return null}};
+const shCachePut=(id,g)=>{try{localStorage.setItem('shg:'+id,JSON.stringify({t:Date.now(),c:{members:g.c.members,keys:g.c.keys,owner:g.c.owner},d:g.d,ms:g.ms.map(shTrim),all:g.all.map(shTrim)}))}catch(e){}};
 async function fs(path,opt={},retry=true){const s=await fbSession();let r;try{r=await fetch(FSB()+path,{...opt,headers:{'Content-Type':'application/json',...(opt.headers||{}),Authorization:'Bearer '+s.id}})}catch(e){throw new Error('You’re offline')}
  if(r.status===401&&retry){const x=fbGet();if(x)fbPut({...x,exp:0});return fs(path,opt,false)}
  if(r.status===404&&opt.ok404)return null;
@@ -5849,10 +5941,10 @@ async function shPublish(sh){if(!sh.fs||!sh.k)return;const p=shProgress(sh),key=
  sh.myCheers=cheers;sh.pub=key;if(out.length){sh.cheerOut=null;sh.u=Date.now()}save()}
 async function shGroup(sh,c0){const c=c0||await fsCircle(sh.id);if(!c)throw new Error('404');const d=await decJ(sh.k,c.enc);const all=await fsMembers(sh);const ms=all.filter(m=>m.status==='joined').map(m=>({...m,mine:m.email===fme()}));return{c,d,ms,all}}
 /* live: invites every minute while open; my progress goes out seconds after a check-in; an open group view refreshes itself */
-function shPoll(){if(shOn()&&Date.now()-SHC.t>175000)shRefresh(false)}
+function shPoll(){if(shOn()&&Date.now()-SHC.t>295000)shRefresh(false)}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(shPoll,800)});
-setInterval(()=>{if(document.visibilityState==='visible')shPoll()},60000);
-setInterval(()=>{if(document.visibilityState!=='visible'||!shOn()||SHC.busy||fsCool())return;for(const sh of shares())if(sh.fs&&sh.k&&sh.status==='joined'&&Date.now()-(sh.pubFail||0)>120000&&pubKey(shProgress(sh))!==sh.pub)shPublish(sh).catch(()=>{sh.pubFail=Date.now()})},15000);
+setInterval(()=>{if(awake())shPoll()},60000);
+setInterval(()=>{if(!awake()||!shOn()||SHC.busy)return;for(const sh of shares())if(sh.fs&&sh.k&&sh.status==='joined'&&Date.now()-(sh.pubFail||0)>120000&&pubKey(shProgress(sh))!==sh.pub)shPublish(sh).catch(()=>{sh.pubFail=Date.now()})},15000);
 
 /* ---- accept / later / decline ---- */
 const SH_LOCKED=x=>`<div class="data">Invite</div><h2 style="margin-top:6px">${esc(shWho(x))} invited you</h2><p class="muted">It’s end-to-end encrypted, so it unlocks once ${esc(x.from||'their')} Plotline is online and hands your copy of the key over (usually within the hour, nothing for you to do). You’ll see what it is before you join.</p><div class="actions"><button class="btn danger ghost" data-act="shDecline" data-id="${x.id}">Decline</button><button class="btn pri" data-act="close">OK</button></div>`;
@@ -5874,12 +5966,17 @@ async function shJoin(sh){const btn=document.querySelector('[data-act=shJoin]');
 
 /* ---- the group view (refreshes itself every few seconds while open) ---- */
 let SHLIVE=null;
-async function shOpen(sh){openSheet(`<div class="data">${MODES[sh.mode]?.e||''} ${MODES[sh.mode]?.n||''}</div><h2 style="margin-top:6px">${esc(sh.title)}</h2><p class="small muted">Loading the group…</p>`);
- let G2;try{await shPublish(sh);G2=await shGroup(sh)}catch(e){if(/404/.test(String(e&&e.message))){sh.status='ended';sh.u=Date.now();save();render(false)}openSheet(`<h2>${esc(sh.title)}</h2><p class="muted">${shErr(e)}</p><div class="actions"><button class="btn" data-act="close">Close</button></div>`);return}
- SHG_OPENING=sh.id;shCollect(sh,G2.all);openSheet(`<div class="sh-g" data-shg="${sh.id}">${shGroupHTML(sh,G2)}</div>`);SHG_OPENING=null;rxRead(sh.id);
- clearInterval(SHLIVE);let last=JSON.stringify(G2.all);
- let tk=0;SHLIVE=setInterval(async()=>{const el=document.querySelector(`#sheet.on [data-shg="${sh.id}"]`);if(!el){clearInterval(SHLIVE);return}if(document.visibilityState!=='visible'||fsCool())return;
-  try{await shPublish(sh);const g=await shGroup(sh,++tk%6?G2.c:null);G2.c=g.c;const j=JSON.stringify(g.all);shCollect(sh,g.all);if(j!==last){last=j;const e2=document.querySelector(`#sheet.on [data-shg="${sh.id}"]`);if(e2)e2.innerHTML=shGroupHTML(sh,g)}}catch(e){}},20000)}
+async function shOpen(sh){const C=shCacheGet(sh.id),here=()=>document.querySelector(`#sheet.on [data-shg="${sh.id}"],#sheet.on [data-shl="${sh.id}"]`);
+ const paint=(g,note)=>{SHG_OPENING=sh.id;const html=`<div class="sh-g" data-shg="${sh.id}">${note?`<p class="sh-note">${note}</p>`:''}${shGroupHTML(sh,g)}</div>`;const el=document.querySelector(`#sheet.on [data-shg="${sh.id}"]`);if(el)el.outerHTML=html;else openSheet(html);SHG_OPENING=null};
+ if(C)paint(C);else openSheet(`<div data-shl="${sh.id}"><div class="data">${MODES[sh.mode]?.e||''} ${MODES[sh.mode]?.n||''}</div><h2 style="margin-top:6px">${esc(sh.title)}</h2><p class="small muted">Loading the group…</p></div>`);
+ shPublish(sh).catch(()=>{});
+ let G2;try{G2=await shGroup(sh)}catch(e){if(/404/.test(String(e&&e.message))){sh.status='ended';sh.u=Date.now();save();render(false)}if(!here())return;
+  if(C)paint(C,`${ic('timer','ico-s')} Saved copy from ${esc(dayLabel(C.t).toLowerCase())} ${new Date(C.t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}. ${shErr(e)}`);
+  else openSheet(`<h2>${esc(sh.title)}</h2><p class="muted">${shErr(e)}</p><div class="actions"><button class="btn" data-act="close">Close</button></div>`);return}
+ shCachePut(sh.id,G2);if(!here())return;shCollect(sh,G2.all);paint(G2);rxRead(sh.id);
+ clearInterval(SHLIVE);let last=JSON.stringify(G2.all),tk=0;
+ SHLIVE=setInterval(async()=>{if(!document.querySelector(`#sheet.on [data-shg="${sh.id}"]`)){clearInterval(SHLIVE);return}if(!awake())return;
+  try{const g=await shGroup(sh,++tk%4?G2.c:null);G2.c=g.c;const j=JSON.stringify(g.all);shCollect(sh,g.all);if(j!==last){last=j;shCachePut(sh.id,g);paint(g)}}catch(e){}},30000)}
 function shGroupHTML(sh,{c,d,ms,all}){SHGD[sh.id]={c,d,ms,all};const it=d.item||{},kind=it.kind,score=m=>kind==='habit'?weekChecks(m.progress):(m.progress&&m.progress.pct)||0;
  const rows=ms.slice().sort((a,b)=>score(b)-score(a)),tot=kind==='habit'?rows.reduce((s,m)=>s+weekChecks(m.progress),0):Math.round(rows.reduce((s,m)=>s+((m.progress&&m.progress.pct)||0),0)/Math.max(1,rows.length));
  const feed=rxFeed(sh,ms);
@@ -5994,9 +6091,9 @@ function shReactSheet(sh,to,name){RXT={id:sh.id,to,nm:name};const left=Math.max(
 function shQuickForm(back){const q=quickMsgs();openSheet(`<h2>Quick messages</h2><p class="small muted">Short messages you can send with one tap in a shared item. Up to 8, 40 characters each. You can also type your own message each time.</p>
  <form data-form="shQuick" data-back="${back?1:''}"><div class="rx-qf">${[...Array(8)].map((_,i)=>`<input name="q${i}" maxlength="40" value="${esc(q[i]||'')}" placeholder="${i<REACT_MSG.length?esc(REACT_MSG[i]):'Add one'}" autocomplete="off" aria-label="Quick message ${i+1}">`).join('')}</div>
  <div class="actions"><button type="button" class="btn ghost" data-act="shQuickReset">Reset to defaults</button><button class="btn pri">Save</button></div></form>`)}
-async function shPollReacts(){if(!shOn()||SHC.busy||SHC.rb||TOURING)return;const L=shares().filter(x=>x.fs&&x.k&&x.status==='joined');if(!L.length)return;SHC.rb=true;
+async function shPollReacts(){if(!shOn()||SHC.busy||SHC.rb||TOURING||fsCool()||Date.now()-(SHC.rt||0)<60000)return;SHC.rt=Date.now();const L=shares().filter(x=>x.fs&&x.k&&x.status==='joined');if(!L.length)return;SHC.rb=true;
  try{for(const sh of L){if(openGroup()===sh.id)continue;shCollect(sh,await fsMembers(sh))}}catch(e){}finally{SHC.rb=false}}
-setInterval(()=>{if(document.visibilityState==='visible')shPollReacts()},20000);
+setInterval(()=>{if(awake())shPollReacts()},120000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(shPollReacts,1500)});
 Object.assign(ACT,{
  shReact:(d,el)=>{const x=shById(d.id);if(!x||x.status!=='joined')return;if(RB.q.length){RB.q=[];reactShow()}const fromGroup=!!(el&&el.closest&&el.closest('[data-shg]'));shReactSheet(x,d.to,d.nm||(d.to||'').split('@')[0]);RXT.back=fromGroup},
@@ -6016,7 +6113,7 @@ const PANEL_EMO=['👏','🔥','💪','❤️'];
 function shPanelFor(kind,id){return shares().find(x=>x.fs&&x.k&&x.status==='joined'&&x.local&&x.local.kind===kind&&x.local.id===id)}
 function shPanelBody(x){const md=MODES[x.mode]||MODES.together,c=SHM[x.id],left=Math.max(0,REACT_MAX-reactsSentToday()),td=ymd();
  const head=`<div class="shp-h"><span class="shp-t">${md.e} <b>Shared</b> · ${esc(md.n)}</span><button class="btn sm ghost" data-act="shOpen" data-id="${x.id}">Group${ic('next','ico-s')}</button></div>`;
- if(!c)return head+`<p class="small muted">Loading who’s in it…</p>`;
+ if(!c||!c.ms)return head+`<p class="small muted">${fsCool()?'Group details are paused for a while (the cloud’s daily limit). Your own progress is saved and goes out later.':'Loading who’s in it…'}</p>`;
  const others=c.ms.filter(m=>m.email!==fme()&&m.status==='joined');
  if(!others.length)return head+`<p class="small muted">${x.role==='owner'?'Nobody has joined yet. Once they do, you’ll see their progress here and can react with one tap.':'Waiting for the others.'}</p>`;
  const mine=reactsForMe(x.id);
@@ -6025,13 +6122,13 @@ function shPanelBody(x){const md=MODES[x.mode]||MODES.together,c=SHM[x.id],left=
   return`<div class="shp-m"><div class="shp-who"><span class="sh-ava">${esc(nm[0].toUpperCase())}</span><div><b>${esc(nm)}</b><small>${st}</small>${last?`<small class="shp-last">${esc(last.e||'💬')} ${last.m?esc(last.m)+' · ':''}${esc(dayLabel(last.t).toLowerCase())}</small>`:''}</div></div>
   <div class="shp-r" role="group" aria-label="React to ${esc(nm)}">${PANEL_EMO.map(e=>`<button class="shp-e" data-act="shQuick" data-id="${x.id}" data-to="${esc(m.email)}" data-nm="${esc(nm)}" data-e="${e}" ${left?'':'disabled'} aria-label="Send ${e} to ${esc(nm)}">${e}</button>`).join('')}<button class="shp-e more" data-act="shReact" data-id="${x.id}" data-to="${esc(m.email)}" data-nm="${esc(nm)}" ${left?'':'disabled'} aria-label="More reactions and messages for ${esc(nm)}">💬<span>More</span></button></div></div>`}).join('')
   +`<p class="shp-f small muted">${left?`Tap to send · ${left} left today`:`That’s ${REACT_MAX} for today`}</p>`}
-function shPanel(kind,id){const x=shPanelFor(kind,id);if(!x)return'';const c=SHM[x.id];if(!c||Date.now()-c.t>4000)setTimeout(()=>shPanelLoad(x),0);
+function shPanel(kind,id){const x=shPanelFor(kind,id);if(!x)return'';if(!SHM[x.id]||!SHM[x.id].ms){const C=shCacheGet(x.id);if(C)SHM[x.id]={ms:C.all,t:0}}const c=SHM[x.id];if(!c||!c.ms||Date.now()-c.t>60000)setTimeout(()=>shPanelLoad(x),0);
  return`<section class="shp rv" data-shp="${x.id}">${shPanelBody(x)}</section>`}
-async function shPanelLoad(x){if(SHM[x.id]&&SHM[x.id].busy)return;SHM[x.id]={...(SHM[x.id]||{}),busy:1};try{shCollect(x,await fsMembers(x))}catch(e){if(SHM[x.id])SHM[x.id].busy=0}}
-function shPanelPaint(cid){const x=shById(cid);document.querySelectorAll(`[data-shp="${cid}"]`).forEach(el=>{el.innerHTML=shPanelBody(x)})}
-const _shCollect=shCollect;shCollect=function(sh,ms){SHM[sh.id]={ms:ms||[],t:Date.now()};_shCollect(sh,ms);if(document.querySelector(`[data-shp="${sh.id}"]`)){shPanelPaint(sh.id);const rx=shset().rx||{};if(rx[sh.id]&&rx[sh.id].n){rx[sh.id]={...rx[sh.id],n:0};shPatch({rx:{...rx}});document.querySelectorAll(`.sh-chip[data-id="${sh.id}"] .sh-dot`).forEach(e=>e.remove())}}};
+async function shPanelLoad(x){if(fsCool()||(SHM[x.id]&&SHM[x.id].busy))return;SHM[x.id]={...(SHM[x.id]||{}),busy:1};try{shCollect(x,await fsMembers(x))}catch(e){if(SHM[x.id])SHM[x.id].busy=0;shPanelPaint(x.id)}}
+function shPanelPaint(cid){const x=shById(cid);if(!x)return;document.querySelectorAll(`[data-shp="${cid}"]`).forEach(el=>{el.innerHTML=shPanelBody(x)})}
+const _shCollect=shCollect;shCollect=function(sh,ms){SHM[sh.id]={ms:ms||[],t:Date.now()};{const C=shCacheGet(sh.id);if(C&&ms){C.all=ms.map(shTrim);C.ms=C.all.filter(m=>m.status==='joined').map(m=>({...m,mine:m.email===fme()}));C.t=Date.now();try{localStorage.setItem('shg:'+sh.id,JSON.stringify(C))}catch(e){}}}_shCollect(sh,ms);if(document.querySelector(`[data-shp="${sh.id}"]`)){shPanelPaint(sh.id);const rx=shset().rx||{};if(rx[sh.id]&&rx[sh.id].n){rx[sh.id]={...rx[sh.id],n:0};shPatch({rx:{...rx}});document.querySelectorAll(`.sh-chip[data-id="${sh.id}"] .sh-dot`).forEach(e=>e.remove())}}};
 /* live while it's on screen: re-read that item every 8 s */
-setInterval(()=>{if(document.visibilityState!=='visible'||!shOn())return;const el=document.querySelector('[data-shp]');const x=el&&shById(el.dataset.shp);if(x&&!document.querySelector('#sheet.on'))shPanelLoad(x)},8000);
+setInterval(()=>{if(!awake()||!shOn())return;const el=document.querySelector('[data-shp]');const x=el&&shById(el.dataset.shp);if(x&&!document.querySelector('#sheet.on'))shPanelLoad(x)},60000);
 function shInject(html,kind,id){const p=shPanel(kind,id);if(!p)return html;const i=html.indexOf('class="hero');if(i<0)return html;const j=html.indexOf('</section>',i);return j<0?html:html.slice(0,j+10)+p+html.slice(j+10)}
 const _vHabit=vHabit;vHabit=id=>shInject(_vHabit(id),'habit',id);VIEWS.habit=vHabit;
 const _vGoal=vGoal;vGoal=id=>shInject(_vGoal(id),'goal',id);VIEWS.goal=vGoal;
@@ -6387,7 +6484,7 @@ Object.assign(ACT,{
  thrFrom:d=>{const L=thrFor(d.k,d.id),it=d.k==='goal'?G(d.id):d.k==='habit'?H(d.id):S.entries.find(x=>x.id===d.id);if(!it)return;
   const ttl=d.k==='entry'?trunc((it.title||(it.text||'').split('\n')[0]||'').trim(),60):it.title;
   if(!L.length)return thrNewSheet({k:d.k,id:d.id},ttl);
-  openSheet(`<div class="data">Threads</div><h2 style="margin-top:6px">${esc(trunc(ttl||'This item',40))}</h2><div class="list" style="margin:14px 0">${L.sort((a,b)=>thrLast(b)-thrLast(a)).map(t=>{const u=thrUps(t)[0];return`<div class="li" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}</div><div class="s"><span class="ell">${u?esc(u.x):'Nothing logged yet'}</span></div></div><div class="data">${thrAgo(thrLast(t))}</div></div>`}).join('')}</div><div class="actions"><button class="btn ghost" data-act="close">Close</button><button class="btn pri" data-act="thrNewFrom" data-k="${d.k}" data-id="${d.id}">${ic('plus')}New thread</button></div>`)},
+  openSheet(`<div class="data">Threads</div><h2 style="margin-top:6px">${esc(trunc(ttl||'This item',40))}</h2><div class="list" style="margin:14px 0">${L.sort((a,b)=>thrLast(b)-thrLast(a)).map(t=>{const u=thrUps(t)[0];return`<div class="li" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}</div><div class="s"><span class="ell clampx">${u?esc(u.x):'Nothing logged yet'}</span><button class="more-t" data-act="clampT" hidden>more</button></div></div><div class="data">${thrAgo(thrLast(t))}</div></div>`}).join('')}</div><div class="actions"><button class="btn ghost" data-act="close">Close</button><button class="btn pri" data-act="thrNewFrom" data-k="${d.k}" data-id="${d.id}">${ic('plus')}New thread</button></div>`)},
  thrNewFrom:d=>{const it=d.k==='goal'?G(d.id):d.k==='habit'?H(d.id):S.entries.find(x=>x.id===d.id);closeSheet();setTimeout(()=>thrNewSheet({k:d.k,id:d.id},it?(it.title||trunc((it.text||'').split('\n')[0],60)):''),380)},
  thrLinkGo:d=>{const t=TH(d.id),l=t&&thrLink(t);if(!l||l.gone)return;if(l.entry)ACT.viewEntry({id:l.entry});else go(l.go)},
  thrEdit:d=>{const t=TH(d.id);if(!t)return;openSheet(`<div class="data">Thread</div><h2 style="margin-top:6px">Edit thread</h2><form data-form="thrEdit" data-id="${t.id}" autocomplete="off"><div class="field"><label>Name</label><input name="title" maxlength="80" required value="${esc(t.title)}"></div><div class="field"><label>Linked to</label>${thrLinkSel(t.link)}</div><div class="actions"><button class="btn danger" type="button" data-act="thrDel" data-id="${t.id}">Delete</button><button class="btn pri" type="submit">Save</button></div></form>`)},
@@ -6400,7 +6497,7 @@ Object.assign(ACT,{
 document.addEventListener('input',e=>{const t=e.target;if(t.matches&&t.matches('.thr-in textarea')){t.style.height='auto';t.style.height=Math.min(160,t.scrollHeight)+'px'}});
 document.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&!e.shiftKey&&t.matches&&t.matches('.thr-in textarea')&&matchMedia('(hover:hover)').matches){e.preventDefault();t.form.requestSubmit()}});
 function thrToday(){const L=threads().filter(t=>t.status!=='done').sort((a,b)=>thrLast(b)-thrLast(a)).slice(0,3);
- const rows=L.length?L.map(t=>{const u=thrUps(t)[0];return`<div class="li thr-li" style="${thrCol(t)}" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}</div><div class="s"><span class="ell">${u?esc(u.x):'Nothing logged yet'}</span></div></div><div class="data">${thrAgo(thrLast(t))}</div><button class="ibtn sm" data-act="thrAddSheet" data-id="${t.id}" aria-label="Add an update to ${esc(t.title)}">${ic('plus')}</button></div>`}).join('')
+ const rows=L.length?L.map(t=>{const u=thrUps(t)[0];return`<div class="li thr-li" style="${thrCol(t)}" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}</div><div class="s"><span class="ell clampx">${u?esc(u.x):'Nothing logged yet'}</span><button class="more-t" data-act="clampT" hidden>more</button></div></div><div class="data">${thrAgo(thrLast(t))}</div><button class="ibtn sm" data-act="thrAddSheet" data-id="${t.id}" aria-label="Add an update to ${esc(t.title)}">${ic('plus')}</button></div>`}).join('')
   :`<div class="li thr-li" data-act="thrNew"><span class="thr-em">🧵</span><div style="flex:1;min-width:0"><div class="t">Start a thread</div><div class="s"><span class="ell">Log a thought or a status, then build on it</span></div></div>${ic('plus','ico-s')}</div>`;
  return`<section class="rv"><div class="st-h"><h3>Threads</h3><span style="display:flex;gap:16px;align-items:center">${L.length?`<button class="link" data-act="thrNew">New</button>`:''}<a class="link" href="#/threads">All threads</a></span></div><div class="list">${rows}</div></section>`}
 
@@ -6437,7 +6534,7 @@ function dyHabitRow(h,ds,fut){const v=hVal(h,ds),n=hTarget(h),dn=hDone(h,ds),sk=
  if(tu.length)body+=`<div class="dy-sub">Thread updates</div>${tu.map(({t,u})=>`<button class="dy-ent" data-act="thrOpen" data-id="${t.id}">${thrTag(u.k)[1]} ${esc(trunc(u.x,80))}<small>${esc(trunc(t.title,30))} · ${tShort(u.t)}</small></button>`).join('')}`;
  return`<div class="dy-h${open?' open':''}${dn?' d':''}" style="${cvar(h)}" data-hid="${h.id}"><div class="dy-hr"><button class="dy-hx" data-act="dyX" data-id="${h.id}" aria-expanded="${open}"><span class="hh-i">${esc(hIcon(h))}</span><span class="hh-t"><b>${esc(h.title)}</b><small>${st}${notes.length?` · 🔔 ${notes.length}`:''}${reacts.length?` · 👏 ${reacts.length}`:''}${ents.length?` · 📓 ${ents.length}`:''}${tu.length?` · 🧵 ${tu.length}`:''}</small></span>${ic('chev','dy-chev')}</button>${ctl}</div><div class="dy-hb"><div>${body}</div></div></div>`}
 function vDay(ds){ds=validDate(ds)||ymd();const td=ymd(),fut=ds>td,k=dnum(ds),rel=k-dnum(td);
- const top=`<div class="crumb dy-crumb"><button class="ibtn" data-act="dyBack" aria-label="Back">${ic('back')}</button><div class="ph-r"><button class="ibtn" data-act="dyGo" data-d="-1" aria-label="Day before">${ic('back')}</button><label class="ibtn jdate" aria-label="Pick a date" title="Pick a date">${ic('cal')}<input type="date" data-dydate max="${td}" value="${ds}"></label><button class="ibtn" data-act="dyGo" data-d="1" aria-label="Day after" ${ds>=td?'disabled':''}>${ic('next')}</button>${gear()}</div></div>`;
+ const top=`<div class="crumb dy-crumb"><button class="ibtn" data-act="dyBack" aria-label="Back">${ic('back')}</button><div class="ph-r"><div class="dy-step" role="group" aria-label="Change day"><button class="ibtn" data-act="dyGo" data-d="-1" aria-label="Day before">${ic('next')}</button><label class="ibtn jdate" aria-label="Pick a date" title="Pick a date">${ic('cal')}<input type="date" data-dydate max="${td}" value="${ds}"></label><button class="ibtn" data-act="dyGo" data-d="1" aria-label="Day after" ${ds>=td?'disabled':''}>${ic('next')}</button></div>${gear()}</div></div>`;
  const head=`<header class="ph dy-head"><div><h1>${rel===0?'Today':rel===-1?'Yesterday':new Date(ds+'T12:00').toLocaleDateString(undefined,{weekday:'long'})}</h1><div class="data">${esc(dLong(ds))}${rel<-1?` · ${-rel} days ago`:''}</div></div></header>`;
  const HS=dyHabits(ds),r=dayRatio(ds),A=(S.settings.actLog||{})[ds]||null,ents=S.entries.filter(e=>dOf(e.t)===ds).sort((a,b)=>a.t-b.t),moods=ents.filter(e=>e.mood),dg=S.days.filter(x=>x.date===ds).sort(byTime),notes=dyNotes(ds),reacts=dyReacts(ds),tu=threads().flatMap(t=>thrUps(t).filter(u=>dOf(u.t)===ds).map(u=>({t,u})));
  const stepsDone=ents.filter(e=>e.type==='step'),due=active().flatMap(g=>g.steps.filter(s=>s.due===ds&&!s.done).map(s=>({g,s})));
@@ -6563,7 +6660,8 @@ function vActivity(){actLoad(false);const A=actSet(),d=ACTV.data||{},ok=d.ok||{}
  const keys=Object.keys(L).filter(k=>k<=ymd()).sort().reverse(),shown=keys.slice(0,ACTV.more);
  const hist=`<section class="rv"><div class="st-h"><h3>Day by day</h3><span class="data">${keys.length} day${keys.length===1?'':'s'} kept on this phone</span></div><div class="ah-list">${shown.map(k=>{const o=L[k]||{};return`<button class="ah-r" data-act="dyOpen" data-d="${k}"><span class="ah-d"><b>${esc(dayName(k))}</b><small>${new Date(k+'T12:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})}</small></span><span class="ah-v${o.s>=A.goal?' ok':''}"><i>👟</i>${o.s!=null?(+o.s).toLocaleString():'—'}</span><span class="ah-v"><i>😴</i>${o.z?fmtMinC(o.z):'—'}</span><span class="ah-v"><i>🏋️</i>${wkMin(o)?fmtMinC(wkMin(o)):'—'}</span><span class="ah-v"><i>📱</i>${o.m!=null?fmtMinC(o.m):'—'}</span>${ic('next','ico-s')}</button>`}).join('')}</div>${keys.length>shown.length?`<div class="actions left"><button class="btn sm" data-act="actMore">Show older days</button></div>`:''}</section>`;
  return head+bar+`<div class="act-grid">${T.join('')}</div>`+hist+`<p class="small muted" style="margin:18px 4px 0">Habits can use these too: tap ⚡ on a habit to check it off by itself.</p>`}
-function actCardHTML(){if(!nat())return'';const L=actLog(),t=L[ymd()]||{},A=actSet(),y=L[fromN(dnum(ymd())-1)]||{};
+/* the web shows what the phone synced (last 3 days), read-only */
+function actCardHTML(){if(!nat()&&!Object.keys(actLog()).some(k=>k>=fromN(dnum(ymd())-2)))return'';const L=actLog(),t=L[ymd()]||{},A=actSet(),y=L[fromN(dnum(ymd())-1)]||{};
  const z=t.z||0,tile=(k,e,v,l,p)=>`<button class="at-t" data-act="actGo" data-k="${k}"><span class="at-e">${e}</span><b>${v}</b><small>${l}</small>${p!=null?`<i style="--p:${Math.max(2,Math.min(100,p))}"></i>`:''}</button>`;
  return`<section class="rv at" id="actCard"><div class="st-h"><h3>Activity</h3><a class="link" href="#/activity">Details</a></div><div class="at-g">${tile('steps','👟',(t.s||0).toLocaleString(),`steps · goal ${A.goal>=1000?A.goal/1000+'k':A.goal}`,Math.round((t.s||0)/A.goal*100))}${tile('sleep','😴',z?fmtMin(z):'—','sleep'+(z?'':' · not recorded'),z?Math.round(z/(A.sleep*60)*100):null)}${tile('work','🏋️',wkMin(t)?fmtMin(wkMin(t)):'—','workout'+(wkMin(t)?'':' today'))}${tile('screen','📱',t.m!=null?fmtMin(t.m):'—','screen time',A.scr&&t.m!=null?Math.round(t.m/A.scr*100):null)}</div>${y.s!=null?`<button class="at-y" data-act="dyOpen" data-d="${fromN(dnum(ymd())-1)}">Yesterday: ${(+y.s).toLocaleString()} steps${y.z?' · '+fmtMin(y.z)+' sleep':''}${y.m!=null?' · '+fmtMin(y.m)+' screen':''} ${ic('next','ico-s')}</button>`:''}</section>`}
 function actCardPaint(){const e=document.getElementById('actCard');if(!e)return;const t=document.createElement('div');t.innerHTML=actCardHTML();const n=t.firstElementChild;if(n){n.classList.add('in');e.replaceWith(n)}}
@@ -6596,6 +6694,16 @@ SCRIPT_FONTS.forEach(x=>{if(!fontOf(x[0]))FONTS.push([x[0],x[1],x[2],x[3]])});
 {const _af=applyFonts;applyFonts=function(){_af();const f=fontSet(),r=document.documentElement;r.toggleAttribute('data-fscript',scriptFont(f.d));r.toggleAttribute('data-fscriptb',scriptFont(f.b));
  /* script fonts fall back to the system's handwriting face while they load, not Impact */
  [['d','--f-display'],['b','--f-body']].forEach(([k,v])=>{if(scriptFont(f[k]))r.style.setProperty(v,`'${fontOf(f[k])[2]}',cursive`)})}}
+applyFonts();
+/* 1.19: one font for everything, and how headings and labels are cased */
+const TCASE=[['auto','As designed'],['upper','ALL CAPS'],['title','Title Case'],['none','As typed'],['lower','lowercase']];
+{const _af=applyFonts;applyFonts=function(){_af();const st=S.settings,r=document.documentElement;
+ if(st.font1){r.style.setProperty('--f-display','var(--f-body)');r.style.setProperty('--f-mono','var(--f-body)')}
+ const t=TCASE.some(x=>x[0]===st.tcase)?st.tcase:'auto';if(t==='auto')r.removeAttribute('data-tcase');else r.setAttribute('data-tcase',t)}}
+{const _fp=fontPanel;fontPanel=function(){const st=S.settings;return _fp().replace(/<\/section>$/,`<label class="sw" style="margin-top:18px"><span>One font for everything<small>Headings, text and numbers all use the text font</small></span><input type="checkbox" data-set="font1" ${st.font1?'checked':''}><i></i></label>
+ <div class="field" style="margin-top:14px"><label>Headings and labels</label>${segHTML('tcase','tcaseSet',TCASE,TCASE.some(x=>x[0]===st.tcase)?st.tcase:'auto')}</div></section>`)}}
+ACT.tcaseSet=d=>{S.settings.tcase=d.v;save();applyFonts();render(false)};
+document.addEventListener('change',e=>{const t=e.target;if(t&&t.dataset&&t.dataset.set==='font1'){S.settings.font1=t.checked;save();applyFonts();render(false)}});
 applyFonts();
 
 /* ================= REACTIONS: your own words, and instant mode on Android ================= */
@@ -6868,7 +6976,7 @@ function fontNativeFlag(){const f=fontSet();document.documentElement.classList.t
 {const _af=applyFonts;applyFonts=function(){if(!S.settings.v114font){S.settings.v114font=1;if(!S.settings.font)S.settings.font={d:'nsysd',b:'system',m:'nsysm'};try{save()}catch(e){}}_af();fontNativeFlag()}}
 
 /* ---------- bottom bar: 4 pages + More ---------- */
-const PAGES=[['today','Home','today','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['vista','Vista','map','Timeline and life map'],['journal','Journal','journal','Moments and history'],['ask','Ask','ai','Insights and AI planning'],['threads','Threads','thread','Conversations about goals and habits'],['activity','Activity','flame','Phone activity and automations'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||p[0]==='bench'||VIEWS[p[0]]);
+const PAGES=[['today','Home','today','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['vista','Vista','map','Timeline and life map'],['journal','Journal','journal','Moments and history'],['ask','Ask','ai','Insights and AI planning'],['threads','Threads','thread','Conversations about goals and habits'],['activity','Activity','flame','Phone activity and automations'],['lists','Lists','checklist','Checklists, packing and shopping lists you can share'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||p[0]==='bench'||p[0]==='lists'||VIEWS[p[0]]);
 const tabs=()=>{const t=(S.settings.tabs||['today','habits','cal','goals']).filter(k=>PAGES.some(p=>p[0]===k));return t.length?t.slice(0,4):['today','habits','cal','goals']};
 const pg=k=>PAGES.find(p=>p[0]===k);
 function tabbarHTML(){return`<div class="navs"><span class="nav-ind"></span>${tabs().map(k=>{const p=pg(k);return`<a class="nav" href="#/${k}" data-nav="${k}">${ic(p[2])}<span>${p[1]}</span></a>`}).join('')}<button class="nav" data-act="navMore" data-nav="more" aria-label="More pages and search">${ic('menu')}<span>More</span></button></div>`}
@@ -7024,18 +7132,20 @@ function cutSec(o,m){const i=o.indexOf(m);if(i<0)return o;const j=o.indexOf('</s
    More is a sheet: every page you haven't pinned as a big tile (one tap), search at the top (it doesn't grab the
    keyboard), your bar's pages, and settings shortcuts. Edit pins and orders pages in place. Tap More again, the
    close button, the scrim or Back to close it. */
-const PG=[['today','Home','today','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['activity','Activity','flame','Steps, sleep, screen time, workouts'],['journal','Journal','journal','Moments and history'],['vista','Vista','map','Timeline and life map'],['ask','Ask','ai','Insights and AI planning'],['threads','Threads','thread','Conversations about goals and habits'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||p[0]==='bench'||VIEWS[p[0]]);
+const PG=[['today','Home','today','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['activity','Activity','flame','Steps, sleep, screen time, workouts'],['journal','Journal','journal','Moments and history'],['vista','Vista','map','Timeline and life map'],['ask','Ask','ai','Insights and AI planning'],['threads','Threads','thread','Conversations about goals and habits'],['lists','Lists','checklist','Checklists, packing and shopping lists you can share'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||p[0]==='bench'||p[0]==='lists'||VIEWS[p[0]]);
 const TMAX=5,TMIN=2;
 const tDef=()=>['today','habits','cal','goals',NATIVE?'activity':'journal'];
 const tabs6=()=>{const t=(Array.isArray(S.settings.tabs)?S.settings.tabs:tDef()).filter((k,i,a)=>PG.some(p=>p[0]===k)&&a.indexOf(k)===i);return t.length>=TMIN?t.slice(0,TMAX):tDef()};
 function tabMigrate(){if(S.settings.v116tabs)return;S.settings.v116tabs=1;const t=Array.isArray(S.settings.tabs)?S.settings.tabs.slice():null;if(t&&t.length===4){const x=tDef().find(k=>!t.includes(k));if(x)t.push(x);S.settings.tabs=t}if(S.settings.layout)S.settings.layout.hcal=false;try{save()}catch(e){}}
 const moreOpen=()=>!!document.querySelector('#sheet.on .mo-h');
 function tbHTML(){const t=tabs6();return`<div class="navs n${t.length+1}"><span class="nav-ind"></span>${t.map(k=>{const p=PG.find(x=>x[0]===k);return`<a class="nav" href="#/${k}" data-nav="${k}">${ic(p[2])}<span>${p[1]}</span></a>`}).join('')}<button class="nav" data-act="navMore" data-nav="more" aria-haspopup="dialog" aria-label="More pages">${ic('menu')}<span>More</span></button></div>`}
-const NAVMAP={goal:'goals',habit:'habits',road:'vista',map:'vista',ai:'ask',thread:'threads',day:'cal'};
+const NAVMAP={goal:'goals',habit:'habits',road:'vista',map:'vista',ai:'ask',thread:'threads',day:'cal',list:'lists'};
 function navMark(){const t=tabs6();let k=NAVMAP[cur.p]||cur.p;if(k==='threads'&&!t.includes('threads')&&t.includes('journal'))k='journal';if(!t.includes(k))k='more';if(moreOpen())k='more';
- document.querySelectorAll('[data-nav]').forEach(a=>{const on=a.dataset.nav===k;a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});moveInd()}
+ const kr=NAVMAP[cur.p]||cur.p;document.querySelectorAll('[data-nav]').forEach(a=>{const on=a.dataset.nav===(a.closest('#rail')?kr:k);a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});moveInd()}
 function tbPaint(){const tb=$('#tabbar');if(tb){tb.innerHTML=tbHTML();navMark()}}
-{const _b=buildChrome;buildChrome=function(){_b();tabMigrate();tbPaint()}}
+/* the desktop rail lists every page (the phone bar has 5 + More) */
+const railHTML=()=>`<div class="navs"><span class="nav-ind"></span>${PG.filter(p=>p[0]!=='settings').map(([k,l,i])=>`<a class="nav" href="#/${k}" data-nav="${k}">${ic(i)}<span>${l}</span></a>`).join('')}</div>`;
+{const _b=buildChrome;buildChrome=function(){_b();const r=$('#rail'),n=r&&r.querySelector('.navs');if(n)n.outerHTML=railHTML();tabMigrate();tbPaint()}}
 const MSET=[['account','Sync','rep'],['look','Look & feel','cards'],['notif','Notifications','bell'],['privacy','Privacy','lock'],['share','Sharing','link'],['data','Your data','down']];
 let MEDIT=false;
 function moreHTML(){const t=tabs6(),un=PG.filter(p=>!t.includes(p[0])),pg=k=>PG.find(x=>x[0]===k);
@@ -7177,9 +7287,14 @@ function axLabels(D,x0,bw,y){const n=D.length,tn=today();return D.map((d,i)=>{co
 function axBars(id,D,key,o){const n=D.length,x0=0,bw=(AW-x0)/n,ch=AH-APT-APB,vals=D.map(d=>d[key]||0),mx=Math.max(o.line||0,...vals,1)*1.12,y=v=>APT+ch-v/mx*ch,gap=n>45?.2:n>20?.26:.34,w=bw*(1-gap),rx=Math.min(6,w/2);
  const bars=D.map((d,i)=>{const v=vals[i],x=x0+i*bw+(bw-w)/2,h=v?Math.max(2.5,v/mx*ch):2,cls=v?(o.good&&o.good(v)?' ok':'')+(o.bad&&o.bad(v)?' over':''):' z';
   return`<g class="axg" data-act="axSel" data-d="${d.d}" data-x="${(x0+i*bw).toFixed(2)}"><rect class="axhit" x="${(x0+i*bw).toFixed(2)}" y="0" width="${bw.toFixed(2)}" height="${AH}"/><rect class="axr${cls}" x="${x.toFixed(2)}" y="${(APT+ch-h).toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" rx="${rx.toFixed(1)}"/></g>`}).join('');
- const gl=o.line?`<line class="axgl" x1="0" x2="${AW}" y1="${y(o.line).toFixed(1)}" y2="${y(o.line).toFixed(1)}"/><text class="axgt" x="${AW-3}" y="${(y(o.line)-5).toFixed(1)}" text-anchor="end">${esc(o.lineLab)}</text>`:'';
- let ma='';if(n>=7){const M=axMA(D,key),runs=[];let cur0=[];M.forEach((v,i)=>{if(v==null){if(cur0.length>1)runs.push(cur0);cur0=[];return}cur0.push([x0+i*bw+bw/2,y(v)])});if(cur0.length>1)runs.push(cur0);ma=runs.map(r=>`<path class="axma" pathLength="1" d="${smooth(r)}"/>`).join('')}
- return`<div class="axc-w"><svg class="axc" viewBox="0 0 ${AW} ${AH}" role="group" aria-label="${esc(o.aria)}"><line class="axbase" x1="0" x2="${AW}" y1="${APT+ch+.5}" y2="${APT+ch+.5}"/><rect class="axsel" x="0" y="${APT-8}" width="${bw.toFixed(2)}" height="${ch+12}" rx="${Math.min(9,bw/2).toFixed(1)}"/>${gl}${bars}${ma}${axLabels(D,x0,bw,AH-6)}</svg>${n>=7?`<div class="axkey"><span><i class="kb"></i>${esc(o.unit)}</span><span><i class="km"></i>7-day average</span>${o.line?`<span><i class="kg"></i>${esc(o.lineLab)}</span>`:''}</div>`:''}</div>`}
+ /* 1.19: two quiet reference lines (goal dashed, average solid) explained in the key under the chart, never written
+    inside it, and the latest day's value above its bar. No moving-average curve: it read as a stray line. */
+ const fm=o.fmt||(v=>Math.round(v).toLocaleString()),av=axAvg(D,key);
+ const gl=o.line?`<line class="axgl" x1="0" x2="${AW}" y1="${y(o.line).toFixed(1)}" y2="${y(o.line).toFixed(1)}"/>`:'';
+ const al=av&&n>=3?`<line class="axav" x1="0" x2="${AW}" y1="${y(av).toFixed(1)}" y2="${y(av).toFixed(1)}"/>`:'';
+ let li=-1;for(let i=n-1;i>=0;i--)if(vals[i]){li=i;break}
+ const vl=li<0?'':(()=>{const h=Math.max(2.5,vals[li]/mx*ch),cx=Math.min(AW-22,Math.max(22,x0+li*bw+bw/2));return`<text class="axv" x="${cx.toFixed(1)}" y="${Math.max(10,APT+ch-h-7).toFixed(1)}" text-anchor="middle">${esc(fm(vals[li]))}</text>`})();
+ return`<div class="axc-w"><svg class="axc" viewBox="0 0 ${AW} ${AH}" role="group" aria-label="${esc(o.aria)}"><line class="axbase" x1="0" x2="${AW}" y1="${APT+ch+.5}" y2="${APT+ch+.5}"/><rect class="axsel" x="0" y="${APT-8}" width="${bw.toFixed(2)}" height="${ch+12}" rx="${Math.min(9,bw/2).toFixed(1)}"/>${bars}${al}${gl}${vl}${axLabels(D,x0,bw,AH-6)}</svg><div class="axkey"><span><i class="kb"></i>${esc(o.unit)}</span>${al?`<span><i class="ka"></i>average ${esc(fm(av))}</span>`:''}${o.line?`<span><i class="kg"></i>${esc(o.lineLab)}</span>`:''}</div></div>`}
 /* sleep: when you fell asleep and woke up, night by night */
 const rel18=t=>{const d=new Date(t);return(d.getHours()*60+d.getMinutes()-1080+1440)%1440};
 const clockOf=m=>{const c=((Math.round(m)+1080)%1440+1440)%1440;return fmtTime(pad2(Math.floor(c/60))+':'+pad2(c%60))};
@@ -7230,17 +7345,17 @@ function axHist(N){const A=actSet(),L=axL(),keys=Object.keys(L).filter(k=>k<=tod
  else T.push(`<section class="panel axcard rv" id="act-steps"><div class="axh"><span class="act-i">👟</span><b>Steps</b></div>${need('steps','Allow physical activity so Plotline can read your phone’s step counter.','Allow')}</section>`);
  const zv=D.filter(x=>x.z),hasZ=zv.length||ok.hc;
  if(hasZ){const Z=D.map(mainSleep).filter(Boolean),debt=zv.reduce((a,x)=>a+Math.max(0,A.sleep*60-x.z),0),met=zv.filter(x=>x.z>=A.sleep*60).length,cons=Z.length>=3?Math.round(sd(Z.map(z=>z.bed))):null;
-  const chart=axSleep(D,A.sleep*60)||axBars('z',D,'z',{line:A.sleep*60,lineLab:'goal '+fmtMin(A.sleep*60),good:v=>v>=A.sleep*60,unit:'Sleep',aria:`Sleep, last ${N} nights. Tap a bar to see that night.`});
+  const chart=axSleep(D,A.sleep*60)||axBars('z',D,'z',{line:A.sleep*60,lineLab:'goal '+fmtMin(A.sleep*60),fmt:fmtMin,good:v=>v>=A.sleep*60,unit:'Sleep',aria:`Sleep, last ${N} nights. Tap a bar to see that night.`});
   T.push(axCard('sleep','😴','Sleep',chart,axS(fmtMin(axAvg(D,'z')),'average night')+axS(Z.length?esc(clockOf(Z.reduce((a,z)=>a+z.bed,0)/Z.length)):'—','usual bedtime',Z.length?'up '+esc(clockOf(Z.reduce((a,z)=>a+z.wake,0)/Z.length)):'')+axS(cons!=null?'± '+fmtMin(cons):'—','bedtime spread',cons!=null?(cons<=30?'very steady':cons<=60?'fairly steady':'all over'):'')+axS(fmtMin(debt),'short of your goal',`${met}/${zv.length} nights met`),(!zv.length&&NATIVE&&ok.hc)?`<div class="act-diag"><p class="small muted">Health Connect is connected but has no sleep from the last 30 days. Turn on syncing to Health Connect in your sleep or watch app.</p><button class="btn sm" data-act="hcOpen">Open Health Connect</button></div>`:''))}
  else T.push(`<section class="panel axcard rv" id="act-sleep"><div class="axh"><span class="act-i">😴</span><b>Sleep</b></div>${need('sleep',ok.hcSupported===false?'Sleep and workouts come from Health Connect, built into Android 14 and newer.':'Connect Health Connect to see sleep and workouts from your fitness apps.',ok.hcSupported===false?'OK':'Connect')}</section>`);
  const mv=D.filter(x=>x.m!=null),hasM=mv.length||ok.screen;
  if(hasM){const lo=mv.reduce((a,x)=>!a||x.m<a.m?x:a,null),under=A.scr?mv.filter(x=>x.m<=A.scr).length:null;
-  T.push(axCard('screen','📱','Screen time',axBars('m',D,'m',{line:A.scr||0,lineLab:'limit '+fmtMin(A.scr),bad:v=>A.scr&&v>A.scr,good:v=>A.scr&&v<=A.scr,unit:'Screen time',aria:`Screen time, last ${N} days. Tap a bar to see that day.`}),axS(fmtMin(axAvg(D,'m')),'daily average')+axS(lo?fmtMin(lo.m):'—','lightest day',lo?esc(dayName(lo.d)):'')+axS(under!=null?`${under}/${mv.length}`:'—','under your limit')+axS(fmtMin(axAvg(D,'m')*7),'a week, about'),`<div class="axsub2">Top apps</div><div class="axapps" data-axx="apps">${axApps(AX.sel)}</div>`))}
+  T.push(axCard('screen','📱','Screen time',axBars('m',D,'m',{line:A.scr||0,lineLab:'limit '+fmtMin(A.scr),fmt:fmtMin,bad:v=>A.scr&&v>A.scr,good:v=>A.scr&&v<=A.scr,unit:'Screen time',aria:`Screen time, last ${N} days. Tap a bar to see that day.`}),axS(fmtMin(axAvg(D,'m')),'daily average')+axS(lo?fmtMin(lo.m):'—','lightest day',lo?esc(dayName(lo.d)):'')+axS(under!=null?`${under}/${mv.length}`:'—','under your limit')+axS(fmtMin(axAvg(D,'m')*7),'a week, about'),`<div class="axsub2">Top apps</div><div class="axapps" data-axx="apps">${axApps(AX.sel)}</div>`))}
  else T.push(`<section class="panel axcard rv" id="act-screen"><div class="axh"><span class="act-i">📱</span><b>Screen time</b></div>${need('screen','Turn on Usage access for Plotline to see how long you spend in apps. Only minutes are read.','Allow')}</section>`);
  const xv=D.filter(x=>x.x),hasW=xv.length||ok.hc;
  if(hasW){const types={};D.forEach(x=>(x.w||[]).forEach(w=>{const n=ACT_EX[w.k]||'Workout';types[n]=(types[n]||0)+(+w.m||0)}));const TT=Object.entries(types).sort((a,b)=>b[1]-a[1]),tsum=TT.reduce((a,x)=>a+x[1],0)||1,long=xv.reduce((a,x)=>!a||x.x>a.x?x:a,null);
   const mix=TT.length?`<div class="axsub2">Mix</div><div class="axmix">${TT.map(([n,m],i)=>`<i style="--w:${(m/tsum*100).toFixed(1)}%;--h:${(i*67)%360}" title="${esc(n)} ${fmtMin(m)}"></i>`).join('')}</div><div class="axmix-l">${TT.slice(0,5).map(([n,m],i)=>`<span><i style="--h:${(i*67)%360}"></i>${esc(n)} · ${fmtMin(m)}</span>`).join('')}</div>`:'';
-  T.push(axCard('work','🏋️','Workouts',axBars('x',D,'x',{line:0,good:v=>v>=30,unit:'Active minutes',aria:`Workouts, last ${N} days. Tap a bar to see that day.`}),axS(`${xv.length}/${N}`,'active days')+axS(fmtMin(xv.reduce((a,x)=>a+x.x,0)),'total')+axS(long?fmtMin(long.x):'—','longest',long?esc(dayName(long.d)):'')+axS(fmtMin(xv.length?xv.reduce((a,x)=>a+x.x,0)/xv.length:0),'per active day'),mix+`<div class="axsub2">This day</div><div class="axapps" data-axx="work">${axWkDay(AX.sel)}</div>`))}
+  T.push(axCard('work','🏋️','Workouts',axBars('x',D,'x',{line:0,fmt:fmtMin,good:v=>v>=30,unit:'Active minutes',aria:`Workouts, last ${N} days. Tap a bar to see that day.`}),axS(`${xv.length}/${N}`,'active days')+axS(fmtMin(xv.reduce((a,x)=>a+x.x,0)),'total')+axS(long?fmtMin(long.x):'—','longest',long?esc(dayName(long.d)):'')+axS(fmtMin(xv.length?xv.reduce((a,x)=>a+x.x,0)/xv.length:0),'per active day'),mix+`<div class="axsub2">This day</div><div class="axapps" data-axx="work">${axWkDay(AX.sel)}</div>`))}
  const pl=base?(()=>{const i=base.indexOf('<section class="panel act-t rv" id="act-places">');if(i<0)return'';const j=base.indexOf('</section>',i);return j<0?'':base.slice(i,j+10)})():'';
  return head+bar+sel+`<div class="axgrid">${T.join('')}${axRhythm(D)}${axLinks()}${pl}</div>`+axHist(N)+`<p class="small muted" style="margin:18px 4px 0">Habits can use these too: tap ⚡ on a habit to check it off by itself.</p>`};VIEWS.activity=vActivity}
 function axPick(ds,anim){AX.sel=ds;document.querySelectorAll('#view svg.axc').forEach(svg=>{svg.querySelectorAll('.axg.on').forEach(x=>x.classList.remove('on'));const g=svg.querySelector(`.axg[data-d="${ds}"]`),s=svg.querySelector('.axsel');if(!s)return;if(!g){s.style.opacity=0;return}g.classList.add('on');s.style.opacity=1;if(!anim)s.style.transition='none';s.style.transform=`translateX(${g.dataset.x}px)`;if(!anim){s.getBoundingClientRect();s.style.transition=''}});
@@ -7429,15 +7544,19 @@ ACT.shareThread=d=>shareStart('thread',{id:d.id});
 /* ---------- after every render ---------- */
 /* goal list titles shrink to fit their one line (down to 12px) before they're cut with … */
 /* big page titles: whole words only; a long word makes the title smaller instead of splitting it */
+/* long text stops after a few lines with … and a "more" button (shown only when something is actually cut) */
+function clampFit(){document.querySelectorAll('#view .clampx:not(.open)').forEach(e=>{const b=e.nextElementSibling;if(b&&b.classList.contains('more-t'))b.hidden=!(e.scrollHeight>e.clientHeight+2)})}
+ACT.clampT=(d,el,e)=>{if(e){e.stopPropagation();e.preventDefault()}const t=el.previousElementSibling;if(!t)return;const o=t.classList.toggle('open');el.textContent=o?'less':'more'};
 function titleFit(){document.querySelectorAll('#view .hero h1,#view .ph h1,#view .cdp-h h2').forEach(h=>{h.style.fontSize='';h.style.overflowWrap='normal';h.style.wordBreak='normal';let f=parseFloat(getComputedStyle(h).fontSize),n=0;while(h.scrollWidth>h.clientWidth+1&&f>18&&n++<60){f-=1;h.style.fontSize=f+'px'}})}
 function lvFit(){document.querySelectorAll('#view .lv-g .lv-t b').forEach(b=>{b.style.fontSize='';let f=parseFloat(getComputedStyle(b).fontSize);while(b.scrollWidth>b.clientWidth+1&&f>12){f-=.5;b.style.fontSize=f+'px'}})}
 addEventListener('resize',()=>{lvFit();titleFit()},{passive:true});
-{const _r=render;render=function(a){_r(a);const z=cur.p==='bench'||cur.p==='map';document.documentElement.classList.toggle('tzx',z);printBtn();lvFit();titleFit()}}
+{const _r=render;render=function(a){_r(a);const z=cur.p==='bench'||cur.p==='map';document.documentElement.classList.toggle('tzx',z);printBtn();lvFit();titleFit();clampFit()}}
 })();
 /* 1.18: an item's own card colour, picked from its … menu */
 ACT.setColor=(d,el)=>{const o=d.k==='habit'?H(d.id):G(d.id);if(!o)return;o.color=d.v||'';save();
  el.closest('.clr-row').querySelectorAll('.clr').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});render(false)};
 </script>
 <script src="bench.js"></script>
+<script src="lists.js"></script>
 </body>
 </html>

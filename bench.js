@@ -291,9 +291,9 @@ let pubT;function pubSoon(b){if(!b.pub||!mine(b.cloud.owner))return;clearTimeout
 async function publish(b,first){const v=b.pub,{who:_,...p}=payload(b);for(let i=0;i<3;i++){const r=await cput(v.doc,{owner:b.cloud.owner,kind:'view',enc:await encJ(v.key,p),u:now(),v:1},first?'new':v.ut);
   if(r.conflict){const d=await cget(v.doc);v.ut=d&&d.ut;first=!d;continue}v.ut=r.ut;persist();return}}
 // ponytail: polls one doc every 6s while a shared board is busy (30s when quiet, paused on quota); switch to Firestore's Listen channel if read quota matters
-let tick=0;setInterval(()=>{const b=WB.B;tick++;if(!b||!b.cloud||cur.p!=='bench'||document.hidden||pushing||WB.G||WB.edit||Date.now()<(window.FS_COOL||0))return;
+let tick=0;setInterval(()=>{const b=WB.B;tick++;if(!b||!b.cloud||cur.p!=='bench'||pushing||WB.G||WB.edit||(window.plAwake&&!window.plAwake()))return;
  if(tick%2||now()-(WB.lastRemote||0)>60e3&&tick%10)return;pull(b).catch(e=>setSt('err',e.message))},3000);
-setInterval(()=>{const b=WB.B;if(b&&b.cloud&&!b.ro&&!document.hidden&&cur.p==='bench'&&Date.now()>=(window.FS_COOL||0))pushSoon(0)},120e3);
+setInterval(()=>{const b=WB.B;if(b&&b.cloud&&!b.ro&&cur.p==='bench'&&(!window.plAwake||window.plAwake()))pushSoon(0)},120e3);
 const linkOf=(k,doc,key)=>`${webBase()}#/bench/${k}~${doc}~${toUrl(key)}`;
 async function shareOn(b){if(!fsOK())throw new Error('Sharing isn’t available in this version');if(!signedIn()&&!(typeof shReady==='function'&&await shReady()))throw new Error('Sign in first to share a board');const s=await gs();
  b.cloud={doc:rnd(24),key:newKey(),owner:s.uid,ut:null,sent:0};persist();await push(b);if(WB.st.k==='err'){b.cloud=null;persist();throw new Error(WB.st.m)}}
@@ -799,6 +799,8 @@ FILE.wbImport=inp=>{const f=inp.files&&inp.files[0];if(!f)return;const r=new Fil
 
 /* ---------------- wiring into the app ---------------- */
 VIEWS.bench=vBench;
+/* the encrypted-link cloud, shared with Lists (lists.js) */
+window.WBC={cget,cput,cdel,signedIn,gs,rnd,toUrl,fromUrl,webBase};
 NAV.push(['bench','Workbench','wbbench']);
 /* the side rail may already be drawn without this tab (this file loads after boot on slow starts): redraw it */
 if(document.querySelector('#rail .nav')&&!document.querySelector('#rail [data-nav=bench]')){buildChrome();if(typeof navMark==='function')navMark()}
