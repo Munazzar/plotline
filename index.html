@@ -3036,7 +3036,7 @@ const IMGV='--t-dim:rgba(0,0,0,.55) !important;--t-fg:#fff !important;--t-mut:rg
 const IMGOV=u=>`linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.66)),url(${u})`;
 const HALOS=[['off','Off'],['high','High priority'],['pinned','Pinned'],['next','Up next'],['all','All']];
 const haloOn=(g,curStep=false)=>{const m=S.settings.halo;return m==='all'||(m==='high'&&g.priority===1)||(m==='pinned'&&g.pinned)||(m==='next'&&curStep)};
-let IMGSIG='';function imgCSS(){let el=$('#imgcss');if(!el){el=document.createElement('style');el.id='imgcss';document.head.appendChild(el)}const sig=S.goals.map(g=>g.img?g.id+g.img.length:'').join();if(sig===IMGSIG)return;IMGSIG=sig;el.textContent=S.goals.filter(g=>g.img).map(g=>`[style*="gk-${g.id}"].tint.tint.tint,[style*="gk-${g.id}"] .tint.tint.tint{--img:${IMGOV(g.img)} !important;${IMGV}}`).join('\n')}
+let IMGSIG='';function imgCSS(){let el=$('#imgcss');if(!el){el=document.createElement('style');el.id='imgcss';document.head.appendChild(el)}const IG=[...S.goals,...(S.lists||[])],sig=IG.map(g=>g.img?g.id+g.img.length:'').join();if(sig===IMGSIG)return;IMGSIG=sig;el.textContent=IG.filter(g=>g.img).map(g=>`[style*="gk-${g.id}"].tint.tint.tint,[style*="gk-${g.id}"] .tint.tint.tint{--img:${IMGOV(g.img)} !important;${IMGV}}`).join('\n')}
 let COVER;
 const CARD_STYLES=[['solid','Solid'],['glow','Glow'],['neon','Neon'],['aurora','Aurora'],['glass','Glass'],['index','Index card']];const CARD_IDS=CARD_STYLES.map(c=>c[0]);
 const cById=id=>`var(--c-${areaOf(id).k})`;
@@ -3093,7 +3093,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.23.0';
+const APP_VER='1.24.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -6493,7 +6493,10 @@ function vThreads(){const all=threads().slice().sort((a,b)=>thrLast(b)-thrLast(a
  const head=`<header class="ph"><div><h1>Journal</h1></div><div class="ph-r"><button class="btn pri" data-act="thrNew" aria-label="New thread">${ic('plus')}<span>New thread</span></button>${gear()}</div></header>`;
  const chips=all.length?`<div class="jchips rv">${segHTML('thf','thrFilt',[['open',`Active · ${open.length}`],['done','Done'],['all','All']],THF)}</div>`:'';
  const H0=S.settings.layout.journal==='h';
- const body=L.length?(H0?hsShell('threads-'+THF,L.map(t=>hsItem(thrCol(t),thrBig(t),'done',`<span class="node static" aria-hidden="true"></span>`,dayLabel(thrLast(t)))).join(''),0):thrSpine(L,thrLast,thrFlip,thrCol))
+ const LV=S.settings.layout.journal==='list';
+ /* list view: one compact row per thread, latest update clipped to two lines with "more" */
+ const rows=()=>`<div class="list thr-rows rv">${L.map(t=>{const u=thrUps(t)[0];return`<div class="li thr-li" style="${thrCol(t)}" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}${t.status==='done'?' · done':''}</div><div class="s"><span class="ell clampx">${u?esc(u.x):'Nothing logged yet'}</span><button class="more-t" data-act="clampT" hidden>more</button></div></div><div class="data">${thrAgo(thrLast(t))}</div>${t.status==='done'?'':`<button class="ibtn sm" data-act="thrAddSheet" data-id="${t.id}" aria-label="Add an update to ${esc(t.title)}">${ic('plus')}</button>`}</div>`}).join('')}</div>`;
+ const body=L.length?(LV?rows():H0?hsShell('threads-'+THF,L.map(t=>hsItem(thrCol(t),thrBig(t),'done',`<span class="node static" aria-hidden="true"></span>`,dayLabel(thrLast(t)))).join(''),0):thrSpine(L,thrLast,thrFlip,thrCol))
   :all.length?`<div class="empty rv"><p>Nothing here.</p><div class="actions"><button class="btn" data-act="thrFilt" data-v="all">Show all threads</button></div></div>`
   :`<div class="empty rv"><h3>Think out loud, one step at a time</h3><p>A thread is a running log for an idea, a project or anything you’re working through. Add a line whenever something changes. Link it to a goal or habit only if you want to.</p><div class="actions"><button class="btn pri" data-act="thrNew">${ic('plus')}Start a thread</button></div></div>`;
  return head+jSwitchRow('threads')+chips+body}

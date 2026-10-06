@@ -23,11 +23,11 @@ function touch(L){L.u=now();save();if(L.cloud)pushSoon(L)}
 const ST=new Map(),st=L=>{let x=ST.get(L.id);if(!x){x={};ST.set(L.id,x)}return x};
 
 /* ---------------- cloud ---------------- */
-const payload=L=>({k:'list',title:L.title,emoji:L.emoji,due:L.due,mu:L.mu,items:L.items});
+const payload=L=>({k:'list',title:L.title,emoji:L.emoji,due:L.due,color:L.color||'',img:L.img||'',mu:L.mu,items:L.items});
 const linkOf=L=>`${C().webBase()}#/list/j~${L.cloud.doc}~${C().toUrl(L.cloud.key)}`;
 const ro=L=>!!(L.cloud&&!C().signedIn());
 function merge(L,r){let ch=false;for(const[id,it]of Object.entries(r.items||{})){const a=L.items[id];if(!a||(it.u||0)>(a.u||0)){L.items[id]=it;ch=true}}
- if((r.mu||0)>(L.mu||0)){L.title=r.title;L.emoji=r.emoji;L.due=r.due||'';L.mu=r.mu;ch=true}return ch}
+ if((r.mu||0)>(L.mu||0)){L.title=r.title;L.emoji=r.emoji;L.due=r.due||'';L.color=r.color||'';L.img=r.img||'';L.mu=r.mu;ch=true}return ch}
 let pT={};function pushSoon(L,d=250){clearTimeout(pT[L.id]);pT[L.id]=setTimeout(()=>push(L),d)}
 async function push(L){const s=st(L);if(!L.cloud||ro(L))return;if(s.pushing){s.again=1;return}s.pushing=1;paintSt(L,'saving');
  try{for(let i=0;i<4;i++){const enc=await encJ(L.cloud.key,payload(L));const r=await C().cput(L.cloud.doc,{owner:L.cloud.owner,kind:'edit',enc,u:now(),v:1},L.cloud.ut||'new');
@@ -68,20 +68,41 @@ function showLink(L){const url=linkOf(L);openSheet(`<div class="data">Share</div
  <div class="actions"><button class="btn pri" data-act="lsSend">${ic('send')}Send…</button></div>`)}
 async function joinData(doc,k){const have=lists().find(l=>l.cloud&&l.cloud.doc===doc);if(have)return have.id;
  const d=await C().cget(doc);if(!d)throw new Error('That list isn’t shared any more');const r=await decJ(k,d.enc);if(!r||r.k!=='list')throw new Error('That link isn’t a list');
- const L={id:uid(),title:r.title||'Shared list',emoji:r.emoji||'📝',due:r.due||'',items:r.items||{},mu:r.mu||0,u:now(),created:now(),cloud:{doc,key:k,owner:d.owner,ut:d.ut,sent:now()}};
+ const L={id:uid(),title:r.title||'Shared list',emoji:r.emoji||'📝',due:r.due||'',color:r.color||'',img:r.img||'',items:r.items||{},mu:r.mu||0,u:now(),created:now(),cloud:{doc,key:k,owner:d.owner,ut:d.ut,sent:now()}};
  lists().unshift(L);save();st(L).remote=now();return L.id}
 async function join(doc,key){try{const id=await joinData(doc,C().fromUrl(key));history.replaceState(null,'','#/list/'+id);cur.id=id;render(false)}
  catch(e){toast(esc(e.message||String(e)));go('lists')}}
 window.LS={byId:id=>LBY(id),ensureCloud,joinData};
+/* list colour from its … menu (same picker as habits and goals) */
+{const _sc=ACT.setColor;ACT.setColor=(d,el)=>{if(d.k!=='list')return _sc(d,el);const L=LBY(d.id);if(!L)return;L.color=d.v||'';L.mu=now();touch(L);
+ el.closest('.clr-row').querySelectorAll('.clr').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});render(false)}}
+/* cover image: smaller than a goal's (it also travels to everyone the list is shared with) */
+FILE.lsimg=async inp=>{const L=LBY(inp.dataset.id),f=inp.files[0];if(!L||!f)return;
+ try{const big=await readImg(f),im=new Image();im.src=big;await im.decode();const sc=Math.min(1,720/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+  L.img=c.toDataURL('image/jpeg',.72);L.mu=now();closeSheet();touch(L);if(typeof imgCSS==='function')imgCSS();render(false);toast('Cover added')}catch(e){toast('Couldn’t read that image')}};
 
-/* ---------------- views ---------------- */
+/* ---------------- views ----------------
+   Same three views as Goals (grid, carousel, list). Cards are "tint" cards, so the card style, background pattern
+   and image from Settings → Look & feel apply; each list can also have its own colour and cover image. */
+const lColor=L=>L.color||AREA_IDS[[...String(L.id)].reduce((a,c)=>a+c.charCodeAt(0),0)%AREA_IDS.length];
+const lvar=L=>cvar({id:L.id,area:'personal',color:lColor(L)});
+const lview=()=>{const v=(S.settings.layout||{}).lists;return['grid','h','list'].includes(v)?v:'grid'};
+function bigCard(L,n){const s=stats(L),I=live(L).filter(i=>!i.done).slice(0,3);
+ return`<a class="lc tint" href="#/list/${L.id}" style="${lvar(L)}"><div class="lc-top"><span class="data">${s.n?`${s.d} of ${s.n} done`:'Empty'}${L.cloud?' · shared':''}</span><span class="nbadge">${pad2(n)}</span></div>
+ <span class="lc-e">${esc(L.emoji||'📝')}</span><h3 class="lc-t">${esc(L.title)}</h3>
+ ${I.length?`<ul class="lc-i">${I.map(i=>`<li>${esc(i.t)}</li>`).join('')}</ul>`:s.n?'<p class="lc-i lc-dn">All done</p>':''}
+ <div class="pbar"><i style="width:${s.p}%"></i></div><div class="lc-f data">${L.due?`<span class="ls-due${dueCl(L.due,s.n&&s.d===s.n)}">Due ${esc(dueTxt(L.due))}</span>`:'&nbsp;'}</div></a>`}
 function card(L){const s=stats(L),r=18,c=2*Math.PI*r;
- return`<a class="ls-c rv" href="#/list/${L.id}"><span class="ls-ring" aria-hidden="true"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="${r}" class="bg"/><circle cx="22" cy="22" r="${r}" class="fg" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c*(1-s.p/100)).toFixed(1)}"/></svg><em>${esc(L.emoji||'📝')}</em></span>
+ return`<a class="ls-c rv" href="#/list/${L.id}" style="${lvar(L)}"><span class="ls-ring" aria-hidden="true"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="${r}" class="bg"/><circle cx="22" cy="22" r="${r}" class="fg" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c*(1-s.p/100)).toFixed(1)}"/></svg><em>${esc(L.emoji||'📝')}</em></span>
  <span class="ls-ct"><b>${esc(L.title)}</b><small>${s.n?`${s.d} of ${s.n} done`:'Empty'}${L.due?` · <span class="ls-due${dueCl(L.due,s.n&&s.d===s.n)}">${esc(dueTxt(L.due))}</span>`:''}</small></span>${L.cloud?`<span class="ls-sh" title="Shared">${ic('link')}</span>`:''}</a>`}
+function body(A,key){const v=lview();if(!A.length)return'';
+ if(v==='list')return`<section class="ls-rows">${A.map(card).join('')}</section>`;
+ if(v==='h')return hsShell('lists-'+key,A.map((L,i)=>{const s=stats(L),dn=s.n&&s.d===s.n;return hsItem(lvar(L),bigCard(L,i+1),dn?'done':'',`<span class="node static" aria-hidden="true">${dn?ic('check'):''}</span>`,L.due?'Due '+esc(dueTxt(L.due)):`${s.d} of ${s.n}`)}).join(''),0);
+ return`<section class="lc-grid">${A.map((L,i)=>`<div class="rv">${bigCard(L,i+1)}</div>`).join('')}</section>`}
 function vLists(){const L=lists(),open=L.filter(l=>{const s=stats(l);return!s.n||s.d<s.n}),done=L.filter(l=>{const s=stats(l);return s.n&&s.d===s.n});
  return`<header class="ph"><div><h1>Lists</h1><div class="data">${L.length?`${open.length} open${done.length?` · ${done.length} done`:''}`:'Checklists you can share'}</div></div><div class="ph-r"><button class="ibtn" data-act="lsJoin" aria-label="Open a shared link" title="Open a shared link">${ic('link')}</button><button class="ibtn" data-act="lsNew" data-k="blank" aria-label="New list" title="New list">${ic('plus')}</button>${gear()}</div></header>
- <section class="rv"><div class="ls-tpl">${Object.entries(TPL).map(([k,[t,e]])=>`<button class="chip" data-act="lsNew" data-k="${k}">${e} ${k==='blank'?'Blank list':esc(t)}</button>`).join('')}</div></section>
- ${L.length?`<section class="ls-grid">${open.map(card).join('')}</section>${done.length?`<div class="st-h rv" style="margin-top:28px"><h3>Done</h3><span class="data">${done.length}</span></div><section class="ls-grid">${done.map(card).join('')}</section>`:''}`
+ <div class="bar rv"><div class="ls-tpl">${Object.entries(TPL).map(([k,[t,e]])=>`<button class="chip" data-act="lsNew" data-k="${k}">${e} ${k==='blank'?'Blank list':esc(t)}</button>`).join('')}</div>${L.length?iconSeg('lists',[['grid','grid','Grid'],['h','horz','Carousel'],['list','list','List']],lview()):''}</div>
+ ${L.length?`${body(open,'open')}${done.length?`<div class="st-h rv" style="margin-top:28px"><h3>Done</h3><span class="data">${done.length}</span></div>${body(done,'done')}`:''}`
  :`<div class="empty rv"><p>No lists yet. Start one above, or open a link someone sent you.</p></div>`}`}
 function itemRow(L,i){const r=ro(L);return`<div class="ls-it${i.done?' done':''}" data-iid="${i.id}"><button class="ls-ck" data-act="lsTog" data-id="${L.id}" data-i="${i.id}" role="checkbox" aria-checked="${!!i.done}" aria-label="${esc(i.t)}" ${r?'disabled':''}>${ic('check')}</button>
  <input class="ls-t" value="${esc(i.t)}" data-lsedit="${i.id}" maxlength="200" aria-label="Item" ${r?'readonly':''}>
@@ -91,7 +112,7 @@ function vList(id){if(id&&id.startsWith('j~')){const[,doc,key]=id.split('~');set
  const L=LBY(id);if(!L)return`<header class="ph"><div><h1>List</h1></div></header><div class="empty rv"><p>This list isn’t on this device.</p><div class="actions"><a class="btn pri" href="#/lists">All lists</a></div></div>`;
  const I=live(L),open=I.filter(i=>!i.done),done=I.filter(i=>i.done),s=stats(L),r=ro(L),showDone=st(L).showDone!==false;
  return`<div class="crumb"><a href="#/lists" class="ibtn" aria-label="Back to lists">${ic('back')}</a><div class="ph-r"><button class="ibtn" data-act="lsShare" data-id="${L.id}" aria-label="${L.cloud?'Share link':'Share'}" title="${L.cloud?'Share link':'Share'}">${ic('share')}</button><button class="ibtn" data-act="lsMenu" data-id="${L.id}" aria-label="More">${ic('more')}</button></div></div>
- <section class="ls-hero rv"><div class="ls-hrow"><button class="ls-emo" data-act="lsEmoji" data-id="${L.id}" aria-label="Change icon" ${r?'disabled':''}>${esc(L.emoji||'📝')}</button><input class="ls-title" value="${esc(L.title)}" data-lstitle="${L.id}" maxlength="80" aria-label="List name" ${r?'readonly':''}></div>
+ <section class="ls-hero tint rv" style="${lvar(L)}"><div class="ls-hrow"><button class="ls-emo" data-act="lsEmoji" data-id="${L.id}" aria-label="Change icon" ${r?'disabled':''}>${esc(L.emoji||'📝')}</button><input class="ls-title" value="${esc(L.title)}" data-lstitle="${L.id}" maxlength="80" aria-label="List name" ${r?'readonly':''}></div>
  <div class="ls-meta"><span class="data">${s.n?`${s.d} of ${s.n} done`:'No items yet'}</span>${typeof shareChip==='function'?shareChip('list',L.id):''}${L.cloud?`<span class="ls-st" id="lsst">${L.cloud.gone?'No longer shared':'Shared'}</span>`:''}<button class="ls-dc${dueCl(L.due,s.n&&s.d===s.n)}" data-act="lsDue" data-id="${L.id}" ${r?'disabled':''}>${ic('cal','ico-s')}${L.due?'Due '+esc(dueTxt(L.due)):'Add a deadline'}</button></div>
  <div class="ls-bar"><i style="width:${s.p}%"></i></div>${r?`<button class="btn sm pri" data-act="lsLogin" style="margin-top:14px">${ic('lock')}Sign in to edit</button>`:''}</section>
  ${r?'':`<form class="ls-add rv" data-form="lsAdd" data-id="${L.id}" autocomplete="off"><input name="t" maxlength="200" placeholder="Add an item" aria-label="Add an item" enterkeyhint="done"><button class="btn pri" aria-label="Add">${ic('plus')}</button></form>`}
@@ -115,6 +136,7 @@ Object.assign(ACT,{
  lsEmoji:d=>{const L=LBY(d.id);if(!L)return;openSheet(`<h2>Icon</h2><div class="ls-emos">${EMO.map(e=>`<button class="ls-emo" data-act="lsEmojiSet" data-id="${L.id}" data-e="${e}">${e}</button>`).join('')}</div>`)},
  lsEmojiSet:d=>{const L=LBY(d.id);if(!L)return;L.emoji=d.e;L.mu=now();closeSheet();touch(L);render(false)},
  lsShare:d=>{const L=LBY(d.id);if(L)shareMenu(L)},
+ lsImgRm:d=>{const L=LBY(d.id);if(!L)return;L.img='';L.mu=now();closeSheet();touch(L);if(typeof imgCSS==='function')imgCSS();render(false)},
  lsLink:d=>{const L=LBY(d.id);if(L)share(L)},
  lsInvite:d=>{const L=LBY(d.id);if(L&&typeof shareStart==='function')shareStart('list',{id:L.id})},
  lsGroup:d=>{const x=(S.shares||[]).find(x=>x.status==='joined'&&x.local&&x.local.kind==='list'&&x.local.id===d.id);if(x&&ACT.shOpen)ACT.shOpen({id:x.id})},
@@ -123,7 +145,8 @@ Object.assign(ACT,{
  lsLogin:async()=>{if(typeof shReady==='function'&&await shReady()&&C().signedIn()){toast('Signed in. You can edit now');render(false)}},
  lsJoin:()=>openSheet(`<h2>Open a shared list</h2><form data-form="lsJoin"><div class="field"><label>Paste the link</label><input name="u" placeholder="https://…#/list/j~…" required></div><div class="actions"><button class="btn pri">Open</button></div></form>`),
  lsMenu:d=>{const L=LBY(d.id);if(!L)return;const own=L.cloud&&C()&&(()=>{try{return L.cloud.owner===(fbGet()||{}).uid}catch(e){return false}})();
-  openSheet(`<div class="data">List</div><h2 style="margin-top:6px">${esc(L.emoji||'')} ${esc(L.title)}</h2><div class="menu">
+  openSheet(`<div class="data">List</div><h2 style="margin-top:6px">${esc(L.emoji||'')} ${esc(L.title)}</h2>${ro(L)?'':colorRow('list',{...L,area:'personal',color:L.color||''})}<div class="menu">
+  ${ro(L)?'':`<label class="mbtn">${ic('camera')}${L.img?'Change cover image':'Add a cover image'}<input type="file" accept="image/*" data-file="lsimg" data-id="${L.id}" hidden></label>${L.img?`<button data-act="lsImgRm" data-id="${L.id}">${ic('trash')}Remove cover image</button>`:''}`}
   <button data-act="lsShare" data-id="${L.id}">${ic('share')}${L.cloud?'Share link':'Share this list'}</button>
   <button data-act="lsCopyText" data-id="${L.id}">${ic('copy')}Copy as text</button>
   <button data-act="lsDup" data-id="${L.id}">${ic('copy')}Duplicate (fresh, nothing ticked)</button>
@@ -150,7 +173,23 @@ if(typeof welcome==='function'){const _w=welcome;welcome=function(){if(/^#\/list
 /* this file can arrive after the app has already routed: catch up */
 if(typeof booted!=='undefined'&&booted&&/^#\/lists?(\/|$)/.test(location.hash)&&!/^lists?$/.test(cur.p))route();
 document.head.insertAdjacentHTML('beforeend',`<style>
-.ls-tpl{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.ls-tpl{display:flex;flex-wrap:wrap;gap:8px}
+.lc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.lc{display:flex;flex-direction:column;gap:8px;min-height:264px;height:100%;box-sizing:border-box;padding:20px 20px 18px;border-radius:26px;text-decoration:none;color:var(--t-fg);position:relative;overflow:hidden;transition:transform .45s var(--spring)}
+.lc:hover{transform:translateY(-3px)}.lc:active{transform:scale(.98)}
+.lc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.lc-top .data{color:var(--t-mut)}
+.lc-e{font-size:30px;line-height:1;margin-top:auto}
+.lc .lc-t{font:800 clamp(24px,3.2vw,30px)/.95 var(--f-display);text-transform:uppercase;color:var(--t-fg);overflow-wrap:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin:0}
+.lc-i{list-style:none;margin:2px 0 0;padding:0;display:grid;gap:3px;font-size:13.5px;color:var(--t-mut)}
+.lc-i li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lc-i li::before{content:'';display:inline-block;width:9px;height:9px;border:1.5px solid currentColor;border-radius:50%;margin-right:8px;vertical-align:-1px}
+.lc .pbar{margin-top:6px}.lc-f{min-height:1em;color:var(--t-mut)}
+.ls-rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.ls-c .ls-ring .fg{stroke:var(--c)}
+.ls-hero.tint{color:var(--t-fg)}.ls-hero.tint .data,.ls-hero.tint .ls-st{color:var(--t-mut)}
+.ls-hero.tint .ls-title{color:var(--t-fg)}.ls-hero.tint .ls-emo{background:rgba(255,255,255,.18);border-color:transparent}
+.ls-hero.tint .ls-dc{background:rgba(0,0,0,.12);border-color:transparent;color:var(--t-fg)}
+.ls-hero.tint .ls-bar{background:var(--t-barbg,rgba(0,0,0,.15))}.ls-hero.tint .ls-bar i{background:var(--t-bar,var(--t-fg))}
+.menu .mbtn{display:flex;align-items:center;gap:12px;cursor:pointer}
 .ls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
 .ls-c{display:flex;align-items:center;gap:14px;padding:16px;border-radius:22px;background:var(--surface);border:1px solid var(--line);color:var(--text);text-decoration:none;transition:transform .45s var(--spring),border-color .2s}
 .ls-c:hover{border-color:var(--line-2);transform:translateY(-2px)}.ls-c:active{transform:scale(.98)}
@@ -161,7 +200,7 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .ls-ct{flex:1;min-width:0;display:grid;gap:3px}.ls-ct b{font-size:16px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ls-ct small{color:var(--muted);font-size:13px}
 .ls-sh{flex:none;color:var(--muted)}.ls-sh svg{width:16px;height:16px}
 .ls-due.late,.ls-dc.late{color:#FF7A7A}.ls-due.soon,.ls-dc.soon{color:var(--acc-ink,var(--accent))}
-.ls-hero{padding:20px;border-radius:28px;background:var(--surface);border:1px solid var(--line);margin-top:6px}
+.ls-hero{padding:22px;border-radius:28px;margin-top:6px}
 .ls-hrow{display:flex;align-items:center;gap:12px}
 .ls-emo{flex:none;width:52px;height:52px;border-radius:16px;border:1px solid var(--line);background:var(--surface-2);font-size:26px;display:grid;place-items:center;cursor:pointer}
 .ls-title{flex:1;min-width:0;background:none;border:0;padding:4px 0;height:auto;font:700 clamp(24px,6vw,34px)/1.1 var(--f-display);color:var(--text);box-shadow:none}
