@@ -42,18 +42,27 @@ function paintSt(L,k){const e=document.getElementById('lsst');if(e&&cur.p==='lis
 /* while a shared list is open and someone is using the app: every 6 s right after a change from someone else, else every 30 s */
 let tick=0;setInterval(()=>{tick++;if(cur.p!=='list')return;const L=LBY(cur.id);if(!L||!L.cloud||L.cloud.gone||st(L).pushing||(window.plAwake&&!window.plAwake()))return;
  if(tick%2||(now()-(st(L).remote||0)>60e3&&tick%10))return;pull(L).catch(()=>paintSt(L,'err'))},3000);
+async function ensureCloud(L){if(L.cloud)return L.cloud;if(!C()||!C().signedIn())throw new Error('Sign in (Settings → Sync) to share a list');
+ const s=await C().gs();L.cloud={doc:C().rnd(24),key:newKey(),owner:s.uid,ut:null,sent:0};save();await push(L);if(!L.cloud.ut){L.cloud=null;save();throw new Error('Couldn’t share the list. Try again in a moment.')}return L.cloud}
 async function share(L){if(L.cloud)return showLink(L);
  if(!C()||!C().signedIn()){if(typeof shReady==='function'&&await shReady()&&C().signedIn())return share(L);return toast('Sign in (Settings → Sync) to share a list')}
- try{toast('Creating a private link…');const s=await C().gs();L.cloud={doc:C().rnd(24),key:newKey(),owner:s.uid,ut:null,sent:0};save();await push(L);if(!L.cloud.ut)throw new Error('Couldn’t create the link');render(false);showLink(L)}
- catch(e){L.cloud=null;save();toast(esc(e.message||String(e)))}}
+ try{toast('Creating a private link…');await ensureCloud(L);render(false);showLink(L)}catch(e){toast(esc(e.message||String(e)))}}
+/* Share: invite people (it shows up in their Plotline, like shared habits) or copy a link */
+function shareMenu(L){const sh=typeof shareChip==='function'&&shareChip('list',L.id);
+ openSheet(`<div class="data">Share</div><h2 style="margin-top:6px">${esc(L.emoji||'')} ${esc(L.title)}</h2><div class="acct-opts">
+ <button class="acct-o" data-act="lsInvite" data-id="${L.id}"><b>${ic('user','ico-s')} Invite people</b><small>Add their Google email. The list shows up in their Plotline by itself, with a notification on Android.</small></button>
+ <button class="acct-o" data-act="lsLink" data-id="${L.id}"><b>${ic('link','ico-s')} Copy a link</b><small>Anyone you send it to can open it after signing in.</small></button>
+ ${sh?`<button class="acct-o" data-act="lsGroup" data-id="${L.id}"><b>${ic('share','ico-s')} Who’s in it</b><small>See everyone’s progress and react.</small></button>`:''}</div>`)}
 function showLink(L){const url=linkOf(L);openSheet(`<div class="data">Share</div><h2 style="margin-top:6px">${esc(L.emoji||'')} ${esc(L.title)}</h2><p class="small muted">Anyone with this link who signs in to Plotline can tick and add items. It’s end-to-end encrypted; the key is only in the link.</p>
  <div class="wb-row"><input id="lslink" readonly value="${esc(url)}" aria-label="Link"><button class="btn sm" data-act="lsCopy">${ic('copy')}Copy</button></div>
  <div class="actions"><button class="btn pri" data-act="lsSend">${ic('send')}Send…</button></div>`)}
-async function join(doc,key){const have=lists().find(l=>l.cloud&&l.cloud.doc===doc);if(have){history.replaceState(null,'','#/list/'+have.id);cur.id=have.id;render(false);return}
- try{const d=await C().cget(doc);if(!d)throw new Error('That list isn’t shared any more');const k=C().fromUrl(key),r=await decJ(k,d.enc);if(!r||r.k!=='list')throw new Error('That link isn’t a list');
-  const L={id:uid(),title:r.title||'Shared list',emoji:r.emoji||'📝',due:r.due||'',items:r.items||{},mu:r.mu||0,u:now(),created:now(),cloud:{doc,key:k,owner:d.owner,ut:d.ut,sent:now()}};
-  lists().unshift(L);save();history.replaceState(null,'','#/list/'+L.id);cur.id=L.id;render(false);toast('List added');st(L).remote=now()}
+async function joinData(doc,k){const have=lists().find(l=>l.cloud&&l.cloud.doc===doc);if(have)return have.id;
+ const d=await C().cget(doc);if(!d)throw new Error('That list isn’t shared any more');const r=await decJ(k,d.enc);if(!r||r.k!=='list')throw new Error('That link isn’t a list');
+ const L={id:uid(),title:r.title||'Shared list',emoji:r.emoji||'📝',due:r.due||'',items:r.items||{},mu:r.mu||0,u:now(),created:now(),cloud:{doc,key:k,owner:d.owner,ut:d.ut,sent:now()}};
+ lists().unshift(L);save();st(L).remote=now();return L.id}
+async function join(doc,key){try{const id=await joinData(doc,C().fromUrl(key));history.replaceState(null,'','#/list/'+id);cur.id=id;render(false)}
  catch(e){toast(esc(e.message||String(e)));go('lists')}}
+window.LS={byId:id=>LBY(id),ensureCloud,joinData};
 
 /* ---------------- views ---------------- */
 function card(L){const s=stats(L),r=18,c=2*Math.PI*r;
@@ -73,7 +82,7 @@ function vList(id){if(id&&id.startsWith('j~')){const[,doc,key]=id.split('~');set
  const I=live(L),open=I.filter(i=>!i.done),done=I.filter(i=>i.done),s=stats(L),r=ro(L),showDone=st(L).showDone!==false;
  return`<div class="crumb"><a href="#/lists" class="ibtn" aria-label="Back to lists">${ic('back')}</a><div class="ph-r"><button class="ibtn" data-act="lsShare" data-id="${L.id}" aria-label="${L.cloud?'Share link':'Share'}" title="${L.cloud?'Share link':'Share'}">${ic('share')}</button><button class="ibtn" data-act="lsMenu" data-id="${L.id}" aria-label="More">${ic('more')}</button></div></div>
  <section class="ls-hero rv"><div class="ls-hrow"><button class="ls-emo" data-act="lsEmoji" data-id="${L.id}" aria-label="Change icon" ${r?'disabled':''}>${esc(L.emoji||'📝')}</button><input class="ls-title" value="${esc(L.title)}" data-lstitle="${L.id}" maxlength="80" aria-label="List name" ${r?'readonly':''}></div>
- <div class="ls-meta"><span class="data">${s.n?`${s.d} of ${s.n} done`:'No items yet'}</span>${L.cloud?`<span class="ls-st" id="lsst">${L.cloud.gone?'No longer shared':'Shared'}</span>`:''}<button class="ls-dc${dueCl(L.due,s.n&&s.d===s.n)}" data-act="lsDue" data-id="${L.id}" ${r?'disabled':''}>${ic('cal','ico-s')}${L.due?'Due '+esc(dueTxt(L.due)):'Add a deadline'}</button></div>
+ <div class="ls-meta"><span class="data">${s.n?`${s.d} of ${s.n} done`:'No items yet'}</span>${typeof shareChip==='function'?shareChip('list',L.id):''}${L.cloud?`<span class="ls-st" id="lsst">${L.cloud.gone?'No longer shared':'Shared'}</span>`:''}<button class="ls-dc${dueCl(L.due,s.n&&s.d===s.n)}" data-act="lsDue" data-id="${L.id}" ${r?'disabled':''}>${ic('cal','ico-s')}${L.due?'Due '+esc(dueTxt(L.due)):'Add a deadline'}</button></div>
  <div class="ls-bar"><i style="width:${s.p}%"></i></div>${r?`<button class="btn sm pri" data-act="lsLogin" style="margin-top:14px">${ic('lock')}Sign in to edit</button>`:''}</section>
  ${r?'':`<form class="ls-add rv" data-form="lsAdd" data-id="${L.id}" autocomplete="off"><input name="t" maxlength="200" placeholder="Add an item" aria-label="Add an item" enterkeyhint="done"><button class="btn pri" aria-label="Add">${ic('plus')}</button></form>`}
  <section class="ls-list rv">${open.map(i=>itemRow(L,i)).join('')||(I.length?'<p class="small muted ls-none">Everything’s done 🎉</p>':'')}</section>
@@ -84,7 +93,7 @@ VIEWS.lists=vLists;VIEWS.list=vList;
 const IT=(d)=>{const L=LBY(d.id);return[L,L&&L.items[d.i]]};
 Object.assign(ACT,{
  lsNew:d=>{const L=newList(d.k);go('list/'+L.id);setTimeout(()=>{const i=document.querySelector(d.k==='blank'||d.k==='todo'?'.ls-title':'.ls-add input');if(i){i.focus();if(i.select&&i.classList.contains('ls-title'))i.select()}},350)},
- lsTog:(d,el)=>{const[L,i]=IT(d);if(!i||ro(L))return;i.done=!i.done;i.u=now();if(typeof vib==='function')vib();touch(L);
+ lsTog:(d,el)=>{const[L,i]=IT(d);if(!i||ro(L))return;i.done=!i.done;i.dt=i.done?ymd():'';i.u=now();if(typeof vib==='function')vib();touch(L);
   const row=el.closest('.ls-it');if(row&&!(typeof reduced==='function'&&reduced())){row.classList.toggle('done',i.done);el.setAttribute('aria-checked',i.done);setTimeout(()=>render(false),380)}else render(false)},
  lsDel:d=>{const[L,i]=IT(d);if(!i)return;i.del=true;i.u=now();touch(L);render(false);toast('Removed',()=>{i.del=false;i.u=now();touch(L);render(false)})},
  lsClear:d=>{const L=LBY(d.id);if(!L)return;const D=live(L).filter(i=>i.done);D.forEach(i=>{i.del=true;i.u=now()});touch(L);render(false);toast(`${D.length} cleared`)},
@@ -95,7 +104,10 @@ Object.assign(ACT,{
  lsItemDueClear:d=>{const[L,i]=IT(d);if(!i)return;i.due='';i.u=now();closeSheet();touch(L);render(false)},
  lsEmoji:d=>{const L=LBY(d.id);if(!L)return;openSheet(`<h2>Icon</h2><div class="ls-emos">${EMO.map(e=>`<button class="ls-emo" data-act="lsEmojiSet" data-id="${L.id}" data-e="${e}">${e}</button>`).join('')}</div>`)},
  lsEmojiSet:d=>{const L=LBY(d.id);if(!L)return;L.emoji=d.e;L.mu=now();closeSheet();touch(L);render(false)},
- lsShare:d=>{const L=LBY(d.id);if(L)share(L)},
+ lsShare:d=>{const L=LBY(d.id);if(L)shareMenu(L)},
+ lsLink:d=>{const L=LBY(d.id);if(L)share(L)},
+ lsInvite:d=>{const L=LBY(d.id);if(L&&typeof shareStart==='function')shareStart('list',{id:L.id})},
+ lsGroup:d=>{const x=(S.shares||[]).find(x=>x.status==='joined'&&x.local&&x.local.kind==='list'&&x.local.id===d.id);if(x&&ACT.shOpen)ACT.shOpen({id:x.id})},
  lsCopy:async()=>{const i=$('#lslink');if(i&&await copyText(i.value))toast('Link copied')},
  lsSend:()=>{const i=$('#lslink');if(!i)return;const msg='Join my list on Plotline: '+i.value;if(NATIVE){try{NATIVE.share('Plotline list',msg);return}catch(e){}}if(navigator.share)navigator.share({title:'Plotline list',url:i.value}).catch(()=>{});else ACT.lsCopy()},
  lsLogin:async()=>{if(typeof shReady==='function'&&await shReady()&&C().signedIn()){toast('Signed in. You can edit now');render(false)}},

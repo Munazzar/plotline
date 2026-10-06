@@ -3093,7 +3093,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.19.0';
+const APP_VER='1.20.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -7529,6 +7529,28 @@ const assignField=(K,o)=>`<div class="field"><label>Assign to · optional</label
  const btn=document.querySelector('[data-act=shJoin]');if(btn){btn.disabled=true;btn.textContent='Joining…'}
  try{const now=Date.now(),t={id:uid(),title:it.title||d.title,link:null,status:'open',created:now,u:now,to:it.to||'',from:c.owner||'',ups:(it.ups||[]).map(u=>({id:uid(),k:u.k||'note',x:u.x||'',t:u.t||now,u:now}))};threads().push(t);
   sh.local={kind:'thread',id:t.id};sh.mode=d.mode;sh.title=d.title;sh.status='joined';sh.u=now;sh.pub='';await shPublish(sh);save();closeSheet();render(false);toast(it.to===fme()?`“${esc(d.title)}” is assigned to you`:`Joined “${esc(d.title)}”`)}
+ catch(e){if(btn){btn.disabled=false;btn.textContent='Join'}toast(shErr(e))}}}
+/* ---------- shared lists by invite (1.20): the invite carries the list's encrypted link, so joining adds the list
+   to their Plotline already syncing. Progress (how much is ticked) shows in the group like any shared item. ---------- */
+{const _sf=shareForm;shareForm=function(o){if(!(SHN&&SHN.kind==='list'))return _sf(o);let h;SHN.kind='step';try{h=_sf(o)}finally{SHN.kind='list'}
+ return h.replace(/They’ll see the title[^<]*<\/small>/,'They’ll get the list in their Plotline and can tick and add items with you. They’ll also see your name and how much you’ve ticked. Nothing else from your plan.</small>')}}
+{const _st=shareStart;shareStart=async function(kind,ref){if(kind!=='list')return _st(kind,ref);const L=window.LS&&LS.byId(ref.id);if(!L)return;if(!(await shReady()))return;SHN={kind:'list',ref,mode:'together'};openSheet(shareForm({title:(L.emoji?L.emoji+' ':'')+L.title}))}}
+{const _go=FORM.shareGo;FORM.shareGo=async function(f){if(!(SHN&&SHN.kind==='list'))return _go(f);
+ const fd=new FormData(f),mode=fd.get('mode')||'together',emails=emailsOf(fd.get('emails'));if(!emails.length)return toast('Add the Google email of who you’re sharing with');
+ const L=LS.byId(SHN.ref.id);if(!L)return;const btn=f.querySelector('.btn.pri');btn.disabled=true;btn.textContent='Sharing…';
+ try{const cl=await LS.ensureCloud(L),id=await ensureIdent(),cid='c'+uid()+uid(),k=newKey(),item={kind:'list',title:L.title,emoji:L.emoji||'',doc:cl.doc,key:WBC.toUrl(cl.key)};
+  const sh={id:cid,fs:1,k,role:'owner',mode,title:L.title,status:'joined',local:{kind:'list',id:L.id},u:Date.now()};
+  const members=[fme(),...emails],keys=await shWrapMissing({members,keys:{}},sh,true)||{};
+  await fs(`/circles?documentId=${cid}`,{method:'POST',body:JSON.stringify(fsEnc({owner:fme(),members,opub:id.pub,locks:JSON.stringify(keys),enc:await encJ(k,{title:L.title,mode,item,ownerName:myName().slice(0,80)}),created:Date.now(),u:Date.now()}))});
+  shares().push(sh);save();await shPublish(sh).catch(()=>{});closeSheet();render(false);shSent(sh,emails,emails.filter(e=>!keys[e]))}
+ catch(e){btn.disabled=false;btn.textContent='Share';toast(shErr(e))}}}
+{const _si=shItem;shItem=function(sh){const L=sh.local||{};return L.kind==='list'?(window.LS&&LS.byId(L.id)):_si(sh)}}
+{const _sp=shProgress;shProgress=function(sh){const L=sh.local||{};if(L.kind!=='list')return _sp(sh);const out={u:Date.now()},l=window.LS&&LS.byId(L.id);if(!l)return out;
+ const I=Object.values(l.items||{}).filter(i=>!i.del),D=I.filter(i=>i.done);out.pct=I.length?Math.round(D.length/I.length*100):0;out.done=['n'+D.length,'of'+I.length];out.dd={};D.forEach(i=>{if(i.dt)out.dd[i.id]=i.dt});return out}}
+{const _sj=shJoin;shJoin=async function(sh){let c,d;try{c=await fsCircle(sh.id);d=c&&await decJ(sh.k,c.enc)}catch(e){}const it=d&&d.item||{};if(it.kind!=='list')return _sj(sh);
+ const btn=document.querySelector('[data-act=shJoin]');if(btn){btn.disabled=true;btn.textContent='Joining…'}
+ try{const lid=await LS.joinData(it.doc,WBC.fromUrl(it.key));sh.local={kind:'list',id:lid};sh.mode=d.mode;sh.title=d.title;sh.status='joined';sh.u=Date.now();sh.pub='';
+  await shPublish(sh).catch(()=>{});save();closeSheet();go('list/'+lid);toast(`Joined “${esc(d.title)}”`)}
  catch(e){if(btn){btn.disabled=false;btn.textContent='Join'}toast(shErr(e))}}}
 ACT.shareThread=d=>shareStart('thread',{id:d.id});
 {const _vt=vThread;vThread=function(id){let o=_vt(id);const t=TH(id);if(!t)return o;
