@@ -3043,6 +3043,30 @@ html.thr-focus #tabbar,html.thr-focus .tabbar{display:none}
 .axdc:hover{background:var(--surface-2)}.axdc:active{transform:scale(.92)}.axdc small{font:600 11.5px var(--f-mono);color:var(--muted)}
 .axdc.td small{color:var(--text)}.axdc.td{background:color-mix(in srgb,var(--accent) 12%,transparent)}.axdc.fut{opacity:.35;cursor:default}
 .axgrid{align-items:start}
+
+/* ================= 1.27 charts ================= */
+.axc .s-ok{stop-color:var(--accent)}.axc .s-lo{stop-color:color-mix(in srgb,var(--accent) 45%,var(--surface-2))}.axc .s-ov{stop-color:#FF7A7A}
+.axc .axr.z{fill:color-mix(in srgb,var(--text) 8%,transparent)}
+.axc .axbub rect{fill:var(--text)}.axc .axbub text{font:700 11px var(--f-body);fill:var(--bg)}
+.axc .axsel{fill:color-mix(in srgb,var(--text) 6%,transparent)}
+.axc .axbase{stroke:var(--line)}
+.axkey,.axc-w .axgl,.axc-w .axav{display:none!important}
+.axkey2{margin:10px 4px 0;font-size:12.5px;color:var(--muted)}
+.axhrs{grid-column:1/-1;margin-top:6px;padding-top:16px;border-top:1px solid var(--line)}
+.axhrs-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}.axhrs-h b{font-size:15px}.axhrs-h span{font-size:13px;color:var(--muted)}
+.axhr{fill:#8BD64A;opacity:.75}.axhr.top{opacity:1}
+
+/* ================= 1.27 calendar: activity and summaries ================= */
+.cd-act{display:flex;align-items:center;gap:5px;margin-top:3px;font:600 9.5px var(--f-mono);color:var(--muted);min-width:0}
+.cd-act i.st{flex:1;max-width:34px;height:4px;border-radius:3px;background:linear-gradient(90deg,#8BD64A var(--p),color-mix(in srgb,var(--text) 12%,transparent) var(--p))}
+.cd-act b{font-weight:600}.cd-act b.zz{color:#B26BFF}
+.cw-h .cd-act{justify-content:center;margin-top:4px}.cw-h .cd-act b{font:600 10.5px var(--f-mono)!important;color:var(--muted)!important}.cw-h .cd-act b.zz{color:#B26BFF!important}.cw-h .cd-act i.st{min-width:20px}
+.csum{margin-top:18px;padding:18px;border-radius:24px;background:var(--surface);border:1px solid var(--line)}
+.csum-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px}.csum-h h3{font-size:18px}
+.csum-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.csum-t{display:grid;gap:2px;padding:12px 14px;border-radius:16px;background:var(--surface-2)}
+.csum-t b{font:700 20px/1.1 var(--f-body)}.csum-t span{font-size:12.5px;color:var(--muted)}.csum-t em{font-style:normal;font-size:11.5px;color:var(--muted)}
+@media(max-width:600px){.csum-g{grid-template-columns:repeat(2,minmax(0,1fr))}.cd-act b.zz{display:none}}
 </style>
 </head>
 <body>
@@ -3162,7 +3186,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.26.0';
+const APP_VER='1.27.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -3187,7 +3211,8 @@ function mergeDocs(a,b){const dead={...(a.dead||{})};for(const[k,v]of Object.ent
    can show it. Last 120 days; per day the fuller record wins (the phone's totals only grow through the day). */
 const actTrim=L=>{const cut=fromN(dnum(ymd())-120),o={};for(const k in L||{})if(k>=cut&&L[k])o[k]=L[k];return o};
 const actScore=o=>o?(+o.s||0)+(+o.z||0)+(+o.m||0)+(o.w||[]).length+(o.a||[]).length+(o.ss||[]).length:-1;
-function mergeAct(a,b){const o={...(a||{})};for(const[k,v]of Object.entries(b||{}))if(actScore(v)>actScore(o[k]))o[k]=v;return actTrim(o)}
+/* the more recently read day wins (it's the phone's latest reading); days from before 1.27 have no time, so the fuller one wins */
+function mergeAct(a,b){const o={...(a||{})};for(const[k,v]of Object.entries(b||{})){const c=o[k],tu=+(v&&v.u)||0,cu=+(c&&c.u)||0;if(tu||cu?tu>cu:actScore(v)>actScore(c))o[k]=v}return actTrim(o)}
 const docOf=x=>({app:'plotline',v:1,act:actTrim(x.act||(x.settings&&x.settings.actLog)),goals:x.goals,entries:x.entries,days:x.days||[],habits:x.habits||[],chapters:x.chapters||[],shares:x.shares||[],lists:x.lists||[],threads:x.threads||[],benches:x.benches||[],ident:x.ident||null,dead:x.dead||{}});
 const sameDoc=(a,b)=>JSON.stringify([a.act||{},a.lists||[],a.goals,a.entries,a.days||[],a.habits||[],a.chapters||[],a.shares||[],a.threads||[],a.benches||[],a.ident||null,a.dead])===JSON.stringify([b.act||{},b.lists||[],b.goals,b.entries,b.days||[],b.habits||[],b.chapters||[],b.shares||[],b.threads||[],b.benches||[],b.ident||null,b.dead]);
 
@@ -3367,7 +3392,7 @@ function calMonth(){const n=dnum(CAL.d),[f,l]=monthOf(n),a=f-dUTC(f).getUTCDay()
  let h=`<div class="cal-dow">${DAYS.map(x=>`<span>${x}</span>`).join('')}</div><div class="cal-m" style="--rows:${(b-a+1)/7}">`;
  for(let k=a;k<=b;k++){const it=M[k]||[],ds=fromN(k),dd=dUTC(k),r=k<=tn?dayRatio(ds):{due:0,dn:0},tg=it.filter(x=>x.k==='target'),pl=it.filter(x=>x.k!=='target'),todo=pl.filter(x=>x.k!=='rep');
   const hb=r.due?`<span class="cd-hb${r.dn>=r.due?' full':''}" title="Habits ${r.dn} of ${r.due}"><i style="width:${Math.round(r.dn/r.due*100)}%"></i></span>`:'';
-  h+=`<button class="cd${k<f||k>l?' out':''}${k===tn?' now':''}${k===n?' pk':''}${k<tn&&todo.some(x=>!x.done)?' late':''}" data-act="calPick" data-d="${ds}" aria-label="${dd.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'})}${it.length?', '+it.length+' planned':''}${r.due?`, habits ${r.dn} of ${r.due}`:''}"><span class="cd-top"><span class="cd-n">${dd.getUTCDate()}</span>${mood[k]?`<span class="cd-mo">${mood[k][0]}</span>`:''}${tg.length?`<span class="cd-tg" style="--c:${colOf(tg[0].g)}">⚑</span>`:''}</span><span class="cd-chips">${pl.slice(0,2).map(x=>`<em ${calOpen(x)} style="--c:${colOf(x.g)}"${x.done?' class="d"':''}>${esc(x.t)}</em>`).join('')}${pl.length>2?`<em class="more">+${pl.length-2} more</em>`:''}</span>${hb}</button>`}
+  h+=`<button class="cd${k<f||k>l?' out':''}${k===tn?' now':''}${k===n?' pk':''}${k<tn&&todo.some(x=>!x.done)?' late':''}" data-act="calPick" data-d="${ds}" aria-label="${dd.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'})}${it.length?', '+it.length+' planned':''}${r.due?`, habits ${r.dn} of ${r.due}`:''}"><span class="cd-top"><span class="cd-n">${dd.getUTCDate()}</span>${mood[k]?`<span class="cd-mo">${mood[k][0]}</span>`:''}${tg.length?`<span class="cd-tg" style="--c:${colOf(tg[0].g)}">⚑</span>`:''}</span><span class="cd-chips">${pl.slice(0,2).map(x=>`<em ${calOpen(x)} style="--c:${colOf(x.g)}"${x.done?' class="d"':''}>${esc(x.t)}</em>`).join('')}${pl.length>2?`<em class="more">+${pl.length-2} more</em>`:''}</span>${hb}${calAct(ds)}</button>`}
  return h+'</div>'+calPeek()}
 /* the picked day, right under the month: what's planned (tick it off) and which habits were done */
 function calPeek(){const ds=CAL.d,k=dnum(ds),tn=dnum(ymd()),it=calItems(k,k)[k]||[],hs=S.habits.filter(h=>h.kind!=='quit'&&h.status!=='archived'&&hDue(h,ds)),r=dayRatio(ds),dd=dUTC(k);
@@ -3378,8 +3403,23 @@ function calPeek(){const ds=CAL.d,k=dnum(ds),tn=dnum(ymd()),it=calItems(k,k)[k]|
  ${mo.length?`<div class="cpeek-j">${mo.slice(-2).map(e=>`<button class="cpj" data-act="viewEntry" data-id="${e.id}">${e.mood&&!e.private?`<span>${e.mood}</span>`:''}<span class="ell">${e.private?'Private entry':esc(trunc(e.title||e.text||'',90))}</span></button>`).join('')}</div>`:''}
  ${!it.length&&!hs.length&&!mo.length?`<p class="small muted" style="margin:6px 2px 2px">A free day. Tap + to plan something.</p>`:''}</div>`}
 function calWeek(){const n=dnum(CAL.d),a=n-dUTC(n).getUTCDay(),M=calItems(a,a+6),tn=dnum(ymd());let h='<div class="cal-w">';
- for(let k=a;k<=a+6;k++){const it=M[k]||[];const dd=dUTC(k);h+=`<div class="cw${k===tn?' now':''}${k===n?' pk':''}"><button class="cw-h" data-act="calPick" data-d="${fromN(k)}"><span class="data">${DAYS[dd.getUTCDay()]}</span><b>${dd.getUTCDate()}</b></button><div class="cw-i">${it.map(calChip).join('')||'<span class="cw-e">Free</span>'}</div></div>`}
+ for(let k=a;k<=a+6;k++){const it=M[k]||[];const dd=dUTC(k);h+=`<div class="cw${k===tn?' now':''}${k===n?' pk':''}"><button class="cw-h" data-act="calPick" data-d="${fromN(k)}"><span class="data">${DAYS[dd.getUTCDay()]}</span><b>${dd.getUTCDate()}</b>${calAct(fromN(k))}</button><div class="cw-i">${it.map(calChip).join('')||'<span class="cw-e">Free</span>'}</div></div>`}
  return h+'</div>'}
+/* 1.27: the calendar shows everything for a day, a week or a month: plans, habits, journal and activity.
+   Each day gets a small activity line (steps against your goal, sleep); week and month end with a summary of the span. */
+function calAct(ds){const o=(S.settings.actLog||{})[ds];if(!o||(!+o.s&&!+o.z))return'';const g=+((S.settings.act||{}).goal)||8000,st=+o.s||0;
+ return`<span class="cd-act" title="${st?st.toLocaleString()+' steps':''}${o.z?' · '+fmtMin(+o.z)+' sleep':''}">${st?`<i class="st${st>=g?' ok':''}" style="--p:${Math.min(100,Math.round(st/g*100))}%"></i><b>${st>=1000?(st/1000).toFixed(st>=10000?0:1)+'k':st}</b>`:''}${o.z?`<b class="zz">${Math.round(+o.z/60*10)/10}h</b>`:''}</span>`}
+function calSum(a,b,lab){const tn=dnum(ymd()),L=S.settings.actLog||{},M=calItems(a,b);let pl=0,pd=0,hd=0,hdue=0,st=0,sn=0,z=0,zn=0,m=0,mn=0,best=null;
+ for(let k=a;k<=Math.min(b,tn);k++){const ds=fromN(k),it=(M[k]||[]).filter(x=>x.k==='day'||x.k==='step');pl+=it.length;pd+=it.filter(x=>x.done).length;const r=dayRatio(ds);hd+=r.dn;hdue+=r.due;const o=L[ds]||{};
+  if(+o.s){st+=+o.s;sn++;if(!best||+o.s>best[1])best=[ds,+o.s]}if(+o.z){z+=+o.z;zn++}if(o.m!=null){m+=+o.m;mn++}}
+ const ent=S.entries.filter(e=>e.type==='note'&&!e.private&&dnum(ymd(new Date(e.t)))>=a&&dnum(ymd(new Date(e.t)))<=b).length;
+ const t=(v,l,x)=>`<div class="csum-t"><b>${v}</b><span>${l}</span>${x?`<em>${x}</em>`:''}</div>`;
+ return`<section class="csum rv"><div class="csum-h"><h3>${esc(lab)}</h3><a class="link" href="#/activity">Activity</a></div><div class="csum-g">
+ ${t(pl?`${pd}/${pl}`:'—','plans done',pl?Math.round(pd/pl*100)+'%':'')}${t(hdue?Math.round(hd/hdue*100)+'%':'—','habits kept',hdue?`${hd} of ${hdue}`:'')}
+ ${t(sn?st.toLocaleString():'—','steps',sn?`avg ${Math.round(st/sn).toLocaleString()}${best?' · best '+esc(dayName(best[0])):''}`:'nothing synced')}
+ ${t(zn?fmtMin(z/zn):'—','sleep a night',zn?`${zn} night${zn===1?'':'s'}`:'')}${t(mn?fmtMin(m/mn):'—','screen a day','')}${t(ent,'journal moments','')}</div></section>`}
+{const _cm=calMonth;calMonth=function(){const n=dnum(CAL.d),[f,l]=monthOf(n),o=_cm(),i=o.lastIndexOf('<div class="cpeek"');const s=calSum(f,l,dUTC(f).toLocaleDateString(undefined,{month:'long',timeZone:'UTC'})+' at a glance');return i<0?o+s:o.slice(0,i)+s+o.slice(i)}}
+{const _cw=calWeek;calWeek=function(){const n=dnum(CAL.d),a=n-dUTC(n).getUTCDay();return _cw()+calSum(a,a+6,'This week at a glance')}}
 const ZMIN=.5,ZMAX=3.2;
 const calPpm=()=>Math.min(ZMAX,Math.max(ZMIN,+S.settings.layout.calPpm||1));
 const hourLbl=h=>new Date(2000,0,1,h).toLocaleTimeString([],{hour:'numeric'});
@@ -5903,8 +5943,9 @@ const RTDB=()=>{if(window.RT_OFF)return'';const c=PLOTLINE_CFG.firebase||{};retu
 const emKey=e=>lc(e).replace(/\./g,',');
 async function rtRing(sh,r){const db=RTDB();if(!db||!sh||!sh.k)return;const s=await fbSession();if(!s||!s.id)return;
  let to=[r.to];if(r.to==='*'){const G=typeof SHGD!=='undefined'&&SHGD[sh.id],C=shCacheGet(sh.id);to=(G&&G.c&&G.c.members)||(C&&C.c&&C.c.members)||[]}
- to=[...new Set(to.map(lc))].filter(e=>e&&e!==fme()&&!/[\/#$\[\]]/.test(e)).slice(0,20);if(!to.length)return;
- const e=await encJ(sh.k,{f:fme(),n:myName().slice(0,80),e:r.emoji||'',m:r.m||'',to:r.to,t:r.t});
+ to=[...new Set(to.map(lc))].filter(e=>e&&e!==fme()&&!/[\/#$\[\]]/.test(e)).slice(0,20);
+ const e=await encJ(sh.k,{id:r.id,f:fme(),n:myName().slice(0,80),e:r.emoji||'',m:r.m||'',to:r.to,t:r.t});
+ fetch(`${db}/rx/${sh.id}.json?auth=${encodeURIComponent(s.id)}`,{method:'POST',body:JSON.stringify({e,t:{'.sv':'timestamp'}})}).catch(()=>{});rxAdd(sh.id,[{id:r.id,f:fme(),n:myName(),e:r.emoji||'',m:r.m||'',to:lc(r.to),t:r.t}]);if(!to.length)return;
  await Promise.all(to.map(em=>fetch(`${db}/inbox/${emKey(em)}.json?auth=${encodeURIComponent(s.id)}`,{method:'POST',body:JSON.stringify({c:sh.id,e,t:{'.sv':'timestamp'}})}).then(x=>{if(x.status===404)window.RT_OFF=1}).catch(()=>{})))}
 /* shared lists and boards (1.23): a changed doc rings ping/{doc} (just a server timestamp; the doc id is a random,
    unguessable name and the content stays encrypted in Firestore). Anyone with that list or board open is pushed the
@@ -5923,7 +5964,7 @@ async function rtListen(){if(RTES||!shOn()||!RTDB()||document.visibilityState!==
  const stop=bad=>{try{es.close()}catch(e){}if(RTES===es){RTES=null;RTON=false}if(bad&&!got&&++RTFAIL>3)window.RT_OFF=1};
  const on=ev=>{got=true;RTON=true;RTFAIL=0;let o;try{o=JSON.parse(ev.data)}catch(e){return}const v=o&&o.data;if(!v||typeof v!=='object')return;
   const E=o.path==='/'?v:{[String(o.path).slice(1)]:v},cids=new Set(Object.values(E).filter(x=>x&&x.c&&(+x.t||0)>t0-5000).map(x=>x.c));
-  cids.forEach(cid=>{const sh=shById(cid);if(sh&&sh.status==='joined'&&sh.k)fsMembers(sh).then(ms=>shCollect(sh,ms)).catch(()=>{})})};
+  cids.forEach(cid=>{const sh=shById(cid);if(sh&&sh.status==='joined'&&sh.k)rxLoad(sh)})};
  es.addEventListener('put',on);es.addEventListener('patch',on);es.addEventListener('auth_revoked',()=>stop(false));es.addEventListener('cancel',()=>{stop(true);window.RT_OFF=1});
  es.onerror=()=>{if(es.readyState===2)stop(true)};setTimeout(()=>stop(false),45*60000)}
 setInterval(()=>{if(!RTES&&awake())rtListen()},30000);
@@ -6077,6 +6118,7 @@ async function shJoin(sh){const btn=document.querySelector('[data-act=shJoin]');
 let SHLIVE=null;
 async function shOpen(sh){const C=shCacheGet(sh.id),here=()=>document.querySelector(`#sheet.on [data-shg="${sh.id}"],#sheet.on [data-shl="${sh.id}"]`);
  const paint=(g,note)=>{SHG_OPENING=sh.id;const html=`<div class="sh-g" data-shg="${sh.id}">${note?`<p class="sh-note">${note}</p>`:''}${shGroupHTML(sh,g)}</div>`;const el=document.querySelector(`#sheet.on [data-shg="${sh.id}"]`);if(el)el.outerHTML=html;else openSheet(html);SHG_OPENING=null};
+ rxLoad(sh).then(()=>rxWatch(sh));
  if(C)paint(C);else openSheet(`<div data-shl="${sh.id}"><div class="data">${MODES[sh.mode]?.e||''} ${MODES[sh.mode]?.n||''}</div><h2 style="margin-top:6px">${esc(sh.title)}</h2><p class="small muted">Loading the group…</p></div>`);
  shPublish(sh).catch(()=>{});
  let G2;try{G2=await shGroup(sh)}catch(e){if(/404/.test(String(e&&e.message))){sh.status='ended';sh.u=Date.now();save();render(false)}if(!here())return;
@@ -6161,8 +6203,24 @@ const dayOf=t=>ymd(new Date(t));
 function reactsSentToday(){const d=ymd(),ids=new Set();shares().forEach(x=>(x.myCheers||[]).concat(x.cheerOut||[]).forEach(c=>{if(c&&dayOf(c.t)===d)ids.add(c.id||x.id+c.t)}));return ids.size}
 /* only the first 50 a day from each person count, whatever their app sent */
 function capReacts(L){const n={};return L.slice().sort((a,b)=>a.t-b.t).filter(r=>{const k=r.fe+'|'+dayOf(r.t);n[k]=(n[k]||0)+1;return n[k]<=REACT_MAX})}
-let SHR={};
-function shCollect(sh,ms){SHR[sh.id]=(ms||[]).filter(m=>m.email!==fme()&&m.status!=='left').flatMap(m=>(m.cheers||[]).filter(c=>c&&(c.to===fme()||c.to==='*')&&+c.t>0&&+c.t<Date.now()+6e5).map(c=>({id:c.id||m.email+c.t,all:c.to==='*',from:m.name,fe:m.email,e:String(c.emoji||'').slice(0,16),m:String(c.m||'').slice(0,120),t:+c.t,cid:sh.id})));shInbox()}
+let SHR={},SHF={};
+function shCollect(sh,ms){SHF[sh.id]=(ms||[]).filter(m=>m.email!==fme()&&m.status!=='left').flatMap(m=>(m.cheers||[]).filter(c=>c&&(c.to===fme()||c.to==='*')&&+c.t>0&&+c.t<Date.now()+6e5).map(c=>({id:c.id||m.email+c.t,all:c.to==='*',from:m.name,fe:m.email,e:String(c.emoji||'').slice(0,16),m:String(c.m||'').slice(0,120),t:+c.t,cid:sh.id})));shMerge(sh.id)}
+/* ---- 1.27: group reactions live in the Realtime Database: rx/{cid}/{id} = {e: sealed {id,f,n,e,m,to,t}, t} ----
+   The group view and the item panel read it from there (fast, no Firestore reads) and stream it while open. */
+const RX2={};
+function rxAdd(cid,L){const A=RX2[cid]||(RX2[cid]=[]),have=new Set(A.map(x=>x.id));let n=0;L.forEach(x=>{if(x&&x.id&&!have.has(x.id)){A.push(x);have.add(x.id);n++}});A.sort((a,b)=>a.t-b.t);if(A.length>300)A.splice(0,A.length-300);if(n)shMerge(cid);return n}
+function shMerge(cid){const me=fme(),seen=new Set(),out=[];(SHF[cid]||[]).forEach(r=>{seen.add(r.id);out.push(r)});
+ (RX2[cid]||[]).forEach(x=>{if(seen.has(x.id)||x.f===me||!(x.to===me||x.to==='*')||!(x.t>0)||x.t>Date.now()+6e5)return;out.push({id:x.id,all:x.to==='*',from:x.n||x.f.split('@')[0],fe:x.f,e:String(x.e||'').slice(0,16),m:String(x.m||'').slice(0,120),t:x.t,cid})});
+ SHR[cid]=out;shInbox();const sh=shById(cid),el=sh&&document.querySelector(`#sheet.on [data-shg="${cid}"]`),g=SHGD[cid]||shCacheGet(cid);if(el&&g&&!el.contains(document.activeElement))el.innerHTML=shGroupHTML(sh,g)}
+async function rxDecode(sh,j){const out=[];for(const[id,v]of Object.entries(j||{})){if(!v||!v.e)continue;try{const p=await decJ(sh.k,v.e);out.push({id:p.id||id,f:lc(p.f||''),n:p.n||'',e:p.e||'',m:p.m||'',to:lc(p.to||''),t:+p.t||+v.t||0})}catch(e){}}return out}
+async function rxLoad(sh){const db=RTDB();if(!db||!sh||!sh.k)return;let s;try{s=await fbSession()}catch(e){return}if(!s||!s.id)return;
+ try{const r=await fetch(`${db}/rx/${sh.id}.json?auth=${encodeURIComponent(s.id)}&orderBy=%22t%22&limitToLast=80`);if(!r.ok)return;rxAdd(sh.id,await rxDecode(sh,await r.json()))}catch(e){}}
+let RXES=null;
+async function rxWatch(sh){if(RXES){try{RXES.close()}catch(e){}RXES=null}const db=RTDB();if(!db||!sh||!sh.k)return;let s;try{s=await fbSession()}catch(e){return}if(!s||!s.id)return;
+ const es=new EventSource(`${db}/rx/${sh.id}.json?auth=${encodeURIComponent(s.id)}&orderBy=%22t%22&limitToLast=80`);RXES=es;
+ const on=async ev=>{let o;try{o=JSON.parse(ev.data)}catch(e){return}const v=o&&o.data;if(!v||typeof v!=='object')return;const E=o.path==='/'?v:{[String(o.path).slice(1)]:v};rxAdd(sh.id,await rxDecode(sh,E))};
+ es.addEventListener('put',on);es.addEventListener('patch',on);es.onerror=()=>{if(es.readyState===2&&RXES===es)RXES=null};
+ const stop=setInterval(()=>{if(!document.querySelector(`#sheet.on [data-shg="${sh.id}"]`)){clearInterval(stop);try{es.close()}catch(e){}if(RXES===es)RXES=null}},2000)}
 const reactsForMe=cid=>{const all=capReacts(Object.values(SHR).flat());return cid?all.filter(r=>r.cid===cid):all};
 const rxUnread=cid=>((shset().rx||{})[cid]||{}).n||0;
 function rxRead(cid){if(RB.q.some(r=>r.cid===cid)){RB.q=RB.q.filter(r=>r.cid!==cid);reactShow()}const rx={...(shset().rx||{})};if(rx[cid]&&rx[cid].n){rx[cid]={...rx[cid],n:0};shPatch({rx});render(false)}}
@@ -6183,7 +6241,7 @@ function reactShow(){let el=$('#rxb');if(!el){el=document.createElement('div');e
 function reactBurst(e){if(reduced&&reduced())return;const w=document.createElement('div');w.className='rx-burst';w.setAttribute('aria-hidden','true');
  w.innerHTML=[...Array(7)].map((_,i)=>`<span style="--x:${Math.round((Math.random()-.5)*220)}px;--d:${i*70}ms;--s:${(.8+Math.random()*.7).toFixed(2)}">${esc(e)}</span>`).join('');document.body.appendChild(w);setTimeout(()=>w.remove(),2200)}
 /* in the group view: recent reactions both ways, newest first */
-function rxFeed(sh,ms){const mine=(ms.find(m=>m.mine)||{}).cheers||[],nm=e=>{const m=ms.find(x=>x.email===e);return m?m.name:(e||'').split('@')[0]};
+function rxFeed(sh,ms){const mine0=(ms.find(m=>m.mine)||{}).cheers||[],seenM=new Set(mine0.map(c=>c&&c.id)),mine=[...mine0,...(RX2[sh.id]||[]).filter(x=>x.f===fme()&&!seenM.has(x.id)).map(x=>({id:x.id,emoji:x.e,m:x.m,t:x.t,to:x.to}))],nm=e=>{const m=ms.find(x=>x.email===e);return m?m.name:(e||'').split('@')[0]};
  const L=[...reactsForMe(sh.id).map(r=>({...r,dir:'in'})),...mine.filter(c=>c&&c.t).map(c=>({e:c.emoji,m:c.m,t:+c.t,to:c.to==='*'?'everyone':nm(c.to),dir:'out'}))].sort((a,b)=>b.t-a.t).slice(0,6);
  if(!L.length)return`<p class="small muted rx-none">No reactions yet. Tap <b>React</b> next to someone to cheer them on.</p>`;
  return`<div class="rx-feed"><div class="data">Reactions · live</div>${L.map(r=>`<div class="rx-i ${r.dir}"><span class="rx-ie">${esc(r.e||'💬')}</span><span class="rx-it"><b>${r.dir==='in'?esc(r.from)+(r.all?' → everyone':' → you'):'You → '+esc(r.to)}</b>${r.m?`<span>${esc(r.m)}</span>`:''}</span><small>${esc(dayLabel(r.t))} ${new Date(r.t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</small></div>`).join('')}</div>`}
@@ -6204,6 +6262,7 @@ function shQuickForm(back){const q=quickMsgs();openSheet(`<h2>Quick messages</h2
 async function shPollReacts(){if(!shOn()||SHC.busy||SHC.rb||TOURING||fsCool()||Date.now()-(SHC.rt||0)<60000)return;SHC.rt=Date.now();const L=shares().filter(x=>x.fs&&x.k&&x.status==='joined');if(!L.length)return;SHC.rb=true;
  try{for(const sh of L){if(openGroup()===sh.id)continue;shCollect(sh,await fsMembers(sh))}}catch(e){}finally{SHC.rb=false}}
 setInterval(()=>{if(awake()&&!RTON)shPollReacts()},120000);
+const rxAll=()=>{if(!shOn())return;shares().filter(x=>x.fs&&x.k&&x.status==='joined').forEach(x=>rxLoad(x))};setTimeout(rxAll,5000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(rxAll,1500)});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(shPollReacts,1500)});
 Object.assign(ACT,{
  shReact:(d,el)=>{const x=shById(d.id);if(!x||x.status!=='joined')return;if(RB.q.length){RB.q=[];reactShow()}const fromGroup=!!(el&&el.closest&&el.closest('[data-shg]'));shReactSheet(x,d.to,d.nm||(d.to||'').split('@')[0]);RXT.back=fromGroup},
@@ -6805,7 +6864,9 @@ const wkMin=o=>o?((+o.x||0)+plWk(o.p))||(o.x!=null?0:undefined):undefined;
 const fmtMinC=m=>fmtMin(m).replace(' ','');
 function actLoad(force){if(!nat()||ACTV.busy)return;if(!force&&ACTV.data&&Date.now()-ACTV.at<45000)return;ACTV.busy=true;const n=ACTV.first?30:Math.max(ACTV.days,14);ACTV.first=false;setTimeout(()=>{try{NATIVE.activityLoad(n)}catch(e){ACTV.busy=false}},0);setTimeout(()=>{ACTV.busy=false},25000)}
 window.__act=j=>{ACTV.busy=false;let d;try{d=JSON.parse(j)}catch(e){return}if(!d||d.err)return;ACTV.data=d;ACTV.at=Date.now();const L=actLog();
- Object.entries(d.days||{}).forEach(([k,v])=>{const o=L[k]||{};const st=Math.max(+v.steps||0,+v.hsteps||0);if(st||o.s==null)o.s=Math.max(st,o.s||0);if(v.sleep!=null)o.z=v.sleep;if(v.ex!=null)o.x=v.ex;if(v.scr!=null)o.m=v.scr;if(v.pl)o.p=v.pl;if(v.ap)o.a=v.ap;if(v.ss)o.ss=v.ss;if(v.w)o.w=v.w;L[k]=o});
+ /* 1.27: what the phone reports now replaces the day (no "keep the higher": that kept doubled totals forever).
+    hagg = Health Connect's de-duplicated total; without it the phone's own counter wins over the raw sum. */
+ Object.entries(d.days||{}).forEach(([k,v])=>{const o=L[k]||{};const st=v.hagg?+v.hsteps||0:(+v.steps||0)||(+v.hsteps||0);if(st||o.s==null)o.s=st;o.u=Date.now();if(v.hr)o.hr=v.hr;if(v.kcal!=null)o.c=+v.kcal;if(v.akcal!=null)o.ac=+v.akcal;if(v.dist!=null)o.dm=+v.dist;if(v.sleep!=null)o.z=v.sleep;if(v.ex!=null)o.x=v.ex;if(v.scr!=null)o.m=v.scr;if(v.pl)o.p=v.pl;if(v.ap)o.a=v.ap;if(v.ss)o.ss=v.ss;if(v.w)o.w=v.w;L[k]=o});
  const keys=Object.keys(L).sort();while(keys.length>180)delete L[keys.shift()];save();
  if((cur.p==='activity'||cur.p==='day')&&!$('#sheet').classList.contains('on'))render(false);else actCardPaint()};
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&['activity','today','day'].includes(cur.p))actLoad(false)});
@@ -7478,14 +7539,21 @@ function axLabels(D,x0,bw,y){const n=D.length,tn=today();return D.map((d,i)=>{co
 function axBars(id,D,key,o){const n=D.length,x0=0,bw=(AW-x0)/n,ch=AH-APT-APB,vals=D.map(d=>d[key]||0),mx=Math.max(o.line||0,...vals,1)*1.12,y=v=>APT+ch-v/mx*ch,gap=n>45?.2:n>20?.26:.34,w=bw*(1-gap),rx=Math.min(6,w/2);
  const bars=D.map((d,i)=>{const v=vals[i],x=x0+i*bw+(bw-w)/2,h=v?Math.max(2.5,v/mx*ch):2,cls=v?(o.good&&o.good(v)?' ok':'')+(o.bad&&o.bad(v)?' over':''):' z';
   return`<g class="axg" data-act="axSel" data-d="${d.d}" data-x="${(x0+i*bw).toFixed(2)}"><rect class="axhit" x="${(x0+i*bw).toFixed(2)}" y="0" width="${bw.toFixed(2)}" height="${AH}"/><rect class="axr${cls}" x="${x.toFixed(2)}" y="${(APT+ch-h).toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" rx="${rx.toFixed(1)}"/></g>`}).join('');
- /* 1.19: two quiet reference lines (goal dashed, average solid) explained in the key under the chart, never written
-    inside it, and the latest day's value above its bar. No moving-average curve: it read as a stray line. */
- const fm=o.fmt||(v=>Math.round(v).toLocaleString()),av=axAvg(D,key);
- const gl=o.line?`<line class="axgl" x1="0" x2="${AW}" y1="${y(o.line).toFixed(1)}" y2="${y(o.line).toFixed(1)}"/>`:'';
- const al=av&&n>=3?`<line class="axav" x1="0" x2="${AW}" y1="${y(av).toFixed(1)}" y2="${y(av).toFixed(1)}"/>`:'';
- let li=-1;for(let i=n-1;i>=0;i--)if(vals[i]){li=i;break}
- const vl=li<0?'':(()=>{const h=Math.max(2.5,vals[li]/mx*ch),cx=Math.min(AW-22,Math.max(22,x0+li*bw+bw/2));return`<text class="axv" x="${cx.toFixed(1)}" y="${Math.max(10,APT+ch-h-7).toFixed(1)}" text-anchor="middle">${esc(fm(vals[li]))}</text>`})();
- return`<div class="axc-w"><svg class="axc" viewBox="0 0 ${AW} ${AH}" role="group" aria-label="${esc(o.aria)}"><line class="axbase" x1="0" x2="${AW}" y1="${APT+ch+.5}" y2="${APT+ch+.5}"/><rect class="axsel" x="0" y="${APT-8}" width="${bw.toFixed(2)}" height="${ch+12}" rx="${Math.min(9,bw/2).toFixed(1)}"/>${bars}${al}${gl}${vl}${axLabels(D,x0,bw,AH-6)}</svg><div class="axkey"><span><i class="kb"></i>${esc(o.unit)}</span>${al?`<span><i class="ka"></i>average ${esc(fm(av))}</span>`:''}${o.line?`<span><i class="kg"></i>${esc(o.lineLab)}</span>`:''}</div></div>`}
+ /* 1.27: no reference lines. Bars that met the goal are in full colour (over a limit: coral), the rest are soft;
+    the picked day gets a value bubble; the key says it in words. */
+ const fm=o.fmt||(v=>Math.round(v).toLocaleString());
+ let li=D.findIndex(x=>x.d===AX.sel);if(li<0||!vals[li]){li=-1;for(let i=n-1;i>=0;i--)if(vals[i]){li=i;break}}
+ const vl=li<0?'':(()=>{const h=Math.max(2.5,vals[li]/mx*ch),cx=Math.min(AW-26,Math.max(26,x0+li*bw+bw/2)),t=fm(vals[li]),w2=Math.max(34,t.length*7+16),yy=Math.max(2,APT+ch-h-26);
+  return`<g class="axbub"><rect x="${(cx-w2/2).toFixed(1)}" y="${yy.toFixed(1)}" width="${w2}" height="20" rx="10"/><text x="${cx.toFixed(1)}" y="${(yy+14).toFixed(1)}" text-anchor="middle">${esc(t)}</text></g>`})();
+ const defs=`<defs><linearGradient id="axg-ok-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="s-ok"/><stop offset="1" class="s-ok" stop-opacity=".6"/></linearGradient><linearGradient id="axg-lo-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="s-lo"/><stop offset="1" class="s-lo" stop-opacity=".5"/></linearGradient><linearGradient id="axg-ov-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="s-ov"/><stop offset="1" class="s-ov" stop-opacity=".6"/></linearGradient></defs>`;
+ const B=bars.replace(/class="axr( ok)?( over)?"/g,(m,ok,ov)=>`class="axr${ok||''}${ov||''}" fill="url(#axg-${ov?'ov':ok?'ok':'lo'}-${id})"`);
+ const kk=o.line?`<div class="axkey2">${o.bad?`Coral bars went over your limit of ${esc(String(o.lineLab).replace(/^limit /,''))}`:`Bright bars reached your goal of ${esc(String(o.lineLab).replace(/^goal /,''))}`}. Tap a bar to open that day.</div>`:`<div class="axkey2">Tap a bar to open that day.</div>`;
+ return`<div class="axc-w"><svg class="axc" viewBox="0 0 ${AW} ${AH}" role="group" aria-label="${esc(o.aria)}">${defs}<line class="axbase" x1="0" x2="${AW}" y1="${APT+ch+.5}" y2="${APT+ch+.5}"/><rect class="axsel" x="0" y="${APT-8}" width="${bw.toFixed(2)}" height="${ch+12}" rx="${Math.min(9,bw/2).toFixed(1)}"/>${B}${vl}${axLabels(D,x0,bw,AH-6)}</svg>${kk}</div>`}
+/* steps by hour for one day (Health Connect, last 7 days) */
+function axHours(hr){if(!Array.isArray(hr)||!hr.some(v=>+v>0))return'';const W=340,H=120,T=8,Bm=20,ch=H-T-Bm,mx=Math.max(...hr.map(Number),1),bw=W/24,w=bw*.62;let top=0;hr.forEach((v,i)=>{if(+v>+hr[top])top=i});
+ const bars=hr.map((v,i)=>{const h=+v?Math.max(2.5,+v/mx*ch):0;return h?`<rect class="axhr${i===top?' top':''}" x="${(i*bw+(bw-w)/2).toFixed(1)}" y="${(T+ch-h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="${(w/2).toFixed(1)}"><title>${i}:00 · ${(+v).toLocaleString()} steps</title></rect>`:''}).join('');
+ const lab=[0,6,12,18].map(h=>`<text class="axl" x="${(h*bw+2).toFixed(1)}" y="${H-4}">${h}</text>`).join('')+`<text class="axl" x="${W-2}" y="${H-4}" text-anchor="end">24h</text>`,P=n=>String(n).padStart(2,'0');
+ return`<div class="axhrs"><div class="axhrs-h"><b>Steps by hour</b><span>Most active ${P(top)}:00 – ${P(top+1)}:00 · ${(+hr[top]).toLocaleString()}</span></div><svg class="axc" viewBox="0 0 ${W} ${H}"><line class="axbase" x1="0" x2="${W}" y1="${T+ch+.5}" y2="${T+ch+.5}"/>${bars}${lab}</svg></div>`}
 /* sleep: when you fell asleep and woke up, night by night */
 const rel18=t=>{const d=new Date(t);return(d.getHours()*60+d.getMinutes()-1080+1440)%1440};
 const clockOf=m=>{const c=((Math.round(m)+1080)%1440+1440)%1440;return fmtTime(pad2(Math.floor(c/60))+':'+pad2(c%60))};
@@ -7530,7 +7598,7 @@ function axHist(N){const A=actSet(),L=axL(),keys=Object.keys(L).filter(k=>k<=tod
 let AXV={p:'week',d:today()};
 const axWeekStart=ds=>{const k=dnum(ds);return k-((dUTC(k).getUTCDay()+6)%7)};
 function axPeriod(){if(AXV.p==='month'){const dd=dUTC(dnum(AXV.d)),y=dd.getUTCFullYear(),m=dd.getUTCMonth();return[Math.round(Date.UTC(y,m,1)/864e5),Math.round(Date.UTC(y,m+1,0)/864e5)]}const s=axWeekStart(AXV.d);return[s,s+6]}
-function axSpan(k0,k1){const L=axL(),out=[];for(let k=k0;k<=k1;k++){const ds=fromN(k),o=L[ds]||{};out.push({d:ds,k,s:o.s!=null&&+o.s>0?+o.s:null,z:+o.z>0?+o.z:null,x:wkMin(o)||null,m:o.m!=null?+o.m:null,ss:o.ss||[],a:o.a||[],w:o.w||[]})}return out}
+function axSpan(k0,k1){const L=axL(),out=[];for(let k=k0;k<=k1;k++){const ds=fromN(k),o=L[ds]||{};out.push({d:ds,k,s:o.s!=null&&+o.s>0?+o.s:null,z:+o.z>0?+o.z:null,x:wkMin(o)||null,m:o.m!=null?+o.m:null,ss:o.ss||[],a:o.a||[],w:o.w||[],hr:o.hr||null,c:o.c!=null?+o.c:null,ac:o.ac!=null?+o.ac:null,dm:o.dm!=null?+o.dm:null})}return out}
 const axActGoal=()=>+(S.settings.act||{}).active||30;
 function axLabel(k0,k1){const p=AXV.p,tn=dnum(today()),f=(k,o)=>dUTC(k).toLocaleDateString(undefined,{...o,timeZone:'UTC'});
  if(p==='day')return AXV.d===today()?'Today':AXV.d===fromN(tn-1)?'Yesterday':f(dnum(AXV.d),{weekday:'short',month:'short',day:'numeric'});
@@ -7544,9 +7612,9 @@ function axNav(k0,k1){const p=AXV.p,last=p==='day'?dnum(AXV.d)>=dnum(today()):k1
 function axRings(o,A,sz){const R=[[o.s||0,A.goal,'r1'],[o.x||0,axActGoal(),'r2'],[o.z||0,A.sleep*60,'r3']],w=sz>60?9:sz>30?4.5:3.4,gap=w*1.35,c=sz/2;
  return`<svg class="axrings" viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}" aria-hidden="true">${R.map(([v,g,cl],i)=>{const r=c-w/2-i*(w+gap),L=2*Math.PI*r,p=g?Math.min(1,v/g):0;return`<circle class="bg ${cl}" cx="${c}" cy="${c}" r="${r.toFixed(2)}" stroke-width="${w}"/><circle class="fg ${cl}" cx="${c}" cy="${c}" r="${r.toFixed(2)}" stroke-width="${w}" stroke-dasharray="${L.toFixed(2)}" stroke-dashoffset="${(L*(1-p)).toFixed(2)}"/>`}).join('')}</svg>`}
 const axTile=(cl,lab,v,unit,goal)=>`<div class="axt ${cl}"><span>${lab}</span><b>${v}<small>${unit}</small></b><em>${goal}</em></div>`;
-function axDayHero(ds,A){const o=axSpan(dnum(ds),dnum(ds))[0],km=((o.s||0)*.000762).toFixed(1);
+function axDayHero(ds,A){const o=axSpan(dnum(ds),dnum(ds))[0],km=o.dm!=null?(o.dm/1000).toFixed(2):((o.s||0)*.000762).toFixed(1);
  return`<section class="axhero rv"><div class="axhero-r">${axRings(o,A,190)}</div><div class="axhero-t">${axTile('r1','Steps',(o.s||0).toLocaleString(),'','/ '+A.goal.toLocaleString())}${axTile('r2','Active',o.x||0,' min','/ '+axActGoal())}${axTile('r3','Sleep',o.z?fmtMin(o.z):'—','','/ '+fmtMin(A.sleep*60))}</div>
- <div class="axhero-f"><span>Distance, about <b>${km} km</b></span><span>Screen time <b>${o.m!=null?fmtMin(o.m):'—'}</b>${A.scr?` <small>/ ${fmtMin(A.scr)}</small>`:''}</span></div></section>`}
+ <div class="axhero-f"><span>Distance${o.dm!=null?'':', about'} <b>${km} km</b></span>${o.c!=null?`<span>Calories burned <b>${o.c.toLocaleString()}</b>${o.ac!=null?` <small>· ${o.ac.toLocaleString()} active</small>`:''}</span>`:''}<span>Screen time <b>${o.m!=null?fmtMin(o.m):'—'}</b>${A.scr?` <small>/ ${fmtMin(A.scr)}</small>`:''}</span></div>${axHours(o.hr)}</section>`}
 /* week and month: a ring per day (tap to open it), then the totals for exactly this span */
 function axSum(D,A){const tn=today(),sum=k=>D.reduce((a,x)=>a+(+x[k]||0),0),n=k=>D.filter(x=>x[k]).length,avg=k=>n(k)?sum(k)/n(k):0,hit=D.filter(x=>x.s>=A.goal).length;
  const cell=x=>{const fut=x.d>tn;return`<button class="axdc${x.d===tn?' td':''}${fut?' fut':''}" ${fut?'disabled':`data-act="axSel" data-d="${x.d}"`} aria-label="${esc(dayName(x.d))}">${axRings(x,A,AXV.p==='month'?34:44)}<small>${AXV.p==='month'?+x.d.slice(8):DAYS[dUTC(x.k).getUTCDay()].slice(0,1)}</small></button>`};

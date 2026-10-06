@@ -9,6 +9,16 @@
         ".validate": "newData.isNumber() && newData.val() <= now"
       }
     },
+    "rx": {
+      "$cid": {
+        ".read": "auth != null && auth.token.email_verified == true",
+        ".indexOn": ["t"],
+        "$id": {
+          ".write": "auth != null && auth.token.email_verified == true && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['e', 't']) && newData.child('e').isString() && newData.child('e').val().length <= 4000 && newData.child('t').isNumber() && newData.child('t').val() <= now"
+        }
+      }
+    },
     "inbox": {
       "$em": {
         ".read": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') === $em",
