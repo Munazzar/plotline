@@ -3186,7 +3186,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.27.0';
+const APP_VER='1.28.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -3272,7 +3272,7 @@ async function syncNow(manual){if(!syncOn()||TOURING)return;if(SYNCING){SYNC_AGA
   if(changedLocal){S.goals=merged.goals;S.entries=merged.entries;S.days=merged.days;S.habits=merged.habits.map(normHabit);S.chapters=merged.chapters||[];S.shares=merged.shares||[];S.threads=merged.threads||[];S.lists=merged.lists||[];if(merged.act&&Object.keys(merged.act).length)S.settings.actLog=merged.act;S.ident=merged.ident||S.ident||null;S.dead=merged.dead;primeSig();await DB.set('state',S).catch(()=>{});syncNative();pushWidget();if(!$('#sheet').classList.contains('on'))render(false)}
   if(!remote||!sameDoc(merged,remote)||DIRTY){S.settings.sync.fileId=await driveWrite(f&&f.id,docOf(merged))}else S.settings.sync.fileId=f.id;
   DIRTY=false;S.settings.sync.last=Date.now();S.settings.sync.err='';if(who)S.settings.sync.owner=lc(who);await DB.set('state',S).catch(()=>{});
-  setSyncMsg('Synced '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}));if(typeof shRefresh==='function'&&shOn()&&Date.now()-SHC.t>5*60000)setTimeout(()=>shRefresh(false),400);if(manual)toast(changedLocal?'Synced · changes pulled in':'Synced · everything is up to date')}
+  setSyncMsg('Synced '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}));if(typeof shRefresh==='function'&&shOn()&&Date.now()-SHC.t>20*60000)setTimeout(()=>shRefresh(false),400);if(manual)toast(changedLocal?'Synced · changes pulled in':'Synced · everything is up to date')}
  catch(e){if(e&&e.auth){S.settings.sync.err='auth';setSyncMsg('Sign in again to keep syncing');authBanner();if(manual)return ACT.reauth()}else{S.settings.sync.err=String(e&&e.message||e);setSyncMsg('Sync failed: '+S.settings.sync.err);if(manual)toast('Sync failed. '+esc(S.settings.sync.err))}}
  finally{SYNCING=null;if(SYNC_AGAIN){SYNC_AGAIN=false;syncSoon(500)}}})();return SYNCING}
 async function connectDrive(useBrowser){const c=cfg();if(!NATIVE&&!c.clientId)return toast('Add your Google client ID first');
@@ -5985,12 +5985,33 @@ const fsEnc=o=>({fields:Object.fromEntries(Object.entries(o).map(([k,v])=>[k,fsv
 const fsDec=d=>{const o={_id:decodeURIComponent(d.name.split('/').pop())};for(const k in d.fields||{})o[k]=fsx(d.fields[k]);return o};
 const jp=(s,d)=>{try{return s?JSON.parse(s):d}catch(e){return d}};
 const circDec=d=>{const c=fsDec(d);c.cid=c._id;c.keys=jp(c.locks,{});c.members=(c.members||[]).map(lc);c.owner=lc(c.owner||'');return c};
-const fsCircle=async cid=>{const d=await fs(`/circles/${cid}`,{ok404:true});return d&&circDec(d)};
+const FSC={};const fsCircle=async cid=>{const m=FSC[cid];if(m&&Date.now()-m.t<60000)return m.c;const d=await fs(`/circles/${cid}`,{ok404:true});const c=d&&circDec(d);FSC[cid]={t:Date.now(),c};return c};
 async function fsMine(){const j=await fs(':runQuery',{method:'POST',body:JSON.stringify({structuredQuery:{from:[{collectionId:'circles'}],where:{fieldFilter:{field:{fieldPath:'members'},op:'ARRAY_CONTAINS',value:{stringValue:fme()}}},limit:200}})});return(j||[]).filter(x=>x.document).map(x=>circDec(x.document))}
-async function fsMembers(sh){const j=await fs(`/circles/${sh.id}/ms?pageSize=100`);const out=[];
+/* ---- 1.28: everyone's progress for a shared item lives in the Realtime Database: gm/{cid}/{email, . as ,} =
+   {s: status, e: progress sealed with the item key, u: server time}. Firestore's free tier stops at 50k reads a day
+   and the group views, panels and phones were using them up; the Realtime Database has no daily read limit.
+   Firestore still gets a copy (status changes at once, progress at most every 2 hours) for people on an older app,
+   and is read only for members who aren't in the Realtime Database yet (at most every 30 minutes per item). ---- */
+const rtAuth=async()=>{const db=RTDB();if(!db)return null;let s;try{s=await fbSession()}catch(e){return null}return s&&s.id?{db,q:'auth='+encodeURIComponent(s.id)}:null};
+const okKey=k=>!!k&&!/[\/#$\[\]]/.test(k);
+async function rtMembers(sh){const a=await rtAuth();if(!a)return null;let r;try{r=await fetch(`${a.db}/gm/${sh.id}.json?${a.q}`,{cache:'no-store'})}catch(e){return null}
+ if(!r.ok)return null;const j=await r.json().catch(()=>null),out=[];if(!j||typeof j!=='object')return out;
+ for(const[k,v]of Object.entries(j)){if(!v||typeof v!=='object')continue;const m={email:lc(k.replace(/,/g,'.')),status:v.s||'joined',enc:v.e||'',u:+v.u||0};let p={};
+  if(m.enc&&sh.k){try{p=await decJ(sh.k,m.enc)}catch(e){}}m.name=p.name||m.email.split('@')[0];m.progress=p.progress||{};m.cheers=p.cheers||[];out.push(m)}return out}
+const FSM={},FSW=(()=>{try{return JSON.parse(localStorage.getItem('plotline.fsw')||'{}')}catch(e){return{}}})();
+async function fsMembersFs(sh){const j=await fs(`/circles/${sh.id}/ms?pageSize=100`);const out=[];
  for(const d of j&&j.documents||[]){const m=fsDec(d);m.email=lc(m._id);let p={};if(m.enc&&sh.k){try{p=await decJ(sh.k,m.enc)}catch(e){}}m.name=p.name||m.email.split('@')[0];m.progress=p.progress||{};m.cheers=p.cheers||[];out.push(m)}return out}
+async function fsMembers(sh){const R=await rtMembers(sh),C=shCacheGet(sh.id),G0=typeof SHGD!=='undefined'&&SHGD[sh.id],members=((G0&&G0.c)||(C&&C.c)||{}).members||[];
+ const have=new Set((R||[]).map(m=>m.email)),missing=members.filter(e=>!have.has(e)),old=()=>((C&&C.all)||[]).filter(m=>!have.has(m.email));
+ if(R&&R.length&&(!missing.length||fsCool()||Date.now()-(FSM[sh.id]||0)<30*60000))return[...R,...old()];
+ let F;try{F=await fsMembersFs(sh);FSM[sh.id]=Date.now()}catch(e){if(R&&R.length)return[...R,...old()];throw e}
+ return[...(R||[]),...F.filter(m=>!have.has(m.email))]}
 async function fsSetMe(sh,o){const enc=sh.k&&o.status==='joined'?await encJ(sh.k,{name:myName().slice(0,80),progress:o.progress||{},cheers:o.cheers||[]}):'';
- return fs(`/circles/${sh.id}/ms/${encodeURIComponent(fme())}`,{method:'PATCH',body:JSON.stringify(fsEnc({status:o.status,enc,u:Date.now()}))})}
+ const a=await rtAuth(),k=emKey(fme());let ok=false;
+ if(a&&okKey(k)){try{const r=await fetch(`${a.db}/gm/${sh.id}/${k}.json?${a.q}`,{method:'PUT',body:JSON.stringify({s:o.status,e:enc,u:{'.sv':'timestamp'}})});ok=r.ok}catch(e){}}
+ if(ok&&o.status==='joined'&&Date.now()-(FSW[sh.id]||0)<2*36e5)return;
+ try{await fs(`/circles/${sh.id}/ms/${encodeURIComponent(fme())}`,{method:'PATCH',body:JSON.stringify(fsEnc({status:o.status,enc,u:Date.now()}))});FSW[sh.id]=Date.now();try{localStorage.setItem('plotline.fsw',JSON.stringify(FSW))}catch(e){}}
+ catch(e){if(!ok)throw e}}
 /* public keys: keys/{email} = {pub, fp}. Only the public half; the private half never leaves your Drive. */
 async function publishKey(){const id=await ensureIdent();if(shset().pubfp===id.fp&&shset().pubme===fme())return;
  await fs(`/keys/${encodeURIComponent(fme())}`,{method:'PATCH',body:JSON.stringify(fsEnc({pub:id.pub,fp:id.fp,u:Date.now()}))});shPatch({pubfp:id.fp,pubme:fme()})}
@@ -6091,7 +6112,7 @@ async function shPublish(sh){if(!sh.fs||!sh.k)return;const p=shProgress(sh),key=
  sh.myCheers=cheers;sh.pub=key;if(out.length){sh.cheerOut=null;sh.u=Date.now()}save()}
 async function shGroup(sh,c0){const c=c0||await fsCircle(sh.id);if(!c)throw new Error('404');const d=await decJ(sh.k,c.enc);const all=await fsMembers(sh);const ms=all.filter(m=>m.status==='joined').map(m=>({...m,mine:m.email===fme()}));return{c,d,ms,all}}
 /* live: invites every minute while open; my progress goes out seconds after a check-in; an open group view refreshes itself */
-function shPoll(){if(shOn()&&Date.now()-SHC.t>295000)shRefresh(false)}
+function shPoll(){if(shOn()&&Date.now()-SHC.t>20*60000)shRefresh(false)}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(shPoll,800)});
 setInterval(()=>{if(awake())shPoll()},60000);
 setInterval(()=>{if(!awake()||!shOn()||SHC.busy)return;for(const sh of shares())if(sh.fs&&sh.k&&sh.status==='joined'&&Date.now()-(sh.pubFail||0)>120000&&pubKey(shProgress(sh))!==sh.pub)shPublish(sh).catch(()=>{sh.pubFail=Date.now()})},15000);
@@ -6127,7 +6148,7 @@ async function shOpen(sh){const C=shCacheGet(sh.id),here=()=>document.querySelec
  shCachePut(sh.id,G2);if(!here())return;shCollect(sh,G2.all);paint(G2);rxRead(sh.id);
  clearInterval(SHLIVE);let last=JSON.stringify(G2.all),tk=0;
  SHLIVE=setInterval(async()=>{if(!document.querySelector(`#sheet.on [data-shg="${sh.id}"]`)){clearInterval(SHLIVE);return}if(!awake())return;
-  try{const g=await shGroup(sh,++tk%4?G2.c:null);G2.c=g.c;const j=JSON.stringify(g.all);shCollect(sh,g.all);if(j!==last){last=j;shCachePut(sh.id,g);paint(g)}}catch(e){}},30000)}
+  try{const g=await shGroup(sh,++tk%20?G2.c:null);G2.c=g.c;const j=JSON.stringify(g.all);shCollect(sh,g.all);if(j!==last){last=j;shCachePut(sh.id,g);paint(g)}}catch(e){}},30000)}
 function shGroupHTML(sh,{c,d,ms,all}){SHGD[sh.id]={c,d,ms,all};const it=d.item||{},kind=it.kind,score=m=>kind==='habit'?weekChecks(m.progress):(m.progress&&m.progress.pct)||0;
  const rows=ms.slice().sort((a,b)=>score(b)-score(a)),tot=kind==='habit'?rows.reduce((s,m)=>s+weekChecks(m.progress),0):Math.round(rows.reduce((s,m)=>s+((m.progress&&m.progress.pct)||0),0)/Math.max(1,rows.length));
  const feed=rxFeed(sh,ms);
@@ -6303,7 +6324,9 @@ const _vHabit=vHabit;vHabit=id=>shInject(_vHabit(id),'habit',id);VIEWS.habit=vHa
 const _vGoal=vGoal;vGoal=id=>shInject(_vGoal(id),'goal',id);VIEWS.goal=vGoal;
 async function reactSend(x,to,emoji,m){if(reactsSentToday()>=REACT_MAX){toast(`That’s ${REACT_MAX} reactions for today`);return false}
  const r={id:uid(),to,emoji:emoji||'',m:String(m||'').slice(0,120),t:Date.now()};if(!r.emoji&&!r.m)return false;
- x.cheerOut=[...(x.cheerOut||[]),r];x.u=Date.now();save();reactBurst(r.emoji||'💬');await shPublish(x);rtRing(x,r).catch(()=>{});return r}
+ x.cheerOut=[...(x.cheerOut||[]),r];x.u=Date.now();save();reactBurst(r.emoji||'💬');
+ /* the message goes out through the Realtime Database at once; the progress copy follows (and retries by itself) */
+ await rtRing(x,r).catch(()=>{});shPublish(x).catch(()=>{});return r}
 Object.assign(ACT,{shQuick:(d,el)=>{const x=shById(d.id);if(!x)return;if(el){el.classList.remove('sent');void el.offsetWidth;el.classList.add('sent')}
  reactSend(x,d.to,d.e,'').then(r=>{if(r){toast(`Sent ${r.emoji} to ${esc(d.nm||'')}`);shPanelPaint(x.id)}}).catch(e=>toast(shErr(e)))}});
 /* ================= LIVE HOME: STUDIO =================*/
@@ -7538,7 +7561,7 @@ function axLabels(D,x0,bw,y){const n=D.length,tn=today();return D.map((d,i)=>{co
  return t?`<text x="${(x0+i*bw+bw/2).toFixed(1)}" y="${y}" text-anchor="middle" class="axl${d.d===tn?' t':''}">${esc(t)}</text>`:''}).join('')}
 function axBars(id,D,key,o){const n=D.length,x0=0,bw=(AW-x0)/n,ch=AH-APT-APB,vals=D.map(d=>d[key]||0),mx=Math.max(o.line||0,...vals,1)*1.12,y=v=>APT+ch-v/mx*ch,gap=n>45?.2:n>20?.26:.34,w=bw*(1-gap),rx=Math.min(6,w/2);
  const bars=D.map((d,i)=>{const v=vals[i],x=x0+i*bw+(bw-w)/2,h=v?Math.max(2.5,v/mx*ch):2,cls=v?(o.good&&o.good(v)?' ok':'')+(o.bad&&o.bad(v)?' over':''):' z';
-  return`<g class="axg" data-act="axSel" data-d="${d.d}" data-x="${(x0+i*bw).toFixed(2)}"><rect class="axhit" x="${(x0+i*bw).toFixed(2)}" y="0" width="${bw.toFixed(2)}" height="${AH}"/><rect class="axr${cls}" x="${x.toFixed(2)}" y="${(APT+ch-h).toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" rx="${rx.toFixed(1)}"/></g>`}).join('');
+  return`<g class="axg" data-act="axBar" data-d="${d.d}" data-x="${(x0+i*bw).toFixed(2)}"><rect class="axhit" x="${(x0+i*bw).toFixed(2)}" y="0" width="${bw.toFixed(2)}" height="${AH}"/><rect class="axr${cls}" x="${x.toFixed(2)}" y="${(APT+ch-h).toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" rx="${rx.toFixed(1)}"/></g>`}).join('');
  /* 1.27: no reference lines. Bars that met the goal are in full colour (over a limit: coral), the rest are soft;
     the picked day gets a value bubble; the key says it in words. */
  const fm=o.fmt||(v=>Math.round(v).toLocaleString());
@@ -7562,7 +7585,7 @@ function axSleep(D,goal){const Z=D.map(mainSleep),ok=Z.filter(Boolean);if(ok.len
  let lo=Math.min(...ok.map(z=>z.bed))-40,hi=Math.max(...ok.map(z=>z.wake))+40;lo=Math.floor(lo/60)*60;hi=Math.ceil(hi/60)*60;const y=m=>APT+(m-lo)/(hi-lo)*ch,w=bw*(n>45?.8:n>20?.74:.62);
  let grid='';const step=hi-lo>600?180:120;for(let m=Math.ceil(lo/step)*step;m<=hi;m+=step)grid+=`<line class="axhl" x1="${x0}" x2="${AW}" y1="${y(m).toFixed(1)}" y2="${y(m).toFixed(1)}"/><text class="axl ys" x="${x0-5}" y="${(y(m)+3).toFixed(1)}" text-anchor="end">${esc(clockOf(m).replace(':00',''))}</text>`;
  const ab=ok.reduce((a,z)=>a+z.bed,0)/ok.length,aw=ok.reduce((a,z)=>a+z.wake,0)/ok.length;
- const bars=D.map((d,i)=>{const z=Z[i],x=x0+i*bw+(bw-w)/2;return`<g class="axg" data-act="axSel" data-d="${d.d}" data-x="${(x0+i*bw).toFixed(2)}"><rect class="axhit" x="${(x0+i*bw).toFixed(2)}" y="0" width="${bw.toFixed(2)}" height="${AH}"/>${z?`<rect class="axr sl${z.dur>=goal?' ok':''}" x="${x.toFixed(2)}" y="${y(z.bed).toFixed(2)}" width="${w.toFixed(2)}" height="${Math.max(3,y(z.wake)-y(z.bed)).toFixed(2)}" rx="${Math.min(6,w/2).toFixed(1)}"/>`:''}</g>`}).join('');
+ const bars=D.map((d,i)=>{const z=Z[i],x=x0+i*bw+(bw-w)/2;return`<g class="axg" data-act="axBar" data-d="${d.d}" data-x="${(x0+i*bw).toFixed(2)}"><rect class="axhit" x="${(x0+i*bw).toFixed(2)}" y="0" width="${bw.toFixed(2)}" height="${AH}"/>${z?`<rect class="axr sl${z.dur>=goal?' ok':''}" x="${x.toFixed(2)}" y="${y(z.bed).toFixed(2)}" width="${w.toFixed(2)}" height="${Math.max(3,y(z.wake)-y(z.bed)).toFixed(2)}" rx="${Math.min(6,w/2).toFixed(1)}"/>`:''}</g>`}).join('');
  return`<div class="axc-w"><svg class="axc axsl" viewBox="0 0 ${AW} ${AH}" role="group" aria-label="Bedtime and wake-up, night by night"><rect class="axsel" x="0" y="${APT-8}" width="${bw.toFixed(2)}" height="${ch+12}" rx="${Math.min(9,bw/2).toFixed(1)}"/>${grid}<line class="axgl b" x1="${x0}" x2="${AW}" y1="${y(ab).toFixed(1)}" y2="${y(ab).toFixed(1)}"/><line class="axgl w" x1="${x0}" x2="${AW}" y1="${y(aw).toFixed(1)}" y2="${y(aw).toFixed(1)}"/>${bars}${axLabels(D,x0,bw,AH-6)}</svg><div class="axkey"><span><i class="kb"></i>Asleep</span><span><i class="kb ok"></i>Met your goal</span><span><i class="kg"></i>Usual bed and wake time</span></div></div>`}
 function sd(a){if(a.length<2)return 0;const m=a.reduce((x,y)=>x+y,0)/a.length;return Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/a.length)}
 const axS=(v,l,x)=>`<div class="axs"><b>${v}</b><small>${l}</small>${x?`<em>${x}</em>`:''}</div>`;
@@ -7609,7 +7632,7 @@ function axNav(k0,k1){const p=AXV.p,last=p==='day'?dnum(AXV.d)>=dnum(today()):k1
  <div class="axnav-r"><button class="ibtn sm" data-act="axMove" data-d="-1" aria-label="Earlier">${ic('back')}</button><b class="axnav-t">${esc(axLabel(k0,k1))}</b><button class="ibtn sm" data-act="axMove" data-d="1" aria-label="Later" ${last?'disabled':''}>${ic('next')}</button>
  ${p==='day'?`<button class="btn sm ghost" data-act="axPer" data-v="week">${ic('back','ico-s')}Week</button><button class="btn sm" data-act="axOpen">Open day</button>`:''}</div></div>`}
 /* rings: outer steps, middle active minutes, inner sleep (each against its goal) */
-function axRings(o,A,sz){const R=[[o.s||0,A.goal,'r1'],[o.x||0,axActGoal(),'r2'],[o.z||0,A.sleep*60,'r3']],w=sz>60?9:sz>30?4.5:3.4,gap=w*1.35,c=sz/2;
+function axRings(o,A,sz){const R=[[o.s||0,A.goal,'r1'],[o.x||0,axActGoal(),'r2'],[o.z||0,A.sleep*60,'r3']],w=sz>60?9:sz>40?4.5:3.2,c=sz/2,gap=Math.max(1,Math.min(w*1.35,(c-w*2)/2-w));/* the inner ring always fits (it went negative on the 44px week rings) */
  return`<svg class="axrings" viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}" aria-hidden="true">${R.map(([v,g,cl],i)=>{const r=c-w/2-i*(w+gap),L=2*Math.PI*r,p=g?Math.min(1,v/g):0;return`<circle class="bg ${cl}" cx="${c}" cy="${c}" r="${r.toFixed(2)}" stroke-width="${w}"/><circle class="fg ${cl}" cx="${c}" cy="${c}" r="${r.toFixed(2)}" stroke-width="${w}" stroke-dasharray="${L.toFixed(2)}" stroke-dashoffset="${(L*(1-p)).toFixed(2)}"/>`}).join('')}</svg>`}
 const axTile=(cl,lab,v,unit,goal)=>`<div class="axt ${cl}"><span>${lab}</span><b>${v}<small>${unit}</small></b><em>${goal}</em></div>`;
 function axDayHero(ds,A){const o=axSpan(dnum(ds),dnum(ds))[0],km=o.dm!=null?(o.dm/1000).toFixed(2):((o.s||0)*.000762).toFixed(1);
@@ -7661,7 +7684,9 @@ function axAnimate(){if(RM())return;document.querySelectorAll('#view svg.axc').f
  document.querySelectorAll('#view .axln-b i,#view .axapp i,#view .axmix i').forEach((c,i)=>c.animate([{transform:'scaleX(0)'},{transform:'none'}],{duration:800,delay:200+i*40,easing:'cubic-bezier(.32,.72,0,1)',fill:'backwards'}));
  cuAll($('#view .axgrid'),true)}
 Object.assign(ACT,{
- axSel:d=>{if(d.d>today())return;AXV={p:'day',d:d.d};AX.anim=1;render(false);window.scrollTo({top:0,behavior:reduced()?'auto':'smooth'})},
+ axSel:d=>{if(d.d>today())return;const y=scrollY;AXV={p:'day',d:d.d};AX.anim=1;render(false);window.scrollTo(0,y)},
+ /* a bar in a chart only picks that day in place (no jump, no page change); its readouts update under the chart */
+ axBar:d=>{if(d.d>today())return;axPick(d.d,true)},
  axStep:d=>{const D=AX.D||[],i=D.findIndex(x=>x.d===AX.sel),j=i+ +d.d;if(j<0||j>=D.length)return;axPick(D[j].d,true)},
  axOpen:()=>go('day/'+(AX.sel||today())),
  axRange:d=>{ACTV.days=+d.v;AX.anim=1;if(nat())actLoad(true);render(false)},

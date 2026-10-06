@@ -262,15 +262,33 @@ const needLogin=b=>!!(b&&b.cloud&&!signedIn()&&!(WB.views[b.cloud.doc]===b));
 async function gs(){if(typeof fbSession!=='function')throw new Error('Sign in to edit shared boards');try{return await fbSession()}catch(e){throw new Error('Sign in to edit shared boards')}}
 const sessFor=(kind,owner)=>kind==='view'&&owner&&owner===myUid()?anon():gs();
 const QUOTA='The cloud’s daily limit is used up. Changes stay on this device and sync again by themselves later.';
-async function cget(doc){let r;try{r=await fetch(`${FSD()}/${doc}?key=${fbc().key}`,{cache:'no-store'})}catch(e){throw new Error('You’re offline')}
+/* 1.28: shared boards and lists live in the Realtime Database at bn/{doc} = {owner, kind, enc, u, n}. It has no daily
+   read limit (Firestore's free tier stops at 50k reads a day, which is what made sharing stop). n is a revision number:
+   the rules only accept n+1 over the stored n, so two people saving at once can't overwrite each other; the loser
+   gets a conflict, merges and saves again, same as before. Boards still only in Firestore are read from there once and
+   move over on their next save. Without the Realtime Database (rules not published) everything stays on Firestore. */
+let BN_OFF=false;const RDB=()=>!BN_OFF&&typeof RTDB==='function'?RTDB():'';
+async function rget(doc){const db=RDB();if(!db)return undefined;let r;try{r=await fetch(`${db}/bn/${doc}.json`,{cache:'no-store'})}catch(e){throw new Error('You’re offline')}
+ if(r.status===401||r.status===403||r.status===404){BN_OFF=true;return undefined}if(!r.ok)return undefined;const v=await r.json().catch(()=>null);
+ if(!v||typeof v!=='object'||!v.enc)return null;return{ut:'r'+(+v.n||0),owner:v.owner,kind:v.kind,enc:v.enc,u:v.u,v:v.v}}
+async function rput(doc,fields,pre,retry=true){const db=RDB();if(!db)return undefined;const s=await sessFor(fields.kind,fields.owner);
+ const n=/^r\d+$/.test(pre||'')?+pre.slice(1)+1:1;let r;
+ try{r=await fetch(`${db}/bn/${doc}.json?auth=${encodeURIComponent(s.id)}`,{method:'PUT',body:JSON.stringify({owner:fields.owner||'',kind:fields.kind,enc:fields.enc,u:fields.u||now(),n})})}catch(e){throw new Error('You’re offline')}
+ if(r.ok)return{ut:'r'+n};const t=await r.text().catch(()=>'');
+ if(r.status===401&&/expired|invalid/i.test(t)&&retry){if(fields.kind==='view'&&fields.owner===myUid())await anon(true);else{const g=gSess();if(g&&typeof fbPut==='function')fbPut({...g,exp:0})}return rput(doc,fields,pre,false)}
+ if(r.status===401||r.status===403){if(n>1||await rget(doc))return{conflict:true};if(!signedIn())throw new Error('Sign in to edit shared boards');BN_OFF=true;return undefined}
+ if(r.status===404){BN_OFF=true;return undefined}throw new Error('Cloud error '+r.status)}
+async function cget(doc){const R=await rget(doc);if(R)return R;return fget(doc)}
+async function cput(doc,fields,pre,retry=true){const R=await rput(doc,fields,pre);if(R)return R;return fput(doc,fields,/^r\d+$/.test(pre||'')?'':pre,retry)}
+async function fget(doc){let r;try{r=await fetch(`${FSD()}/${doc}?key=${fbc().key}`,{cache:'no-store'})}catch(e){throw new Error('You’re offline')}
  if(r.status===404)return null;if(r.status===429){window.FS_COOL=Date.now()+15*60000;throw new Error(QUOTA)}if(!r.ok)throw new Error('Cloud error '+r.status);const d=await r.json();return{ut:d.updateTime,...fsDec(d)}}
-async function cput(doc,fields,pre,retry=true){const s=await sessFor(fields.kind,fields.owner);const q=pre==='new'?'currentDocument.exists=false':pre?'currentDocument.updateTime='+encodeURIComponent(pre):'';let r;
+async function fput(doc,fields,pre,retry=true){const s=await sessFor(fields.kind,fields.owner);const q=pre==='new'?'currentDocument.exists=false':pre?'currentDocument.updateTime='+encodeURIComponent(pre):'';let r;
  try{r=await fetch(`${FSD()}/${doc}?${q}`,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.id},body:JSON.stringify(fsEnc(fields))})}catch(e){throw new Error('You’re offline')}
- if(r.status===401&&retry){if(fields.kind==='view'&&fields.owner===myUid())await anon(true);else{const g=gSess();if(g&&typeof fbPut==='function')fbPut({...g,exp:0})}return cput(doc,fields,pre,false)}
+ if(r.status===401&&retry){if(fields.kind==='view'&&fields.owner===myUid())await anon(true);else{const g=gSess();if(g&&typeof fbPut==='function')fbPut({...g,exp:0})}return fput(doc,fields,pre,false)}
  if(r.status===400||r.status===409||r.status===404){const t=await r.text();if(/FAILED_PRECONDITION|ABORTED|ALREADY_EXISTS|NOT_FOUND/.test(t))return{conflict:true};throw new Error('Cloud error '+r.status)}
  if(r.status===403)throw new Error(signedIn()?'The cloud refused this board. Check the Firestore rules for “benches”.':'Sign in to edit shared boards');
  if(r.status===429){window.FS_COOL=Date.now()+15*60000;throw new Error(QUOTA)}if(!r.ok)throw new Error('Cloud error '+r.status);const d=await r.json();return{ut:d.updateTime}}
-async function cdel(doc,owner){let s;try{s=await(owner&&owner===myUid()?anon():gs())}catch(e){return}await fetch(`${FSD()}/${doc}`,{method:'DELETE',headers:{Authorization:'Bearer '+s.id}}).catch(()=>{})}
+async function cdel(doc,owner){let s;try{s=await(owner&&owner===myUid()?anon():gs())}catch(e){return}const db=RDB();if(db)fetch(`${db}/bn/${doc}.json?auth=${encodeURIComponent(s.id)}`,{method:'DELETE'}).catch(()=>{});await fetch(`${FSD()}/${doc}`,{method:'DELETE',headers:{Authorization:'Bearer '+s.id}}).catch(()=>{})}
 function setSt(k,m=''){WB.st={k,m};const el=$('#wbst');if(el){el.className='wb-st '+k;el.title=k==='ok'?'Synced':k==='saving'?'Saving…':k==='err'?m:'On this device only'}if(k==='err'&&m&&m!==WB.lastErr){WB.lastErr=m;toast(esc(m))}}
 let pushT,pushing=false,again=false;
 function pushSoon(d=500){const b=WB.B;if(!b||!b.cloud||b.ro)return;clearTimeout(pushT);pushT=setTimeout(()=>push(b),d)}

@@ -12,7 +12,9 @@
     "rx": {
       "$cid": {
         ".read": "auth != null && auth.token.email_verified == true",
-        ".indexOn": ["t"],
+        ".indexOn": [
+          "t"
+        ],
         "$id": {
           ".write": "auth != null && auth.token.email_verified == true && !data.exists() && newData.exists()",
           ".validate": "newData.hasChildren(['e', 't']) && newData.child('e').isString() && newData.child('e').val().length <= 4000 && newData.child('t').isNumber() && newData.child('t').val() <= now"
@@ -26,7 +28,31 @@
         "$id": {
           ".write": "auth != null && auth.token.email_verified == true && !data.exists() && newData.exists()",
           ".validate": "newData.hasChildren(['c', 'e', 't']) && newData.child('c').isString() && newData.child('c').val().length <= 60 && newData.child('e').isString() && newData.child('e').val().length <= 4000 && newData.child('t').isNumber() && newData.child('t').val() <= now",
-          "$other": { ".validate": "$other === 'c' || $other === 'e' || $other === 't'" }
+          "$other": {
+            ".validate": "$other === 'c' || $other === 'e' || $other === 't'"
+          }
+        }
+      }
+    },
+    "gm": {
+      "$cid": {
+        ".read": "auth != null && auth.token.email_verified == true && $cid.length >= 10 && $cid.length <= 60",
+        "$em": {
+          ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') === $em",
+          ".validate": "newData.hasChildren(['s', 'e', 'u']) && newData.child('s').isString() && newData.child('s').val().length <= 12 && newData.child('e').isString() && newData.child('e').val().length <= 40000 && newData.child('u').isNumber() && newData.child('u').val() <= now",
+          "$other": {
+            ".validate": "$other === 's' || $other === 'e' || $other === 'u'"
+          }
+        }
+      }
+    },
+    "bn": {
+      "$doc": {
+        ".read": true,
+        ".write": "auth != null && $doc.length >= 20 && $doc.length <= 40 && (data.exists() ? (newData.exists() ? (newData.child('owner').val() === data.child('owner').val() && newData.child('kind').val() === data.child('kind').val() && newData.child('n').val() === data.child('n').val() + 1 && ((data.child('kind').val() === 'edit' && auth.token.email_verified == true) || data.child('owner').val() === auth.uid)) : data.child('owner').val() === auth.uid) : (newData.child('n').val() === 1 && (auth.token.email_verified == true || newData.child('owner').val() === auth.uid)))",
+        ".validate": "newData.hasChildren(['owner', 'kind', 'enc', 'u', 'n']) && newData.child('owner').isString() && (newData.child('kind').val() === 'edit' || newData.child('kind').val() === 'view') && newData.child('enc').isString() && newData.child('enc').val().length < 1000000 && newData.child('u').isNumber() && newData.child('n').isNumber()",
+        "$other": {
+          ".validate": "$other === 'owner' || $other === 'kind' || $other === 'enc' || $other === 'u' || $other === 'n'"
         }
       }
     }
