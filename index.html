@@ -3193,7 +3193,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.29.0';
+const APP_VER='1.30.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -3253,6 +3253,26 @@ const DRV='https://www.googleapis.com/drive/v3',UPL='https://www.googleapis.com/
 async function gfetch(url,opt={},retry=true){const t=await token(false);const r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+t}});
  if(r.status===401){tokDrop();if(NATIVE&&S.settings.sync.native){try{NATIVE.invalidateToken(t)}catch(e){}if(retry)return gfetch(url,opt,false)}throw{auth:true}}
  if(!r.ok){let m='';try{m=(await r.json()).error.message}catch(e){}throw new Error(`Drive ${r.status}${m?': '+m:''}`)}return r}
+/* 1.30: photos live in their own Drive files (appDataFolder, img-<sha>). The plan file carries "dimg:<fileId>" in their
+   place, so a sync rewrites kilobytes instead of every photo again. This device keeps its pictures inline, plus a cache
+   of downloaded ones (IndexedDB img:<fileId>), so pages draw them without asking Drive.
+   ponytail: no clean-up of photo files whose item was deleted; add a sweep if hidden Drive storage ever matters. */
+const IMGRX=/^data:(image\/[a-z+.-]+);base64,/,IMGC=new Map();let IMGM=null;
+async function imgMap(){if(!IMGM)IMGM=(await DB.get('imgmap').catch(()=>null))||{};return IMGM}
+async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,32)}
+async function imgUp(d){let r=IMGC.get(d);if(r)return r;const M=await imgMap(),h=await sha(d);let id=M[h];
+ if(!id){const mt=d.match(IMGRX)[1],bin=Uint8Array.from(atob(d.slice(d.indexOf(',')+1)),c=>c.charCodeAt(0)),b='pl'+uid();
+  const body=new Blob([`--${b}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({name:'img-'+h,parents:['appDataFolder'],mimeType:mt})}\r\n--${b}\r\nContent-Type: ${mt}\r\n\r\n`,bin,`\r\n--${b}--`]);
+  id=(await(await gfetch(`${UPL}/files?uploadType=multipart&fields=id`,{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+b},body})).json()).id;if(!id)throw 0;M[h]=id;await DB.set('imgmap',M).catch(()=>{})}
+ r='dimg:'+id;IMGC.set(d,r);DB.set('img:'+id,d).catch(()=>{});return r}
+async function imgDown(r){const id=r.slice(5);let d=await DB.get('img:'+id).catch(()=>null);
+ if(!d){const bl=await(await gfetch(`${DRV}/files/${encodeURIComponent(id)}?alt=media`)).blob();d=await new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(f.result);f.onerror=no;f.readAsDataURL(bl)});DB.set('img:'+id,d).catch(()=>{})}
+ IMGC.set(d,r);return d}
+/* copy a JSON value, mapping strings through f (async; undefined keeps the string) */
+async function imgWalk(v,f){if(typeof v==='string'){const x=await f(v);return x===undefined?v:x}if(Array.isArray(v)){const o=[];for(const x of v)o.push(await imgWalk(x,f));return o}
+ if(v&&typeof v==='object'){const o={};for(const k in v)o[k]=await imgWalk(v[k],f);return o}return v}
+const imgOut=doc=>imgWalk(doc,t=>t.length>4000&&IMGRX.test(t)?imgUp(t).catch(()=>undefined):undefined);
+const imgIn=doc=>imgWalk(doc,t=>t.length<80&&t.startsWith('dimg:')?imgDown(t).catch(()=>undefined):undefined);
 async function driveFind(){const q=encodeURIComponent("name='plotline.json' and trashed=false");const j=await(await gfetch(`${DRV}/files?spaces=appDataFolder&q=${q}&fields=files(id,modifiedTime)&pageSize=5`)).json();return j.files&&j.files[0]||null}
 async function driveRead(id){return(await gfetch(`${DRV}/files/${id}?alt=media`)).json()}
 async function driveWrite(id,doc){const body=JSON.stringify(doc);
@@ -3272,11 +3292,13 @@ async function syncNow(manual){if(!syncOn()||TOURING)return;if(SYNCING){SYNC_AGA
   const who=await acctEmail();if(who&&ownerOf()&&lc(who)!==ownerOf()){S.settings.sync.on=false;S.settings.sync.fileId='';await DB.set('state',S).catch(()=>{});setSyncMsg('Paused · different account');acctChoice(who);return}
   let f=S.settings.sync.fileId?{id:S.settings.sync.fileId}:await driveFind();let remote=null;
   if(f){try{remote=await driveRead(f.id)}catch(e){if(String(e.message).includes('404')){S.settings.sync.fileId='';f=await driveFind();remote=f?await driveRead(f.id):null}else throw e}}
-  const local=docOf(S);local.benches=window.WBSYNC?await WBSYNC.list():(remote&&remote.benches)||[];const merged=remote?mergeDocs(local,remote):local;
+  const l0=docOf(S);l0.benches=window.WBSYNC?await WBSYNC.list():(remote&&remote.benches)||[];
+  /* photos go out as their own Drive files (refs in the plan); mine = merged with the pictures back in, for this device */
+  const local=await imgOut(l0),merged=await imgOut(remote?mergeDocs(local,remote):local),mine=await imgIn(merged);
   /* Workbench boards live in their own store, not in S */
-  if(window.WBSYNC&&JSON.stringify(merged.benches||[])!==JSON.stringify(local.benches))await WBSYNC.apply(merged.benches,merged.dead);
+  if(window.WBSYNC&&JSON.stringify(merged.benches||[])!==JSON.stringify(local.benches))await WBSYNC.apply(mine.benches,merged.dead);
   const changedLocal=!sameDoc(merged,local);
-  if(changedLocal){S.goals=merged.goals;S.entries=merged.entries;S.days=merged.days;S.habits=merged.habits.map(normHabit);S.chapters=merged.chapters||[];S.shares=merged.shares||[];S.threads=merged.threads||[];S.lists=merged.lists||[];if(merged.act&&Object.keys(merged.act).length)S.settings.actLog=merged.act;S.ident=merged.ident||S.ident||null;S.dead=merged.dead;primeSig();await DB.set('state',S).catch(()=>{});syncNative();pushWidget();if(!$('#sheet').classList.contains('on'))render(false)}
+  if(changedLocal){S.goals=mine.goals;S.entries=mine.entries;S.days=mine.days;S.habits=mine.habits.map(normHabit);S.chapters=mine.chapters||[];S.shares=mine.shares||[];S.threads=mine.threads||[];S.lists=mine.lists||[];if(mine.act&&Object.keys(mine.act).length)S.settings.actLog=mine.act;S.ident=mine.ident||S.ident||null;S.dead=merged.dead;primeSig();await DB.set('state',S).catch(()=>{});syncNative();pushWidget();if(!$('#sheet').classList.contains('on'))render(false)}
   if(!remote||!sameDoc(merged,remote)||DIRTY){S.settings.sync.fileId=await driveWrite(f&&f.id,docOf(merged))}else S.settings.sync.fileId=f.id;
   DIRTY=false;S.settings.sync.last=Date.now();S.settings.sync.err='';if(who)S.settings.sync.owner=lc(who);await DB.set('state',S).catch(()=>{});
   setSyncMsg('Synced '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}));if(typeof shRefresh==='function'&&shOn()&&Date.now()-SHC.t>20*60000)setTimeout(()=>shRefresh(false),400);if(manual)toast(changedLocal?'Synced · changes pulled in':'Synced · everything is up to date')}
@@ -6019,6 +6041,14 @@ async function fsSetMe(sh,o){const enc=sh.k&&o.status==='joined'?await encJ(sh.k
  if(ok&&o.status==='joined'&&Date.now()-(FSW[sh.id]||0)<2*36e5)return;
  try{await fs(`/circles/${sh.id}/ms/${encodeURIComponent(fme())}`,{method:'PATCH',body:JSON.stringify(fsEnc({status:o.status,enc,u:Date.now()}))});FSW[sh.id]=Date.now();try{localStorage.setItem('plotline.fsw',JSON.stringify(FSW))}catch(e){}}
  catch(e){if(!ok)throw e}}
+/* 1.30: who may use a shared item's Realtime Database data. The owner claims gmo/{cid} and lists the invited people in
+   gma/{cid}/{email key}: true. The rules then let only them write their own gm entry, read gm and rx, and drop notes into
+   another joined member's inbox, so knowing an item's id is no longer enough. Re-sent only when the member list changes. */
+async function rtAcl(cid,members){try{const a=await rtAuth();if(!a||!cid)return;const L=[...new Set([fme(),...(members||[])].map(emKey))].filter(okKey).sort(),sig=L.join('|');
+ if(localStorage.getItem('gacl:'+cid)===sig)return;
+ const r=await fetch(`${a.db}/gmo/${cid}.json?${a.q}`,{method:'PUT',body:JSON.stringify(emKey(fme()))});if(!r.ok)return;
+ const r2=await fetch(`${a.db}/gma/${cid}.json?${a.q}`,{method:'PUT',body:JSON.stringify(Object.fromEntries(L.map(k=>[k,true])))});if(r2.ok)localStorage.setItem('gacl:'+cid,sig)}catch(e){}}
+async function rtDrop(cid){try{const a=await rtAuth();if(!a)return;await Promise.all(['gma','gm','rx'].map(n=>fetch(`${a.db}/${n}/${cid}.json?${a.q}`,{method:'DELETE'})));localStorage.removeItem('gacl:'+cid)}catch(e){}}
 /* public keys: keys/{email} = {pub, fp}. Only the public half; the private half never leaves your Drive. */
 async function publishKey(){const id=await ensureIdent();if(shset().pubfp===id.fp&&shset().pubme===fme())return;
  await fs(`/keys/${encodeURIComponent(fme())}`,{method:'PATCH',body:JSON.stringify(fsEnc({pub:id.pub,fp:id.fp,u:Date.now()}))});shPatch({pubfp:id.fp,pubme:fme()})}
@@ -6090,7 +6120,7 @@ Object.assign(FORM,{shareGo:async f=>{const fd=new FormData(f),mode=fd.get('mode
   const sh={id:cid,fs:1,k,role:'owner',mode,title:o.title,status:'joined',local:K==='step'?{kind:'step',g:ref.g,id:ref.id}:{kind:K,id:ref.id},u:Date.now()};
   const members=[fme(),...emails],keys=await shWrapMissing({members,keys:{}},sh,true)||{};
   await fs(`/circles?documentId=${cid}`,{method:'POST',body:JSON.stringify(fsEnc({owner:fme(),members,opub:id.pub,locks:JSON.stringify(keys),enc:await encJ(k,{title:o.title,mode,item,ownerName:myName().slice(0,80)}),created:Date.now(),u:Date.now()}))});
-  shares().push(sh);save();await shPublish(sh).catch(()=>{});closeSheet();render(false);shSent(sh,emails,emails.filter(e=>!keys[e]))}
+  await rtAcl(cid,members);shares().push(sh);save();await shPublish(sh).catch(()=>{});closeSheet();render(false);shSent(sh,emails,emails.filter(e=>!keys[e]))}
  catch(e){btn.disabled=false;btn.textContent='Share';toast(shErr(e))}}});
 function shErr(e){if(e&&(e.auth||e.fbAuth))return'Sign in again to share';if(e&&e.fbAllow)return'Allow Plotline to confirm your email first (Settings → Sharing)';const m=String(e&&e.message||e);if(/403|PERMISSION_DENIED/.test(m))return'You don’t have access to that shared item';if(/404|NOT_FOUND/.test(m))return'That shared item isn’t available any more';if(/QUOTA|RESOURCE_EXHAUSTED|429/.test(m))return'Sharing has hit today’s cloud limit. It comes back by itself, so try again in a while.';return esc(m)}
 function shSent(sh,emails,later){const who=emails.length===1?emails[0].split('@')[0]:emails.length+' people';
@@ -6108,7 +6138,7 @@ async function shRefresh(manual){if(!shOn()||SHC.busy||TOURING||(!manual&&fsCool
    if(c.owner!==fme()){if(x&&['declined','left','ended'].includes(x.status))continue;const u=await shUnlock(c,x);
     if(!x){shares().push({id:c.cid,fs:1,role:'member',status:'invited',from:c.owner,fromName:u?u.d.ownerName:'',title:u?u.d.title:'',mode:u?u.d.mode:'',k:u?u.k:'',locked:!u,u:Date.now()});news++}
     else if(u&&(x.locked||!x.k||x.title!==u.d.title)){Object.assign(x,{k:u.k,locked:false,title:u.d.title,mode:u.d.mode,fromName:u.d.ownerName,u:Date.now()});news++}}
-   else if(x&&x.k&&x.status==='joined'){const keys=await shWrapMissing(c,x,Date.now()-(x.kt||0)>30*60000).catch(()=>null);x.kt=Date.now();
+   else if(x&&x.k&&x.status==='joined'){await rtAcl(c.cid,c.members);const keys=await shWrapMissing(c,x,Date.now()-(x.kt||0)>30*60000).catch(()=>null);x.kt=Date.now();
     if(keys)await fs(`/circles/${c.cid}?updateMask.fieldPaths=locks&updateMask.fieldPaths=u`,{method:'PATCH',body:JSON.stringify(fsEnc({locks:JSON.stringify(keys),u:Date.now()}))}).catch(()=>{})}}
   shares().forEach(x=>{if(x.fs&&['joined','invited','later'].includes(x.status)&&!seen.has(x.id)){x.status='ended';x.u=Date.now();news++}});
   for(const sh of shares().filter(x=>x.fs&&x.status==='joined'))await shPublish(sh).catch(()=>{});
@@ -6212,13 +6242,13 @@ Object.assign(ACT,{
  shOpen:d=>{const x=shById(d.id);if(x)shOpen(x)},
  shCheer:d=>ACT.shReact(d),
  shLeave:d=>{const x=shById(d.id);if(!x)return;askConfirm('Leave this shared item?','Your progress is removed from it and the group stops seeing it. Your own copy in Plotline stays.','Leave',async()=>{closeSheet();try{await fsSetMe(x,{status:'left'})}catch(e){}x.status='left';x.k='';x.u=Date.now();save();render(false);toast('You left')})},
- shStop:d=>{const x=shById(d.id);if(!x)return;askConfirm('Stop sharing?','The shared item is deleted, so everyone stops seeing it. Your goal stays in your plan.','Stop sharing',async()=>{closeSheet();try{const j=await fs(`/circles/${x.id}/ms?pageSize=100`);for(const dd of j&&j.documents||[])await fs(`/circles/${x.id}/ms/${encodeURIComponent(fsDec(dd)._id)}`,{method:'DELETE',ok404:true});await fs(`/circles/${x.id}`,{method:'DELETE',ok404:true})}catch(e){return toast(shErr(e))}x.status='ended';x.k='';x.u=Date.now();save();render(false);toast('Sharing stopped')})},
+ shStop:d=>{const x=shById(d.id);if(!x)return;askConfirm('Stop sharing?','The shared item is deleted, so everyone stops seeing it. Your goal stays in your plan.','Stop sharing',async()=>{closeSheet();try{const j=await fs(`/circles/${x.id}/ms?pageSize=100`);for(const dd of j&&j.documents||[])await fs(`/circles/${x.id}/ms/${encodeURIComponent(fsDec(dd)._id)}`,{method:'DELETE',ok404:true});await fs(`/circles/${x.id}`,{method:'DELETE',ok404:true});await rtDrop(x.id)}catch(e){return toast(shErr(e))}x.status='ended';x.k='';x.u=Date.now();save();render(false);toast('Sharing stopped')})},
  shInvite:d=>{const x=shById(d.id);if(!x)return;openSheet(`<h2>Invite more people</h2><form data-form="shMore" data-id="${x.id}"><div class="field"><label>Their Google email</label><input name="emails" type="email" multiple required placeholder="address@gmail.com"></div><div class="actions"><button type="button" class="btn ghost" data-act="close">Cancel</button><button class="btn pri">Invite</button></div></form>`)},
  shRedo:d=>{const x=shById(d.id);if(!x||!x.local)return;const L=x.local;x.status='ended';x.u=Date.now();save();render(false);shareStart(L.kind,L.kind==='step'?{g:L.g,id:L.id}:{id:L.id})},
  shDrop:d=>{const x=shById(d.id);if(!x)return;x.status='ended';x.u=Date.now();save();render(false)}});
 Object.assign(FORM,{shMore:async f=>{const x=shById(f.dataset.id);if(!x||!x.k)return;const emails=emailsOf(new FormData(f).get('emails'));if(!emails.length)return;
  try{const c=await fsCircle(x.id);if(!c)throw new Error('404');const members=[...new Set([...c.members,...emails])].slice(0,21);const keys=await shWrapMissing({...c,members},x,true)||c.keys;
-  await fs(`/circles/${x.id}?updateMask.fieldPaths=members&updateMask.fieldPaths=locks&updateMask.fieldPaths=u`,{method:'PATCH',body:JSON.stringify(fsEnc({members,locks:JSON.stringify(keys),u:Date.now()}))});closeSheet();shSent(x,emails,emails.filter(e=>!keys[e]))}catch(e){toast(shErr(e))}}});
+  await fs(`/circles/${x.id}?updateMask.fieldPaths=members&updateMask.fieldPaths=locks&updateMask.fieldPaths=u`,{method:'PATCH',body:JSON.stringify(fsEnc({members,locks:JSON.stringify(keys),u:Date.now()}))});await rtAcl(x.id,members);closeSheet();shSent(x,emails,emails.filter(e=>!keys[e]))}catch(e){toast(shErr(e))}}});
 /* ---- reactions: a few emoji and short quick messages instead of a single 👏; live; at most 50 a day ----
  Sent ones live in my own encrypted progress doc as cheers:[{id,to,emoji,m,t}] (same field as 1.8.2's 👏, so
  older apps still show them). The sender's app stops at 50 a day (counted across devices, since S.shares syncs).
@@ -7854,7 +7884,7 @@ const assignField=(K,o)=>`<div class="field"><label>Assign to · optional</label
   const sh={id:cid,fs:1,k,role:'owner',mode,title:t.title,status:'joined',local:{kind:'thread',id:t.id},u:Date.now()};
   const members=[fme(),...emails],keys=await shWrapMissing({members,keys:{}},sh,true)||{};
   await fs(`/circles?documentId=${cid}`,{method:'POST',body:JSON.stringify(fsEnc({owner:fme(),members,opub:id.pub,locks:JSON.stringify(keys),enc:await encJ(k,{title:t.title,mode,item,ownerName:myName().slice(0,80)}),created:Date.now(),u:Date.now()}))});
-  shares().push(sh);save();await shPublish(sh).catch(()=>{});closeSheet();render(false);shSent(sh,emails,emails.filter(e=>!keys[e]))}
+  await rtAcl(cid,members);shares().push(sh);save();await shPublish(sh).catch(()=>{});closeSheet();render(false);shSent(sh,emails,emails.filter(e=>!keys[e]))}
  catch(e){btn.disabled=false;btn.textContent='Share';toast(shErr(e))}}}
 {const _si=shItem;shItem=function(sh){const L=sh.local||{};return L.kind==='thread'?TH(L.id):_si(sh)}}
 {const _sp=shProgress;shProgress=function(sh){const L=sh.local||{};if(L.kind!=='thread')return _sp(sh);const t=TH(L.id),out={u:Date.now()};if(!t)return out;const U=thrUps(t);out.pct=t.status==='done'?100:0;out.n=U.length;out.done=['n'+U.length,t.status||'open'];out.last=U[0]?trunc(U[0].x||'',80):'';return out}}
@@ -7875,7 +7905,7 @@ const assignField=(K,o)=>`<div class="field"><label>Assign to · optional</label
   const sh={id:cid,fs:1,k,role:'owner',mode,title:L.title,status:'joined',local:{kind:'list',id:L.id},u:Date.now()};
   const members=[fme(),...emails],keys=await shWrapMissing({members,keys:{}},sh,true)||{};
   await fs(`/circles?documentId=${cid}`,{method:'POST',body:JSON.stringify(fsEnc({owner:fme(),members,opub:id.pub,locks:JSON.stringify(keys),enc:await encJ(k,{title:L.title,mode,item,ownerName:myName().slice(0,80)}),created:Date.now(),u:Date.now()}))});
-  shares().push(sh);save();await shPublish(sh).catch(()=>{});closeSheet();render(false);shSent(sh,emails,emails.filter(e=>!keys[e]))}
+  await rtAcl(cid,members);shares().push(sh);save();await shPublish(sh).catch(()=>{});closeSheet();render(false);shSent(sh,emails,emails.filter(e=>!keys[e]))}
  catch(e){btn.disabled=false;btn.textContent='Share';toast(shErr(e))}}}
 {const _si=shItem;shItem=function(sh){const L=sh.local||{};return L.kind==='list'?(window.LS&&LS.byId(L.id)):_si(sh)}}
 {const _sp=shProgress;shProgress=function(sh){const L=sh.local||{};if(L.kind!=='list')return _sp(sh);const out={u:Date.now()},l=window.LS&&LS.byId(L.id);if(!l)return out;

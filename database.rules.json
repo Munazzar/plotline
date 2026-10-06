@@ -11,14 +11,15 @@
     },
     "rx": {
       "$cid": {
-        ".read": "auth != null && auth.token.email_verified == true",
+        ".read": "auth != null && auth.token.email_verified == true && (root.child('gm').child($cid).child(auth.token.email.toLowerCase().replace('.', ',')).exists() || root.child('gma').child($cid).child(auth.token.email.toLowerCase().replace('.', ',')).exists())",
         ".indexOn": [
           "t"
         ],
         "$id": {
-          ".write": "auth != null && auth.token.email_verified == true && !data.exists() && newData.exists()",
+          ".write": "auth != null && auth.token.email_verified == true && (root.child('gm').child($cid).child(auth.token.email.toLowerCase().replace('.', ',')).exists() || root.child('gma').child($cid).child(auth.token.email.toLowerCase().replace('.', ',')).exists()) && !data.exists() && newData.exists()",
           ".validate": "newData.hasChildren(['e', 't']) && newData.child('e').isString() && newData.child('e').val().length <= 4000 && newData.child('t').isNumber() && newData.child('t').val() <= now"
-        }
+        },
+        ".write": "auth != null && auth.token.email_verified == true && root.child('gmo').child($cid).val() === auth.token.email.toLowerCase().replace('.', ',') && !newData.exists()"
       }
     },
     "inbox": {
@@ -26,7 +27,7 @@
         ".read": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') === $em",
         ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') === $em",
         "$id": {
-          ".write": "auth != null && auth.token.email_verified == true && !data.exists() && newData.exists()",
+          ".write": "auth != null && auth.token.email_verified == true && !data.exists() && newData.exists() && newData.child('c').val().matches(/^[A-Za-z0-9_-]+$/) && newData.child('c').val().length >= 10 && root.child('gm').child(newData.child('c').val()).child(auth.token.email.toLowerCase().replace('.', ',')).child('s').val() === 'joined' && root.child('gm').child(newData.child('c').val()).child($em).child('s').val() === 'joined'",
           ".validate": "newData.hasChildren(['c', 'e', 't']) && newData.child('c').isString() && newData.child('c').val().length <= 60 && newData.child('e').isString() && newData.child('e').val().length <= 4000 && newData.child('t').isNumber() && newData.child('t').val() <= now",
           "$other": {
             ".validate": "$other === 'c' || $other === 'e' || $other === 't'"
@@ -36,13 +37,30 @@
     },
     "gm": {
       "$cid": {
-        ".read": "auth != null && auth.token.email_verified == true && $cid.length >= 10 && $cid.length <= 60",
+        ".read": "auth != null && auth.token.email_verified == true && (root.child('gm').child($cid).child(auth.token.email.toLowerCase().replace('.', ',')).exists() || root.child('gma').child($cid).child(auth.token.email.toLowerCase().replace('.', ',')).exists())",
         "$em": {
-          ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') === $em",
+          ".write": "auth != null && auth.token.email_verified == true && $em === auth.token.email.toLowerCase().replace('.', ',') && $cid.length >= 10 && $cid.length <= 60 && (root.child('gma').child($cid).child(auth.token.email.toLowerCase().replace('.', ',')).exists() || root.child('gmo').child($cid).val() === auth.token.email.toLowerCase().replace('.', ',') || !root.child('gmo').child($cid).exists())",
           ".validate": "newData.hasChildren(['s', 'e', 'u']) && newData.child('s').isString() && newData.child('s').val().length <= 12 && newData.child('e').isString() && newData.child('e').val().length <= 40000 && newData.child('u').isNumber() && newData.child('u').val() <= now",
           "$other": {
             ".validate": "$other === 's' || $other === 'e' || $other === 'u'"
           }
+        },
+        ".write": "auth != null && auth.token.email_verified == true && root.child('gmo').child($cid).val() === auth.token.email.toLowerCase().replace('.', ',') && !newData.exists()"
+      }
+    },
+    "gmo": {
+      "$cid": {
+        ".read": "auth != null && auth.token.email_verified == true",
+        ".write": "auth != null && auth.token.email_verified == true && $cid.length >= 10 && $cid.length <= 60 && $cid.matches(/^[A-Za-z0-9_-]+$/) && (!data.exists() || data.val() === auth.token.email.toLowerCase().replace('.', ',')) && newData.val() === auth.token.email.toLowerCase().replace('.', ',')",
+        ".validate": "newData.isString()"
+      }
+    },
+    "gma": {
+      "$cid": {
+        ".read": "auth != null && auth.token.email_verified == true && (data.child(auth.token.email.toLowerCase().replace('.', ',')).exists() || root.child('gmo').child($cid).val() === auth.token.email.toLowerCase().replace('.', ','))",
+        ".write": "auth != null && auth.token.email_verified == true && root.child('gmo').child($cid).val() === auth.token.email.toLowerCase().replace('.', ',')",
+        "$em": {
+          ".validate": "newData.isBoolean() && $em.length <= 120"
         }
       }
     },
