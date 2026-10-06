@@ -20,6 +20,9 @@ const toUrl=k=>k.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''),fromUrl
 const webBase=()=>(PLOTLINE_CFG.webUrl||location.origin+location.pathname).replace(/#.*$/,'');
 
 Object.assign(IC,{
+ wbfit:'<rect x="7.5" y="8.5" width="9" height="7" rx="1.5"/><path d="M3 7V4.5A1.5 1.5 0 0 1 4.5 3H7M17 3h2.5A1.5 1.5 0 0 1 21 4.5V7M21 17v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 21H4.5A1.5 1.5 0 0 1 3 19.5V17"/>',
+ wbfs:'<path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/>',
+ wbunfs:'<path d="M20 10h-6V4M4 14h6v6M14 10l6.5-6.5M10 14l-6.5 6.5"/>',
  wbbench:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M10 6.5h4a3 3 0 0 1 3 3V14"/><circle cx="6.5" cy="17.5" r="3"/>',
  wbptr:'<path d="M5 3l14 7-6 2-2 6z"/>',
  wbhand:'<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L3.5 14a1.6 1.6 0 0 1 2.6-1.8L8 14"/>',
@@ -447,7 +450,12 @@ function openB(b){if(b.cloud&&!Object.getOwnPropertyDescriptor(b,'ro'))Object.de
 function listHTML(){return`<header class="ph"><div><h1>Workbench</h1><div class="data">Ideas, workflows and architectures · with any AI</div></div><div class="ph-r">${gear()}</div></header>
  <section class="rv"><div class="wb-tpls">${TPLS.map(([k,n,d,i])=>`<button class="wb-tpl" data-act="wbNew" data-tpl="${k}">${ic(i)}<b>${n}</b><small>${d}</small></button>`).join('')}</div>
  <div class="actions left"><button class="btn sm" data-act="wbJoin">${ic('link')}Open a shared link</button><label class="btn sm">${ic('up')}Import a board<input type="file" accept=".json,application/json" data-file="wbImport" hidden></label></div></section>
- <section class="rv"><div class="st-h"><h3>Your boards</h3></div>${LIST.length?`<div class="wb-grid">${LIST.slice().sort((a,c)=>(c.u||0)-(a.u||0)).map(cardHTML).join('')}</div>`:'<p class="muted small">No boards yet. Pick a start above.</p>'}</section>`}
+ ${boardSecs()}`}
+/* the dashboard groups boards by who can see them */
+function boardSecs(){const L=LIST.slice().sort((a,c)=>(c.u||0)-(a.u||0)),byMe=L.filter(b=>b.cloud&&mine(b.cloud.owner)),withMe=L.filter(b=>b.cloud&&!mine(b.cloud.owner)),local=L.filter(b=>!b.cloud);
+ if(!L.length)return`<section class="rv"><div class="st-h"><h3>Your boards</h3></div><p class="muted small">No boards yet. Pick a start above.</p></section>`;
+ const sec=(t,sub,A)=>A.length?`<section class="rv"><div class="st-h"><h3>${t}</h3><span class="data">${sub}</span></div><div class="wb-grid">${A.map(cardHTML).join('')}</div></section>`:'';
+ return sec('Shared by you',`${byMe.length} board${byMe.length===1?'':'s'} · live for anyone with the link`,byMe)+sec('Shared with you',`${withMe.length} board${withMe.length===1?'':'s'}`,withMe)+sec(byMe.length||withMe.length?'On this device only':'Your boards',byMe.length||withMe.length?'not shared':'',local)}
 function cardHTML(b){const ns=Object.values(b.nodes),es=edgesOk(b).length;
  return`<div class="wb-card" data-act="wbOpen" data-id="${b.id}" role="button" tabindex="0">${mini(b)}<b>${esc(b.title)}</b><span class="data">${ns.length} item${ns.length===1?'':'s'} · ${es} link${es===1?'':'s'} · ${rel(b.u||b.created)}${b.cloud?' · shared':''}</span><button class="ibtn" data-act="wbCardMenu" data-id="${b.id}" aria-label="Board options">${ic('more')}</button></div>`}
 function mini(b){const ns=Object.values(b.nodes);if(!ns.length)return'<div class="wb-mini"></div>';const bb=bbox(ns),p=60,N=b.nodes,c=n=>[n.x+n.w/2,n.y+n.h/2];
@@ -459,7 +467,7 @@ function boardHTML(b){const ro=!!b.ro;
  <div class="wb-top"><div class="wb-bar"><a class="wb-b" href="#/bench" aria-label="All boards" title="All boards">${ic('back')}</a>${ro?`<span class="wb-ttl">${esc(b.title)}</span>${needLogin(b)?`<button class="wb-b wb-signin" data-act="wbLogin">${ic('lock')}<span>Sign in to edit</span></button>`:`<span class="wb-tag">${ic('eye')}View only</span>`}`:`<input class="wb-ttl" id="wbttl" value="${esc(b.title)}" maxlength="80" aria-label="Board name">`}<span class="wb-who" id="wbwho"></span><span class="wb-st" id="wbst"></span></div>
  <div class="wb-sp"></div><div class="wb-bar">${ro?'':pbtn('ai','wbspark','AI')}${pbtn('prompt','wbprompt','Prompt')}${pbtn('comments','wbcom','Comments')}${pbtn('share','wbshare','Share')}${btn('wbMore','','more','More')}</div></div>
  ${ro?'':`<div class="wb-tools wb-bar" id="wbtools">${btn('wbTool','data-t="select"','wbptr','Select (drag empty space to box-select)')}${btn('wbTool','data-t="hand"','wbhand','Pan (or hold Space)')}<span class="wb-sep"></span><button class="wb-b wb-addb" data-act="wbPop" data-p="add" aria-haspopup="dialog" aria-expanded="false" title="Add an item">${ic('plus')}<span>Add</span></button>${btn('wbAdd','data-t="sticky"','wbsticky','Add a sticky note')}<span class="wb-sep"></span>${btn('wbTool','data-t="link"','link','Connect: tap one item, then another')}</div>`}
- <div class="wb-zm wb-bar">${ro?'':btn('wbUndo','','wbundo','Undo (Ctrl+Z)','id="wbun"')+btn('wbRedo','','wbredo','Redo (Ctrl+Shift+Z)','id="wbre"')}${btn('wbZoom','data-d="-1"','minus','Zoom out 5%')}<input type="range" class="wb-zr" id="wbzr" min="15" max="300" step="1" value="100" aria-label="Zoom"><button class="wb-b z" data-act="wbZoom" data-d="0" id="wbz" title="Back to 100%">100%</button>${btn('wbZoom','data-d="1"','plus','Zoom in 5%')}${btn('wbFit','','fit','Fit the board (Shift+1)')}${btn('wbPop','data-p="view"','grid','Background and snapping','aria-haspopup="dialog" aria-expanded="false"')}${btn('wbFull','','full','Full screen','id="wbfull"')}</div>
+ <div class="wb-zm wb-bar">${ro?'':btn('wbUndo','','wbundo','Undo (Ctrl+Z)','id="wbun"')+btn('wbRedo','','wbredo','Redo (Ctrl+Shift+Z)','id="wbre"')}${btn('wbZoom','data-d="-1"','minus','Zoom out 5%')}<input type="range" class="wb-zr" id="wbzr" min="15" max="300" step="1" value="100" aria-label="Zoom"><button class="wb-b z" data-act="wbZoom" data-d="0" id="wbz" title="Back to 100%">100%</button>${btn('wbZoom','data-d="1"','plus','Zoom in 5%')}${btn('wbFit','','wbfit','Fit the board (Shift+1)')}${btn('wbPop','data-p="view"','grid','Background and snapping','aria-haspopup="dialog" aria-expanded="false"')}${btn('wbFull','','wbfs','Full screen','id="wbfull"')}</div>
  <div class="wb-sb wb-bar" id="wbsb"></div><div class="wb-pop wb-bar" id="wbpop" role="dialog" aria-label="Choose"></div><aside class="wb-side" id="wbside" aria-label="Board panel"></aside></div>`}
 const pbtn=(p,icon,label)=>`<button class="wb-b" data-act="wbPanel" data-p="${p}" aria-label="${label}" title="${label}">${ic(icon)}<span class="lb">${label}</span>${p==='comments'?'<span class="n" id="wbcn"></span>':''}</button>`;
 function nodeHTML(n,ro){const t=TYPES[n.type]?n.type:'card',cm=Object.values(WB.B.comments).filter(c=>c.on===n.id).length;
@@ -484,7 +492,7 @@ function drawWho(){const el=$('#wbwho'),b=WB.B;if(!el||!b)return;const L=Object.
  const hue=s=>[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%360;el.innerHTML=L.slice(0,5).map(([k,v])=>`<span style="background:hsl(${hue(k)} 70% 70%)" title="${esc(v.n)} is here">${esc((v.n||'?')[0].toUpperCase())}</span>`).join('');el.title=L.length?`${L.length} other${L.length===1?'':'s'} here now`:''}
 const GRIDS=[['dots','Dots'],['grid','Grid'],['fine','Grid + blocks'],['cross','Crosses'],['iso','Triangles'],['lines','Lined paper'],['none','Plain']];
 const gmode=()=>{const m=S.settings.wbGrid||'dots';return GRIDS.some(g=>g[0]===m)?m:'dots'};
-let GCOL='';function gcol(){if(!GCOL){const c=getComputedStyle(document.documentElement);GCOL=[c.getPropertyValue('--line-2').trim()||'#888',c.getPropertyValue('--line').trim()||'#666']}return GCOL}
+function gcol(){const c=getComputedStyle(document.documentElement),t=(c.getPropertyValue('--text').trim()||'#888').replace(/'/g,'');/* derived from the text colour on every draw, so it follows theme switches and shows on light themes */return[`${t}' fill-opacity='.34' stroke-opacity='.34`,`${t}' stroke-opacity='.13`]}
 function gridSvg(m,g){const[a,b]=gcol(),u=(w,h,body)=>`url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>${body}</svg>`)}")`,r=Math.max(.8,Math.min(1.6,g/14));
  if(m==='dots')return[u(g,g,`<circle cx='${g/2}' cy='${g/2}' r='${r}' fill='${a}'/>`),g,g];
  if(m==='grid')return[u(g,g,`<path d='M${g} 0V${g}H0' fill='none' stroke='${b}' stroke-width='1'/>`),g,g];
@@ -509,7 +517,7 @@ document.addEventListener('input',e=>{if(e.target&&e.target.id==='wbzr'&&WB.B&&W
 document.addEventListener('wheel',e=>{if(!(e.target&&e.target.id==='wbzr')||!WB.B)return;e.preventDefault();const[cx,cy]=zoomCenter();zoomStep(e.deltaY<0?1:-1,cx,cy)},{passive:false});
 /* full screen: the browser's, or the app's immersive mode */
 function fsSet(on){const R=document.documentElement;R.classList.toggle('wb-fs',on);try{if(on){if(R.requestFullscreen&&!document.fullscreenElement&&!NATIVE)R.requestFullscreen().catch(()=>{})}else if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}try{NATIVE&&NATIVE.immersive&&NATIVE.immersive(!!on)}catch(e){}
- const b=$('#wbfull');if(b){b.innerHTML=ic(on?'unfull':'full');b.title=b.ariaLabel=on?'Exit full screen':'Full screen'}}
+ const b=$('#wbfull');if(b){b.innerHTML=ic(on?'wbunfs':'wbfs');b.title=b.ariaLabel=on?'Exit full screen':'Full screen'}}
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.documentElement.classList.contains('wb-fs'))fsSet(false)});
 addEventListener('hashchange',()=>{if(!/^#\/bench\//.test(location.hash)&&document.documentElement.classList.contains('wb-fs'))fsSet(false);popClose()});
 function centerWorld(){const cv=$('#wbcv'),v=WB.B.vp||{x:0,y:0,z:1};const w=cv?cv.clientWidth:innerWidth,h=cv?cv.clientHeight:innerHeight;return{x:(w/2-v.x)/v.z,y:(h/2-v.y)/v.z}}
@@ -710,7 +718,12 @@ Object.assign(ACT,{
  wbOpen:(d,el,e)=>{if(e&&e.target.closest('[data-act=wbCardMenu]'))return;go('bench/'+d.id)},
  wbCardMenu:(d,el,e)=>{if(e)e.stopPropagation();const b=LIST.find(x=>x.id===d.id);if(!b)return;const own=b.cloud&&mine(b.cloud.owner);
   openSheet(`<div class="data">Board</div><h2 style="margin-top:6px">${esc(b.title)}</h2><form data-form="wbRename" data-id="${b.id}"><div class="field"><label>Name</label><input name="t" value="${esc(b.title)}" maxlength="80"></div><div class="actions left"><button class="btn sm pri">Rename</button></div></form>
-  <div class="actions left"><button class="btn" data-act="wbDupB" data-id="${b.id}">${ic('copy')}Duplicate</button><button class="btn" data-act="wbExp" data-id="${b.id}">${ic('down')}Export file</button><button class="btn" data-act="wbDelB" data-id="${b.id}">${ic('trash')}Delete${b.cloud?' from this device':''}</button>${own?`<button class="btn" data-act="wbDelB" data-id="${b.id}" data-cloud="1">${ic('trash')}Delete everywhere</button>`:''}</div>`)},
+  <div class="actions left"><button class="btn pri" data-act="wbCardShare" data-id="${b.id}">${ic('wbshare')}${b.cloud?'Share link':'Share'}</button><button class="btn" data-act="wbDupB" data-id="${b.id}">${ic('copy')}Duplicate</button><button class="btn" data-act="wbExp" data-id="${b.id}">${ic('down')}Export file</button><button class="btn" data-act="wbDelB" data-id="${b.id}">${ic('trash')}Delete${b.cloud?' from this device':''}</button>${own?`<button class="btn" data-act="wbDelB" data-id="${b.id}" data-cloud="1">${ic('trash')}Delete everywhere</button>`:''}</div>`)},
+ wbCardShare:async d=>{const b=LIST.find(x=>x.id===d.id);if(!b)return;
+  if(!b.cloud){try{toast('Creating a private link…');await shareOn(b);render(false)}catch(e){toast(esc(e.message||String(e)));return}}
+  const url=linkOf('e',b.cloud.doc,b.cloud.key);
+  openSheet(`<div class="data">Share</div><h2 style="margin-top:6px">${esc(b.title)}</h2><p class="small muted">Anyone with this link can view, edit and comment. It’s end-to-end encrypted; the key is only in the link.</p><div class="wb-row"><input id="wbcl" readonly value="${esc(url)}" aria-label="Link"><button class="btn sm" data-act="wbCopyLink" data-k="wbcl">${ic('copy')}Copy</button></div>${navigator.share?`<div class="actions left"><button class="btn" data-act="wbSendLink" data-k="wbcl">${ic('wbshare')}Send…</button></div>`:''}`)},
+ wbSendLink:d=>{const i=$('#'+d.k);if(i)navigator.share({title:'Plotline board',url:i.value}).catch(()=>{})},
  wbDupB:d=>{const b=LIST.find(x=>x.id===d.id);if(!b)return;closeSheet();dupBoard(b);render(false);toast('Duplicated')},
  wbExp:d=>{const b=LIST.find(x=>x.id===d.id);if(b)exportJSON(b)},
  wbDelB:d=>{const b=LIST.find(x=>x.id===d.id);if(!b)return;closeSheet();delBoard(b,!!d.cloud);if(cur.p==='bench'&&cur.id===b.id)go('bench');else render(false)},
@@ -727,7 +740,7 @@ Object.assign(ACT,{
   if(d.a==='dh'||d.a==='dv'){const h=d.a==='dh',L=ids.map((id,i)=>({n:b.nodes[id],r:R0[i]})).sort((p,q)=>h?p.r.x-q.r.x:p.r.y-q.r.y),tot=L.reduce((a,o)=>a+(h?o.r.w:o.r.h),0),gap=((h?bb.w:bb.h)-tot)/(L.length-1);let at=h?bb.x:bb.y;L.forEach(o=>{if(h)o.n.x=Math.round(at);else o.n.y=Math.round(at);at+=(h?o.r.w:o.r.h)+gap})}
   else ids.forEach((id,i)=>{const n=b.nodes[id],r=R0[i];if(d.a==='l')n.x=bb.x;else if(d.a==='r')n.x=bb.x+bb.w-r.w;else if(d.a==='c')n.x=Math.round(bb.x+bb.w/2-r.w/2);else if(d.a==='t')n.y=bb.y;else if(d.a==='b')n.y=bb.y+bb.h-r.h;else if(d.a==='m')n.y=Math.round(bb.y+bb.h/2-r.h/2)});
   commit(before)},
- wbPrint:()=>{closeSheet();printBoard(B())},
+ wbPrint:()=>{closeSheet();if(NATIVE||typeof printPage!=='function')printBoard(B());else printPage()},
  wbLogin:async()=>{if(typeof shReady!=='function')return toast('Sign in from Settings → Sync');const ok=await shReady();if(ok&&signedIn()){toast('Signed in. You can edit now');render(false)}},
  wbFit:()=>fitTo(),wbUndo:undo,wbRedo:redo,
  wbSnap:()=>{WB.snap=!WB.snap;draw();toast(WB.snap?'Snap to grid on':'Snap to grid off')},

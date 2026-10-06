@@ -9,7 +9,8 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Plotline</title>
-<style>@font-face{font-family:'Big Shoulders Display';font-weight:600;font-display:swap;src:url(fonts/big-shoulders-display-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Big Shoulders Display';font-weight:700;font-display:swap;src:url(fonts/big-shoulders-display-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Big Shoulders Display';font-weight:800;font-display:swap;src:url(fonts/big-shoulders-display-latin-800-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:400;font-display:swap;src:url(fonts/figtree-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:500;font-display:swap;src:url(fonts/figtree-latin-500-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:600;font-display:swap;src:url(fonts/figtree-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:700;font-display:swap;src:url(fonts/figtree-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Martian Mono';font-weight:400;font-display:swap;src:url(fonts/martian-mono-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Martian Mono';font-weight:500;font-display:swap;src:url(fonts/martian-mono-latin-500-normal.woff2) format('woff2')}</style>
+<style>@font-face{font-family:'Big Shoulders Display';font-weight:600;font-display:swap;src:url(fonts/big-shoulders-display-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Big Shoulders Display';font-weight:700;font-display:swap;src:url(fonts/big-shoulders-display-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Big Shoulders Display';font-weight:800;font-display:swap;src:url(fonts/big-shoulders-display-latin-800-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:400;font-display:swap;src:url(fonts/figtree-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:500;font-display:swap;src:url(fonts/figtree-latin-500-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:600;font-display:swap;src:url(fonts/figtree-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:700;font-display:swap;src:url(fonts/figtree-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Martian Mono';font-weight:400;font-display:swap;src:url(fonts/martian-mono-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Martian Mono';font-weight:500;font-display:swap;src:url(fonts/martian-mono-latin-500-normal.woff2) format('woff2')}
+</style>
 <style>
 /* ================= tokens ======================== */
 :root{
@@ -143,7 +144,7 @@ select option{background:var(--bg-2);color:var(--text)}
 input[type=date],input[type=time]{min-height:48px}
 input[type=range]{padding:0;border:0;background:none;height:26px;box-shadow:none;-webkit-appearance:auto;appearance:auto;accent-color:var(--accent)}
 input[type=checkbox]{width:auto}
-.sel{width:auto;height:46px;padding:0 38px 0 14px;font-size:14px;font-weight:600;border-radius:15px;border-color:var(--line)}
+select.sel{width:auto;height:46px;padding:0 38px 0 14px;font-size:14px;font-weight:600;border-radius:15px;border-color:var(--line)}
 .field{margin-bottom:16px}
 .field>label,.lbl{display:block;font:500 10.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -2131,6 +2132,8 @@ html.stu-attop .sbar{background:transparent;backdrop-filter:none;-webkit-backdro
 /* ==== BEGIN 1.10 CSS ==== */
 /* ---- page headers: title and every action (gear last, in the corner) share the first line ---- */
 .ph{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:14px;align-items:start}
+/* a page title never breaks inside a word: the buttons beside it wrap instead */
+@media(max-width:820px){.ph{display:flex;flex-wrap:wrap;align-items:flex-start}.ph>:first-child{flex:1 1 auto;min-width:min-content}.ph>.ph-r{flex:0 1 auto;min-width:0;flex-wrap:wrap;justify-content:flex-end;row-gap:8px;margin-left:auto}}
 .ph>div:first-child{display:contents}
 .ph>div:first-child>*{grid-column:1/-1}
 .ph>div:first-child>h1{grid-column:1;grid-row:1;min-width:0;overflow-wrap:break-word}
@@ -2652,6 +2655,8 @@ html.fnat :is(.ph h1,.hero h1,.sheet h2,.st-h h3,.panel h3){letter-spacing:0}
 @keyframes cdpIn{from{opacity:0;transform:translateY(10px)}}
 .cdp-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .cdp-h h2{font:700 30px/1 var(--f-display);text-transform:uppercase;letter-spacing:.01em}
+.cdp-h>div{min-width:0}.cdp-h h2{font-size:clamp(22px,6.4vw,30px);overflow-wrap:normal;word-break:normal;hyphens:none}
+.hcal-p .cdp{margin-top:18px;padding:14px 12px 4px}
 .cdp-h .data{margin-top:8px}.cdp-a{display:flex;gap:8px;align-items:center}
 .cdp .dy-sum{margin-top:16px}.cdp .dy-sec .st-h{margin-top:30px}
 .cdp-hours #dgrid{height:460px!important}
@@ -2750,6 +2755,8 @@ html.fnat :is(.ph h1,.hero h1,.sheet h2,.st-h h3,.panel h3){letter-spacing:0}
 .hweek .hd:active i{transform:scale(.82)}
 /* text size: the page and sheets scale; canvas pages (Workbench, Map) keep 1:1 so dragging stays exact */
 html.tz-on:not(.tzx) #view,html.tz-on #sheet>*{zoom:var(--tz,1)}
+/* the studio fills the window edge to edge at any text size (its own contents scale with its width) */
+.tz-on:not(.tzx) #view .studio{zoom:calc(1 / var(--tz,1))}
 /* dialogs and floating panels stay solid on see-through (Glass) themes */
 html:is([data-theme=glass],[data-theme=glasslight]) :is(.vdlg-b,.cdp,.axday,.mo-t,.pg-t){background:color-mix(in srgb,var(--bg-2) 94%,var(--text) 6%)}
 html:is([data-theme=glass],[data-theme=glasslight]) .vdlg-b{-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%)}
@@ -2763,6 +2770,9 @@ html:is([data-theme=glass],[data-theme=glasslight]) .vdlg-b{-webkit-backdrop-fil
 .lv-e{flex:none;font-size:20px;width:28px;text-align:center}
 .lv-t{flex:1;min-width:0;display:grid;gap:2px}
 .lv-t b{font-size:14.5px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+/* goal rows are all the same height: one line each for the title, details and next step */
+.lv-g .lv-t b,.lv-g .lv-t small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lv-g .lv-t b{line-height:20px}
 .lv-t small{font-size:12.5px;line-height:1.35;color:var(--muted);overflow-wrap:anywhere}.lv-t small svg{width:12px;height:12px;vertical-align:-1px;margin:0 2px}
 .lv-nx{color:var(--text)!important;opacity:.8}
 .lv-p{flex:none;display:grid;justify-items:end;gap:5px;min-width:48px}.lv-p b{font:600 13px var(--f-mono)}
@@ -2791,16 +2801,23 @@ html:is([data-theme=glass],[data-theme=glasslight]) .vdlg-b{-webkit-backdrop-fil
 .hh-c2.none .hh-ring,.hh-c2.fut .hh-ring{background:none}.hh-c2.fut{opacity:.4}
 .hh-c2.today .hh-ring{box-shadow:0 0 0 2px var(--bg-2),0 0 0 3.5px var(--text)}
 .hh-c2.sel{background:color-mix(in srgb,var(--accent) 13%,transparent)}
+/* 1.17.2: a real month grid; picking a day only recolours its cell */
+.hh-c2{aspect-ratio:auto;height:clamp(46px,7.5vw,80px);background:var(--surface);border:1px solid var(--line-2);border-radius:12px}
+.hh-c2:active{transform:scale(.96)}
+.hh-c2.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+.hh-c2.fut{opacity:.55}
+.dy-in .dy-sum{margin-top:12px}.dy-in .dy-sec{margin-top:20px}.dy-in .dy-sec .st-h h3{font-size:18px}
+.cpeek .dy-in{margin-top:6px}
 .hh-day{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .hh-day-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.hh-day-h>div{display:grid;gap:2px}.hh-day-h b{font-size:15px}
 .hh-leg{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
 
 /* long text wraps instead of being cut off */
-.hrow .t.ell,.hpill .t.ell,.li .t.ell,.agr .t,.cchip b,.dy-hx .hh-t b,.hsn-t b,.wb-card b,.fnd-r b,.mo-t b{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
-.li .s .ell,.hrow .s .ell{white-space:normal;overflow-wrap:anywhere}
-h1,h2,h3,.t,.hday-n .ell{overflow-wrap:anywhere}
+.hrow .t.ell,.hpill .t.ell,.li .t.ell,.agr .t,.cchip b,.dy-hx .hh-t b,.hsn-t b,.wb-card b,.fnd-r b,.mo-t b{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:break-word}
+.li .s .ell,.hrow .s .ell{white-space:normal;overflow-wrap:break-word}
+h1,h2,h3,.t,.hday-n .ell{overflow-wrap:break-word}
 .hday-n .ell{white-space:normal}
-.now h2,.mini .t,.hq h3,.rcard h3{overflow-wrap:anywhere;hyphens:auto}
+.now h2,.mini .t,.hq h3,.rcard h3{overflow-wrap:break-word;hyphens:auto}
 /* contrast fixes (checked on every theme) */
 #view .hx-sub .chip.on{background:var(--text)!important;color:var(--bg)!important;border-color:transparent!important}
 .hsn-st.z,.hsn-hint{color:var(--muted)}
@@ -2811,13 +2828,25 @@ h1,h2,h3,.t,.hday-n .ell{overflow-wrap:anywhere}
 [data-mode=light] :is(#view,#sheet) .link{color:color-mix(in srgb,var(--accent) 72%,#000)}
 [data-mode=light] .kd{color:color-mix(in srgb,var(--c) 42%,#000)}
 html[data-theme=glass] .due.over{color:#FF9A8A}
-/* cards grow to fit their text instead of clipping or shrinking it */
-.fc{height:auto;min-height:264px}
-.fc-in{display:grid;height:auto;min-height:264px}
-.fc-face{position:relative;inset:auto;grid-area:1/1;min-height:264px}
-.fc-t,.fc-back .nx,.fc-back .bt span,.jf .jt-big,.jf.big .jt-big{-webkit-line-clamp:unset!important;display:block!important;overflow:visible!important;overflow-wrap:anywhere;hyphens:auto}
-.jf-face{overflow:visible}
-.mini{height:auto;min-height:156px}
+/* 1.17.2: nothing pushes the page sideways on a phone or at larger text sizes */
+.ov-tl,.cpeek-i{grid-template-columns:minmax(0,1fr)}
+.ov-tl>*,.cpeek-i>*,.agr>*,.st-h>*,.cdp-h>*{min-width:0}
+.st-h{flex-wrap:wrap;row-gap:4px}
+.cdp-h{flex-wrap:wrap}
+.agr .t,.agr .data{overflow-wrap:break-word}
+#view .hday-b .link{white-space:normal;text-align:left;line-height:1.25}
+/* ---- print: what you see on the page, without the app's navigation and buttons ---- */
+@media print{
+ @page{margin:10mm}
+ *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ *,*::before,*::after{animation:none!important;transition:none!important}
+ html,body{height:auto!important;overflow:visible!important}
+ #app{display:block!important}
+ #rail,.rail,#tabbar,.tabbar,#fnav,#toast,.tprompt,#scrim,#sheet,.aov,.selp,.rxb,.zoom-hint,.burst,#view .ph-r,#view .crumb,#view .cdp-a,#view .demob{display:none!important}
+ #view{max-width:none!important;margin:0!important;padding:0!important}
+ .rv{opacity:1!important;transform:none!important}
+ .wb-top,.wb-tools,.wb-zm,.wb-sb,.wb-side,.wb-pop{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -2934,7 +2963,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.17.1';
+const APP_VER='1.17.2';
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
@@ -3212,7 +3241,7 @@ function flipCard(g,n){const p=pct(g),nx=nextStep(g),dn=g.steps.filter(s=>s.done
  <div class="fc-face fc-back"><div class="bt"><i></i><span>${esc(trunc(g.title,48))}</span></div><div><div class="data">Next step</div><div class="nx">${nx?esc(nx.title):g.status==='done'?'Everything done':'No steps yet'}</div></div><div class="kv"><span>Due</span><span class="${nx?'due '+dueCls(nx):''}">${nx&&nx.due?dueShort(nx):'—'}</span></div><div class="kv pr"><span>Priority</span><span>${PRIO[g.priority]}</span></div><div class="fc-act"><button class="btn pri sm" data-act="open" data-id="${g.id}">Open</button><button class="ibtn sm ${g.pinned?'on':''}" data-act="pin" data-id="${g.id}" aria-label="${g.pinned?'Unpin':'Pin to Today'}">${ic('pin')}</button></div></div></div></div>`}
 function goalsList(){const gs=treeOrder(filteredGoals()).map(x=>x.g);if(!gs.length)return`<div class="empty" style="grid-column:1/-1"><p>${S.goals.length?(F.q?'No goals match that search.':'Nothing here yet.'):'No goals yet.'}</p><div class="actions"><button class="btn pri" data-act="newGoal">${ic('plus')}New goal</button></div></div>`;return gs.map((g,i)=>`<div class="rv">${flipCard(g,i+1)}</div>`).join('')}
 function vGoals(){const a=active().length,d=S.goals.filter(g=>g.status==='done').length;
- return`<header class="ph"><div><h1>Goals</h1><div class="data">${a} active · ${d} achieved · pinch the cards to see more</div></div><div class="ph-r"><button class="ibtn ${F.search?'on':''}" data-act="toggleSearch" aria-label="Search">${ic('search')}</button><button class="ibtn" data-act="newGoal" aria-label="New goal">${ic('plus')}</button>${gear()}</div></header>
+ return`<header class="ph"><div><h1>Goals</h1><div class="data">${a} active · ${d} achieved · pinch the cards to see more</div></div><div class="ph-r"><button class="ibtn ${F.search?'on':''}" data-act="toggleSearch" aria-label="Search these goals" title="Search these goals">${ic('filter')}</button><button class="ibtn" data-act="newGoal" aria-label="New goal">${ic('plus')}</button>${gear()}</div></header>
  <div class="bar">${segHTML('gf','filt',[['active','Active'],['short','Short-term'],['long','Long-term'],['done','Achieved']],F.v)}<div style="display:flex;gap:8px;align-items:center"><select class="sel" data-f="area" aria-label="Life area"><option value="all">All areas</option>${allAreas().map(x=>`<option value="${x.id}" ${F.area===x.id?'selected':''}>${x.name}</option>`).join('')}</select>${iconSeg('goals',[['grid','grid','Grid'],['h','horz','Carousel']],S.settings.layout.goals)}</div></div>
  ${F.search?`<input class="rv in" data-q placeholder="Search goals and steps" value="${esc(F.q)}" style="margin-bottom:18px" aria-label="Search">`:''}
  ${S.settings.layout.goals==='h'&&filteredGoals().length?goalsCarousel():`<div class="fgrid" id="glist" data-zk="goals" style="${zoomCss('goals')}">${goalsList()}</div>`}`}
@@ -3825,7 +3854,7 @@ const ACT={
  calView:d=>{S.settings.layout.cal=d.v;save();render(false)},
  calToday:()=>{const t=ymd();CAL.dir=t<CAL.d?-1:t>CAL.d?1:0;CAL.d=t;render(false)},
  calStep:d=>{const k=+d.d,n=dnum(CAL.d),v=S.settings.layout.cal;if(v==='day')CAL.d=fromN(n+k);else if(v==='week')CAL.d=fromN(n+7*k);else{const dd=dUTC(n),f=Math.round(Date.UTC(dd.getUTCFullYear(),dd.getUTCMonth()+k,1)/864e5),[,l]=monthOf(f),tn=dnum(ymd());CAL.d=fromN(tn>=f&&tn<=l?tn:f)}CAL.dir=k;render(false)},
- calPick:d=>{const v=S.settings.layout.cal;if(d.d===CAL.d&&v!=='day'){S.settings.layout.cal='day';save();render(false);return}CAL.d=d.d;render(false);if(v==='month'){const g=document.getElementById('cpeek');if(g){const r=g.getBoundingClientRect();if(r.top>innerHeight-140)g.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'nearest'})}}},
+ calPick:d=>{const v=S.settings.layout.cal;if(d.d===CAL.d&&v!=='day'){S.settings.layout.cal='day';save();render(false);return}CAL.d=d.d;render(false);if(v==='month'){const g=document.getElementById('cdp');if(g){const r=g.getBoundingClientRect();if(r.top>innerHeight-140)g.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'nearest'})}}},
  toggleStep:d=>{const g=G(d.g),s=g&&g.steps.find(x=>x.id===d.s);if(!s)return;s.done=!s.done;s.doneAt=s.done?Date.now():null;
   if(s.done&&s.repeat&&!g.steps.some(x=>x.from===s.id)){const base=s.due&&daysUntil(s.due)>=0?s.due:ymd();const[y,m,dd]=base.split('-').map(Number);const nx=new Date(y,m-1,dd);if(s.repeat==='daily')nx.setDate(nx.getDate()+1);else if(s.repeat==='weekly')nx.setDate(nx.getDate()+7);else nx.setMonth(nx.getMonth()+1);g.steps.splice(g.steps.indexOf(s)+1,0,{id:uid(),from:s.id,title:s.title,due:ymd(nx),time:s.time||'',remind:s.remind??'',reminded:false,note:s.note||'',repeat:s.repeat,done:false,doneAt:null});toast(`Done. Next one is ${dueShort({due:ymd(nx)}).toLowerCase()}`)}
   if(s.done){log('step',g.id,s.title,Date.now(),s.id);vib();if(g.status==='active'&&prog(g)>=1)completeGoal(g)}
@@ -7051,6 +7080,7 @@ calPeek=function(){return''};
 function calDayPanel(ds){const k=dnum(ds),tn=dnum(today()),rel=k-tn,dd=dUTC(k),nm=rel===0?'Today':rel===-1?'Yesterday':rel===1?'Tomorrow':dd.toLocaleDateString(undefined,{weekday:'long',timeZone:'UTC'});
  let b=vDay(ds);const i=b.indexOf('</header>');b=i<0?b:b.slice(i+9);
  return`<section class="cdp" id="cdp" data-d="${ds}"><div class="cdp-h"><div><h2>${esc(nm)}</h2><div class="data">${dd.toLocaleDateString(undefined,{weekday:Math.abs(rel)<=1?'long':undefined,month:'long',day:'numeric',...(dd.getUTCFullYear()!==new Date().getFullYear()?{year:'numeric'}:{}),timeZone:'UTC'})}${rel<-1?` · ${-rel} days ago`:rel>1?` · in ${rel} days`:''}</div></div><div class="cdp-a"><button class="ibtn sm" data-act="addDay" data-d="${ds}" aria-label="Plan something for this day">${ic('plus')}</button><button class="btn sm cta" data-act="dyOpen" data-d="${ds}">Full page</button></div></div>${b}</section>`}
+window.calDayPanel=calDayPanel;
 {const _vc=vCal;vCal=function(){const o=_vc(),m='<section class="rv"><div class="st-h"><h3>',i=o.lastIndexOf(m),n=dnum(CAL.d),v=S.settings.layout.cal||'month';
  let tail=calDayPanel(CAL.d);if(v==='day')tail+=`<section class="rv cdp-hours"><div class="st-h"><h3>Hours</h3><span class="data">tap a slot to plan it</span></div>${dayGrid(n,calItems(n,n)[n]||[])}</section>`;
  return(i<0?o:o.slice(0,i))+tail};VIEWS.cal=vCal}
@@ -7183,7 +7213,7 @@ setTimeout(check,4000);document.addEventListener('visibilitychange',()=>{if(docu
    - Habit calendar: progress rings per day; tapping a day shows it underneath instead of leaving the page. */
 (()=>{
 const today=()=>ymd();
-Object.assign(IC,{print:'<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/>',list:'<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>'});
+Object.assign(IC,{filter:'<path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"/>',print:'<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/>',list:'<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>'});
 const who=e=>e?String(e).split('@')[0]:'';
 
 /* ---------- text size ---------- */
@@ -7200,7 +7230,7 @@ ACT.calSlot=(d,el,e)=>{if(Date.now()-HSDRAG<300)return;const r=el.getBoundingCli
 const chev=()=>`<span class="lv-ch" aria-hidden="true"></span>`;
 /* Goals */
 {const _gl=goalsList;goalsList=function(){if(S.settings.layout.goals!=='list')return _gl();const L=treeOrder(filteredGoals());if(!L.length)return _gl();
- return`<div class="lv">${L.map(({g,d})=>{const nx=nextStep(g),p=pct(g);return`<button class="lv-r" style="${cvar(g)};--d:${d||0}" data-act="open" data-id="${g.id}"><span class="lv-dot"></span><span class="lv-t"><b>${esc(g.title)}</b><small>${esc(areaName(g.area))} · ${esc(hzName(g.horizon))}${g.targetDate?' · '+esc(fmtDate(g.targetDate)):''}${g.assignee?' · '+ic('user','ico-s')+esc(who(g.assignee)):''}</small>${nx?`<small class="lv-nx">Next: ${esc(nx.title)}${nx.due?' · '+esc(dayName(nx.due)):''}</small>`:''}</span><span class="lv-p"><b>${g.status==='done'?'✓':p+'%'}</b><i style="--p:${p}%"></i></span>${chev()}</button>`}).join('')}</div>`}}
+ return`<div class="lv">${L.map(({g,d})=>{const nx=nextStep(g),p=pct(g);return`<button class="lv-r lv-g" style="${cvar(g)};--d:${d||0}" data-act="open" data-id="${g.id}"><span class="lv-dot"></span><span class="lv-t"><b>${esc(g.title)}</b><small>${esc(areaName(g.area))} · ${esc(hzName(g.horizon))}${g.targetDate?' · '+esc(fmtDate(g.targetDate)):''}${g.assignee?' · '+ic('user','ico-s')+esc(who(g.assignee)):''}</small><small class="lv-nx">${nx?`Next: ${esc(nx.title)}${nx.due?' · '+esc(dayName(nx.due)):''}`:g.status==='done'?'Achieved':'No next step yet'}</small></span><span class="lv-p"><b>${g.status==='done'?'✓':p+'%'}</b><i style="--p:${p}%"></i></span>${chev()}</button>`}).join('')}</div>`}}
 {const _vg=vGoals;vGoals=function(){return _vg().replace(/(<div class="seg-c ico" data-seg="lay-goals"[^>]*><span class="pill"><\/span>)([\s\S]*?)(<\/div>)/,(m,a,b,c)=>a+b+`<button role="tab" aria-selected="${S.settings.layout.goals==='list'}" aria-label="List" title="List" class="${S.settings.layout.goals==='list'?'on':''}" data-act="layout" data-k="goals" data-v="list">${ic('list')}</button>`+c)};VIEWS.goals=vGoals}
 /* a goal's steps */
 function stepsListHTML(g){const tn=today(),ST=subTree(g);if(!g.steps.length&&!ST.length)return`<div class="empty rv"><p>No steps yet.</p><div class="actions"><button class="btn pri" data-act="addStepSheet" data-id="${g.id}">${ic('plus')}Add a step</button></div></div>`;
@@ -7226,9 +7256,8 @@ function jListHTML(es){let last='',o='';es.forEach(e=>{const ds=dOf(e.t);if(ds!=
 let HHS=null;
 hhCell=function(ds){const td=today(),fut=ds>td,r=dayRatio(ds),p=r.due?r.dn/r.due:0,k=fut?' fut':!r.due?' none':p>=1?' full':p>0||ds===td?' part':' miss';
  return`<button class="hh-c2${k}${ds===td?' today':''}${ds===HHS?' sel':''}" data-act="hhSel" data-d="${ds}" style="--p:${Math.round(p*100)}%" aria-pressed="${ds===HHS}" aria-label="${esc(dayName(ds))}: ${fut?'upcoming':r.due?r.dn+' of '+r.due+' habits':'nothing due'}"><span class="hh-ring"><b>${+ds.slice(8)}</b></span></button>`};
-function hhDay(ds){const fut=ds>today(),L=S.habits.filter(h=>h.status!=='archived'&&h.kind!=='quit'&&(hDue(h,ds)||hVal(h,ds)>0||(h.skip&&h.skip[ds]))),r=dayRatio(ds);
- return`<div class="hh-day"><div class="hh-day-h"><div><b>${esc(ds===today()?'Today':dayName(ds))}</b><span class="data">${fut?'upcoming':r.due?`${r.dn} of ${r.due} kept`:'nothing due'}</span></div><button class="link" data-act="dyOpen" data-d="${ds}">Open the day</button></div>
- ${L.length?`<div class="cpeek-hb">${L.map(h=>{const d=hDone(h,ds),sk=h.skip&&h.skip[ds];return`<button class="cpk-h${d?' on':''}${sk?' s':''}" style="${cvar(h)}" ${fut?'disabled':`data-act="hhTog" data-id="${h.id}" data-d="${ds}"`} aria-pressed="${d}"><span>${esc(hIcon(h))}</span>${esc(h.title)}${d?ic('check'):sk?' · skipped':''}</button>`}).join('')}</div>`:'<p class="small muted">No habits on this day.</p>'}</div>`}
+/* the picked day opens right here, with everything that happened on it (same panel as the Calendar) */
+function hhDay(ds){return calDayPanel(ds).replace(/(class="[^"]*?)\brv\b ?/g,'$1')}
 hCal=function(){const[y,m]=HH.m.split('-').map(Number),first=new Date(y,m-1,1),n=new Date(y,m,0).getDate(),lead=(first.getDay()+6)%7,cells=[],P=s=>String(s).padStart(2,'0'),cm=today().slice(0,7);
  for(let i=0;i<lead;i++)cells.push('<span class="hh-e"></span>');for(let d=1;d<=n;d++)cells.push(hhCell(`${y}-${P(m)}-${P(d)}`));
  let done=0,due=0,perfect=0,run=0,best=0;for(let d=1;d<=n;d++){const ds=`${y}-${P(m)}-${P(d)}`;if(ds>today())break;const r=dayRatio(ds);due+=r.due;done+=r.dn;if(r.due&&r.dn>=r.due){perfect++;run++;best=Math.max(best,run)}else if(r.due&&ds!==today())run=0}
@@ -7271,7 +7300,10 @@ const PR={
  habits:()=>{const N=Math.max(14,+S.settings.layout.hsnN||14),tn=dnum(today()),K=[];for(let k=tn-N+1;k<=tn;k++)K.push(k);const L=S.habits.filter(h=>h.status==='active');
   printDoc('Habits',`<h1>Habits</h1><p class="m">Last ${N} days</p><table class="g"><tr><th>Habit</th>${K.map(k=>`<th>${dUTC(k).getUTCDate()}</th>`).join('')}</tr>${L.map(h=>`<tr><td>${esc(hIcon(h))} ${esc(h.title)}</td>${K.map(k=>`<td>${hMark(h,fromN(k))}</td>`).join('')}</tr>`).join('')}</table><p class="m">✓ done · ✗ missed · – skipped · · not due</p>`)}};
 function longDayName(ds){return dUTC(dnum(ds)).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'UTC'})}
-ACT.printIt=d=>{const f=PR[d.k];if(!f)return;closeSheet();f(d.id)};
+/* the web prints the page as it looks; the Android app (no print in its web view) saves a printable file */
+function printPage(){closeSheet();document.querySelectorAll('#view .rv:not(.in)').forEach(e=>e.classList.add('in'));setTimeout(()=>{try{window.print()}catch(e){toast('Couldn’t open printing')}},80)}
+window.printPage=printPage;
+ACT.printIt=d=>{const f=PR[d.k];if(NATIVE){if(!f)return;closeSheet();f(d.id);return}printPage()};
 function printKey(){if(cur.p==='goal')return['goal',cur.id];if(cur.p==='habit')return['habit',cur.id];if(cur.p==='day')return['day',cur.id||today()];if(cur.p==='cal')return['cal'];if(cur.p==='journal')return['journal'];if(cur.p==='activity'&&$('#view .axgrid'))return['activity'];if(cur.p==='habits'&&S.habits.length)return['habits'];return null}
 function printBtn(){const k=printKey();if(!k)return;const r=document.querySelector('#view .crumb>.ph-r')||document.querySelector('#view header.ph .ph-r');if(!r||r.querySelector('[data-act=printIt]'))return;
  r.insertAdjacentHTML('afterbegin',`<button class="ibtn" data-act="printIt" data-k="${k[0]}"${k[1]?` data-id="${esc(k[1])}"`:''} aria-label="Print" title="Print or save as PDF">${ic('print')}</button>`)}
@@ -7311,10 +7343,11 @@ ACT.shareThread=d=>shareStart('thread',{id:d.id});
  if(g.assignee)o=o.replace('<div class="ov-pace"',`<div class="ov-pace"><span class="ci-b asg">${ic('user','ico-s')}${g.assignee===(typeof fme==='function'&&fme())?'Assigned to you':'Assigned to '+esc(who(g.assignee))}</span>`);
  return o};VIEWS.goal=vGoal}
 
-/* titles keep their size and wrap; the cards grow instead (1.17) */
-fitCards=function(){};
 /* ---------- after every render ---------- */
-{const _r=render;render=function(a){_r(a);const z=cur.p==='bench'||cur.p==='map';document.documentElement.classList.toggle('tzx',z);printBtn()}}
+/* goal list titles shrink to fit their one line (down to 12px) before they're cut with … */
+function lvFit(){document.querySelectorAll('#view .lv-g .lv-t b').forEach(b=>{b.style.fontSize='';let f=parseFloat(getComputedStyle(b).fontSize);while(b.scrollWidth>b.clientWidth+1&&f>12){f-=.5;b.style.fontSize=f+'px'}})}
+addEventListener('resize',()=>lvFit(),{passive:true});
+{const _r=render;render=function(a){_r(a);const z=cur.p==='bench'||cur.p==='map';document.documentElement.classList.toggle('tzx',z);printBtn();lvFit()}}
 })();
 </script>
 <script src="bench.js"></script>
