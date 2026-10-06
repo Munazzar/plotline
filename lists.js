@@ -36,7 +36,7 @@ async function push(L){const s=st(L);if(!L.cloud||ro(L))return;if(s.pushing){s.a
 async function pull(L,force){const d=await C().cget(L.cloud.doc);if(!d){L.cloud.gone=1;save();paintSt(L,'err');return}
  if(!force&&d.ut===L.cloud.ut)return;const r=await decJ(L.cloud.key,d.enc);L.cloud.owner=d.owner;L.cloud.ut=d.ut;st(L).remote=now();
  const ch=merge(L,r);const mineNewer=Object.values(L.items).some(i=>(i.u||0)>(L.cloud.sent||0))||(L.mu||0)>(L.cloud.sent||0);
- if(ch){save();if(cur.p==='list'&&cur.id===L.id)repaint()}
+ if(ch){save();if(cur.p==='list'&&cur.id===L.id||cur.p==='lists')repaint()}
  if(mineNewer&&!ro(L))pushSoon(L,200);paintSt(L,'ok')}
 /* redraw the open list in place, keeping whatever you're typing (and the cursor) */
 function repaint(){const a=document.activeElement,k=a&&a.dataset?(a.dataset.lsedit?'[data-lsedit="'+a.dataset.lsedit+'"]':a.dataset.lstitle?'[data-lstitle]':a.closest&&a.closest('.ls-add')?'.ls-add input':null):null;
@@ -46,12 +46,21 @@ function paintSt(L,k){const e=document.getElementById('lsst');if(e&&cur.p==='lis
 /* while a shared list is open and someone is using the app: every 6 s right after a change from someone else, else every 30 s */
 /* live: while a shared list is open, the Realtime Database pushes a ping on every change and we fetch it at once.
    Without that (not set up yet), it checks every 6 s right after a change, else every 30 s. */
-let WATCH=null;
-function watchFor(L){const doc=L&&L.cloud&&!L.cloud.gone?L.cloud.doc:null;if(WATCH&&WATCH.doc===doc)return;if(WATCH){WATCH.w.close();WATCH=null}
- if(doc&&window.rtWatch)WATCH={doc,w:rtWatch(doc,()=>{const x=LBY(cur.id);if(!x||!x.cloud||x.cloud.doc!==doc||now()-(st(x).pushedAt||0)<1500)return;pull(x).catch(()=>paintSt(x,'err'))})}}
-let tick=0;setInterval(()=>{tick++;const L=cur.p==='list'?LBY(cur.id):null;watchFor(L);if(!L||!L.cloud||L.cloud.gone||st(L).pushing||(window.plAwake&&!window.plAwake()))return;
- if(WATCH&&WATCH.w.on)return;if(tick%2||(now()-(st(L).remote||0)>60e3&&tick%10))return;pull(L).catch(()=>paintSt(L,'err'))},3000);
-addEventListener('hashchange',()=>setTimeout(()=>watchFor(cur.p==='list'?LBY(cur.id):null),50));
+/* 1.30.3: one live connection per shared list on screen: the open list, or every shared list while Lists is open
+   (each is a Realtime Database connection, so nothing is watched on other pages). A change anywhere redraws in place. */
+const W8=new Map();// doc -> watcher
+const byDoc=doc=>lists().find(l=>l.cloud&&l.cloud.doc===doc);
+const isOn=L=>!!(L&&L.cloud&&W8.has(L.cloud.doc)&&W8.get(L.cloud.doc).on);
+function watchAll(){const want=new Set((cur.p==='list'?[LBY(cur.id)]:cur.p==='lists'?lists().filter(l=>!l.del).slice(0,12):[]).filter(l=>l&&l.cloud&&!l.cloud.gone).map(l=>l.cloud.doc));
+ if(window.plAwake&&!window.plAwake())want.clear();
+ for(const[d,w]of W8)if(!want.has(d)){w.close();W8.delete(d)}
+ if(window.rtWatch)for(const d of want)if(!W8.has(d))W8.set(d,rtWatch(d,()=>{const x=byDoc(d);if(!x||now()-(st(x).pushedAt||0)<1500)return;pull(x).catch(()=>paintSt(x,'err'))}));
+ liveTag()}
+/* the blinking "Live" tag shows only while the database is actually pushing changes */
+function liveTag(){const e=document.getElementById('lslive');if(!e)return;const on=cur.p==='list'?isOn(LBY(cur.id)):[...W8.values()].some(w=>w.on);e.hidden=!on}
+let tick=0;setInterval(()=>{tick++;watchAll();const L=cur.p==='list'?LBY(cur.id):null;if(!L||!L.cloud||L.cloud.gone||st(L).pushing||(window.plAwake&&!window.plAwake()))return;
+ if(isOn(L))return;if(tick%2||(now()-(st(L).remote||0)>60e3&&tick%10))return;pull(L).catch(()=>paintSt(L,'err'))},3000);
+addEventListener('hashchange',()=>setTimeout(watchAll,50));
 async function ensureCloud(L){if(L.cloud)return L.cloud;if(!C()||!C().signedIn())throw new Error('Sign in (Settings → Sync) to share a list');
  const s=await C().gs();L.cloud={doc:C().rnd(24),key:newKey(),owner:s.uid,ut:null,sent:0};save();await push(L);if(!L.cloud.ut){L.cloud=null;save();throw new Error('Couldn’t share the list. Try again in a moment.')}return L.cloud}
 async function share(L){if(L.cloud)return showLink(L);
@@ -100,7 +109,7 @@ function body(A,key){const v=lview();if(!A.length)return'';
  if(v==='h')return hsShell('lists-'+key,A.map((L,i)=>{const s=stats(L),dn=s.n&&s.d===s.n;return hsItem(lvar(L),bigCard(L,i+1),dn?'done':'',`<span class="node static" aria-hidden="true">${dn?ic('check'):''}</span>`,L.due?'Due '+esc(dueTxt(L.due)):`${s.d} of ${s.n}`)}).join(''),0);
  return`<section class="lc-grid">${A.map((L,i)=>`<div class="rv">${bigCard(L,i+1)}</div>`).join('')}</section>`}
 function vLists(){const L=lists(),open=L.filter(l=>{const s=stats(l);return!s.n||s.d<s.n}),done=L.filter(l=>{const s=stats(l);return s.n&&s.d===s.n});
- return`<header class="ph"><div><h1>Lists</h1><div class="data">${L.length?`${open.length} open${done.length?` · ${done.length} done`:''}`:'Checklists you can share'}</div></div><div class="ph-r"><button class="ibtn" data-act="lsJoin" aria-label="Open a shared link" title="Open a shared link">${ic('link')}</button><button class="ibtn" data-act="lsNew" data-k="blank" aria-label="New list" title="New list">${ic('plus')}</button>${gear()}</div></header>
+ return`<header class="ph"><div><h1>Lists</h1><div class="data">${L.length?`${open.length} open${done.length?` · ${done.length} done`:''}`:'Checklists you can share'}</div></div><div class="ph-r">${L.some(l=>l.cloud&&!l.cloud.gone)?`<span class="live-tag" id="lslive" ${[...W8.values()].some(w=>w.on)?'':'hidden'}><i></i>Live</span>`:''}<button class="ibtn" data-act="lsJoin" aria-label="Open a shared link" title="Open a shared link">${ic('link')}</button><button class="ibtn" data-act="lsNew" data-k="blank" aria-label="New list" title="New list">${ic('plus')}</button>${gear()}</div></header>
  <div class="bar rv"><div class="ls-tpl">${Object.entries(TPL).map(([k,[t,e]])=>`<button class="chip" data-act="lsNew" data-k="${k}">${e} ${k==='blank'?'Blank list':esc(t)}</button>`).join('')}</div>${L.length?iconSeg('lists',[['grid','grid','Grid'],['h','horz','Carousel'],['list','list','List']],lview()):''}</div>
  ${L.length?`${body(open,'open')}${done.length?`<div class="st-h rv" style="margin-top:28px"><h3>Done</h3><span class="data">${done.length}</span></div>${body(done,'done')}`:''}`
  :`<div class="empty rv"><p>No lists yet. Start one above, or open a link someone sent you.</p></div>`}`}
@@ -111,7 +120,7 @@ function itemRow(L,i){const r=ro(L);return`<div class="ls-it${i.done?' done':''}
 function vList(id){if(id&&id.startsWith('j~')){const[,doc,key]=id.split('~');setTimeout(()=>join(doc,key),0);return`<header class="ph"><div><h1>List</h1><div class="data">Opening the shared list…</div></div></header>`}
  const L=LBY(id);if(!L)return`<header class="ph"><div><h1>List</h1></div></header><div class="empty rv"><p>This list isn’t on this device.</p><div class="actions"><a class="btn pri" href="#/lists">All lists</a></div></div>`;
  const I=live(L),open=I.filter(i=>!i.done),done=I.filter(i=>i.done),s=stats(L),r=ro(L),showDone=st(L).showDone!==false;
- return`<div class="crumb"><a href="#/lists" class="ibtn" aria-label="Back to lists">${ic('back')}</a><div class="ph-r"><button class="ibtn" data-act="lsShare" data-id="${L.id}" aria-label="${L.cloud?'Share link':'Share'}" title="${L.cloud?'Share link':'Share'}">${ic('share')}</button><button class="ibtn" data-act="lsMenu" data-id="${L.id}" aria-label="More">${ic('more')}</button></div></div>
+ return`<div class="crumb"><a href="#/lists" class="ibtn" aria-label="Back to lists">${ic('back')}</a><div class="ph-r">${L.cloud?`<span class="live-tag" id="lslive" ${isOn(L)?'':'hidden'}><i></i>Live</span>`:''}<button class="ibtn" data-act="lsShare" data-id="${L.id}" aria-label="${L.cloud?'Share link':'Share'}" title="${L.cloud?'Share link':'Share'}">${ic('share')}</button><button class="ibtn" data-act="lsMenu" data-id="${L.id}" aria-label="More">${ic('more')}</button></div></div>
  <section class="ls-hero tint rv" style="${lvar(L)}"><div class="ls-hrow"><button class="ls-emo" data-act="lsEmoji" data-id="${L.id}" aria-label="Change icon" ${r?'disabled':''}>${esc(L.emoji||'📝')}</button><input class="ls-title" value="${esc(L.title)}" data-lstitle="${L.id}" maxlength="80" aria-label="List name" ${r?'readonly':''}></div>
  <div class="ls-meta"><span class="data">${s.n?`${s.d} of ${s.n} done`:'No items yet'}</span>${typeof shareChip==='function'?shareChip('list',L.id):''}${L.cloud?`<span class="ls-st" id="lsst">${L.cloud.gone?'No longer shared':'Shared'}</span>`:''}<button class="ls-dc${dueCl(L.due,s.n&&s.d===s.n)}" data-act="lsDue" data-id="${L.id}" ${r?'disabled':''}>${ic('cal','ico-s')}${L.due?'Due '+esc(dueTxt(L.due)):'Add a deadline'}</button></div>
  <div class="ls-bar"><i style="width:${s.p}%"></i></div>${r?`<button class="btn sm pri" data-act="lsLogin" style="margin-top:14px">${ic('lock')}Sign in to edit</button>`:''}</section>

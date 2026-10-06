@@ -1,5 +1,5 @@
 // Plotline offline cache: serve the app shell from cache, refresh it in the background.
-const CACHE = 'plotline-v1.30.2';
+const CACHE = 'plotline-v1.30.3';
 const SHELL = ['./', './index.html', './bench.js', './lists.js', './manifest.webmanifest', './icon-192.png', './icon-512.png',
   './fonts/big-shoulders-display-latin-600-normal.woff2', './fonts/big-shoulders-display-latin-700-normal.woff2', './fonts/big-shoulders-display-latin-800-normal.woff2',
   './fonts/figtree-latin-400-normal.woff2', './fonts/figtree-latin-500-normal.woff2', './fonts/figtree-latin-600-normal.woff2', './fonts/figtree-latin-700-normal.woff2',

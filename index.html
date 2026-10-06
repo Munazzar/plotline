@@ -3074,12 +3074,33 @@ html.thr-focus #tabbar,html.thr-focus .tabbar{display:none}
 .csum-t{display:grid;gap:2px;padding:12px 14px;border-radius:16px;background:var(--surface-2)}
 .csum-t b{font:700 20px/1.1 var(--f-body)}.csum-t span{font-size:12.5px;color:var(--muted)}.csum-t em{font-style:normal;font-size:11.5px;color:var(--muted)}
 @media(max-width:600px){.csum-g{grid-template-columns:repeat(2,minmax(0,1fr))}.cd-act b.zz{display:none}}
+/* 1.30.3 habit rows: icon, title (bell and auto-track as small icons beside it) and the check on one line; the week
+   runs across the whole card underneath, seven equal days */
+.hrow{display:grid;grid-template-columns:46px minmax(0,1fr) auto;column-gap:14px;row-gap:12px;align-items:center}
+.hb-t{display:flex;align-items:center;gap:6px;min-width:0}.hb-t .t{flex:0 1 auto;min-width:0;white-space:nowrap}
+.hb-t .hu{white-space:nowrap}.hside-i{flex:none;display:flex;gap:0;margin-left:auto}.hside-i:empty{display:none}
+.hrow .hside-i .ic{width:30px;height:30px;margin:0}.hrow .hside-i .ic svg{width:16px;height:16px}
+.hside{flex:none;display:flex;align-items:center}
+.hrow>.hweek{grid-column:1/-1;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:0;align-items:start;padding-top:12px;border-top:1px dashed var(--line)}
+.hrow>.hweek .hd{width:auto;min-width:0;gap:6px;align-items:center}
+.hrow>.hweek .hd i{width:min(30px,100%);height:auto;aspect-ratio:1;border-radius:10px}
+.hrow>.hweek .hd em{height:13px;line-height:13px;font-size:10px}
 /* 1.30.2 spacing: cards keep their shadows; stacks of them get enough room that one shadow doesn't run into the next card */
 .shp{margin:14px 0 30px;padding:16px 18px}
 .dy-hl,.dy-plan,.setup,.tgrid,.fpre,.ins-stats{gap:12px}
 .dy-sum,.ask-sugs{gap:10px}
 .ask-scope{margin-bottom:12px}
 .hpc+.hpc{margin-top:16px}
+.fgrid{gap:24px}@media(max-width:560px){.fgrid{gap:16px}}
+/* thread grid cards: the latest update under the title, two lines */
+.thr-fc .fc-t{flex:none}.thr-fq{margin-top:auto;font-size:13.5px;line-height:1.4;color:var(--t-mut,var(--muted));display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.thr-fc .fc-p{margin-top:10px}
+/* live tag: shared lists while the Realtime Database is pushing changes */
+.live-tag{align-self:center;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:color-mix(in srgb,#22C55E 14%,transparent);border:1px solid color-mix(in srgb,#22C55E 40%,transparent);color:color-mix(in srgb,#22C55E 78%,var(--text));font:700 10.5px var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
+.live-tag[hidden]{display:none}
+.live-tag i{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 0 currentColor;animation:liveB 1.6s ease-out infinite}
+@keyframes liveB{0%{box-shadow:0 0 0 0 color-mix(in srgb,currentColor 60%,transparent);opacity:1}70%{box-shadow:0 0 0 6px transparent;opacity:.55}100%{box-shadow:0 0 0 0 transparent;opacity:1}}
+@media(prefers-reduced-motion:reduce){.live-tag i{animation:none}}
 </style>
 </head>
 <body>
@@ -3199,7 +3220,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.30.2';
+const APP_VER='1.30.3';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -4337,7 +4358,7 @@ function hSub(h){const td=ymd(),s=hStreak(h),out=[];if(h.status==='paused')out.p
  if(h.cue)out.push(`<span class="ell">${esc(h.cue)}</span>`);else if(h.time)out.push(fmtTime(h.time));
  return out.join('<i class="sep"></i>')}
 function hrow(h){const td=ymd();
- return`<div class="hrow${hDone(h,td)?' done':''}${h.status!=='active'?' off':''}" style="${cvar(h)}" data-act="openHabit" data-id="${h.id}"><span class="hic">${esc(hIcon(h))}</span><div class="hb"><div class="t ell">${esc(h.title)}${h.kind==='build'&&h.target>1?`<span class="hu">${h.target} ${esc(h.unit)}</span>`:''}</div><div class="s">${hSub(h)}</div>${hWeek(h)}</div>${h.status==='active'?(h.auto&&h.auto.type?autoBtn('habit',`data-id="${h.id}"`,h,'ic'):'')+habitBell(h,'ic'):''}${h.status==='active'&&!h.skip[td]?hChk(h):h.skip[td]?'<span class="data">Rest day</span>':''}</div>`}
+ return`<div class="hrow${hDone(h,td)?' done':''}${h.status!=='active'?' off':''}" style="${cvar(h)}" data-act="openHabit" data-id="${h.id}"><span class="hic">${esc(hIcon(h))}</span><div class="hb"><div class="hb-t"><div class="t ell">${esc(h.title)}${h.kind==='build'&&h.target>1?`<span class="hu">${h.target} ${esc(h.unit)}</span>`:''}</div>${h.status==='active'?`<span class="hside-i">${h.auto&&h.auto.type?autoBtn('habit',`data-id="${h.id}"`,h,'ic'):''}${habitBell(h,'ic')}</span>`:''}</div><div class="s">${hSub(h)}</div></div><div class="hside">${h.status==='active'&&!h.skip[td]?hChk(h):h.skip[td]?'<span class="data">Rest day</span>':''}</div>${hWeek(h)}</div>`}
 function qcard(h){const now=Date.now(),td=ymd();
  if(h.mode==='limit'){const v=+h.log[td]||0,over=v>h.limit,st=lStreak(h);
   return`<article class="hq tint${over?' over':''}" style="${cvar(h)}" data-act="openHabit" data-id="${h.id}"><div class="hq-top"><span class="data">Cutting down · max ${h.limit}${h.unit?' '+esc(h.unit):''} a day</span><span class="hic sm">${esc(hIcon(h))}</span></div><h3>${esc(h.title)}</h3>
@@ -6693,6 +6714,15 @@ function thrFlip(t){const U=thrUps(t),u=U[0],tg=u?thrTag(u.k):null,lk=thrLink(t)
  return`<div class="jf" style="${thrCol(t)}" data-act="flip" tabindex="0" role="button" aria-label="${esc(t.title)}. Show latest updates"><div class="jf-in"><div class="jf-face jf-front tint"><div class="sc-top"><span class="data">${tg?tg[1]+' ':''}Thread · ${when}</span><span class="flip-hint">${ic('flipi')}</span></div><div class="jt-big">${esc(t.title)}</div><div class="data" style="margin-top:10px">${U.length} update${U.length===1?'':'s'}${lk?' · '+esc(trunc(lk.n,28)):''}</div></div>
  <div class="jf-face jf-back tint"><div class="data">${when}</div><h4>${esc(t.title)}</h4>${U.slice(0,3).map(x=>`<p class="note thr-ln">${thrTag(x.k)[1]} ${esc(trunc(x.x,90))}</p>`).join('')||'<p class="note" style="opacity:.7">Nothing logged yet.</p>'}<div class="sc-act"><button class="btn inkline sm" data-act="thrOpen" data-id="${t.id}">${ic('eye')}<span>Open</span></button>${t.status==='done'?'':`<button class="btn inkline sm" data-act="thrAddSheet" data-id="${t.id}">${ic('plus')}<span>Update</span></button>`}</div></div></div></div>`}
 function thrSpine(L,dateOf,card,colOf){let last='',h='',i=0;L.forEach(x=>{const d=dOf(dateOf(x));if(d!==last){h+=`<div class="sp-date rv" data-jday="${d}"><span class="data">${dayLabel(dateOf(x))}</span></div>`;last=d}h+=`<div class="sp-item ${i++%2?'r':'l'} rv" style="${colOf(x)}"><div class="sp-card">${card(x)}</div><span class="jdot"></span></div>`});return`<div class="spine" data-zk="journal" style="${zoomCss('journal')}">${h}</div>`}
+/* 1.30.3 grid view: goal-style cards. Linked threads take their goal's or habit's colour; the rest get a steady colour
+   from their id, so the grid isn't one flat colour. Stored apart from the Journal's layout (layout.thr). */
+const thrGC=t=>{const l=thrLink(t);if(l&&l.c)return l.c;let h=0;for(const ch of t.id)h=(h*31+ch.charCodeAt(0))>>>0;const i=h%7;return`--c:var(--c-${AREA_IDS[i]});--c2:var(--c-${AREA_IDS[(i+2)%7]});--c3:var(--c-${AREA_IDS[(i+5)%7]})`};
+function thrCard(t,n){const U=thrUps(t),u=U[0],tg=u?thrTag(u.k):null,lk=thrLink(t),dn=t.status==='done';
+ return`<div class="fc thr-fc${dn?' done':''}" style="${thrGC(t)}" data-act="thrOpen" data-id="${t.id}" tabindex="0" role="button" aria-label="Open thread ${esc(t.title)}"><div class="fc-in"><div class="fc-face fc-front tint${haloOn({})?' halo':''}">
+ <div class="fc-top"><span class="data">${dn?'✅ Done':tg?tg[1]+' '+tg[2]:'🧵 New'} · ${U.length} update${U.length===1?'':'s'}</span><span class="fc-tr"><span class="nbadge">${pad2(n)}</span></span></div>${lk?`<div class="data fc-par ell">↳ ${esc(lk.e)} ${esc(trunc(lk.n,34))}</div>`:''}
+ <div class="fc-t">${esc(t.title)}</div><div class="thr-fq">${u?esc(trunc(u.x,140)):'Nothing logged yet'}</div><div class="fc-p data">${esc(thrAgo(thrLast(t)))}</div></div></div></div>`}
+ACT.thrGrid=()=>{S.settings.layout.thr='grid';save();render(false)};
+{const _l=ACT.layout;ACT.layout=d=>{if(d.k==='journal'&&cur.p==='threads')delete S.settings.layout.thr;return _l(d)}}
 let THF='open';
 function vThreads(){const all=threads().slice().sort((a,b)=>thrLast(b)-thrLast(a)),open=all.filter(t=>t.status!=='done'),L=THF==='done'?all.filter(t=>t.status==='done'):THF==='all'?all:open;
  const head=`<header class="ph"><div><h1>Journal</h1></div><div class="ph-r"><button class="btn pri" data-act="thrNew" aria-label="New thread">${ic('plus')}<span>New thread</span></button>${gear()}</div></header>`;
@@ -6701,10 +6731,15 @@ function vThreads(){const all=threads().slice().sort((a,b)=>thrLast(b)-thrLast(a
  const LV=S.settings.layout.journal==='list';
  /* list view: one compact row per thread, latest update clipped to two lines with "more" */
  const rows=()=>`<div class="list thr-rows rv">${L.map(t=>{const u=thrUps(t)[0];return`<div class="li thr-li" style="${thrCol(t)}" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}${t.status==='done'?' · done':''}</div><div class="s"><span class="ell clampx">${u?esc(u.x):'Nothing logged yet'}</span><button class="more-t" data-act="clampT" hidden>more</button></div></div><div class="data">${thrAgo(thrLast(t))}</div>${t.status==='done'?'':`<button class="ibtn sm" data-act="thrAddSheet" data-id="${t.id}" aria-label="Add an update to ${esc(t.title)}">${ic('plus')}</button>`}</div>`}).join('')}</div>`;
- const body=L.length?(LV?rows():H0?hsShell('threads-'+THF,L.map(t=>hsItem(thrCol(t),thrBig(t),'done',`<span class="node static" aria-hidden="true"></span>`,dayLabel(thrLast(t)))).join(''),0):thrSpine(L,thrLast,thrFlip,thrCol))
+ const GV=S.settings.layout.thr==='grid';
+ const body=L.length?(GV?`<div class="fgrid thr-grid rv">${L.map((t,i)=>thrCard(t,i+1)).join('')}</div>`:LV?rows():H0?hsShell('threads-'+THF,L.map(t=>hsItem(thrCol(t),thrBig(t),'done',`<span class="node static" aria-hidden="true"></span>`,dayLabel(thrLast(t)))).join(''),0):thrSpine(L,thrLast,thrFlip,thrCol))
   :all.length?`<div class="empty rv"><p>Nothing here.</p><div class="actions"><button class="btn" data-act="thrFilt" data-v="all">Show all threads</button></div></div>`
   :`<div class="empty rv"><h3>Think out loud, one step at a time</h3><p>A thread is a running log for an idea, a project or anything you’re working through. Add a line whenever something changes. Link it to a goal or habit only if you want to.</p><div class="actions"><button class="btn pri" data-act="thrNew">${ic('plus')}Start a thread</button></div></div>`;
- return head+jSwitchRow('threads')+chips+body}
+ let sw=jSwitchRow('threads');
+ /* a Grid button first in the layout switch (threads page only); while it's on, the journal buttons aren't */
+ sw=sw.replace(/(<div class="seg-c ico" data-seg="lay-journal"[^>]*>)/,`$1<button role="tab" aria-selected="${GV}" aria-label="Grid" title="Grid" class="${GV?'on':''}" data-act="thrGrid">${ic('grid')}</button>`);
+ if(GV)sw=sw.replace(/data-act="layout" data-k="journal"/g,'data-off="1" data-act="layout" data-k="journal"').replace(/class="on"([^>]*data-off="1")/g,'class=""$1').replace(/aria-selected="true"([^>]*data-off="1")/g,'aria-selected="false"$1');
+ return head+sw+chips+body}
 function updBig(t,u){const g=thrTag(u.k);return`<div class="jb tint thr-ub" data-k="${g[0]}"><div class="jh"><span class="data">${g[1]} ${g[2]} · ${tShort(u.t)}</span><button class="x" data-act="thrUpEdit" data-id="${t.id}" data-u="${u.id}" aria-label="Edit update">${ic('edit')}</button></div><div class="data" style="margin-top:4px">${dayLabel(u.t)}</div><div class="thr-utext">${thrText(u.x)}</div></div>`}
 function updCard(t,u){const g=thrTag(u.k);return`<div class="jc thr-uc" data-k="${g[0]}"><div class="jh"><span class="data">${g[1]} ${g[2]} · ${tShort(u.t)}</span><button class="x" data-act="thrUpEdit" data-id="${t.id}" data-u="${u.id}" aria-label="Edit update">${ic('edit')}</button></div><div class="jt">${thrText(u.x)}</div></div>`}
 function vThread(id){const t=TH(id);if(!t)return`<header class="ph"><div><h1>Not found</h1></div><div class="ph-r">${gear()}</div></header><a class="btn" href="#/threads">Back to threads</a>`;
