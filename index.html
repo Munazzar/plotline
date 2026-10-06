@@ -6115,6 +6115,8 @@ async function shGroup(sh,c0){const c=c0||await fsCircle(sh.id);if(!c)throw new 
 function shPoll(){if(shOn()&&Date.now()-SHC.t>20*60000)shRefresh(false)}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(shPoll,800)});
 setInterval(()=>{if(awake())shPoll()},60000);
+/* 1.28: everything already shared is written once to the Realtime Database (the 15 s loop below sends it) */
+setTimeout(()=>{try{if(!localStorage.getItem('plotline.gm1')&&RTDB()){shares().forEach(x=>{if(x.fs&&x.status==='joined')x.pub=''});localStorage.setItem('plotline.gm1','1')}}catch(e){}},3000);
 setInterval(()=>{if(!awake()||!shOn()||SHC.busy)return;for(const sh of shares())if(sh.fs&&sh.k&&sh.status==='joined'&&Date.now()-(sh.pubFail||0)>120000&&pubKey(shProgress(sh))!==sh.pub)shPublish(sh).catch(()=>{sh.pubFail=Date.now()})},15000);
 
 /* ---- accept / later / decline ---- */
