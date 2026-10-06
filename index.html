@@ -2974,6 +2974,46 @@ html[data-tcase=lower] :is(h1,h2,h3,h4,.jb-big,.jt-big,.fc-t,.sc-t,.fc-back .nx,
 .dy-step>.ibtn{border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;width:42px}
 .dy-step>.ibtn+.ibtn{border-left:1px solid var(--line)!important}
 .dy-step>[data-d="-1"] svg{transform:rotate(180deg)}
+
+/* ================= 1.25 thread workspace ================= */
+.thr-ws{display:grid;gap:22px;margin-top:8px}
+@media(min-width:1100px){.thr-ws{grid-template-columns:minmax(380px,1fr) minmax(0,1.25fr);align-items:start}.thr-ed{position:sticky;top:calc(16px + var(--sat,0px))}}
+.thr-ed{display:grid;gap:12px;padding:18px;border-radius:26px;background:var(--surface);border:1px solid var(--line)}
+.thr-ed-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.thr-ed-done{justify-items:start}
+.fmt-bar{display:flex;flex-wrap:wrap;gap:6px}
+.fmt-b{height:34px;min-width:34px;padding:0 11px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text);font:600 13px var(--f-body);cursor:pointer}
+.fmt-b:hover{border-color:var(--text)}.fmt-b:active{transform:scale(.94)}
+.fmt-bar .fmt-b{font-family:var(--f-body)!important;text-transform:none!important;letter-spacing:0!important}.fmt-bar .fmt-b[data-f=b]{font-weight:800}.fmt-i{font-style:italic}.fmt-u{text-decoration:underline}.fmt-h{background:color-mix(in srgb,#FFE066 45%,var(--surface-2))}
+.thr-ta{width:100%;min-height:200px;resize:vertical;font:400 16.5px/1.6 var(--f-body);padding:16px 18px;border-radius:18px;background:var(--bg-2);border:1px solid var(--line);color:var(--text)}
+.thr-ta:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.thr-ed-f{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.thr-ed-f .thr-wc{margin-right:auto}
+@media(max-width:600px){.thr-kb{display:none}.thr-ed{padding:14px;border-radius:22px}.fmt-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px}.fmt-bar::-webkit-scrollbar{display:none}.fmt-b{flex:none;height:32px;font-size:12.5px;padding:0 10px}.thr-ta{min-height:160px}}
+/* focus mode: the editor fills the screen */
+html.thr-focus{overflow:hidden}
+html.thr-focus .thr-ed{position:fixed;inset:0;z-index:70;border-radius:0;padding:calc(18px + var(--sat,0px)) max(18px,calc(50vw - 420px)) calc(18px + var(--sab,0px));grid-template-rows:auto auto 1fr auto;background:var(--bg)}
+html.thr-focus .thr-ta{height:100%!important;min-height:0;resize:none;font-size:18px;background:transparent;border:0;box-shadow:none;padding:8px 2px}
+html.thr-focus #tabbar,html.thr-focus .tabbar{display:none}
+/* the updates */
+.thr-feed{min-width:0}
+.thr-tools{display:grid;gap:10px;margin-bottom:14px}
+.thr-q{display:flex;align-items:center;gap:8px;padding:0 14px;height:46px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+.thr-q svg{width:16px;height:16px;color:var(--muted)}.thr-q input{flex:1;min-width:0;border:0;background:none;box-shadow:none;height:44px;padding:0;font-size:15px}
+.thr-kf{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.thr-kf::-webkit-scrollbar{display:none}.thr-kf .chip{flex:none}
+.thr-tr{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.thr-read{display:grid;gap:12px}
+.thr-rc{padding:16px 18px;border-radius:20px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--c,var(--accent))}
+.thr-rc[data-k=idea]{border-left-color:#F0C862}.thr-rc[data-k=prog]{border-left-color:#46C99B}.thr-rc[data-k=block]{border-left-color:#FF7A7A}.thr-rc[data-k=done]{border-left-color:#6B9BFF}
+.thr-rc-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.thr-rc-x{font-size:16px;line-height:1.6;overflow-wrap:break-word}
+.thr-rc-x mark,.thr-utext mark,.jt mark{background:color-mix(in srgb,#FFE066 60%,transparent);color:inherit;border-radius:3px;padding:0 2px}
+.thr-ul{margin:4px 0 4px 2px;padding-left:20px}.thr-ul li{margin:2px 0}
+.thr-ul li.ck{list-style:none;margin-left:-20px}.thr-ul li.ck::before{content:'';display:inline-block;width:13px;height:13px;border:1.5px solid currentColor;border-radius:4px;margin-right:8px;vertical-align:-2px;opacity:.7}
+.thr-ul li.ck.on{text-decoration:line-through;opacity:.65}.thr-ul li.ck.on::before{background:currentColor}
+/* Ask: the composer floats on its own rounded box (no square panel behind it) on every theme */
+#view .ask-comp:not(.aov-comp){margin-left:-24px!important;margin-right:-24px!important;padding-left:24px!important;padding-right:24px!important;background:linear-gradient(to top,color-mix(in srgb,var(--bg) 94%,transparent) 55%,transparent)!important;box-shadow:none!important;border:0!important;border-radius:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+#view .ask-comp:not(.aov-comp) .ask-row{box-shadow:0 18px 44px -18px rgba(0,0,0,.45)}
+#view .ask-row textarea::placeholder{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -3093,7 +3133,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.24.0';
+const APP_VER='1.25.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -6476,7 +6516,12 @@ function thrLink(t){const l=t.link;if(!l)return null;
 const thrFor=(k,id)=>threads().filter(t=>t.link&&t.link.k===k&&t.link.id===id);
 const thrCol=t=>{const l=thrLink(t);return l&&l.c?l.c:DEFC};
 function thrBtn(k,id){const n=thrFor(k,id).filter(t=>t.status!=='done').length;return`<button class="ibtn thr-b${n?' on':''}" data-act="thrFrom" data-k="${k}" data-id="${id}" aria-label="Threads${n?' ('+n+')':''}" title="Threads">${ic('thread')}${n?`<sup>${n}</sup>`:''}</button>`}
-const thrText=x=>esc(x).replace(/\n/g,'<br>');
+const fmtInline=h=>h.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/__(.+?)__/g,'<u>$1</u>').replace(/==(.+?)==/g,'<mark>$1</mark>').replace(/(^|[^*\w])\*(?!\s)([^*]+?)\*(?!\*)/g,'$1<i>$2</i>');
+const thrText=x=>{const L=esc(String(x||'')).split('\n');let o='',inUl=false;
+ const close=()=>{if(inUl){o+='</ul>';inUl=false}};
+ L.forEach((l,i)=>{const m=/^\s*(?:[-•]\s+|\[( |x|X)\]\s+)(.*)$/.exec(l);
+  if(m){if(!inUl){o+='<ul class="thr-ul">';inUl=true}const ck=m[1]!==undefined;o+=`<li${ck?` class="ck${/x/i.test(m[1])?' on':''}"`:''}>${fmtInline(m[2])}</li>`;return}
+  close();o+=fmtInline(l)+(i<L.length-1?'<br>':'')});close();return o};
 function thrTags(sel,mini){return`<div class="thr-tags${mini?' tg-s':''}" role="radiogroup" aria-label="Kind of update"><input type="hidden" name="k" value="${sel}">${THR_TAGS.map(([k,e,n])=>`<button type="button" class="chip${k===sel?' on':''}" role="radio" aria-checked="${k===sel}" data-act="thrTag" data-v="${k}" title="${n}">${e}${mini?'':' '+n}</button>`).join('')}</div>`}
 function thrLinkSel(cur){const gs=active(),hs=S.habits.filter(h=>h.status!=='archived');const v=cur?cur.k+':'+cur.id:'';
  return`<select name="link" aria-label="Link to"><option value="">Not linked · stands on its own</option>${gs.length?`<optgroup label="Goals">${gs.map(g=>`<option value="goal:${g.id}" ${v==='goal:'+g.id?'selected':''}>🎯 ${esc(trunc(g.title,48))}</option>`).join('')}</optgroup>`:''}${hs.length?`<optgroup label="Habits">${hs.map(h=>`<option value="habit:${h.id}" ${v==='habit:'+h.id?'selected':''}>${esc(hIcon(h))} ${esc(trunc(h.title,48))}</option>`).join('')}</optgroup>`:''}${cur&&cur.k==='entry'?`<option value="entry:${cur.id}" selected>📓 This journal entry</option>`:''}</select>`}
@@ -6511,9 +6556,70 @@ function vThread(id){const t=TH(id);if(!t)return`<header class="ph"><div><h1>Not
  const body=U.length?(H0?hsShell('thread-'+t.id,U.map(u=>hsItem(col,updBig(t,u),'done jd-'+dOf(u.t),`<span class="node static" aria-hidden="true"></span>`,dayLabel(u.t))).join(''),0):thrSpine(U,u=>u.t,u=>updCard(t,u),()=>col))
   :`<div class="empty rv"><p>Add the first line above. Come back any time and keep building on it.</p></div>`;
  return top+comp+bar+body}
+/* ---------- thread workspace (1.25) ----------
+   A thread opens as a writing space: a big editor with a formatting bar (bold, italic, underline, highlight, bullet
+   list, checklist, clear), word count, Ctrl+Enter to add and a full-screen focus mode; next to it (wide screens) or
+   below it (phones) the updates, searchable, filterable by kind, newest or oldest first, as readable cards, side by
+   side or a timeline. Export as Markdown, copy, print.
+   Formatting is stored as light text markers (**bold**, *italic*, __underline__, ==highlight==, "- " and "[ ] "),
+   so widgets, sharing and older versions still see plain readable text. */
+const FMT=[['b','B','Bold (Ctrl+B)'],['i','I','Italic (Ctrl+I)'],['u','U','Underline (Ctrl+U)'],['h','Highlight','Highlight'],['ul','• List','Bullet list'],['ck','☐ Checklist','Checklist'],['clr','Clear','Remove formatting']];
+const fmtBar=()=>`<div class="fmt-bar" role="toolbar" aria-label="Formatting">${FMT.map(([k,n,t])=>`<button type="button" class="fmt-b fmt-${k}" data-act="fmt" data-f="${k}" title="${t}" aria-label="${t}">${n}</button>`).join('')}</div>`;
+function fmtApply(ta,f){const a=ta.selectionStart,b=ta.selectionEnd,v=ta.value,sel=v.slice(a,b);let out,s0=a,s1=b;
+ const wrap=m=>{if(sel.startsWith(m)&&sel.endsWith(m)&&sel.length>=2*m.length){out=sel.slice(m.length,-m.length);s1=a+out.length}else{out=m+(sel||'text')+m;s0=a+m.length;s1=s0+(sel||'text').length}};
+ if(f==='b')wrap('**');else if(f==='i')wrap('*');else if(f==='u')wrap('__');else if(f==='h')wrap('==');
+ else if(f==='ul'||f==='ck'){const ls=v.lastIndexOf('\n',a-1)+1,le=v.indexOf('\n',b);const e=le<0?v.length:le,blk=v.slice(ls,e),p=f==='ul'?'- ':'[ ] ';
+  const lines=blk.split('\n'),all=lines.every(l=>l.startsWith(p));out=lines.map(l=>all?l.slice(p.length):(l.replace(/^(- |\[[ xX]\] )/,'')&&p+l.replace(/^(- |\[[ xX]\] )/,''))||p).join('\n');
+  ta.setRangeText(out,ls,e,'end');ta.dispatchEvent(new Event('input',{bubbles:true}));ta.focus();return}
+ else if(f==='clr'){out=sel.replace(/\*\*|__|==|(?<!\*)\*(?!\*)/g,'');s0=a;s1=a+out.length}
+ ta.setRangeText(out,a,b,'select');ta.setSelectionRange(s0,s1);ta.dispatchEvent(new Event('input',{bubbles:true}));ta.focus()}
+ACT.fmt=(d,el)=>{const ta=el.closest('form,.thr-ed,.sheet')?.querySelector('textarea');if(ta)fmtApply(ta,d.f)};
+document.addEventListener('keydown',e=>{const t=e.target;if(!t||!t.matches||!t.matches('textarea[data-fmt]'))return;const m=e.ctrlKey||e.metaKey;
+ if(m&&['b','i','u'].includes(e.key.toLowerCase())){e.preventDefault();fmtApply(t,e.key.toLowerCase())}
+ else if(m&&e.key==='Enter'){e.preventDefault();const f=t.closest('form');if(f)f.requestSubmit()}
+ else if(e.key==='Escape'&&document.documentElement.classList.contains('thr-focus')){ACT.thrFocus()}
+ else if(e.key==='Enter'&&!e.shiftKey){const v=t.value,a=t.selectionStart,ls=v.lastIndexOf('\n',a-1)+1,line=v.slice(ls,a),m2=/^(- |\[[ xX]\] )/.exec(line);
+  if(m2){e.preventDefault();if(line.trim()===m2[1].trim()){t.setRangeText('',ls,a,'end')}else t.setRangeText('\n'+(m2[1].startsWith('[')?'[ ] ':m2[1]),a,t.selectionEnd,'end');t.dispatchEvent(new Event('input',{bubbles:true}))}}});
+document.addEventListener('input',e=>{const t=e.target;if(!t||!t.matches||!t.matches('textarea[data-fmt]'))return;const w=t.value.trim()?t.value.trim().split(/\s+/).length:0,c=t.closest('form')?.querySelector('.thr-wc');if(c)c.textContent=`${w} word${w===1?'':'s'}`;
+ if(t.classList.contains('thr-ta')&&!document.documentElement.classList.contains('thr-focus')){t.style.height='auto';t.style.height=Math.min(Math.max(t.scrollHeight,200),window.innerHeight*.6)+'px'}});
+let THQ={q:'',k:'',old:false};
+const thrView=()=>{const v=(S.settings.layout||{}).thr;return['list','h','v'].includes(v)?v:'list'};
+function thrFeed(t){const col=thrCol(t);let U=thrUps(t);const n=U.length;
+ if(THQ.k)U=U.filter(u=>u.k===THQ.k);if(THQ.q){const q=THQ.q.toLowerCase();U=U.filter(u=>String(u.x||'').toLowerCase().includes(q))}if(THQ.old)U=U.slice().reverse();
+ const v=thrView();
+ const tools=`<div class="thr-tools rv"><div class="thr-q">${ic('search')}<input type="search" data-thq placeholder="Search this thread" value="${esc(THQ.q)}" aria-label="Search this thread"></div>
+  <div class="thr-kf">${[['','All'],...THR_TAGS.map(([k,e,nm])=>[k,e+' '+nm])].map(([k,nm])=>`<button class="chip${THQ.k===k?' on':''}" data-act="thrKf" data-k="${k}">${nm}</button>`).join('')}</div>
+  <div class="thr-tr"><button class="btn sm ghost" data-act="thrSort">${THQ.old?'Oldest first':'Newest first'}</button>${iconSeg('thr',[['list','list','Readable cards'],['h','horz','Side by side'],['v','vert','Timeline']],v)}</div></div>`;
+ const empty=n?`<div class="empty rv"><p>No updates match.</p></div>`:`<div class="empty rv"><p>Write the first update. Come back any time and keep building on it.</p></div>`;
+ const body=!U.length?empty:v==='h'?hsShell('thread-'+t.id,U.map(u=>hsItem(col,updBig(t,u),'done jd-'+dOf(u.t),`<span class="node static" aria-hidden="true"></span>`,dayLabel(u.t))).join(''),0)
+  :v==='v'?thrSpine(U,u=>u.t,u=>updCard(t,u),()=>col)
+  :`<div class="thr-read">${U.map(u=>{const g=thrTag(u.k);return`<article class="thr-rc rv" data-k="${g[0]}"><div class="thr-rc-h"><span class="data">${g[1]} ${g[2]} · ${esc(dayLabel(u.t))} · ${tShort(u.t)}</span><button class="ibtn sm" data-act="thrUpEdit" data-id="${t.id}" data-u="${u.id}" aria-label="Edit update">${ic('edit')}</button></div><div class="thr-rc-x">${thrText(u.x)}</div></article>`}).join('')}</div>`;
+ return`<section class="thr-feed" id="thrfeed">${tools}${body}</section>`}
+vThread=function(id){const t=TH(id);if(!t)return`<header class="ph"><div><h1>Not found</h1></div><div class="ph-r">${gear()}</div></header><a class="btn" href="#/threads">Back to threads</a>`;
+ if(THQ.id!==id)THQ={q:'',k:'',old:false,id};
+ const lk=thrLink(t),U=thrUps(t),col=thrCol(t);
+ const top=`<div class="crumb"><a href="#/threads" class="ibtn" aria-label="Back to threads">${ic('back')}</a><div class="ph-r"><button class="ibtn" data-act="thrExport" data-id="${t.id}" aria-label="Export or copy" title="Export or copy">${ic('down')}</button><button class="ibtn" data-act="thrEdit" data-id="${t.id}" aria-label="Edit thread" title="Edit">${ic('edit')}</button>${t.status==='done'?`<button class="ibtn" data-act="thrReopen" data-id="${t.id}" aria-label="Reopen" title="Reopen">${ic('rep')}</button>`:`<button class="ibtn" data-act="thrDone" data-id="${t.id}" aria-label="Mark done" title="Mark done">${ic('check')}</button>`}${gear()}</div></div>
+ <header class="ph thr-ph" style="${col}"><div><h1>${esc(t.title)}</h1><div class="data">Thread · started ${new Date(t.created).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})} · ${U.length} update${U.length===1?'':'s'}${t.status==='done'?' · done':''}</div>${lk?`<button class="thr-lk" data-act="thrLinkGo" data-id="${t.id}" ${lk.gone?'disabled':''}>${esc(lk.e)} ${esc(trunc(lk.n,40))}${lk.gone?'':ic('next','ico-s')}</button>`:''}</div></header>`;
+ const ed=t.status==='done'?`<div class="thr-ed thr-ed-done rv"><p class="muted">This thread is done.</p><button class="btn" data-act="thrReopen" data-id="${t.id}">${ic('rep')}Reopen to add more</button></div>`
+  :`<form class="thr-ed rv" data-form="thrAdd" data-id="${t.id}" autocomplete="off"><div class="thr-ed-h"><span class="data">${new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</span>${thrTags('note',true)}</div>${fmtBar()}
+  <textarea name="x" class="thr-ta" data-fmt maxlength="10000" required placeholder="Write an update… bold it, list it, highlight the pieces that matter." aria-label="Write an update"></textarea>
+  <div class="thr-ed-f"><span class="thr-wc data">0 words</span><span class="small muted thr-kb">Ctrl+Enter to add</span><button class="btn ghost sm" type="button" data-act="thrFocus" title="Write full screen">${ic('full')}Focus</button><button class="btn pri" type="submit">${ic('send')}Add update</button></div></form>`;
+ return top+`<div class="thr-ws">${ed}${thrFeed(t)}</div>`};
+VIEWS.thread=vThread;
+document.addEventListener('input',e=>{if(!e.target.matches||!e.target.matches('[data-thq]'))return;THQ.q=e.target.value;const t=TH(cur.id),f=$('#thrfeed');if(!t||!f)return;const p=e.target.selectionStart;f.outerHTML=thrFeed(t);document.querySelectorAll('#thrfeed .rv').forEach(x=>x.classList.add('in'));const i=$('[data-thq]');if(i){i.focus();try{i.setSelectionRange(p,p)}catch(_){}}});
+Object.assign(ACT,{
+ thrKf:d=>{THQ.k=d.k||'';render(false)},
+ thrSort:()=>{THQ.old=!THQ.old;render(false)},
+ thrFocus:()=>{const r=document.documentElement,on=!r.classList.contains('thr-focus');r.classList.toggle('thr-focus',on);const ta=$('#view .thr-ta');if(ta){ta.style.height='';ta.focus()}},
+ thrExport:d=>{const t=TH(d.id);if(!t)return;openSheet(`<div class="data">Thread</div><h2 style="margin-top:6px">${esc(t.title)}</h2><div class="menu"><button data-act="thrMd" data-id="${t.id}">${ic('down')}Download as a Markdown file</button><button data-act="thrCopy" data-id="${t.id}">${ic('copy')}Copy everything as text</button><button data-act="printIt" data-k="thread" data-id="${t.id}">${ic('print')}Print or save as PDF</button></div>`)},
+ thrMd:d=>{const t=TH(d.id);if(!t)return;closeSheet();download((t.title.replace(/[^\w\- ]+/g,'').trim()||'thread')+'.md',thrMd(t),'text/markdown');toast('Saved')},
+ thrCopy:async d=>{const t=TH(d.id);if(!t)return;closeSheet();if(await copyText(thrMd(t)))toast('Copied')}});
+function thrMd(t){return`# ${t.title}\n\n`+thrUps(t).slice().reverse().map(u=>{const g=thrTag(u.k);return`## ${new Date(u.t).toLocaleString()} · ${g[1]} ${g[2]}\n\n${u.x}\n`}).join('\n')}
+document.addEventListener('submit',e=>{if(e.target.classList&&e.target.classList.contains('thr-ed'))setTimeout(()=>document.documentElement.classList.remove('thr-focus'),0)},true);
+addEventListener('hashchange',()=>document.documentElement.classList.remove('thr-focus'));
 function thrNewSheet(link,ttl){openSheet(`<div class="data">Thread</div><h2 style="margin-top:6px">Start a thread</h2><p class="small muted">A running log. Add a first thought now and keep adding as it grows.</p><form data-form="thrNew" autocomplete="off"><div class="field"><label>Name it</label><input name="title" maxlength="80" required placeholder="App idea, Moving plans, Learning guitar…" value="${esc(ttl||'')}"></div><div class="field"><label>First update <span class="muted">(optional)</span></label>${thrTags('note')}<textarea name="x" rows="3" maxlength="2000" placeholder="What’s on your mind?" style="margin-top:10px"></textarea></div><div class="field"><label>Link it to</label>${thrLinkSel(link)}<p class="small muted" style="margin-top:6px">Optional. A linked thread also shows on that goal or habit.</p></div><div class="actions"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn pri" type="submit">Start thread</button></div></form>`);
  setTimeout(()=>{const i=$('#sheet input[name=title]');if(i&&!i.value)i.focus()},350)}
-function thrAddSheet(id){const t=TH(id);if(!t)return;openSheet(`<div class="data">${esc(t.title)}</div><h2 style="margin-top:6px">Add an update</h2><form data-form="thrAdd" data-id="${t.id}" data-sheet="1" autocomplete="off">${thrTags('note')}<div class="field" style="margin-top:12px"><textarea name="x" rows="4" maxlength="2000" required placeholder="What’s new?"></textarea></div><div class="actions"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn pri" type="submit">Add update</button></div></form>`);setTimeout(()=>$('#sheet textarea')?.focus(),350)}
+function thrAddSheet(id){const t=TH(id);if(!t)return;openSheet(`<div class="data">${esc(t.title)}</div><h2 style="margin-top:6px">Add an update</h2><form data-form="thrAdd" data-id="${t.id}" data-sheet="1" autocomplete="off">${thrTags('note')}<div class="field" style="margin-top:12px">${fmtBar()}<textarea name="x" rows="6" maxlength="10000" data-fmt required placeholder="What’s new?"></textarea></div><div class="actions"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn pri" type="submit">Add update</button></div></form>`);setTimeout(()=>$('#sheet textarea')?.focus(),350)}
 Object.assign(FORM,{
  thrNew:f=>{const E=f.elements,title=E.title.value.trim();if(!title)return;const now=Date.now(),t={id:uid(),title,link:thrPick(E.link&&E.link.value),status:'open',created:now,u:now,ups:[]};const x=E.x.value.trim();if(x)t.ups.push({id:uid(),t:now,k:E.k.value||'note',x,u:now});threads().push(t);save();closeSheet();go('thread/'+t.id);toast('Thread started')},
  thrAdd:f=>{const t=TH(f.dataset.id);if(!t)return;const x=f.elements.x.value.trim();if(!x)return;const now=Date.now();t.ups.push({id:uid(),t:now,k:f.elements.k.value||'note',x,u:now});if(t.status==='done')t.status='open';t.u=now;save();if(f.dataset.sheet)closeSheet();render(false);toast('Added')},
@@ -6535,7 +6641,7 @@ Object.assign(ACT,{
  thrDel:d=>askConfirm('Delete this thread?','Its updates go with it. Your goals, habits and journal stay as they are.','Delete',()=>{S.threads=threads().filter(x=>x.id!==d.id);save();closeSheet();go('threads');toast('Thread deleted')}),
  thrDone:d=>{const t=TH(d.id);if(!t)return;t.status='done';t.u=Date.now();save();render(false);toast('Thread marked done')},
  thrReopen:d=>{const t=TH(d.id);if(!t)return;t.status='open';t.u=Date.now();save();render(false)},
- thrUpEdit:d=>{const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u);if(!u)return;openSheet(`<div class="data">${new Date(u.t).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div><h2 style="margin-top:6px">Edit update</h2><form data-form="thrUpEdit" data-id="${t.id}" data-u="${u.id}" autocomplete="off">${thrTags(u.k)}<div class="field" style="margin-top:12px"><textarea name="x" rows="5" maxlength="2000" required>${esc(u.x)}</textarea></div><div class="actions"><button class="btn danger" type="button" data-act="thrUpDel" data-id="${t.id}" data-u="${u.id}">Delete</button><button class="btn pri" type="submit">Save</button></div></form>`)},
+ thrUpEdit:d=>{const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u);if(!u)return;openSheet(`<div class="data">${new Date(u.t).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div><h2 style="margin-top:6px">Edit update</h2><form data-form="thrUpEdit" data-id="${t.id}" data-u="${u.id}" autocomplete="off">${thrTags(u.k)}<div class="field" style="margin-top:12px">${fmtBar()}<textarea name="x" rows="8" maxlength="10000" data-fmt required>${esc(u.x)}</textarea></div><div class="actions"><button class="btn danger" type="button" data-act="thrUpDel" data-id="${t.id}" data-u="${u.id}">Delete</button><button class="btn pri" type="submit">Save</button></div></form>`)},
  thrUpDel:d=>{const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u);if(!u)return;u.del=1;u.u=Date.now();t.u=u.u;save();closeSheet();render(false);toast('Update removed')}});
 /* the quick box grows as you type; Enter sends on a keyboard, Shift+Enter is a new line */
 document.addEventListener('input',e=>{const t=e.target;if(t.matches&&t.matches('.thr-in textarea')){t.style.height='auto';t.style.height=Math.min(160,t.scrollHeight)+'px'}});
@@ -7541,6 +7647,7 @@ const PR={
   printDoc('Activity',`<h1>Activity</h1><p class="m">Last ${N} days</p><table><tr><th>Day</th><th>Steps</th><th>Sleep</th><th>Active</th><th>Screen</th></tr>${rows.join('')}</table>`)},
  habits:()=>{const N=Math.max(14,+S.settings.layout.hsnN||14),tn=dnum(today()),K=[];for(let k=tn-N+1;k<=tn;k++)K.push(k);const L=S.habits.filter(h=>h.status==='active');
   printDoc('Habits',`<h1>Habits</h1><p class="m">Last ${N} days</p><table class="g"><tr><th>Habit</th>${K.map(k=>`<th>${dUTC(k).getUTCDate()}</th>`).join('')}</tr>${L.map(h=>`<tr><td>${esc(hIcon(h))} ${esc(h.title)}</td>${K.map(k=>`<td>${hMark(h,fromN(k))}</td>`).join('')}</tr>`).join('')}</table><p class="m">✓ done · ✗ missed · – skipped · · not due</p>`)}};
+PR.thread=id=>{const t=TH(id);if(!t)return;printDoc(t.title,`<h1>${esc(t.title)}</h1><p class="m">${thrUps(t).length} updates</p>${thrUps(t).slice().reverse().map(u=>{const g=thrTag(u.k);return`<h2>${esc(new Date(u.t).toLocaleString())} · ${g[1]} ${esc(g[2])}</h2><p>${thrText(u.x)}</p>`}).join('')}`)};
 PR.vista=()=>{const L=S.goals.filter(g=>g.status!=='archived').sort((a,b)=>(a.targetDate||'9')<(b.targetDate||'9')?-1:1);
  printDoc('Vista',`<h1>Vista</h1><p class="m">Every goal on your timeline</p><table><tr><th>Goal</th><th>Area</th><th>Start</th><th>Target</th><th>Done</th><th>Next step</th></tr>${L.map(g=>{const nx=nextStep(g);return`<tr><td>${esc(g.title)}</td><td>${esc(areaName(g.area))}</td><td>${g.startDate?esc(fmtDate(g.startDate)):'–'}</td><td>${g.targetDate?esc(fmtDate(g.targetDate)):'–'}</td><td>${g.status==='done'?'✓':pct(g)+'%'}</td><td>${nx?esc(nx.title):''}</td></tr>`}).join('')}</table>`)};
 function longDayName(ds){return dUTC(dnum(ds)).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'UTC'})}
@@ -7549,7 +7656,7 @@ function printPage(){closeSheet();document.querySelectorAll('#view .rv:not(.in)'
 window.printPage=printPage;
 
 ACT.printIt=d=>{const f=PR[d.k];if(NATIVE){if(!f)return;closeSheet();f(d.id);return}printPage()};
-function printKey(){if(cur.p==='goal')return['goal',cur.id];if(cur.p==='habit')return['habit',cur.id];if(cur.p==='day')return['day',cur.id||today()];if(cur.p==='cal')return['cal'];if(cur.p==='road'||cur.p==='map')return['vista'];if(cur.p==='journal')return['journal'];if(cur.p==='activity'&&$('#view .axgrid'))return['activity'];if(cur.p==='habits'&&S.habits.length)return['habits'];return null}
+function printKey(){if(cur.p==='thread')return['thread',cur.id];if(cur.p==='goal')return['goal',cur.id];if(cur.p==='habit')return['habit',cur.id];if(cur.p==='day')return['day',cur.id||today()];if(cur.p==='cal')return['cal'];if(cur.p==='road'||cur.p==='map')return['vista'];if(cur.p==='journal')return['journal'];if(cur.p==='activity'&&$('#view .axgrid'))return['activity'];if(cur.p==='habits'&&S.habits.length)return['habits'];return null}
 function printBtn(){const k=printKey();if(!k)return;const r=document.querySelector('#view .crumb>.ph-r')||document.querySelector('#view header.ph .ph-r');if(!r||r.querySelector('[data-act=printIt]'))return;
  r.insertAdjacentHTML('afterbegin',`<button class="ibtn" data-act="printIt" data-k="${k[0]}"${k[1]?` data-id="${esc(k[1])}"`:''} aria-label="Print" title="Print or save as PDF">${ic('print')}</button>`)}
 
