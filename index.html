@@ -3021,6 +3021,28 @@ html.thr-focus #tabbar,html.thr-focus .tabbar{display:none}
 #view .ask-comp:not(.aov-comp){margin-left:-24px!important;margin-right:-24px!important;padding-left:24px!important;padding-right:24px!important;background:linear-gradient(to top,color-mix(in srgb,var(--bg) 94%,transparent) 55%,transparent)!important;box-shadow:none!important;border:0!important;border-radius:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 #view .ask-comp:not(.aov-comp) .ask-row{box-shadow:0 18px 44px -18px rgba(0,0,0,.45)}
 #view .ask-row textarea::placeholder{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ================= 1.26 activity periods ================= */
+.axnav{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.axnav-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.axnav-t{min-width:150px;text-align:center;font-size:16px}
+.axrings .bg{fill:none;opacity:.22}.axrings .fg{fill:none;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .9s var(--spring)}
+.axrings .r1{stroke:#8BD64A}.axrings .r2{stroke:#33C3F0}.axrings .r3{stroke:#B26BFF}
+.axhero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px 28px;align-items:center;padding:24px;border-radius:28px;background:var(--surface);border:1px solid var(--line);margin-bottom:18px}
+.axhero-t,.axsum-t{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.axt{display:grid;gap:4px;padding:14px 16px;border-radius:18px;border:1.5px solid var(--line-2);text-align:left}
+.axt span{font:600 13px var(--f-body)}.axt.r1 span{color:#8BD64A}.axt.r2 span{color:#33C3F0}.axt.r3 span{color:#B26BFF}.axt.r4 span{color:var(--muted)}
+.axt b{font:700 28px/1.05 var(--f-body);letter-spacing:-.01em}.axt b small{font-size:14px;font-weight:500;color:var(--muted);margin-left:3px}
+.axt em{font-style:normal;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:6px}
+.axhero-f{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 28px;font-size:14px;color:var(--muted)}.axhero-f b{color:var(--text);font-weight:600}
+@media(max-width:640px){.axhero{grid-template-columns:1fr;justify-items:center;padding:20px 16px}.axhero-t{width:100%;grid-template-columns:repeat(3,minmax(0,1fr))}.axt{padding:12px 10px;text-align:center}.axt b{font-size:22px}}
+.axsum{display:grid;gap:16px;padding:20px;border-radius:28px;background:var(--surface);border:1px solid var(--line);margin-bottom:18px}
+.axdays{display:grid;gap:6px}.axdays.week{grid-template-columns:repeat(7,minmax(0,1fr))}.axdays.month{grid-template-columns:repeat(7,minmax(0,1fr));max-width:520px}
+.axdh{text-align:center;font:500 10.5px var(--f-mono);color:var(--muted)}
+.axdc{display:grid;justify-items:center;gap:4px;padding:6px 0;border:0;border-radius:14px;background:none;color:var(--text);cursor:pointer;font:inherit;transition:background .2s,transform .3s var(--spring)}
+.axdc:hover{background:var(--surface-2)}.axdc:active{transform:scale(.92)}.axdc small{font:600 11.5px var(--f-mono);color:var(--muted)}
+.axdc.td small{color:var(--text)}.axdc.td{background:color-mix(in srgb,var(--accent) 12%,transparent)}.axdc.fut{opacity:.35;cursor:default}
+.axgrid{align-items:start}
 </style>
 </head>
 <body>
@@ -3140,7 +3162,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.25.1';
+const APP_VER='1.26.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -7501,11 +7523,45 @@ function axLinks(){const D=axDays(60),A=actSet(),out=[],av=x=>x.reduce((a,b)=>a+
 function axCard(id,em,title,chart,stats,extra){return`<section class="panel axcard rv" id="act-${id}"><div class="axh"><span class="act-i">${em}</span><b>${title}</b></div><div class="axread" data-axr="${id}">${axRead(id,AX.sel)}</div>${chart}<div class="axstats">${stats}</div>${extra||''}</section>`}
 function axHist(N){const A=actSet(),L=axL(),keys=Object.keys(L).filter(k=>k<=today()).sort().reverse(),shown=keys.slice(0,ACTV.more);
  return`<section class="rv"><div class="st-h"><h3>Day by day</h3><span class="data">${keys.length} day${keys.length===1?'':'s'} kept</span></div><div class="ah-list">${shown.map(k=>{const o=L[k]||{};return`<button class="ah-r" data-act="dyOpen" data-d="${k}"><span class="ah-d"><b>${esc(dayName(k))}</b><small>${new Date(k+'T12:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})}</small></span><span class="ah-v${o.s>=A.goal?' ok':''}"><i>👟</i>${o.s!=null?(+o.s).toLocaleString():'—'}</span><span class="ah-v"><i>😴</i>${o.z?fmtMinC(o.z):'—'}</span><span class="ah-v"><i>🏋️</i>${wkMin(o)?fmtMinC(wkMin(o)):'—'}</span><span class="ah-v"><i>📱</i>${o.m!=null?fmtMinC(o.m):'—'}</span>${ic('next','ico-s')}</button>`}).join('')}</div>${keys.length>shown.length?`<div class="actions left"><button class="btn sm" data-act="actMore">Show older days</button></div>`:''}</section>`}
+/* ---------- 1.26: Activity by Day / Week / Month ----------
+   The period switch decides what every card shows: a week (Mon–Sun) or a whole month, with totals and averages for
+   exactly that span; tap a day (ring or bar) to open it, with "Back to week". Day shows Samsung-Health-style rings
+   (steps, active minutes, sleep) against your goals. */
+let AXV={p:'week',d:today()};
+const axWeekStart=ds=>{const k=dnum(ds);return k-((dUTC(k).getUTCDay()+6)%7)};
+function axPeriod(){if(AXV.p==='month'){const dd=dUTC(dnum(AXV.d)),y=dd.getUTCFullYear(),m=dd.getUTCMonth();return[Math.round(Date.UTC(y,m,1)/864e5),Math.round(Date.UTC(y,m+1,0)/864e5)]}const s=axWeekStart(AXV.d);return[s,s+6]}
+function axSpan(k0,k1){const L=axL(),out=[];for(let k=k0;k<=k1;k++){const ds=fromN(k),o=L[ds]||{};out.push({d:ds,k,s:o.s!=null&&+o.s>0?+o.s:null,z:+o.z>0?+o.z:null,x:wkMin(o)||null,m:o.m!=null?+o.m:null,ss:o.ss||[],a:o.a||[],w:o.w||[]})}return out}
+const axActGoal=()=>+(S.settings.act||{}).active||30;
+function axLabel(k0,k1){const p=AXV.p,tn=dnum(today()),f=(k,o)=>dUTC(k).toLocaleDateString(undefined,{...o,timeZone:'UTC'});
+ if(p==='day')return AXV.d===today()?'Today':AXV.d===fromN(tn-1)?'Yesterday':f(dnum(AXV.d),{weekday:'short',month:'short',day:'numeric'});
+ if(p==='week')return tn>=k0&&tn<=k1?'This week':`${f(k0,{month:'short',day:'numeric'})} – ${f(k1,{month:'short',day:'numeric'})}`;
+ return f(k0,{month:'long',year:dUTC(k0).getUTCFullYear()!==new Date().getFullYear()?'numeric':undefined})}
+function axNav(k0,k1){const p=AXV.p,last=p==='day'?dnum(AXV.d)>=dnum(today()):k1>=dnum(today());
+ return`<div class="axnav rv">${segHTML('axp','axPer',[['day','Day'],['week','Week'],['month','Month']],p)}
+ <div class="axnav-r"><button class="ibtn sm" data-act="axMove" data-d="-1" aria-label="Earlier">${ic('back')}</button><b class="axnav-t">${esc(axLabel(k0,k1))}</b><button class="ibtn sm" data-act="axMove" data-d="1" aria-label="Later" ${last?'disabled':''}>${ic('next')}</button>
+ ${p==='day'?`<button class="btn sm ghost" data-act="axPer" data-v="week">${ic('back','ico-s')}Week</button><button class="btn sm" data-act="axOpen">Open day</button>`:''}</div></div>`}
+/* rings: outer steps, middle active minutes, inner sleep (each against its goal) */
+function axRings(o,A,sz){const R=[[o.s||0,A.goal,'r1'],[o.x||0,axActGoal(),'r2'],[o.z||0,A.sleep*60,'r3']],w=sz>60?9:sz>30?4.5:3.4,gap=w*1.35,c=sz/2;
+ return`<svg class="axrings" viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}" aria-hidden="true">${R.map(([v,g,cl],i)=>{const r=c-w/2-i*(w+gap),L=2*Math.PI*r,p=g?Math.min(1,v/g):0;return`<circle class="bg ${cl}" cx="${c}" cy="${c}" r="${r.toFixed(2)}" stroke-width="${w}"/><circle class="fg ${cl}" cx="${c}" cy="${c}" r="${r.toFixed(2)}" stroke-width="${w}" stroke-dasharray="${L.toFixed(2)}" stroke-dashoffset="${(L*(1-p)).toFixed(2)}"/>`}).join('')}</svg>`}
+const axTile=(cl,lab,v,unit,goal)=>`<div class="axt ${cl}"><span>${lab}</span><b>${v}<small>${unit}</small></b><em>${goal}</em></div>`;
+function axDayHero(ds,A){const o=axSpan(dnum(ds),dnum(ds))[0],km=((o.s||0)*.000762).toFixed(1);
+ return`<section class="axhero rv"><div class="axhero-r">${axRings(o,A,190)}</div><div class="axhero-t">${axTile('r1','Steps',(o.s||0).toLocaleString(),'','/ '+A.goal.toLocaleString())}${axTile('r2','Active',o.x||0,' min','/ '+axActGoal())}${axTile('r3','Sleep',o.z?fmtMin(o.z):'—','','/ '+fmtMin(A.sleep*60))}</div>
+ <div class="axhero-f"><span>Distance, about <b>${km} km</b></span><span>Screen time <b>${o.m!=null?fmtMin(o.m):'—'}</b>${A.scr?` <small>/ ${fmtMin(A.scr)}</small>`:''}</span></div></section>`}
+/* week and month: a ring per day (tap to open it), then the totals for exactly this span */
+function axSum(D,A){const tn=today(),sum=k=>D.reduce((a,x)=>a+(+x[k]||0),0),n=k=>D.filter(x=>x[k]).length,avg=k=>n(k)?sum(k)/n(k):0,hit=D.filter(x=>x.s>=A.goal).length;
+ const cell=x=>{const fut=x.d>tn;return`<button class="axdc${x.d===tn?' td':''}${fut?' fut':''}" ${fut?'disabled':`data-act="axSel" data-d="${x.d}"`} aria-label="${esc(dayName(x.d))}">${axRings(x,A,AXV.p==='month'?34:44)}<small>${AXV.p==='month'?+x.d.slice(8):DAYS[dUTC(x.k).getUTCDay()].slice(0,1)}</small></button>`};
+ const lead=AXV.p==='month'?'<span class="axdc-e"></span>'.repeat((dUTC(D[0].k).getUTCDay()+6)%7):'';
+ return`<section class="axsum rv"><div class="axdays ${AXV.p}">${AXV.p==='month'?['M','T','W','T','F','S','S'].map(x=>`<span class="axdh">${x}</span>`).join(''):''}${lead}${D.map(cell).join('')}</div>
+ <div class="axsum-t">${axTile('r1','Steps',Math.round(sum('s')).toLocaleString(),'',`avg ${Math.round(avg('s')).toLocaleString()} · goal met ${hit}/${n('s')}`)}${axTile('r2','Active',fmtMin(sum('x')),'',`${n('x')} active day${n('x')===1?'':'s'}`)}${axTile('r3','Sleep',n('z')?fmtMin(avg('z')):'—','',n('z')?'average night':'no sleep synced')}${axTile('r4','Screen',n('m')?fmtMin(avg('m')):'—','',n('m')?'a day on average':'no screen time synced')}</div></section>`}
+Object.assign(ACT,{
+ axPer:d=>{AXV={p:d.v,d:AXV.d>today()?today():AXV.d};const[k0]=axPeriod();ACTV.days=Math.min(30,Math.max(7,dnum(today())-k0+1));AX.anim=1;if(typeof nat==='function'&&nat())actLoad(true);render(false)},
+ axMove:d=>{const k=+d.d,p=AXV.p;let n;if(p==='day')n=dnum(AXV.d)+k;else if(p==='week')n=dnum(AXV.d)+7*k;else{const dd=dUTC(dnum(AXV.d));n=Math.round(Date.UTC(dd.getUTCFullYear(),dd.getUTCMonth()+k,1)/864e5)}
+  const tn=dnum(today());if(n>tn)n=tn;AXV={p,d:fromN(n)};const[k0]=axPeriod();ACTV.days=Math.min(30,Math.max(7,tn-k0+1));AX.anim=1;if(typeof nat==='function'&&nat())actLoad(true);render(false)}});
 {const _va=vActivity;vActivity=function(){const L=axL();if(!Object.keys(L).length||(NATIVE&&!nat()))return _va();
- const base=NATIVE?_va():'',N=ACTV.days||7,D=axDays(N),A=actSet(),d=ACTV.data||{},ok=d.ok||{};AX.D=D;if(!AX.sel||!D.some(x=>x.d===AX.sel))AX.sel=today();
+ const base=NATIVE?_va():'',[k0,k1]=axPeriod(),D=axSpan(k0,k1),N=D.length,A=actSet(),d=ACTV.data||{},ok=d.ok||{},DAY=AXV.p==='day';AX.D=D;AX.sel=DAY?AXV.d:(D.some(x=>x.d===today())?today():D[D.length-1].d);
  const head=`<header class="ph"><div><h1>Activity</h1><div class="data">${NATIVE?(ACTV.at?'Updated '+tShort(ACTV.at)+' · ':'')+'read on this phone · synced to your own Google Drive':'synced from your phone'}</div></div><div class="ph-r">${NATIVE?`<button class="ibtn" data-act="actRefresh" aria-label="Refresh" title="Refresh">${ic('rep')}</button>`:''}<button class="ibtn" data-act="actGoals" aria-label="Daily goals" title="Daily goals">${ic('target')}</button>${gear()}</div></header>`;
- const bar=`<div class="bar">${segHTML('actd','axRange',[['7','7 d'],['14','14 d'],['30','30 d'],['90','90 d']],String(N))}</div>`;
- const sel=`<div class="axday" id="axday"><button class="ibtn sm" data-act="axStep" data-d="-1" aria-label="Day before">${ic('back')}</button><div class="axday-t"><small class="data">Showing</small><b id="axdayT">${AX.sel===today()?'Today':esc(dayName(AX.sel))}</b></div><button class="ibtn sm" data-act="axStep" data-d="1" aria-label="Day after">${ic('next')}</button><button class="btn sm cta" data-act="axOpen">Open day</button></div>`;
+ const bar=axNav(k0,k1);
+ const sel=DAY?axDayHero(AXV.d,A):axSum(D,A);
  const need=(t,x,b)=>NATIVE?actNeed(t,x,b):`<p class="small muted">Nothing synced yet.</p>`;
  const T=[];
  const sv=D.filter(x=>x.s),hasS=sv.length||ok.steps;
@@ -7526,7 +7582,7 @@ function axHist(N){const A=actSet(),L=axL(),keys=Object.keys(L).filter(k=>k<=tod
   const mix=TT.length?`<div class="axsub2">Mix</div><div class="axmix">${TT.map(([n,m],i)=>`<i style="--w:${(m/tsum*100).toFixed(1)}%;--h:${(i*67)%360}" title="${esc(n)} ${fmtMin(m)}"></i>`).join('')}</div><div class="axmix-l">${TT.slice(0,5).map(([n,m],i)=>`<span><i style="--h:${(i*67)%360}"></i>${esc(n)} · ${fmtMin(m)}</span>`).join('')}</div>`:'';
   T.push(axCard('work','🏋️','Workouts',axBars('x',D,'x',{line:0,fmt:fmtMin,good:v=>v>=30,unit:'Active minutes',aria:`Workouts, last ${N} days. Tap a bar to see that day.`}),axS(`${xv.length}/${N}`,'active days')+axS(fmtMin(xv.reduce((a,x)=>a+x.x,0)),'total')+axS(long?fmtMin(long.x):'—','longest',long?esc(dayName(long.d)):'')+axS(fmtMin(xv.length?xv.reduce((a,x)=>a+x.x,0)/xv.length:0),'per active day'),mix+`<div class="axsub2">This day</div><div class="axapps" data-axx="work">${axWkDay(AX.sel)}</div>`))}
  const pl=base?(()=>{const i=base.indexOf('<section class="panel act-t rv" id="act-places">');if(i<0)return'';const j=base.indexOf('</section>',i);return j<0?'':base.slice(i,j+10)})():'';
- return head+bar+sel+`<div class="axgrid">${T.join('')}${axRhythm(D)}${axLinks()}${pl}</div>`+axHist(N)+`<p class="small muted" style="margin:18px 4px 0">Habits can use these too: tap ⚡ on a habit to check it off by itself.</p>`};VIEWS.activity=vActivity}
+ return head+bar+sel+`<div class="axgrid${DAY?' axday-v':''}">${T.join('')}${DAY?'':axRhythm(D)}${DAY?'':axLinks()}${pl}</div>`+(DAY?'':axHist(N))+`<p class="small muted" style="margin:18px 4px 0">Habits can use these too: tap ⚡ on a habit to check it off by itself.</p>`};VIEWS.activity=vActivity}
 function axPick(ds,anim){AX.sel=ds;document.querySelectorAll('#view svg.axc').forEach(svg=>{svg.querySelectorAll('.axg.on').forEach(x=>x.classList.remove('on'));const g=svg.querySelector(`.axg[data-d="${ds}"]`),s=svg.querySelector('.axsel');if(!s)return;if(!g){s.style.opacity=0;return}g.classList.add('on');s.style.opacity=1;if(!anim)s.style.transition='none';s.style.transform=`translateX(${g.dataset.x}px)`;if(!anim){s.getBoundingClientRect();s.style.transition=''}});
  document.querySelectorAll('#view [data-axr]').forEach(el=>{const old=el.querySelector('[data-cu]'),ov=old?+old.dataset.cu:0;el.innerHTML=axRead(el.dataset.axr,ds);const nw=el.querySelector('[data-cu]');if(nw&&anim){nw.dataset.v=ov;countUp(nw,+nw.dataset.cu,FMT[nw.dataset.f])}if(anim&&!RM())el.animate([{opacity:.55},{opacity:1}],{duration:260})});
  const ap=document.querySelector('#view [data-axx="apps"]');if(ap)ap.innerHTML=axApps(ds);const wk=document.querySelector('#view [data-axx="work"]');if(wk)wk.innerHTML=axWkDay(ds);
@@ -7537,7 +7593,7 @@ function axAnimate(){if(RM())return;document.querySelectorAll('#view svg.axc').f
  document.querySelectorAll('#view .axln-b i,#view .axapp i,#view .axmix i').forEach((c,i)=>c.animate([{transform:'scaleX(0)'},{transform:'none'}],{duration:800,delay:200+i*40,easing:'cubic-bezier(.32,.72,0,1)',fill:'backwards'}));
  cuAll($('#view .axgrid'),true)}
 Object.assign(ACT,{
- axSel:d=>axPick(d.d,true),
+ axSel:d=>{if(d.d>today())return;AXV={p:'day',d:d.d};AX.anim=1;render(false);window.scrollTo({top:0,behavior:reduced()?'auto':'smooth'})},
  axStep:d=>{const D=AX.D||[],i=D.findIndex(x=>x.d===AX.sel),j=i+ +d.d;if(j<0||j>=D.length)return;axPick(D[j].d,true)},
  axOpen:()=>go('day/'+(AX.sel||today())),
  axRange:d=>{ACTV.days=+d.v;AX.anim=1;if(nat())actLoad(true);render(false)},
