@@ -3166,6 +3166,14 @@ html:is([data-theme=glass],[data-theme=glasslight]) .rm-ch .chip.on:not(#_){back
 .pl-sel{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px;border-radius:18px;border:1px solid var(--line);background:var(--bg-2)}
 .pl-sel .pl-e{width:42px;height:42px;font-size:21px;background:var(--surface)}.pl-sel .pl-t small{white-space:normal}
 .pl-sel.wait .pl-e svg{animation:plSpin 1.4s linear infinite}@keyframes plSpin{to{transform:rotate(360deg)}}.pl-sel.wait .pl-e{animation:aiBreath 1.4s ease-in-out infinite}
+.pl-map{position:relative;height:180px;margin-top:10px;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:var(--bg-2);touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}
+.pl-map.drag{cursor:grabbing}.plm-t{position:absolute;inset:0;will-change:transform}[data-mode=dark] .plm-t{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.7)}.plm-t img{position:absolute;width:256px;height:256px;max-width:none;pointer-events:none}
+.plm-r{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:color-mix(in srgb,var(--accent) 15%,transparent);border:1.5px solid color-mix(in srgb,var(--accent) 70%,transparent);pointer-events:none;transition:width .25s,height .25s}
+.plm-pin{position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);pointer-events:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.45));transition:transform .2s var(--spring)}
+.pl-map.drag .plm-pin{transform:translate(-50%,calc(-100% - 8px))}.plm-pin svg{width:28px;height:36px;display:block}
+.plm-z{position:absolute;right:8px;top:8px;display:grid;gap:4px}.plm-z button{width:32px;height:32px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--text);font:600 18px/1 var(--f-body);cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.plm-h{position:absolute;left:8px;bottom:8px;font-size:11px;padding:4px 9px;border-radius:99px;background:color-mix(in srgb,var(--bg) 75%,transparent);color:var(--text);pointer-events:none}
+.plm-c{position:absolute;right:6px;bottom:3px;font-size:9px;color:var(--text);opacity:.7;text-shadow:0 0 3px var(--bg);pointer-events:none}
 .pl-nm{display:grid;grid-template-columns:1fr 84px;gap:10px;margin-top:12px}.pl-em input{text-align:center}
 .pl-msg{margin:14px 4px 4px;font-size:13px;color:var(--muted)}.pl-msg svg{width:14px;height:14px;vertical-align:-2px}
 .pl-hint{margin-top:8px}.pl-src{margin:10px 0 0;text-align:center;font-size:10.5px;color:var(--muted);opacity:.7}
@@ -3289,7 +3297,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.31.1';
+const APP_VER='1.31.2';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -5980,13 +5988,13 @@ IC.locate='<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.5"/><path
 IC.x='<path d="M6 6l12 12M18 6 6 18"/>';
 const PH='https://photon.komoot.io';
 /* [what the item is called, emoji, name, OSM tag, words to look for nearby] */
-const PL_K=[[/gym|fitness|workout|lift|weights|crossfit|boxing/,'🏋️','Gym','leisure:fitness_centre',['gym','fitness']],
- [/mosque|masjid|pray|salah|jumu/,'🕌','Mosque','amenity:place_of_worship',['mosque','masjid']],
- [/church|chapel|\bmass\b/,'⛪','Church','amenity:place_of_worship',['church','chapel']],
+const PL_K=[[/gym|fitness|workout|lift|weights|crossfit|boxing/,'🏋️','Gym','leisure:fitness_centre',['gym','fitness','sport','crossfit']],
+ [/mosque|masjid|pray|salah|jumu/,'🕌','Mosque','amenity:place_of_worship',['mosque','masjid','islamic','jamia','musalla']],
+ [/church|chapel|\bmass\b/,'⛪','Church','amenity:place_of_worship',['church','chapel','cathedral']],
  [/librar|study|revision/,'📚','Library','amenity:library',['library']],
  [/swim|pool/,'🏊','Pool','leisure',['swimming','pool','leisure centre']],
- [/park|walk|jog|\brun|hike/,'🌳','Park','leisure:park',['park','gardens']],
- [/coffee|caf[eé]/,'☕','Café','amenity:cafe',['cafe','coffee']],
+ [/park|walk|jog|\brun|hike/,'🌳','Park','leisure:park',['park','garden','common','green']],
+ [/coffee|caf[eé]/,'☕','Café','amenity:cafe',['cafe','coffee','café']],
  [/school|class|college|universit|lecture|campus/,'🏫','School','',[]],
  [/office|\bwork\b|job|shift/,'💼','Work','',[]],
  [/home/,'🏠','Home','',[]]];
@@ -6029,13 +6037,15 @@ function plGuess(name,cat){const P=PL;if(!P)return;const k=plKind(name+' '+(cat|
  if(!P.nameSet)P.name=trunc(name||(P.kind?P.kind[2]:''),30);if(!P.emojiSet)P.emoji=k?k[1]:''}
 /* nearby spots that fit the habit (a gym for "Gym", a mosque for "Pray at the masjid") */
 async function plNear(){const P=PL;if(!P||!P.here||!P.kind||!P.kind[4].length||P.nearDone)return;P.nearDone=1;
- const c={lat:+P.here.lat.toFixed(2),lng:+P.here.lng.toFixed(2)},dx=.035/Math.cos(c.lat*Math.PI/180),bb=[c.lng-dx,c.lat-.035,c.lng+dx,c.lat+.035].map(v=>v.toFixed(3)).join(',');
- const L=(await Promise.all(P.kind[4].map(q=>plGet(`/api/?q=${encodeURIComponent(q)}&limit=8&bbox=${bb}${P.kind[3]?'&osm_tag='+P.kind[3]:''}`).catch(()=>[])))).flat();if(PL!==P)return;
+ const c={lat:+P.here.lat.toFixed(2),lng:+P.here.lng.toFixed(2)},dx=.05/Math.cos(c.lat*Math.PI/180),bb=[c.lng-dx,c.lat-.05,c.lng+dx,c.lat+.05].map(v=>v.toFixed(3)).join(',');
+ const L=(await Promise.all(P.kind[4].map(q=>plGet(`/api/?q=${encodeURIComponent(q)}&limit=15&bbox=${bb}${P.kind[3]?'&osm_tag='+P.kind[3]:''}`).catch(()=>[])))).flat();if(PL!==P)return;
  const seen=new Set();P.near=L.map(x=>({...x,km:plKm(P.here,x)})).sort((a,b)=>a.km-b.km).filter(x=>{const k=x.name.toLowerCase();if(seen.has(k))return false;seen.add(k);return true}).slice(0,3);plPaintRes()}
 async function plSearch(){const P=PL;if(!P)return;const q=P.q.trim();if(P.sc)P.sc.abort();P.err='';
  if(q.length<3){P.res=[];P.load=0;plPaintRes();return}
  const c=P.sc=new AbortController(),b=P.here||P.sel;P.load=1;plPaintRes();
- try{const L=await plGet(`/api/?q=${encodeURIComponent(q)}&limit=6${b?`&lat=${(+b.lat).toFixed(2)}&lon=${(+b.lng).toFixed(2)}`:''}`,c.signal);if(P.sc!==c)return;P.res=L}
+ try{let L=await plGet(`/api/?q=${encodeURIComponent(q)}&limit=10${b?`&lat=${(+b.lat).toFixed(2)}&lon=${(+b.lng).toFixed(2)}`:''}`,c.signal);if(P.sc!==c)return;
+  /* Photon only nudges by position: when something matches within 50 km, drop matches over 150 km away and list near ones first */
+  if(b){L=L.map(x=>({...x,km:plKm(b,x)}));if(L.some(x=>x.km<50))L=L.filter(x=>x.km<150).sort((x,y)=>(x.km>=50)-(y.km>=50))}P.res=L.slice(0,6)}
  catch(e){if(c.signal.aborted)return;P.res=[];P.err='Couldn’t search right now. Check your connection and try again.'}
  P.load=0;plPaintRes()}
 function plRow(x,i,src){const P=PL,k=P.here?plKm(P.here,x):null,on=P.sel&&P.sel.src===src&&P.sel.lat===x.lat&&P.sel.lng===x.lng;
@@ -6047,12 +6057,31 @@ function plPaintRes(){const b=$('#plRes'),P=PL;if(!b||!P)return;let h='';
 function plPaintSel(){const b=$('#plSel'),P=PL;if(!b||!P)return;const s=P.sel,ok=$('#plOk');if(ok)ok.disabled=!s;
  if(!s){b.innerHTML=P.busy?`<div class="pl-sel wait"><span class="pl-e">${ic('locate')}</span><span class="pl-t"><b>Finding where you are…</b><small>This takes a few seconds</small></span></div>`:`<p class="pl-msg">Search above, or tap ${ic('locate','ico-s')} to use where you are now.</p>`;return}
  const k=P.here&&s.src!=='here'?plKm(P.here,s):null,g=(plKind(P.name+' '+(s.cat||''))||P.kind||[])[1]||'📍';
- const card=`<div class="pl-sel"><span class="pl-e">${esc(P.emoji||g)}</span><span class="pl-t"><b>${s.src==='here'?'You’re here':esc(s.name||P.name||'Picked spot')}</b><small>${s.addr?esc(s.addr):s.src==='here'&&!s.done?'Looking up the address…':''}</small><small class="pl-ll">${plLL(s)}${s.acc?` · ±${Math.round(s.acc)} m`:''}${k!=null?` · ${plDist(k)} away`:''}</small></span><button type="button" class="ibtn sm" data-act="plMap" aria-label="Open in Maps" title="Open in Maps">${ic('ext')}</button></div>`;
+ const card=`<div class="pl-sel"><span class="pl-e">${esc(P.emoji||g)}</span><span class="pl-t"><b>${s.src==='here'?'You’re here':s.src==='pin'?esc(s.name||'Pinned spot'):esc(s.name||P.name||'Picked spot')}</b><small>${s.addr?esc(s.addr):(s.src==='here'||s.src==='pin')&&!s.done?'Looking up the address…':''}</small><small class="pl-ll">${plLL(s)}${s.acc?` · ±${Math.round(s.acc)} m`:''}${k!=null?` · ${plDist(k)} away`:''}</small></span><button type="button" class="ibtn sm" data-act="plMap" aria-label="Open in Maps" title="Open in Maps">${ic('ext')}</button></div>`;
  const c=b.querySelector('.pl-sel'),n=$('#plN'),e=$('#plE');
- if(c&&n&&!c.classList.contains('wait')){c.outerHTML=card;if(document.activeElement!==n)n.value=P.name;if(document.activeElement!==e)e.value=P.emoji;e.placeholder=g;return}
- b.innerHTML=card+`<div class="pl-nm"><div class="field"><label for="plN">Name</label><input id="plN" data-pl="name" maxlength="30" autocomplete="off" value="${esc(P.name)}" placeholder="Gym, Work, Home, Mosque…"></div><div class="field pl-em"><label for="plE">Emoji</label><input id="plE" data-pl="emoji" class="emo-in" maxlength="16" value="${esc(P.emoji)}" placeholder="${g}"></div></div>
- <div class="field"><label>Counts as there within</label><div class="chips rm-ch">${[[100,'100 m'],[150,'150 m'],[300,'300 m']].map(([v,l])=>`<button type="button" class="chip${P.r===v?' on':''}" data-act="plR" data-v="${v}">${l}</button>`).join('')}</div><p class="small muted pl-hint">Bigger works better for large buildings and parks, or where GPS is weak.</p></div>`}
+ if(c&&n&&!c.classList.contains('wait')){c.outerHTML=card;if(document.activeElement!==n)n.value=P.name;if(document.activeElement!==e)e.value=P.emoji;e.placeholder=g;plMapPaint();return}
+ b.innerHTML=card+`<div class="pl-map" id="plMap"><div class="plm-t"></div><div class="plm-r"></div><span class="plm-pin"><svg viewBox="0 0 30 38" aria-hidden="true"><path d="M15 37s12-12.6 12-22A12 12 0 0 0 3 15c0 9.4 12 22 12 22z" fill="var(--accent)"/><circle cx="15" cy="15" r="4.5" fill="var(--bg)"/></svg></span><div class="plm-z"><button type="button" data-act="plZ" data-d="1" aria-label="Zoom in">+</button><button type="button" data-act="plZ" data-d="-1" aria-label="Zoom out">−</button></div><small class="plm-h">Drag the map or tap to move the pin</small><small class="plm-c">© OpenStreetMap contributors</small></div><div class="pl-nm"><div class="field"><label for="plN">Name</label><input id="plN" data-pl="name" maxlength="30" autocomplete="off" value="${esc(P.name)}" placeholder="Gym, Work, Home, Mosque…"></div><div class="field pl-em"><label for="plE">Emoji</label><input id="plE" data-pl="emoji" class="emo-in" maxlength="16" value="${esc(P.emoji)}" placeholder="${g}"></div></div>
+ <div class="field"><label>Counts as there within</label><div class="chips rm-ch">${[[100,'100 m'],[150,'150 m'],[300,'300 m']].map(([v,l])=>`<button type="button" class="chip${P.r===v?' on':''}" data-act="plR" data-v="${v}">${l}</button>`).join('')}</div><p class="small muted pl-hint">Bigger works better for large buildings and parks, or where GPS is weak.</p></div>`;plMapPaint()}
 function plPaint(){plPaintRes();plPaintSel()}
+/* a small map to nudge the pin: drag the map (the pin stays in the middle), tap a spot, or zoom.
+ OpenStreetMap's own tiles (free with credit, light use), dimmed by a filter in dark themes. */
+const PLM={};
+const plPx=(lat,lng,z)=>{const n=256*2**z,s=Math.sin(lat*Math.PI/180);return{x:(lng+180)/360*n,y:(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n}};
+const plLl=(x,y,z)=>{const n=256*2**z;return{lat:Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI,lng:(((x/n*360)%360+360)%360)-180}};
+const plMpp=(lat,z)=>156543.03*Math.cos(lat*Math.PI/180)/2**z;
+function plMapPaint(){const m=$('#plMap'),P=PL;if(!m||!P||!P.sel)return;const s=P.sel,w=m.clientWidth,h=m.clientHeight;if(!w)return;
+ const z=P.z||Math.max(13,Math.min(18,Math.floor(Math.log2(plMpp(s.lat,0)/(2*P.r/(.5*h)))))),c=plPx(s.lat,s.lng,z),x0=c.x-w/2,y0=c.y-h/2,n=2**z;
+ let t='';for(let tx=Math.floor((x0-256)/256);tx<=Math.floor((x0+w+256)/256);tx++)for(let ty=Math.floor((y0-256)/256);ty<=Math.floor((y0+h+256)/256);ty++){if(ty<0||ty>=n)continue;t+=`<img src="https://tile.openstreetmap.org/${z}/${((tx%n)+n)%n}/${ty}.png" style="left:${Math.round(tx*256-x0)}px;top:${Math.round(ty*256-y0)}px" alt="" draggable="false">`}
+ const L=m.querySelector('.plm-t'),d=Math.round(2*P.r/plMpp(s.lat,z));L.innerHTML=t;L.style.transform='';m.querySelector('.plm-r').style.cssText=`width:${d}px;height:${d}px`;PLM.z=z}
+function plMoved(ll){const P=PL;if(!P)return;$('#plMap .plm-h')?.remove();const s=P.sel={lat:ll.lat,lng:ll.lng,addr:'',src:'pin'};plPaintSel();clearTimeout(PLM.t);
+ PLM.t=setTimeout(async()=>{try{const[f]=await plGet(`/reverse?lat=${s.lat.toFixed(4)}&lon=${s.lng.toFixed(4)}&limit=1`);if(f&&PL===P&&P.sel===s){s.addr=[f.name,f.addr].filter(Boolean).join(', ');s.cat=f.cat;if(f.poi&&f.cat!=='postcode')s.name=f.name}}catch(e){}if(PL===P&&P.sel===s){s.done=1;plPaintSel()}},450)}
+document.addEventListener('pointerdown',e=>{const m=e.target.closest&&e.target.closest('#plMap');if(!m||e.target.closest('button')||!PL||!PL.sel)return;PLM.d={x:e.clientX,y:e.clientY,dx:0,dy:0,m};try{m.setPointerCapture(e.pointerId)}catch(_){}m.classList.add('drag')});
+document.addEventListener('pointermove',e=>{const D=PLM.d;if(!D)return;D.dx=e.clientX-D.x;D.dy=e.clientY-D.y;D.m.querySelector('.plm-t').style.transform=`translate(${D.dx}px,${D.dy}px)`});
+['pointerup','pointercancel'].forEach(k=>document.addEventListener(k,e=>{const D=PLM.d;if(!D)return;PLM.d=null;D.m.classList.remove('drag');const P=PL;if(!P||!P.sel)return;
+ let dx=D.dx,dy=D.dy;if(k==='pointercancel'){D.m.querySelector('.plm-t').style.transform='';return}
+ if(Math.hypot(dx,dy)<6){const r=D.m.getBoundingClientRect();dx=r.left+r.width/2-e.clientX;dy=r.top+r.height/2-e.clientY}
+ const c=plPx(P.sel.lat,P.sel.lng,PLM.z);plMoved(plLl(c.x-dx,c.y-dy,PLM.z))}));
+Object.assign(ACT,{plZ:d=>{if(!PL)return;PL.z=Math.max(3,Math.min(19,(PL.z||PLM.z||16)+(+d.d)));plMapPaint()}});
 document.addEventListener('input',e=>{const t=e.target,P=PL;if(!P||!t)return;
  if(t.id==='plQ'){P.q=t.value;clearTimeout(P.qt);if(t.value.trim().length<3)plSearch();else P.qt=setTimeout(plSearch,300)}
  else if(t.dataset&&t.dataset.pl){P[t.dataset.pl]=t.value;P[t.dataset.pl+'Set']=1;if(t.dataset.pl==='emoji'){const c=$('#plSel .pl-sel .pl-e');if(c)c.textContent=oneEmoji(t.value)||t.placeholder}}});
@@ -6063,7 +6092,7 @@ Object.assign(ACT,{
  plHere:()=>plLocate(false),
  plPick:d=>{const P=PL;if(!P)return;const x=(d.src==='near'?P.near:P.res)[+d.i];if(!x)return;P.sel={lat:x.lat,lng:x.lng,name:x.name,addr:x.addr,cat:x.cat,src:d.src};plGuess(x.name,x.cat);
   if(d.src==='res'){P.q='';P.res=[];const q=$('#plQ');if(q){q.value='';q.blur()}}plPaint()},
- plR:d=>{if(!PL)return;PL.r=+d.v;document.querySelectorAll('[data-act=plR]').forEach(b=>b.classList.toggle('on',+b.dataset.v===PL.r))},
+ plR:d=>{if(!PL)return;PL.r=+d.v;document.querySelectorAll('[data-act=plR]').forEach(b=>b.classList.toggle('on',+b.dataset.v===PL.r));plMapPaint()},
  plMap:()=>{const s=PL&&PL.sel;if(!s)return;const u=`https://www.google.com/maps/search/?api=1&query=${(+s.lat).toFixed(6)},${(+s.lng).toFixed(6)}`;if(NATIVE&&NATIVE.openUrl)NATIVE.openUrl(u);else window.open(u,'_blank','noopener')},
  plSave:()=>{const P=PL;if(!P||!P.sel)return;const name=String(P.name||'').trim();if(!name){$('#plN')?.focus();return toast('Give this place a name')}
   const s=P.sel,o={id:P.id||uid(),name,emoji:oneEmoji(P.emoji)||(plKind(name+' '+(s.cat||''))||P.kind||[])[1]||'📍',lat:+s.lat,lng:+s.lng,r:P.r,addr:String(s.addr||'').trim()};
