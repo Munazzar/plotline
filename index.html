@@ -3289,7 +3289,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.31.0';
+const APP_VER='1.31.1';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -8267,6 +8267,15 @@ addEventListener('resize',()=>{lvFit();titleFit()},{passive:true});
 /* 1.18: an item's own card colour, picked from its … menu */
 ACT.setColor=(d,el)=>{const o=d.k==='habit'?H(d.id):G(d.id);if(!o)return;o.color=d.v||'';save();
  el.closest('.clr-row').querySelectorAll('.clr').forEach(b=>{const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});render(false)};
+
+/* ---- Back closes whatever is on top, then pages: picker, dialog, sheet, Ask, year review, tour prompt ----
+ Android's back button calls __back; Esc does the same for dialogs on a keyboard. The lock screen never closes. */
+function dlgClose(){const p=[...document.querySelectorAll('.selp')].pop();if(p){p.querySelector('.selp-dim').click();return true}
+ const v=[...document.querySelectorAll('.vdlg')].pop();if(v){if(v.classList.contains('pl-v'))ACT.plClose();else{const b=v.querySelector('[data-act=vcNo],[data-act=appsCancel]');if(b)b.click();else v.remove()}return true}return false}
+{const _b=window.__back;window.__back=function(){if(dlgClose())return true;if(!$('#sheet').classList.contains('on')&&!(typeof TR!=='undefined'&&TR)){
+  if(AOV.open){aovClose();return true}if(document.querySelector('.yrv')){ACT.yearClose();return true}if(document.querySelector('.tprompt.on')){ACT.tourNo();return true}}
+ return _b.apply(this,arguments)}}
+addEventListener('keydown',e=>{if(e.key==='Escape'&&dlgClose())e.stopImmediatePropagation()},true);
 </script>
 <script src="bench.js"></script>
 <script src="lists.js"></script>
