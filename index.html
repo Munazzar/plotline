@@ -2302,12 +2302,12 @@ html.stu-on #vin>.ph>.ph-r{align-self:center}
 .act-diag{margin-top:12px;display:grid;gap:8px;justify-items:start}
 .act-wk{height:28px;padding:0 10px;font-size:11.5px;margin-left:auto}.act-list>div:has(.act-wk) small{margin-left:0;flex-basis:100%;order:3}
 /* ---- Home ---- */
-.hft{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px 4px;margin:0 0 16px;padding:10px 6px;border-radius:22px;border:1px solid var(--line);background:var(--surface)}
+.hft{margin:0 0 16px;padding:10px 0;border-radius:22px;border:1px solid var(--line);background:var(--surface);overflow:hidden}
+.hft-s{display:flex;gap:2px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding:0 8px;padding:0 8px;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}
+.hft-s::-webkit-scrollbar{display:none}.hft-s .hft-b{flex:0 0 calc((100% - 8px)/4.6);scroll-snap-align:start}.hft-s .hft-b:last-child{margin-right:18px}
 .hft-b{display:grid;justify-items:center;gap:6px;padding:4px 0;min-width:0;border:0;background:none;color:var(--text);font:inherit;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .hft-i{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);transition:transform .25s var(--spring)}.hft-i svg{width:22px;height:22px}
 .hft-b:active .hft-i{transform:scale(.9)}.hft-b b{font:600 11.5px/1.15 var(--f-body);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hft.open{animation:hftIn .3s var(--spring)}@keyframes hftIn{from{opacity:.6;transform:scale(.98)}}
-.hft.open .hft-b:last-child .hft-i svg{transform:rotate(45deg)}
 header+.hft{margin-top:-14px}.hft+.hmq{margin-top:0}
 .hmq{display:flex;gap:8px;overflow-x:auto;margin:-12px -16px 16px;padding:2px 16px 4px;scrollbar-width:none}
 .hmq-b{flex:none;display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 15px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);color:var(--text);font:600 13.5px var(--f-body);cursor:pointer;white-space:nowrap;transition:transform .2s}
@@ -3114,6 +3114,62 @@ html[data-theme=glasslight] :is(.panel,.list,.hday,.hin,.aip,.jw,.hsum,.dy-h,.ac
 .live-tag i{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 0 currentColor;animation:liveB 1.6s ease-out infinite}
 @keyframes liveB{0%{box-shadow:0 0 0 0 color-mix(in srgb,currentColor 60%,transparent);opacity:1}70%{box-shadow:0 0 0 6px transparent;opacity:.55}100%{box-shadow:0 0 0 0 transparent;opacity:1}}
 @media(prefers-reduced-motion:reduce){.live-tag i{animation:none}}
+/* glass: its chip background out-ranked every selected chip (dark text on glass); :not(#_) lifts these above it */
+html:is([data-theme=glass],[data-theme=glasslight]) .chip.on:not(#_){background:var(--text);color:var(--bg);border-color:transparent}
+html:is([data-theme=glass],[data-theme=glasslight]) .rm-ch .chip.on:not(#_){background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+/* ---- smart suggestions: a slow light running round the edge ---- */
+@property --aia{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes aiSpin{to{--aia:360deg}}@keyframes aiBreath{50%{opacity:.55}}
+.ai{position:relative;isolation:isolate}
+.ai::after{content:'';position:absolute;inset:-1px;border-radius:inherit;padding:1.5px;pointer-events:none;background:conic-gradient(from var(--aia),#a78bfa,#60a5fa,#34d399,#f0abfc,#a78bfa);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);animation:aiSpin 5s linear infinite,aiBreath 3.2s ease-in-out infinite;opacity:.9}
+.ai::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;box-shadow:0 0 18px -6px #a78bfa;animation:aiBreath 3.2s ease-in-out infinite}
+.chip.ai{border-color:transparent}
+.chip.ai:not(.on){background:color-mix(in srgb,#a78bfa 9%,var(--surface))}
+.au-t.ai:not(.on){border-color:transparent}
+/* ---- check-off sheet: status, how it happened, comment ---- */
+.ck-st{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:10px}
+.ck-st i{width:9px;height:9px;border-radius:50%;background:var(--line-2);flex:none}.ck-st.d i{background:var(--accent)}.ck-st.s i{background:var(--muted,#888)}
+.ck-st b{font:600 14px var(--f-body)}.ck-st small{flex-basis:100%;padding-left:17px;color:var(--muted);font-size:12.5px}
+.ck-f{margin-top:14px}.ck-f label span{font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0}
+.ck-f textarea{width:100%;resize:vertical;min-height:64px}
+.ck-ch{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.ck-ch .chip{height:34px;padding:0 13px;font-size:13px;width:auto}
+.ck-hint{margin-top:10px}
+[data-act=hTap],[data-act=dyTog],[data-act=toggleStep],[data-act=toggleDay]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+/* the log */
+.ckl{display:grid;gap:8px}
+.ckl-r{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 12px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;cursor:pointer}
+.ckl-r>svg{flex:none;opacity:.45}
+.ckl-d{display:grid;justify-items:center;flex:none;width:40px;padding:4px 0;border-radius:12px;background:var(--bg-2)}.ckl-d b{font:700 16px/1 var(--f-body)}.ckl-d small{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.ckl-r.d .ckl-d{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.ckl-b{display:grid;gap:2px;min-width:0;flex:1}.ckl-b b{font:600 14px var(--f-body)}.ckl-b small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ckl-b q,.ck-log q{font-size:13px;color:var(--text);opacity:.9;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.ckl-b q::before,.ck-log q::before{content:'“'}.ckl-b q::after,.ck-log q::after{content:'”'}
+.ck-log{display:grid;gap:4px;margin:0 0 10px;padding:10px 12px;border-radius:14px;background:var(--bg-2)}.ck-log small{color:var(--muted);font-size:12px}
+.ck-q{font-style:italic}.ck-add{margin:2px 0 8px}
+/* ---- add a place ---- */
+.pl-v{align-items:start;padding-top:max(24px,env(safe-area-inset-top))}
+.pl{max-height:calc(100dvh - 48px);overflow:auto;overscroll-behavior:contain}
+.pl-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.pl-hd h3{margin:0}
+.pl-q{display:flex;align-items:center;gap:8px;height:48px;padding:0 6px 0 14px;border-radius:16px;border:1px solid var(--line-2);background:var(--bg-2)}
+.pl-q:focus-within{border-color:var(--accent)}.pl-q>svg{width:18px;height:18px;flex:none;opacity:.55}
+.pl-q input{flex:1;min-width:0;height:100%;border:0!important;background:none!important;box-shadow:none!important;padding:0!important;font:500 15px var(--f-body);color:var(--text);outline:0}
+.pl-q input::-webkit-search-cancel-button{display:none}
+.pl-me{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:12px;border:0;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);cursor:pointer;transition:transform .2s var(--spring)}
+.pl-me:active{transform:scale(.9)}.pl-me svg{width:20px;height:20px}
+.pl-res{display:none;gap:4px;margin-top:10px}.pl-res.on{display:grid}
+.pl-nh{font:600 11px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:2px 4px 2px}
+.pl-r{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 12px;border-radius:14px;border:1px solid transparent;background:none;color:var(--text);font:inherit;cursor:pointer}
+.pl-r:hover,.pl-r.on{background:var(--bg-2)}.pl-r.ai{margin:3px 0}.pl-r.on:not(.ai){border-color:var(--accent)}
+.pl-e{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:11px;background:var(--bg-2);font-size:17px}.pl-e svg{width:18px;height:18px;color:var(--accent)}
+.pl-t{display:grid;gap:2px;min-width:0;flex:1}.pl-t b{font:600 14.5px var(--f-body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pl-t small{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-r em{font:500 12px var(--f-mono,monospace);font-style:normal;color:var(--muted);flex:none}
+.pl-ll{font:500 11px/1.4 var(--f-mono,ui-monospace,monospace)!important;letter-spacing:.01em;opacity:.7}
+.pl-sel{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px;border-radius:18px;border:1px solid var(--line);background:var(--bg-2)}
+.pl-sel .pl-e{width:42px;height:42px;font-size:21px;background:var(--surface)}.pl-sel .pl-t small{white-space:normal}
+.pl-sel.wait .pl-e svg{animation:plSpin 1.4s linear infinite}@keyframes plSpin{to{transform:rotate(360deg)}}.pl-sel.wait .pl-e{animation:aiBreath 1.4s ease-in-out infinite}
+.pl-nm{display:grid;grid-template-columns:1fr 84px;gap:10px;margin-top:12px}.pl-em input{text-align:center}
+.pl-msg{margin:14px 4px 4px;font-size:13px;color:var(--muted)}.pl-msg svg{width:14px;height:14px;vertical-align:-2px}
+.pl-hint{margin-top:8px}.pl-src{margin:10px 0 0;text-align:center;font-size:10.5px;color:var(--muted);opacity:.7}
+.pl-cur{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin:10px 2px 0;font-size:12.5px;color:var(--muted)}.pl-cur span{flex-basis:100%}.pl-cur .link{margin-left:auto}
 </style>
 </head>
 <body>
@@ -3233,7 +3289,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.30.8';
+const APP_VER='1.31.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -3581,7 +3637,7 @@ function goalsCarousel(){const gs=treeOrder(filteredGoals()).map(x=>x.g);return 
 let GV={mode:'path',x:0};
 function stepCard(g,s,i){const a=`data-g="${g.id}" data-s="${s.id}"`;
  return`<div class="sc" data-act="flip" tabindex="0" role="button" aria-label="Step ${i+1}: ${esc(s.title)}. Show details"><div class="sc-in"><div class="sc-face sc-front tint${haloOn(g,s===nextStep(g))?' halo':''}"><span class="nbadge sm">${pad2(i+1)}</span><div class="sc-t">${esc(s.title)}</div><div class="data">${s.done?'Done '+new Date(s.doneAt||Date.now()).toLocaleDateString(undefined,{month:'short',day:'numeric'}):(dueText(s)||'No date')}</div>${stepBell(g,s,'ic mini')}</div>
- <div class="sc-face sc-back">${s.due?`<div class="kv"><span>Due</span><span>${fmtDate(s.due)}${s.time?' · '+fmtTime(s.time):''}</span></div>`:''}<div class="kv"${s.due?'':' style="border-top:0;padding-top:0"'}><span>Reminder</span><span>${s.done?remLabel(s.remind,s):stepBell(g,s)}</span></div>${s.focus?`<div class="kv"><span>Focus</span><span>${s.focus} min</span></div>`:''}${s.note?`<p class="note">${esc(s.note)}</p>`:''}<div class="sc-act"><button class="btn sm" data-act="editStep" ${a}>${ic('edit')}<span>Edit</span></button>${s.done?'':`<button class="btn sm" data-act="timerPick" ${a}>${ic('timer')}<span>Focus</span></button>`}</div></div></div></div>`}
+ <div class="sc-face sc-back">${s.due?`<div class="kv"><span>Due</span><span>${fmtDate(s.due)}${s.time?' · '+fmtTime(s.time):''}</span></div>`:''}<div class="kv"${s.due?'':' style="border-top:0;padding-top:0"'}><span>Reminder</span><span>${s.done?remLabel(s.remind,s):stepBell(g,s)}</span></div>${s.focus?`<div class="kv"><span>Focus</span><span>${s.focus} min</span></div>`:''}${ckStepKV(g,s)}${s.note?`<p class="note">${esc(s.note)}</p>`:''}<div class="sc-act"><button class="btn sm" data-act="editStep" ${a}>${ic('edit')}<span>Edit</span></button>${s.done?'':`<button class="btn sm" data-act="timerPick" ${a}>${ic('timer')}<span>Focus</span></button>`}</div></div></div></div>`}
 function bigStepCard(g,s,i,N){const a=`data-g="${g.id}" data-s="${s.id}"`;const st=s.done?'Done':dueCls(s)==='over'?'Late':s===nextStep(g)?'Up next':'Planned';
  return`<div class="sc big" data-act="flip" tabindex="0" role="button" aria-label="Step ${i+1}: ${esc(s.title)}. Show details"><div class="sc-in">
  <div class="sc-face sc-front tint${haloOn(g,s===nextStep(g))?' halo':''}"><div class="sc-top"><span class="data">${st} · step ${i+1} of ${N}</span><span class="nbadge">${pad2(i+1)}</span></div><div class="sc-t">${esc(s.title)}</div><div class="sc-foot"><span class="data">${s.done?'Done '+new Date(s.doneAt||Date.now()).toLocaleDateString(undefined,{month:'short',day:'numeric'}):(dueText(s)||'No date')}${s.repeat?' · ↻ '+s.repeat:''}</span>${stepBell(g,s,'ic mini')}<span class="flip-hint">${ic('flipi')}</span></div></div>
@@ -4096,15 +4152,16 @@ function pushWidget(){if(!NATIVE||!NATIVE.widget||TOURING)return;const COL={heal
 window.__route=r=>{closeSheet();RP=null;SHEET_LOCK=false;if(r==='hvista'){HV='vista';go('habits');return}const hu=/^(urge|routine|slip)-([a-z0-9]+)$/.exec(r||'');if(hu){go('habit/'+hu[2]);setTimeout(()=>{if(H(hu[2]))ACT[hu[1]==='routine'?'routineGo':hu[1]]({id:hu[2]})},450);return}const cd=/^cal-(\d{4}-\d{2}-\d{2})$/.exec(r||'');if(cd){CAL.d=cd[1];S.settings.layout.cal='day';go('cal');return}if(r==='add'){go('today');setTimeout(()=>{const i=$('.tg-add input');if(i){i.scrollIntoView({block:'center'});i.focus()}},450)}else if(r)go(r)};
 /* taps on home-screen widgets are queued natively and applied here */
 function applyWidgetQueue(){if(!NATIVE||!NATIVE.widgetQueue||TOURING)return;let q=[];const rq=[];try{q=JSON.parse(NATIVE.widgetQueue()||'[]')}catch(e){}if(!q.length)return;let n=0;
- q.forEach(a=>{if(a.k==='day'){const x=S.days.find(y=>y.id===a.id);if(x&&!!x.done!==!!a.done){x.done=!!a.done;x.doneAt=x.done?(a.at||Date.now()):null;n++}}
+ q.forEach(a=>{VIA=ckVia(a);if(a.k==='day'){const x=S.days.find(y=>y.id===a.id);if(x&&!!x.done!==!!a.done){x.done=!!a.done;x.doneAt=x.done?(a.at||Date.now()):null;ckO(x);n++}}
   else if(a.k==='step'){const g=G(a.g),st=g&&g.steps.find(y=>y.id===a.s);if(st&&!st.done){ACT.toggleStep({g:a.g,s:a.s});n++}}
   else if(a.k==='habit'){const h=H(a.id);if(h&&validDate(a.d)&&a.d<=ymd()){hSetVal(h,a.d,+a.v||0);n++}}
   else if(a.k==='thr'||a.k==='thrnew'){if(typeof thrFromQueue==='function'&&thrFromQueue(a))n++}
-  else if(a.k==='hskip'){const h=H(a.id);if(h&&validDate(a.d)){h.skip[a.d]=1;n++}}
+  else if(a.k==='hskip'){const h=H(a.id);if(h&&validDate(a.d)){h.skip[a.d]=1;h.ck={...h.ck,[a.d]:{...ckNew((h.ck||{})[a.d]),sk:1}};n++}}
   else if(a.k==='reply'&&a.text)rq.push(a)
   else if(a.k==='jnote'){/* replies stay with the reminder's history on the phone, never in the journal */}
   else if(a.k==='remoff'){const o=a.o||{};if(o.k==='habit'){const x=H(o.hid);if(x){x.remind=false;x.u=Date.now();n++}}else if(o.k==='step'){const g=G(o.g),st=g&&g.steps.find(y=>y.id===o.s);if(st){st.remind='';g.u=Date.now();n++}}else if(o.k==='day'){const x=S.days.find(y=>y.id===o.id);if(x){x.remind='';x.u=Date.now();n++}}else if(o.k==='checkin'){const g=G(o.g);if(g){g.checkin='';g.remTarget='';g.u=Date.now();n++}}else if(o.k==='wrap'){S.settings.notif={...nset(),wrap:false};n++}}
   else if(a.k==='move'&&validDate(a.to)){const o=a.o||{};if(o.k==='day'){const x=S.days.find(y=>y.id===o.id);if(x){x.date=a.to;x.u=Date.now();n++}}else if(o.k==='step'){const g=G(o.g),st=g&&g.steps.find(y=>y.id===o.s);if(st){st.due=a.to;st.reminded=false;g.u=Date.now();n++}}}});
+ VIA=null;
  if(rq.length)setTimeout(()=>applyReplies(rq),600);
  if(n)checkMilestones();
  if(n){save();render(false);toast(`${n} update${n>1?'s':''} from your home screen`)}}
@@ -4386,7 +4443,7 @@ function hSub(h){const td=ymd(),s=hStreak(h),out=[];if(h.status==='paused')out.p
  if(h.cue)out.push(`<span class="ell">${esc(h.cue)}</span>`);else if(h.time)out.push(fmtTime(h.time));
  return out.join('<i class="sep"></i>')}
 function hrow(h){const td=ymd();
- return`<div class="hrow${hDone(h,td)?' done':''}${h.status!=='active'?' off':''}" style="${cvar(h)}" data-act="openHabit" data-id="${h.id}"><span class="hic">${esc(hIcon(h))}</span><div class="hb"><div class="hb-t"><div class="t ell">${esc(h.title)}${h.kind==='build'&&h.target>1?`<span class="hu">${h.target} ${esc(h.unit)}</span>`:''}</div>${h.status==='active'?`<span class="hside-i">${h.auto&&h.auto.type?autoBtn('habit',`data-id="${h.id}"`,h,'ic'):''}${habitBell(h,'ic')}</span>`:''}</div><div class="s">${hSub(h)}</div></div><div class="hside">${h.status==='active'&&!h.skip[td]?hChk(h):h.skip[td]?'<span class="data">Rest day</span>':''}</div>${hWeek(h)}</div>`}
+ return`<div class="hrow${hDone(h,td)?' done':''}${h.status!=='active'?' off':''}" style="${cvar(h)}" data-act="openHabit" data-id="${h.id}"><span class="hic">${esc(hIcon(h))}</span><div class="hb"><div class="hb-t"><div class="t ell">${esc(h.title)}${h.kind==='build'&&h.target>1?`<span class="hu">${h.target} ${esc(h.unit)}</span>`:''}</div>${h.status==='active'?`<span class="hside-i">${h.auto&&h.auto.type?autoBtn('habit',`data-id="${h.id}"`,h,'ic'):''}${habitBell(h,'ic')}</span>`:''}</div><div class="s">${hSub(h)}</div></div><div class="hside">${h.status==='active'&&!h.skip[td]?(((h.ck||{})[td]||{}).sk&&!hDone(h,td)?`<button class="link small" data-act="hDaySheet" data-id="${h.id}" data-d="${td}">Skipped</button>`:hChk(h)):h.skip[td]?'<span class="data">Rest day</span>':''}</div>${hWeek(h)}</div>`}
 function qcard(h){const now=Date.now(),td=ymd();
  if(h.mode==='limit'){const v=+h.log[td]||0,over=v>h.limit,st=lStreak(h);
   return`<article class="hq tint${over?' over':''}" style="${cvar(h)}" data-act="openHabit" data-id="${h.id}"><div class="hq-top"><span class="data">Cutting down · max ${h.limit}${h.unit?' '+esc(h.unit):''} a day</span><span class="hic sm">${esc(hIcon(h))}</span></div><h3>${esc(h.title)}</h3>
@@ -4640,7 +4697,7 @@ Object.assign(FORM,{
 });
 FILE.aicover=async inp=>{const f=inp.files[0];if(!f||!AI.main)return;try{AI.main.img=await readImg(f);render(false)}catch(e){toast('Couldn’t read that image')}};
 document.addEventListener('change',e=>{const t=e.target;if(t.form&&t.form.dataset.form==='saveHabit')hFormSync(t.form);
- if(t.dataset.hstep){const h=H(t.dataset.id),ds=t.dataset.d;if(!h)return;const L=new Set(h.rs[ds]||[]);t.checked?L.add(t.dataset.hstep):L.delete(t.dataset.hstep);h.rs[ds]=h.steps.filter(s=>L.has(s.id)).map(s=>s.id);if(!h.rs[ds].length)delete h.rs[ds];else delete h.skip[ds];if(t.checked)vib();if(hDone(h,ds))checkMilestones();save();render(false)}
+ if(t.dataset.hstep){const h=H(t.dataset.id),ds=t.dataset.d;if(!h)return;const was=hDone(h,ds),L=new Set(h.rs[ds]||[]);t.checked?L.add(t.dataset.hstep):L.delete(t.dataset.hstep);h.rs[ds]=h.steps.filter(s=>L.has(s.id)).map(s=>s.id);if(!h.rs[ds].length)delete h.rs[ds];else delete h.skip[ds];ckH(h,ds,was);if(t.checked)vib();if(hDone(h,ds))checkMilestones();save();render(false)}
  if(t.dataset.aim&&AI.main&&(t.tagName!=='TEXTAREA'&&t.type!=='text'||t.dataset.aim==='area')){AI.main[t.dataset.aim]=t.dataset.aim==='area'?(areaKey(t.value)||'personal'):t.value;render(false)}});
 document.addEventListener('input',e=>{const t=e.target;if(t.dataset.aim&&AI.main&&(t.tagName==='TEXTAREA'||t.type==='text'))AI.main[t.dataset.aim]=t.value;else if(t.dataset.ait!=null&&AI.plan){const g=AI.plan.goals[+t.dataset.ait];if(g)g.title=t.value}});
 function seedHabits(){const day=864e5,tn=dnum(ymd());const mk=(o,fill)=>{const h=normHabit({id:uid(),createdAt:Date.now()-50*day,startDate:addDays(-49),...o});if(fill)for(let k=tn-49;k<tn;k++){const v=fill(tn-k,dUTC(k).getUTCDay());if(v)hSetVal(h,fromN(k),v)}S.habits.push(h);return h};
@@ -5524,9 +5581,10 @@ async function replyAI(a){const o=a.o||{},hs=replyCtx(a),e=typeof planEngine==='
  let out='';const onTok=x=>{out+=x};const opts={schema,max_tokens:120,temperature:0};
  try{if(e==='api')await apiChat(msgs,onTok,new AbortController().signal,opts);else if(e==='native')await natChat(msgs,onTok,()=>{},null,opts);else return kw();const j=JSON.parse(out.slice(out.indexOf('{'),out.lastIndexOf('}')+1));if(!['done','skip','note'].includes(j.action))return kw();j.ids=(j.ids||[]).filter(id=>hs.some(h=>h.id===id));return j}catch(err){return kw()}}
 async function applyReplies(list){let n=0,notes=0;for(const a of list){const o=a.o||{},r=await replyAI(a),d=o.hd&&validDate(o.hd)?o.hd:ymd();
+  VIA={v:'reply',n:a.text||'',t:+a.at||0};
   if(r.action==='done'&&r.ids.length){r.ids.forEach(id=>{const h=H(id);if(h&&d<=ymd()){hSetVal(h,d,hTarget(h));n++}})}
-  else if(r.action==='skip'&&r.ids.length){r.ids.forEach(id=>{const h=H(id);if(h){h.skip[d]=1;n++}})}
-  else notes++}
+  else if(r.action==='skip'&&r.ids.length){r.ids.forEach(id=>{const h=H(id);if(h){h.skip[d]=1;h.ck={...h.ck,[d]:{...ckNew((h.ck||{})[d]),sk:1}};n++}})}
+  else notes++;VIA=null}
  if(n)checkMilestones();if(n||notes){save();render(false);toast(`${n?`${n} habit${n>1?'s':''} updated from your replies`:''}${n&&notes?' · ':''}${notes?`${notes} repl${notes>1?'ies':'y'} kept with the reminder`:''}`)}}
 
 /* ================= REMINDERS PER ITEM =================
@@ -5865,14 +5923,14 @@ function auItem(){if(!AU)return null;if(AU.k==='habit')return H(AU.id);if(AU.k==
 function autoBody(){const o=auItem();if(!o)return'';const a=o.auto&&o.auto.type?o.auto:null,D=AU.d||{},st=astat(),t=AU.pick||D.type||'';const K=AU.k;
  if(!NATIVE)return`<p class="small muted">Automatic check-offs use your phone’s sensors and apps, so they work in the Android app. Set them up there.</p>`;
  const types=Object.entries(AUTO_T).filter(([k,v])=>v.kinds.includes(K)&&!(k==='screen'&&o.kind==='routine'));
- let b=`<div class="au-types">${types.map(([k,v])=>`<button class="au-t${t===k?' on':''}" data-act="autoPick" data-t="${k}"><span>${v.e}</span><b>${v.n}</b><small>${v.x}</small></button>`).join('')}</div>`;
+ let b=`<div class="au-types">${types.map(([k,v])=>`<button class="au-t${t===k?' on':''}${!a&&k===autoGuess(o.title)?' ai':''}" data-act="autoPick" data-t="${k}"><span>${v.e}</span><b>${v.n}</b><small>${v.x}</small></button>`).join('')}</div>`;
  if(!t)return b+`<p class="small muted" style="margin-top:12px">Pick what should check it off. You can change or remove it any time.</p>`;
  const cur={...(D.type===t?D:{}),type:t};const need=autoNeed(t,st);
  if(need)b+=`<div class="rm-snz mute">${ic('lock')}<div><b>${need.t}</b><small>${need.x}</small></div><button class="btn sm pri" data-act="autoPerm" data-t="${t}">${need.b}</button></div>`;
- if(t==='steps')b+=`<div class="field"><label>Steps in a day</label>${auChips('n',[[3000,'3,000'],[5000,'5,000'],[8000,'8,000'],[10000,'10,000'],[12000,'12,000']],cur.n||8000)}<div class="rm-inl"><span class="small muted">Or any number</span><input type="number" min="100" step="100" data-au="n" value="${cur.n||8000}"></div>${st.steps&&st.steps.perm?`<p class="small muted">Today so far: ${(+st.steps.today||0).toLocaleString()} steps</p>`:''}</div>`;
- if(t==='workout')b+=`<div class="field"><label>Kind</label><select data-au="kind">${EX_TYPES.map(([k,n])=>`<option value="${k}" ${String(cur.kind||'any')===k?'selected':''}>${n}</option>`).join('')}</select></div><div class="field"><label>At least</label>${auChips('mins',[[10,'10 min'],[20,'20 min'],[30,'30 min'],[45,'45 min'],[60,'1 hour']],cur.mins||20)}</div><p class="small muted">From any app that writes to Health Connect, like Samsung Health, Fitbit or Strava.</p>`;
- if(t==='sleep')b+=`<div class="field"><label>At least</label>${auChips('hours',[[6,'6 h'],[6.5,'6½ h'],[7,'7 h'],[7.5,'7½ h'],[8,'8 h']],cur.hours||7)}</div><p class="small muted">Last night’s sleep, from Health Connect.</p>`;
- if(t==='place'){const P=places();b+=`<div class="field"><label>Place</label>${P.length?`<div class="chips rm-ch">${P.map(p=>`<button type="button" class="chip${cur.place===p.id?' on':''}" data-act="auSet" data-f="place" data-v="${p.id}">${esc(p.emoji||'📍')} ${esc(p.name)}</button>`).join('')}</div>`:''}<button class="btn sm" data-act="placeNew" style="margin-top:8px">${ic('plus')}Add the place I’m at now</button></div>
+ if(t==='steps')b+=`<div class="field"><label>Steps in a day</label>${auChips('n',[[3000,'3,000'],[5000,'5,000'],[8000,'8,000'],[10000,'10,000'],[12000,'12,000']],cur.n||8000,auSmart('steps'))}<div class="rm-inl"><span class="small muted">Or any number</span><input type="number" min="100" step="100" data-au="n" value="${cur.n||8000}"></div>${st.steps&&st.steps.perm?`<p class="small muted">Today so far: ${(+st.steps.today||0).toLocaleString()} steps</p>`:''}</div>`;
+ if(t==='workout')b+=`<div class="field"><label>Kind</label><select data-au="kind">${EX_TYPES.map(([k,n])=>`<option value="${k}" ${String(cur.kind||'any')===k?'selected':''}>${n}</option>`).join('')}</select></div><div class="field"><label>At least</label>${auChips('mins',[[10,'10 min'],[20,'20 min'],[30,'30 min'],[45,'45 min'],[60,'1 hour']],cur.mins||20,auSmart('workout'))}</div><p class="small muted">From any app that writes to Health Connect, like Samsung Health, Fitbit or Strava.</p>`;
+ if(t==='sleep')b+=`<div class="field"><label>At least</label>${auChips('hours',[[6,'6 h'],[6.5,'6½ h'],[7,'7 h'],[7.5,'7½ h'],[8,'8 h']],cur.hours||7,auSmart('sleep'))}</div><p class="small muted">Last night’s sleep, from Health Connect.</p>`;
+ if(t==='place'){const P=places();b+=`<div class="field"><label>Place</label>${P.length?`<div class="chips rm-ch">${P.map(p=>`<button type="button" class="chip${cur.place===p.id?' on':''}" data-act="auSet" data-f="place" data-v="${p.id}">${esc(p.emoji||'📍')} ${esc(p.name)}</button>`).join('')}</div>`:''}${(sp=>sp?`<p class="pl-cur"><span>${esc(sp.addr||'Saved place')}</span><small class="pl-ll">${plLL(sp)} · ${sp.r} m</small><button type="button" class="link small" data-act="placeEdit" data-id="${sp.id}">Edit</button></p>`:'')(P.find(p=>p.id===cur.place))}<button class="btn sm" data-act="placeNew" style="margin-top:8px">${ic('plus')}Add a place</button></div>
   <div class="field"><label>Check it off</label>${auChips('when',[['','After I’ve been there a while'],['now','As soon as I arrive']],cur.when==='now'?'now':cur.when==='arrive'||cur.when==='leave'?'':cur.when||'')}</div>
   ${cur.when!=='now'&&cur.when!=='arrive'&&cur.when!=='leave'?`<div class="field"><label>Time there</label>${auChips('mins',[[10,'10 min'],[20,'20 min'],[30,'30 min'],[45,'45 min'],[60,'1 hour']],cur.mins||20)}</div>`:''}
   <div class="field"><label>Or just remind me</label>${auChips('when',[['arrive','When I arrive'],['leave','When I leave']],cur.when)}</div>`}
@@ -5889,7 +5947,7 @@ function autoNeed(t,st){if(t==='steps'&&st.steps){if(!st.steps.ok)return{t:'No s
  if(t==='screen'&&st.screen&&!st.screen.perm)return{t:'Allow usage access',x:'Android lists apps by name; turn on Plotline. It only counts minutes in the apps you pick.',b:'Open'};
  if(t==='place'&&st.loc){if(!st.loc.perm)return{t:'Allow location',x:'Used only to know when you’re at your saved places.',b:'Allow'};if(!st.loc.bg)return{t:'Allow location all the time',x:'So places work with the app closed. Choose “Allow all the time”.',b:'Open'}}
  return null}
-const auChips=(f,opts,cur)=>`<div class="chips rm-ch">${opts.map(([v,l])=>`<button type="button" class="chip${String(cur)===String(v)?' on':''}" data-act="auSet" data-f="${f}" data-v="${v}">${l}</button>`).join('')}</div>`;
+const auChips=(f,opts,cur,sm=[])=>`<div class="chips rm-ch">${sm.map(([v,l])=>`<button type="button" class="chip ai${String(cur)===String(v)?' on':''}" data-act="auSet" data-f="${f}" data-v="${v}">${l}</button>`).join('')}${opts.filter(o=>!sm.some(x=>String(x[0])===String(o[0]))).map(([v,l])=>`<button type="button" class="chip${String(cur)===String(v)?' on':''}" data-act="auSet" data-f="${f}" data-v="${v}">${l}</button>`).join('')}</div>`;
 let APPS=null;const appName=pk=>{const a=(APPS||[]).find(x=>x.pk===pk);return a?a.name:pk.split('.').pop()};
 function autoPaint(){const b=$('#auBody');if(b)b.innerHTML=autoBody()}
 function auDraft(){const o=auItem();AU.d=AU.d||{...(o&&o.auto||{})};return AU.d}
@@ -5910,14 +5968,211 @@ Object.assign(ACT,{
   const d=document.createElement('div');d.className='vdlg';d.innerHTML=`<div class="vdlg-b au-pick"><h3>Choose apps</h3><p class="small muted">Social apps are first.</p><div class="au-list">${L.map(a=>`<label class="au-app"><input type="checkbox" value="${esc(a.pk)}" ${sel.has(a.pk)?'checked':''}><span>${esc(a.name)}${a.cat===4?' <em>social</em>':''}</span></label>`).join('')||'<p class="small muted">No apps found.</p>'}</div><div class="actions"><button class="btn ghost" data-act="appsCancel">Cancel</button><button class="btn pri" data-act="appsOk">Done</button></div></div>`;document.body.appendChild(d)},
  appsOk:()=>{const d=document.querySelector('.vdlg');if(!d)return;auDraft().apps=[...d.querySelectorAll('input:checked')].map(i=>i.value);d.remove();autoPaintD()},
  appsCancel:()=>document.querySelector('.vdlg')?.remove(),
- placeNew:async()=>{const st=astat();if(st.loc&&!st.loc.perm){if(!(await permAsk('loc','android.permission.ACCESS_FINE_LOCATION,android.permission.ACCESS_COARSE_LOCATION')))return toast('Location is needed to save a place')}
-  toast('Finding where you are…');const r=await new Promise(res=>{window.__here=j=>{try{res(JSON.parse(j))}catch(e){res({err:'bad'})}};NATIVE.placeHere()});
-  if(r.err)return toast(r.err==='perm'?'Allow location to save a place':'Couldn’t find your location. Try again outside or with Wi-Fi on');
-  const d=document.createElement('div');d.className='vdlg';d.innerHTML=`<form class="vdlg-b" data-form="placeSave" data-lat="${r.lat}" data-lng="${r.lng}"><h3>Save this place</h3><p class="small muted">Accurate to about ${Math.round(r.acc||50)} m.</p><div class="field"><label>Name</label><input name="name" required maxlength="30" placeholder="Gym, Work, Home, Mosque…"></div><div class="two"><div class="field"><label>Emoji</label><input name="emoji" class="emo-in" maxlength="16" placeholder="📍"></div><div class="field"><label>Size</label><select name="r"><option value="100">Small · 100 m</option><option value="150" selected>Normal · 150 m</option><option value="300">Large · 300 m</option></select></div></div><div class="actions"><button type="button" class="btn ghost" data-act="appsCancel">Cancel</button><button class="btn pri">Save place</button></div></form>`;document.body.appendChild(d);setTimeout(()=>d.querySelector('input').focus(),50)},
  placeDel:d=>askConfirm('Delete this place?','Automations that use it stop working until you pick another place.','Delete',()=>{S.settings.places=places().filter(p=>p.id!==d.id);save();syncNative();closeSheet();render(false)})});
-Object.assign(FORM,{placeSave:f=>{const E=f.elements,name=E.name.value.trim();if(!name)return;const p={id:uid(),name,emoji:oneEmoji(E.emoji.value),lat:+f.dataset.lat,lng:+f.dataset.lng,r:+E.r.value||150};S.settings.places=[...places(),p];save();syncNative();document.querySelector('.vdlg')?.remove();if(AU){auDraft().place=p.id;autoPaintD()}else render(false);toast('Place saved')}});
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||t.dataset.au==null||!AU)return;const D=auDraft();D[t.dataset.au]=t.type==='checkbox'?t.checked:t.type==='number'?+t.value:t.value;if(t.type!=='checkbox')autoPaintD()});
 function autoPaintD(){if(AU&&AU.pick){AU.d=AU.d||{};AU.d.type=AU.pick}const b=$('#auBody');if(b)b.innerHTML=autoBody()}
+
+/* ---- Places: search an address, use where you are, or pick a spot nearby ----
+ Addresses and nearby spots come from OpenStreetMap through Photon (photon.komoot.io: no account, no key). Only the
+ words you type and a rounded position go there: about 1 km to rank results and find spots near you, about 10 m to
+ name the spot you're standing at. The saved place itself stays in your own data. */
+IC.locate='<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/>';
+IC.x='<path d="M6 6l12 12M18 6 6 18"/>';
+const PH='https://photon.komoot.io';
+/* [what the item is called, emoji, name, OSM tag, words to look for nearby] */
+const PL_K=[[/gym|fitness|workout|lift|weights|crossfit|boxing/,'🏋️','Gym','leisure:fitness_centre',['gym','fitness']],
+ [/mosque|masjid|pray|salah|jumu/,'🕌','Mosque','amenity:place_of_worship',['mosque','masjid']],
+ [/church|chapel|\bmass\b/,'⛪','Church','amenity:place_of_worship',['church','chapel']],
+ [/librar|study|revision/,'📚','Library','amenity:library',['library']],
+ [/swim|pool/,'🏊','Pool','leisure',['swimming','pool','leisure centre']],
+ [/park|walk|jog|\brun|hike/,'🌳','Park','leisure:park',['park','gardens']],
+ [/coffee|caf[eé]/,'☕','Café','amenity:cafe',['cafe','coffee']],
+ [/school|class|college|universit|lecture|campus/,'🏫','School','',[]],
+ [/office|\bwork\b|job|shift/,'💼','Work','',[]],
+ [/home/,'🏠','Home','',[]]];
+const plKind=t=>{t=String(t||'').toLowerCase();return PL_K.find(k=>k[0].test(t))||null};
+const plKm=(a,b)=>{const r=x=>x*Math.PI/180,h=Math.sin(r(b.lat-a.lat)/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(r(b.lng-a.lng)/2)**2;return 12742*Math.asin(Math.sqrt(h))};
+const plDist=k=>k<1?Math.max(10,Math.round(k*100)*10)+' m':(k<10?k.toFixed(1):Math.round(k))+' km';
+const plLL=p=>`${(+p.lat).toFixed(5)}, ${(+p.lng).toFixed(5)}`;
+function plFeat(f){const p=f.properties||{},c=(f.geometry||{}).coordinates||[],st=[p.housenumber,p.street].filter(Boolean).join(' '),name=p.name||st||p.district||p.city||'';
+ return{lat:+c[1],lng:+c[0],name,poi:!!p.name,cat:p.osm_value||'',addr:[p.name?st:'',p.district||p.locality,p.city,p.country].filter((v,i,a)=>v&&v!==name&&a.indexOf(v)===i).join(', ')}}
+async function plGet(path,signal){const r=await fetch(PH+path,{signal});if(!r.ok)throw new Error('photon '+r.status);return((await r.json()).features||[]).map(plFeat).filter(x=>isFinite(x.lat)&&isFinite(x.lng)&&x.name)}
+let PL=null,PLW=null;
+function plWhere(){if(PLW)return PLW;return PLW=new Promise(res=>{const done=r=>{PLW=null;res(r)};
+ if(NATIVE&&NATIVE.placeHere){window.__here=j=>{try{done(JSON.parse(j))}catch(e){done({err:'bad'})}};NATIVE.placeHere();return}
+ if(!navigator.geolocation)return done({err:'none'});
+ navigator.geolocation.getCurrentPosition(p=>done({lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy}),e=>done({err:e.code===1?'perm':'bad'}),{enableHighAccuracy:true,timeout:15000,maximumAge:30000})})}
+function plOpen(p){const it=AU&&$('#auBody')?auItem():null;
+ PL={id:p?p.id:'',sel:p?{lat:p.lat,lng:p.lng,name:p.name,addr:p.addr||'',src:'saved'}:null,name:p?p.name:'',emoji:p?p.emoji||'':'',r:p?+p.r||150:150,kind:plKind(it&&it.title),ttl:it?it.title:'',q:'',res:[],near:[]};
+ document.querySelector('.pl-v')?.remove();
+ const d=document.createElement('div');d.className='vdlg pl-v';
+ d.innerHTML=`<div class="vdlg-b pl" role="dialog" aria-modal="true" aria-label="${p?'Edit place':'Add a place'}"><div class="pl-hd"><h3>${p?'Edit place':'Add a place'}</h3><button type="button" class="ibtn sm" data-act="plClose" aria-label="Close">${ic('x')}</button></div>
+ <div class="pl-q">${ic('search')}<input id="plQ" type="search" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="Search an address or place" aria-label="Search an address or place"><button type="button" class="pl-me" data-act="plHere" aria-label="Use my current location" title="Use my current location">${ic('locate')}</button></div>
+ <div id="plRes" class="pl-res"></div><div id="plSel"></div>
+ <div class="actions"><button type="button" class="btn ghost" data-act="plClose">Cancel</button><button type="button" class="btn pri" data-act="plSave" id="plOk">Save place</button></div>
+ <p class="pl-src">Addresses from OpenStreetMap</p></div>`;
+ d.addEventListener('click',e=>{if(e.target===d)ACT.plClose()});document.body.appendChild(d);plPaint();plAuto()}
+/* location already allowed: start from where you are, quietly */
+async function plAuto(){let ok=false;try{if(NATIVE){const st=astat();ok=!!(st.loc&&st.loc.perm)}else if(navigator.permissions)ok=(await navigator.permissions.query({name:'geolocation'})).state==='granted'}catch(e){}if(ok)plLocate(true)}
+async function plLocate(quiet){const P=PL;if(!P)return;
+ if(NATIVE){const st=astat();if(st.loc&&!st.loc.perm&&!(await permAsk('loc','android.permission.ACCESS_FINE_LOCATION,android.permission.ACCESS_COARSE_LOCATION')))return toast('Allow location to use where you are')}
+ P.busy=1;plPaint();const r=await plWhere();if(PL!==P)return;P.busy=0;
+ if(r.err||!isFinite(+r.lat)){plPaint();if(!quiet)toast(r.err==='perm'?'Allow location to use where you are':'Couldn’t find your location. Try again outside or with Wi-Fi on');return}
+ P.here={lat:+r.lat,lng:+r.lng,acc:+r.acc||0};
+ if(!quiet||!P.sel){P.sel={...P.here,addr:'',src:'here'};if(!quiet){P.q='';P.res=[];const q=$('#plQ');if(q)q.value=''}}
+ plPaint();plNear();
+ const s=P.sel;if(s.src!=='here')return;
+ try{const[f]=await plGet(`/reverse?lat=${s.lat.toFixed(4)}&lon=${s.lng.toFixed(4)}&limit=1`);if(f&&PL===P&&P.sel===s){s.addr=[f.poi?f.name:'',f.poi?f.addr:[f.name,f.addr].filter(Boolean).join(', ')].filter(Boolean).join(' · ');s.cat=f.cat;plGuess(f.poi?f.name:'',f.cat)}}catch(e){}
+ if(PL===P&&P.sel===s){s.done=1;plPaint()}}
+/* a name and emoji from what you picked, or from the habit it's for, unless you typed your own */
+function plGuess(name,cat){const P=PL;if(!P)return;const k=plKind(name+' '+(cat||''))||P.kind;
+ if(!P.nameSet)P.name=trunc(name||(P.kind?P.kind[2]:''),30);if(!P.emojiSet)P.emoji=k?k[1]:''}
+/* nearby spots that fit the habit (a gym for "Gym", a mosque for "Pray at the masjid") */
+async function plNear(){const P=PL;if(!P||!P.here||!P.kind||!P.kind[4].length||P.nearDone)return;P.nearDone=1;
+ const c={lat:+P.here.lat.toFixed(2),lng:+P.here.lng.toFixed(2)},dx=.035/Math.cos(c.lat*Math.PI/180),bb=[c.lng-dx,c.lat-.035,c.lng+dx,c.lat+.035].map(v=>v.toFixed(3)).join(',');
+ const L=(await Promise.all(P.kind[4].map(q=>plGet(`/api/?q=${encodeURIComponent(q)}&limit=8&bbox=${bb}${P.kind[3]?'&osm_tag='+P.kind[3]:''}`).catch(()=>[])))).flat();if(PL!==P)return;
+ const seen=new Set();P.near=L.map(x=>({...x,km:plKm(P.here,x)})).sort((a,b)=>a.km-b.km).filter(x=>{const k=x.name.toLowerCase();if(seen.has(k))return false;seen.add(k);return true}).slice(0,3);plPaintRes()}
+async function plSearch(){const P=PL;if(!P)return;const q=P.q.trim();if(P.sc)P.sc.abort();P.err='';
+ if(q.length<3){P.res=[];P.load=0;plPaintRes();return}
+ const c=P.sc=new AbortController(),b=P.here||P.sel;P.load=1;plPaintRes();
+ try{const L=await plGet(`/api/?q=${encodeURIComponent(q)}&limit=6${b?`&lat=${(+b.lat).toFixed(2)}&lon=${(+b.lng).toFixed(2)}`:''}`,c.signal);if(P.sc!==c)return;P.res=L}
+ catch(e){if(c.signal.aborted)return;P.res=[];P.err='Couldn’t search right now. Check your connection and try again.'}
+ P.load=0;plPaintRes()}
+function plRow(x,i,src){const P=PL,k=P.here?plKm(P.here,x):null,on=P.sel&&P.sel.src===src&&P.sel.lat===x.lat&&P.sel.lng===x.lng;
+ return`<button type="button" class="pl-r${src==='near'?' ai':''}${on?' on':''}" data-act="plPick" data-src="${src}" data-i="${i}"><span class="pl-e">${(plKind(x.name+' '+x.cat)||[])[1]||'📍'}</span><span class="pl-t"><b>${esc(x.name)}</b>${x.addr?`<small>${esc(x.addr)}</small>`:''}</span>${k!=null?`<em>${plDist(k)}</em>`:''}</button>`}
+function plPaintRes(){const b=$('#plRes'),P=PL;if(!b||!P)return;let h='';
+ if(P.q.trim().length>=3)h=P.load&&!P.res.length?'<p class="pl-msg">Searching…</p>':P.err?`<p class="pl-msg">${P.err}</p>`:P.res.length?P.res.map((x,i)=>plRow(x,i,'res')).join(''):'<p class="pl-msg">No matches. Try a street, an area or a postcode.</p>';
+ else if(P.near.length)h=`<div class="pl-nh">Near you, for “${esc(trunc(P.ttl,28))}”</div>`+P.near.map((x,i)=>plRow(x,i,'near')).join('');
+ b.innerHTML=h;b.classList.toggle('on',!!h)}
+function plPaintSel(){const b=$('#plSel'),P=PL;if(!b||!P)return;const s=P.sel,ok=$('#plOk');if(ok)ok.disabled=!s;
+ if(!s){b.innerHTML=P.busy?`<div class="pl-sel wait"><span class="pl-e">${ic('locate')}</span><span class="pl-t"><b>Finding where you are…</b><small>This takes a few seconds</small></span></div>`:`<p class="pl-msg">Search above, or tap ${ic('locate','ico-s')} to use where you are now.</p>`;return}
+ const k=P.here&&s.src!=='here'?plKm(P.here,s):null,g=(plKind(P.name+' '+(s.cat||''))||P.kind||[])[1]||'📍';
+ const card=`<div class="pl-sel"><span class="pl-e">${esc(P.emoji||g)}</span><span class="pl-t"><b>${s.src==='here'?'You’re here':esc(s.name||P.name||'Picked spot')}</b><small>${s.addr?esc(s.addr):s.src==='here'&&!s.done?'Looking up the address…':''}</small><small class="pl-ll">${plLL(s)}${s.acc?` · ±${Math.round(s.acc)} m`:''}${k!=null?` · ${plDist(k)} away`:''}</small></span><button type="button" class="ibtn sm" data-act="plMap" aria-label="Open in Maps" title="Open in Maps">${ic('ext')}</button></div>`;
+ const c=b.querySelector('.pl-sel'),n=$('#plN'),e=$('#plE');
+ if(c&&n&&!c.classList.contains('wait')){c.outerHTML=card;if(document.activeElement!==n)n.value=P.name;if(document.activeElement!==e)e.value=P.emoji;e.placeholder=g;return}
+ b.innerHTML=card+`<div class="pl-nm"><div class="field"><label for="plN">Name</label><input id="plN" data-pl="name" maxlength="30" autocomplete="off" value="${esc(P.name)}" placeholder="Gym, Work, Home, Mosque…"></div><div class="field pl-em"><label for="plE">Emoji</label><input id="plE" data-pl="emoji" class="emo-in" maxlength="16" value="${esc(P.emoji)}" placeholder="${g}"></div></div>
+ <div class="field"><label>Counts as there within</label><div class="chips rm-ch">${[[100,'100 m'],[150,'150 m'],[300,'300 m']].map(([v,l])=>`<button type="button" class="chip${P.r===v?' on':''}" data-act="plR" data-v="${v}">${l}</button>`).join('')}</div><p class="small muted pl-hint">Bigger works better for large buildings and parks, or where GPS is weak.</p></div>`}
+function plPaint(){plPaintRes();plPaintSel()}
+document.addEventListener('input',e=>{const t=e.target,P=PL;if(!P||!t)return;
+ if(t.id==='plQ'){P.q=t.value;clearTimeout(P.qt);if(t.value.trim().length<3)plSearch();else P.qt=setTimeout(plSearch,300)}
+ else if(t.dataset&&t.dataset.pl){P[t.dataset.pl]=t.value;P[t.dataset.pl+'Set']=1;if(t.dataset.pl==='emoji'){const c=$('#plSel .pl-sel .pl-e');if(c)c.textContent=oneEmoji(t.value)||t.placeholder}}});
+Object.assign(ACT,{
+ placeNew:()=>plOpen(),
+ placeEdit:d=>{const p=places().find(x=>x.id===d.id);if(p)plOpen(p)},
+ plClose:()=>{if(PL&&PL.sc)PL.sc.abort();PL=null;document.querySelector('.pl-v')?.remove()},
+ plHere:()=>plLocate(false),
+ plPick:d=>{const P=PL;if(!P)return;const x=(d.src==='near'?P.near:P.res)[+d.i];if(!x)return;P.sel={lat:x.lat,lng:x.lng,name:x.name,addr:x.addr,cat:x.cat,src:d.src};plGuess(x.name,x.cat);
+  if(d.src==='res'){P.q='';P.res=[];const q=$('#plQ');if(q){q.value='';q.blur()}}plPaint()},
+ plR:d=>{if(!PL)return;PL.r=+d.v;document.querySelectorAll('[data-act=plR]').forEach(b=>b.classList.toggle('on',+b.dataset.v===PL.r))},
+ plMap:()=>{const s=PL&&PL.sel;if(!s)return;const u=`https://www.google.com/maps/search/?api=1&query=${(+s.lat).toFixed(6)},${(+s.lng).toFixed(6)}`;if(NATIVE&&NATIVE.openUrl)NATIVE.openUrl(u);else window.open(u,'_blank','noopener')},
+ plSave:()=>{const P=PL;if(!P||!P.sel)return;const name=String(P.name||'').trim();if(!name){$('#plN')?.focus();return toast('Give this place a name')}
+  const s=P.sel,o={id:P.id||uid(),name,emoji:oneEmoji(P.emoji)||(plKind(name+' '+(s.cat||''))||P.kind||[])[1]||'📍',lat:+s.lat,lng:+s.lng,r:P.r,addr:String(s.addr||'').trim()};
+  S.settings.places=P.id?places().map(x=>x.id===P.id?{...x,...o}:x):[...places(),o];save();syncNative();ACT.plClose();
+  if(AU&&$('#auBody')){auDraft().place=o.id;autoPaintD()}else render(false);toast(P.id?'Place updated':'Place saved')}});
+
+/* ---- smart suggestions: worked out on this phone from your own data, so they're exact, instant and private ---- */
+function auSmart(t){const L=actDays(28),med=(a,n)=>{a=a.filter(x=>x>0).sort((x,y)=>x-y);return a.length>=n?a[a.length>>1]:0};
+ if(t==='steps'){const m=med(L.map(x=>+x.s||0),5);if(!m)return[];const u=Math.max(1000,Math.round(m/500)*500),s=Math.round(m*1.15/500)*500;return[[u,`Your usual · ${u.toLocaleString()}`],...(s>u?[[s,`Stretch · ${s.toLocaleString()}`]]:[])]}
+ if(t==='workout'){const m=med(L.map(x=>+x.x||0),3);if(!m)return[];const v=Math.max(5,Math.round(m/5)*5);return[[v,`Your usual · ${v} min`]]}
+ if(t==='sleep'){const m=med(L.map(x=>+x.z||0),5);if(!m)return[];const h=Math.round(m/30)/2;return[[h,`Your usual · ${h} h`]]}
+ return[]}
+
+/* ---- how each item was checked off, and a comment to look back on ----
+ habit h.ck[date], step s.ck, day goal x.ck = {t: when, via: tap|widget|notif|reply|auto, x: what the automation saw,
+ n: your comment, sk: skipped}. The phone's queue says how: automations carry a rule id, widgets a time, the rest
+ came from a notification (its history tells a Done tap from a reply). Hold any check button to comment or skip. */
+let VIA=null,TOAST_AT=0;
+const VIA_T={tap:'✓ In the app',widget:'▦ Home-screen widget',notif:'🔔 From the notification',reply:'💬 From your reply',auto:'⚡ Automatically'};
+const ckNew=c=>({...(c&&c.n?{n:c.n}:VIA&&VIA.n?{n:String(VIA.n).slice(0,280)}:{}),t:VIA&&VIA.t||Date.now(),via:VIA?VIA.v:'tap',...(VIA&&VIA.x?{x:VIA.x}:{})});
+const ckDrop=c=>c&&c.n?{n:c.n}:null;
+function ckH(h,ds,was){const now=hDone(h,ds);if(now===was)return;h.ck=h.ck||{};const c=now?ckNew(h.ck[ds]):ckDrop(h.ck[ds]);if(c)h.ck[ds]=c;else delete h.ck[ds]}
+function ckO(o){if(o.done)o.ck=ckNew(o.ck);else{const c=ckDrop(o.ck);if(c)o.ck=c;else delete o.ck}}
+{const _sv=hSetVal;hSetVal=function(h,ds,v){const was=hDone(h,ds);_sv(h,ds,v);ckH(h,ds,was)}}
+function ckVia(a){if(!a||!/^(habit|step|day|hskip)$/.test(a.k))return null;
+ if(a.rid){const o=a.k==='habit'?H(a.id):a.k==='day'?S.days.find(y=>y.id===a.id):((G(a.g)||{}).steps||[]).find(y=>y.id===a.s);return{v:'auto',x:o&&o.auto?autoLabel(o.auto):'',t:+a.at||0}}
+ if(a.at)return{v:'widget',t:+a.at};
+ const key=a.k==='step'?'s:'+a.g+'/'+a.s:a.k==='day'?'d:'+a.id:'h:'+a.id,e=nhist(key).filter(e=>e&&(e.kind==='done'||/^reply/.test(e.kind))).sort((x,y)=>y.t-x.t)[0],rep=!!e&&/^reply/.test(e.kind);
+ return{v:rep?'reply':'notif',t:e&&Date.now()-e.t<864e5?+e.t:0,n:rep?e.text:''}}
+function ckHow(c,ds){if(!c||!c.t)return'';const late=ds&&dOf(c.t)!==ds;
+ return[(late?esc(new Date(c.t).toLocaleDateString(undefined,{month:'short',day:'numeric'}))+', ':'')+tShort(c.t),c.sk?'Skipped':'',!c.sk||c.via!=='tap'?VIA_T[c.via]||VIA_T.tap:'',c.x?esc(c.x):''].filter(Boolean).join(' · ')}
+/* comment chips: what today's data says, then what you usually write here, then plain defaults */
+const CK_DEF={done:['Felt great','Hard, but done','Did a short version'],skip:['Not feeling well','Travelling','No time today','Resting']};
+const ckBits=n=>String(n||'').split(/[.!?;\n]+|\s·\s/).map(s=>s.trim()).filter(s=>s.length>1&&s.length<=40);
+function ckAll(){const L=[];S.habits.forEach(h=>{for(const ds in h.ck||{}){const c=h.ck[ds];if(c&&c.n)L.push({n:c.n,sk:!!(c.sk||(h.skip&&h.skip[ds])),t:c.t||Date.parse(ds+'T12:00'),k:'h:'+h.id})}});
+ S.goals.forEach(g=>g.steps.forEach(s=>{if(s.ck&&s.ck.n)L.push({n:s.ck.n,sk:false,t:s.ck.t||0,k:'s:'+g.id+'/'+s.id})}));S.days.forEach(x=>{if(x.ck&&x.ck.n)L.push({n:x.ck.n,sk:false,t:x.ck.t||0,k:'d:'+x.id})});return L}
+function ckLearn(key,mode){const now=Date.now(),wd=new Date().getDay(),M=new Map();
+ ckAll().forEach(e=>ckBits(e.n).forEach(p=>{let w=Math.exp(-(now-e.t)/(45*864e5));if(e.k===key)w*=3;if(mode!=='any')w*=(mode==='skip')===e.sk?2:.35;if(new Date(e.t).getDay()===wd)w*=1.25;
+  const k=p.toLowerCase(),o=M.get(k)||{p,w:0,c:0,own:0};o.w+=w;o.c++;if(e.k===key)o.own=1;M.set(k,o)}));
+ return[...M.values()].filter(o=>o.c>=2||o.own).sort((a,b)=>b.w-a.w).map(o=>o.p)}
+function ckCtx(o,mode,ds){const out=[],A=(S.settings.actLog||{})[ds]||{},ty=(o.auto&&o.auto.type)||autoGuess(o.title);
+ if(mode!=='skip'){if(ty==='steps'&&+A.s>0)out.push(`${(+A.s).toLocaleString()} steps`);
+  if(ty==='workout'&&wkMin(A)>0)out.push(`${fmtMin(wkMin(A))} workout`);
+  if(ty==='sleep'&&+A.z>0)out.push(`Slept ${fmtMin(A.z)}`);
+  if(o.mini)out.push(trunc('Small version: '+o.mini,40));
+  if(NATIVE&&ds===ymd()){const st=astat(),p=places().find(p=>st.inside&&st.inside[p.id]);if(p)out.push(`At ${p.emoji||'📍'} ${p.name}`)}}
+ if(mode!=='done'&&+A.z>0&&A.z<360)out.push(`Short night, ${fmtMin(A.z)} sleep`);
+ return out}
+function ckField(tg,key,n,mode,o,ds,noSkip){const seen=new Set(),sm=[...ckCtx(o,mode,ds),...ckLearn(key,mode)].filter(x=>{const k=x.toLowerCase();if(seen.has(k))return false;seen.add(k);return true}).slice(0,4);
+ const df=(mode==='skip'?CK_DEF.skip:mode==='done'||noSkip?CK_DEF.done:[...CK_DEF.done.slice(0,2),...CK_DEF.skip.slice(0,2)]).filter(x=>!seen.has(x.toLowerCase())),has=String(n||'').toLowerCase();
+ const chip=(x,ai)=>`<button type="button" class="chip${ai?' ai':''}${has.includes(x.toLowerCase())?' on':''}" data-act="ckChip" data-v="${esc(x)}">${esc(x)}</button>`;
+ return`<div class="field ck-f"><label for="ckN">Comment <span>· for you to look back on</span></label><textarea id="ckN" rows="2" maxlength="280" data-ckn="${tg}" placeholder="${mode==='skip'?'Why skip? A word is enough':'How did it go? Anything to remember?'}">${esc(n||'')}</textarea><div class="chips rm-ch ck-ch">${sm.map(x=>chip(x,1)).join('')}${df.map(x=>chip(x)).join('')}</div></div>`}
+function ckObj(tg){const[k,a,b]=String(tg).split('|');if(k==='h'){const h=H(a);return h&&{h,ds:b}}if(k==='s'){const g=G(a),s=g&&g.steps.find(x=>x.id===b);return s&&{o:s,g}}if(k==='d'){const x=S.days.find(y=>y.id===a);return x&&{o:x}}return null}
+function ckSetNote(tg,v){const r=ckObj(tg);if(!r)return;v=String(v||'').slice(0,280);const put=c=>{c={...(c||{})};if(v.trim())c.n=v;else delete c.n;return Object.keys(c).length?c:null};
+ if(r.h){r.h.ck=r.h.ck||{};const c=put(r.h.ck[r.ds]);if(c)r.h.ck[r.ds]=c;else delete r.h.ck[r.ds]}else{const c=put(r.o.ck);if(c)r.o.ck=c;else delete r.o.ck}save()}
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.dataset&&t.dataset.ckn!=null)ckSetNote(t.dataset.ckn,t.value)});
+document.addEventListener('change',e=>{const t=e.target;if(t&&t.dataset&&t.dataset.ckn!=null)render(false)});
+function ckSheetI(tg){const r=ckObj(tg);if(!r||r.h)return;const o=r.o,s=tg[0]==='s',c=o.ck||{},key=s?'s:'+r.g.id+'/'+o.id:'d:'+o.id,ds=s?ymd():o.date;
+ const at=s?`data-act="toggleStep" data-g="${r.g.id}" data-s="${o.id}"`:`data-act="toggleDay" data-id="${o.id}"`;
+ openSheet(`<div class="data">${s?esc(r.g.title):'Goal for '+esc(dayName(o.date))}</div><h2 style="margin-top:8px">${esc(o.title)}</h2>
+ <div class="ck-st${o.done?' d':''}"><i></i><b>${o.done?'Done':'Not done yet'}</b>${o.done?`<small>${ckHow(c,s?'':o.date)||(o.doneAt?esc(fmtAt(o.doneAt)):'')}</small>`:''}</div>
+ ${ckField(tg,key,c.n,o.done?'done':'any',o,ds,1)}
+ <div class="actions">${o.done?`<button class="btn ghost" ${at} data-ck="1">Mark not done</button><button class="btn pri" data-act="close">Done</button>`:`<button class="btn pri" ${at} data-ck="1">${ic('check')}Mark done</button>`}</div>`)}
+function ckToast(msg,attrs){const t=$('#toast'),fresh=t.classList.contains('on')&&Date.now()-TOAST_AT<400;toast(fresh?t.querySelector('span').innerHTML:msg,fresh?UNDO:null,`<button class="link" data-act="ckOpen" ${attrs}>Add a comment</button>`)}
+{const _to=toast;toast=function(m,u,x){_to(m,u);TOAST_AT=Date.now();if(x){const t=$('#toast');t.insertAdjacentHTML('beforeend',x);clearTimeout(TT);TT=setTimeout(()=>t.classList.remove('on'),5200)}}}
+{const _ht=ACT.hTap;ACT.hTap=d=>{const h=H(d.id),td=ymd(),was=h&&hDone(h,td);_ht(d);if(h&&!was&&hDone(h,td))ckToast(`${esc(hIcon(h))} ${esc(h.title)} · done`,`data-k="h" data-id="${h.id}" data-d="${td}"`)}}
+{const _ts=ACT.toggleStep;ACT.toggleStep=d=>{const g=G(d.g),s=g&&g.steps.find(x=>x.id===d.s);if(!s)return;_ts(d);ckO(s);save();if(d.ck)closeSheet();render(false);if(s.done&&!VIA)ckToast('Step done',`data-k="s" data-g="${g.id}" data-s="${s.id}"`)}}
+{const _td=ACT.toggleDay;ACT.toggleDay=d=>{const x=S.days.find(y=>y.id===d.id);if(!x)return;_td(d);ckO(x);save();if(d.ck)closeSheet();render(false);if(x.done)ckToast('Done',`data-k="d" data-id="${x.id}"`)}}
+{const _hds=ACT.hDaySheet;Object.assign(ACT,{
+ hDaySheet:d=>{const h=H(d.id),ds=d.d;if(!h||!validDate(ds)||ds>ymd())return;if(h.kind==='quit')return _hds(d);
+  const v=hVal(h,ds),n=hTarget(h),dn=hDone(h,ds),rt=h.kind==='routine'&&h.steps.length,c=(h.ck||{})[ds]||{},rest=!!h.skip[ds],sk=rest||!!c.sk,tg=`h|${h.id}|${ds}`;
+  const st=dn?'Done':rest?'Rest day':sk?'Skipped':v?`${v} of ${n}${h.unit?' '+esc(h.unit):''}`:'Not done yet',how=dn||sk?ckHow(c,ds):'';
+  openSheet(`<div class="data">${esc(dayName(ds))}</div><h2 style="margin-top:8px">${esc(hIcon(h))} ${esc(h.title)}</h2>
+  <div class="ck-st${dn?' d':sk?' s':''}"><i></i><b>${st}</b>${how?`<small>${how}</small>`:''}</div>
+  ${rt?`<div class="clist" style="margin-top:12px">${h.steps.map(s=>`<label class="citem" style="${cvar(h)}"><input type="checkbox" data-hstep="${s.id}" data-id="${h.id}" data-d="${ds}" ${(h.rs[ds]||[]).includes(s.id)?'checked':''}><i></i><span>${esc(s.title)}</span><span class="data">${s.min?s.min+' min':''}</span></label>`).join('')}</div>`
+   :n>1?`<div class="hstep" style="margin-top:12px"><button class="ibtn" data-act="hAdj" data-id="${h.id}" data-d="${ds}" data-n="-1" aria-label="One less">${ic('minus')}</button><div><b id="hsv">${v}</b><span>of ${n} ${esc(h.unit)}</span></div><button class="ibtn" data-act="hAdj" data-id="${h.id}" data-d="${ds}" data-n="1" aria-label="One more">${ic('plus')}</button></div>`:''}
+  ${ckField(tg,'h:'+h.id,c.n,sk?'skip':dn?'done':'any',h,ds)}
+  ${!dn&&!sk&&!hRestOK(h)?'<p class="small muted ck-hint">A skip keeps your reason in the log, and the day still counts as missed. To protect the streak, turn on rest days when you edit the habit.</p>':''}
+  <div class="actions">${dn?`<button class="btn ghost" data-act="ckDo" data-t="${tg}" data-v="undo">Mark not done</button><button class="btn pri" data-act="close">Done</button>`
+   :sk?`<button class="btn ghost" data-act="ckDo" data-t="${tg}" data-v="unskip">Undo skip</button><button class="btn pri" data-act="ckDo" data-t="${tg}" data-v="done">${ic('check')}Mark done</button>`
+   :`<button class="btn" data-act="ckDo" data-t="${tg}" data-v="skip">${ic('skip')}Skip</button><button class="btn pri" data-act="ckDo" data-t="${tg}" data-v="done">${ic('check')}Mark done</button>`}</div>`)},
+ ckDo:d=>{const r=ckObj(d.t);if(!r||!r.h)return;const h=r.h,ds=r.ds;h.ck=h.ck||{};let msg='';
+  if(d.v==='done'){delete h.skip[ds];hSetVal(h,ds,hTarget(h));if(h.ck[ds])delete h.ck[ds].sk;vib();if(checkMilestones()!==2&&ds===ymd())hCelebrate(h);else msg='Marked done'}
+  else if(d.v==='undo'){hSetVal(h,ds,0);msg='Marked not done'}
+  else if(d.v==='skip'){if(hDone(h,ds))hSetVal(h,ds,0);if(hRestOK(h))h.skip[ds]=1;h.ck[ds]={...ckNew(h.ck[ds]),sk:1};msg=h.skip[ds]?'Rest day. Your streak is safe.':'Skipped. Your reason is in the log.'}
+  else if(d.v==='unskip'){delete h.skip[ds];const n=(h.ck[ds]||{}).n;if(n)h.ck[ds]={n};else delete h.ck[ds];msg='Skip removed'}
+  closeSheet();save();render(false);if(msg)toast(msg)},
+ ckOpen:d=>{if(d.k==='h')ACT.hDaySheet({id:d.id,d:d.d||ymd()});else if(d.k==='s')ckSheetI(`s|${d.g}|${d.s}`);else ckSheetI('d|'+d.id)},
+ ckChip:(d,el)=>{const t=$('#ckN');if(!t)return;const cur=t.value.trim();if(cur.toLowerCase().includes(d.v.toLowerCase()))return;t.value=cur?cur.replace(/[.\s]+$/,'')+'. '+d.v:d.v;ckSetNote(t.dataset.ckn,t.value);if(el)el.classList.add('on');render(false)}})}
+/* hold any check button: comment, or skip */
+(()=>{let T=0,X=0,Y=0,el=null,EAT=0;const SEL='[data-act=hTap],[data-act=dyTog],[data-act=toggleStep],[data-act=toggleDay]',off=()=>{clearTimeout(T);el=null};
+ document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest(SEL);if(!b||b.dataset.ck)return;el=b;X=e.clientX;Y=e.clientY;clearTimeout(T);
+  T=setTimeout(()=>{const b=el;el=null;if(!b||!document.contains(b))return;const d=b.dataset;EAT=Date.now();vib();
+   if(d.act==='toggleStep')ckSheetI(`s|${d.g}|${d.s}`);else if(d.act==='toggleDay')ckSheetI('d|'+d.id);else ACT.hDaySheet({id:d.id,d:d.d||ymd()})},480)},{passive:true});
+ document.addEventListener('pointermove',e=>{if(el&&Math.hypot(e.clientX-X,e.clientY-Y)>10)off()},{passive:true});
+ ['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,()=>{clearTimeout(T)},{passive:true}));addEventListener('scroll',off,{passive:true,capture:true});
+ addEventListener('click',e=>{if(Date.now()-EAT<700&&e.target.closest&&e.target.closest(SEL)){e.stopPropagation();e.preventDefault()}},true);
+ document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest(SEL))e.preventDefault()})})();
+/* the log: on the habit page, the day page and step cards */
+function ckLogH(h){const tn=dnum(ymd()),rows=[];
+ for(let k=tn;k>tn-90&&rows.length<10;k--){const ds=fromN(k);if(ds<h.startDate)break;const c=(h.ck||{})[ds],dn=hDone(h,ds),rest=!!(h.skip&&h.skip[ds]),sk=rest||!!(c&&c.sk);if(!dn&&!sk&&!(c&&c.n))continue;
+  const D=new Date(ds+'T12:00');rows.push(`<button class="ckl-r${dn?' d':sk?' s':''}" data-act="hDaySheet" data-id="${h.id}" data-d="${ds}"><span class="ckl-d"><b>${D.getDate()}</b><small>${esc(D.toLocaleDateString(undefined,{month:'short'}))}</small></span><span class="ckl-b"><b>${dn?'Done':rest?'Rest day':sk?'Skipped':'Not done'}</b>${c&&c.t&&(dn||sk)?`<small>${ckHow(c,ds)}</small>`:''}${c&&c.n?`<q>${esc(c.n)}</q>`:''}</span>${ic('next','ico-s')}</button>`)}
+ return`<section class="rv"><div class="st-h"><h3>Log</h3><span class="data">hold ✓ to comment</span></div>${rows.length?`<div class="ckl">${rows.join('')}</div>`:'<p class="small muted">Each check-off lands here with how it happened. Hold the check button to add a comment or skip a day.</p>'}</section>`}
+{const _vh=vHabit;vHabit=function(id){let o=_vh(id);const h=H(id);if(!h||h.kind==='quit')return o;const m='<section class="rv"><div class="st-h"><h3>History</h3>',i=o.indexOf(m);return i<0?o:o.slice(0,i)+ckLogH(h)+o.slice(i)};VIEWS.habit=vHabit}
+{const _dr=dyHabitRow;dyHabitRow=function(h,ds,fut){let o=_dr(h,ds,fut);if(h.kind==='quit'||fut)return o;const c0=(h.ck||{})[ds],c=c0&&(hDone(h,ds)||c0.sk||h.skip[ds])?c0:c0&&c0.n?{n:c0.n}:null;
+ if(c&&(c.t||c.n)){const i=o.indexOf('<div class="dy-hb"><div>');if(i>=0)o=o.slice(0,i+24)+`<div class="ck-log">${c.t?`<small>${ckHow(c,ds)}</small>`:''}${c.n?`<q>${esc(c.n)}</q>`:''}</div>`+o.slice(i+24);if(c.n)o=o.replace('</b><small>','</b><small>💬 ')}
+ return o.replace(`<a class="btn sm" href="#/habit/${h.id}">`,`<button class="btn sm" data-act="hDaySheet" data-id="${h.id}" data-d="${ds}">${c&&c.n?'Edit comment':'Comment or skip'}</button><a class="btn sm" href="#/habit/${h.id}">`)}}
+function ckStepKV(g,s){if(!s.done)return'';const c=s.ck||{},how=ckHow(c)||(s.doneAt?esc(fmtAt(s.doneAt)):'');
+ return`<div class="kv"><span>Done</span><span>${how}</span></div>${c.n?`<p class="note ck-q">“${esc(c.n)}”</p>`:''}<button class="link small ck-add" data-act="ckOpen" data-k="s" data-g="${g.id}" data-s="${s.id}">${c.n?'Edit comment':'Add a comment'}</button>`}
 
 /* ---- Settings → Automations ---- */
 function autoSub(){if(!NATIVE)return'In the Android app';const n=autoRules().length;return n?`${n} item${n===1?'':'s'} check${n===1?'s':''} itself off`:'Off · set up with ⚡ on a habit or step'}
@@ -5929,7 +6184,7 @@ function autoHTML(){if(!NATIVE)return`<section class="panel rv"><h3>Automations<
   <div><b>🏋️ Health Connect</b><small>Workouts, sleep and steps from your fitness apps</small>${st.hc&&!st.hc.ok?ok(false,'Android 14+'):st.hc&&st.hc.perm?ok(true,'Connected'):`<button class="btn sm" data-act="autoPerm" data-t="workout">Connect</button>`}</div>
   <div><b>📱 Screen time</b><small>Minutes in apps you choose</small>${st.screen&&st.screen.perm?ok(true,'On'):`<button class="btn sm" data-act="autoPerm" data-t="screen">Allow</button>`}</div>
   <div><b>📍 Location</b><small>Only for your saved places</small>${st.loc&&st.loc.perm&&st.loc.bg?ok(true,'All the time'):st.loc&&st.loc.perm?`<button class="btn sm" data-act="autoPerm" data-t="place">Allow all the time</button>`:`<button class="btn sm" data-act="autoPerm" data-t="place">Allow</button>`}</div></div></section>
- <section class="panel rv"><h3>Places</h3>${places().length?`<div class="chl">${places().map(p=>`<div class="chl-r"><span style="font-size:20px">${esc(p.emoji||'📍')}</span><span><b>${esc(p.name)}</b><small>${p.r} m around it${st.inside&&st.inside[p.id]?' · you’re here now':''}</small></span><button class="ibtn sm" data-act="placeDel" data-id="${p.id}" aria-label="Delete ${esc(p.name)}">${ic('trash')}</button></div>`).join('')}</div>`:'<p class="small muted">No places yet.</p>'}<div class="actions left"><button class="btn sm" data-act="placeNew">${ic('plus')}Add the place I’m at now</button></div></section>
+ <section class="panel rv"><h3>Places</h3>${places().length?`<div class="chl">${places().map(p=>`<div class="chl-r"><span style="font-size:20px">${esc(p.emoji||'📍')}</span><span><b>${esc(p.name)}</b><small>${p.addr?esc(trunc(p.addr,48))+' · ':''}${p.r} m around it${st.inside&&st.inside[p.id]?' · you’re here now':''}</small></span><button class="ibtn sm" data-act="placeEdit" data-id="${p.id}" aria-label="Edit ${esc(p.name)}">${ic('edit')}</button><button class="ibtn sm" data-act="placeDel" data-id="${p.id}" aria-label="Delete ${esc(p.name)}">${ic('trash')}</button></div>`).join('')}</div>`:'<p class="small muted">No places yet.</p>'}<div class="actions left"><button class="btn sm" data-act="placeNew">${ic('plus')}Add a place</button></div></section>
  <section class="panel rv"><h3>In use</h3>${R.length?`<div class="chl">${R.map(r=>`<div class="chl-r"><span style="font-size:18px">${AUTO_T[r.type].e}</span><span><b>${esc(r.title)}</b><small>${esc(autoLabel(r))}</small></span></div>`).join('')}</div>`:'<p class="small muted">Nothing yet. Look for ⚡ on a habit or step.</p>'}</section>`}
 
 /* ================= SHARING (end-to-end encrypted; only shared items leave your Drive) =================
@@ -6926,7 +7181,7 @@ function vDay(ds){ds=validDate(ds)||ymd();const td=ymd(),fut=ds>td,k=dnum(ds),re
  o+=`<section class="rv dy-sec" id="dyHab"><div class="st-h"><h3>Habits</h3><span class="data">${r.due?`${r.dn} of ${r.due} kept`:''}</span></div>${HS.length?`<div class="dy-hl">${HS.map(h=>dyHabitRow(h,ds,fut)).join('')}</div>`:'<p class="small muted">No habits were due on this day.</p>'}${fut?'<p class="small muted" style="margin-top:8px">This day hasn’t happened yet.</p>':''}</section>`;
  if(NATIVE&&NATIVE.activityLoad||A)o+=`<section class="rv dy-sec" id="dyAct"><div class="st-h"><h3>Activity</h3><a class="link" href="#/activity">All activity</a></div>${A?actDayHTML(ds,A):'<p class="small muted">Nothing was recorded on the phone for this day.</p>'}</section>`;
  if(dg.length||!fut)o+=`<section class="rv dy-sec" id="dyG"><div class="st-h"><h3>Goals for the day</h3></div>${dg.length?`<div class="list">${dg.map(x=>`<div class="li"><button class="chk${x.done?' on':''}" data-act="toggleDay" data-id="${x.id}" aria-label="${x.done?'Undo':'Done'}: ${esc(x.title)}">${ic('check')}</button><div style="flex:1;min-width:0"><div class="t${x.done?' done':''}">${esc(x.title)}</div>${x.time?`<div class="s">${fmtTime(x.time)}</div>`:''}</div><button class="ibtn sm" data-act="editDay" data-id="${x.id}" aria-label="Edit">${ic('edit')}</button></div>`).join('')}</div>`:'<p class="small muted">No goals were set for this day.</p>'}</section>`;
- if(stepsDone.length||due.length)o+=`<section class="rv dy-sec"><div class="st-h"><h3>Steps</h3></div><div class="list">${stepsDone.map(e=>{const g=G(e.goalId);return`<div class="li" style="${g?cvar(g):''}"><span class="chk on">${ic('check')}</span><div style="flex:1;min-width:0"><div class="t">${esc(e.text||'Step')}</div><div class="s"><i></i><span class="ell">${g?esc(g.title):''} · ${tShort(e.t)}</span></div></div></div>`}).join('')}${due.map(({g,s})=>`<div class="li" style="${cvar(g)}"><button class="chk" data-act="toggleStep" data-g="${g.id}" data-s="${s.id}" aria-label="Done: ${esc(s.title)}">${ic('check')}</button><div style="flex:1;min-width:0"><div class="t">${esc(s.title)}</div><div class="s"><i></i><span class="ell">${esc(g.title)} · was due this day</span></div></div></div>`).join('')}</div></section>`;
+ if(stepsDone.length||due.length)o+=`<section class="rv dy-sec"><div class="st-h"><h3>Steps</h3></div><div class="list">${stepsDone.map(e=>{const g=G(e.goalId);return`<div class="li" style="${g?cvar(g):''}"><span class="chk on">${ic('check')}</span><div style="flex:1;min-width:0"><div class="t">${esc(e.text||'Step')}</div><div class="s"><i></i><span class="ell">${g?esc(g.title):''} · ${(st=>st&&st.ck&&st.ck.t?ckHow(st.ck):tShort(e.t))(g&&g.steps.find(x=>x.id===e.sid))}</span></div></div></div>`}).join('')}${due.map(({g,s})=>`<div class="li" style="${cvar(g)}"><button class="chk" data-act="toggleStep" data-g="${g.id}" data-s="${s.id}" aria-label="Done: ${esc(s.title)}">${ic('check')}</button><div style="flex:1;min-width:0"><div class="t">${esc(s.title)}</div><div class="s"><i></i><span class="ell">${esc(g.title)} · was due this day</span></div></div></div>`).join('')}</div></section>`;
  const jl=ents.filter(e=>e.type!=='step'&&e.type!=='focus');
  o+=`<section class="rv dy-sec" id="dyJ"><div class="st-h"><h3>Journal</h3>${fut?'':`<button class="link" data-act="addEntry">Write</button>`}</div>${jl.length?`<div class="dy-jg">${jl.map(e=>journalCard(e)).join('')}</div>`:'<p class="small muted">No journal entries on this day.</p>'}</section>`;
  if(tu.length)o+=`<section class="rv dy-sec"><div class="st-h"><h3>Threads</h3></div><div class="list">${tu.map(({t,u})=>`<div class="li" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${thrTag(u.k)[1]}</span><div style="flex:1;min-width:0"><div class="t">${esc(u.x)}</div><div class="s"><span class="ell">${esc(t.title)} · ${tShort(u.t)}</span></div></div></div>`).join('')}</div></section>`;
@@ -7144,7 +7399,7 @@ function aiPlanCard(where){if(where==='home'&&S.settings.aipHide)return`<section
  return`<section class="aip rv${where==='ask'?' in-ask':''}"><span class="aip-i">${ic('ai')}</span><div class="aip-b"><b>Plan with AI</b><p>Say what you want in your own words, like “get fit by summer”, “save for a house” or “a calmer morning”. The AI drafts a goal with steps, dates and the habits to get there. You check and edit everything before anything is saved.</p><div class="aip-a"><button class="btn pri sm" data-act="aiStart">${ic('ai')}Start a plan</button><button class="btn sm" data-act="aiChangeStart">Rework my plan</button>${where==='home'?`<button class="btn ghost sm" data-act="aipHide">Minimize</button>`:''}</div></div></section>`}
 function homeQuick(){const Q=[['aiStart','✨','Plan with AI'],['newGoal','🎯','Goal'],['newHabit','✅','Habit'],['addEntry','✍️','Write'],['thrNew','🧵','Thread'],['askGo','💬','Ask'],['dayToday','📅','Today in full']];
  return`<div class="hmq rv" role="toolbar" aria-label="Quick actions">${Q.map(([a,e,l])=>`<button class="hmq-b" data-act="${a}"><span>${e}</span>${l}</button>`).join('')}</div>`}
-function homeDay(){const td=ymd(),hs=S.habits.filter(h=>h.status==='active'&&h.kind!=='quit'&&hDue(h,td)&&!(h.skip&&h.skip[td])),dg=S.days.filter(x=>x.date===td),st=active().flatMap(g=>g.steps.filter(s=>s.due===td).map(s=>({g,s})));
+function homeDay(){const td=ymd(),hs=S.habits.filter(h=>h.status==='active'&&h.kind!=='quit'&&hDue(h,td)&&!(h.skip&&h.skip[td])&&!((h.ck||{})[td]||{}).sk),dg=S.days.filter(x=>x.date===td),st=active().flatMap(g=>g.steps.filter(s=>s.due===td).map(s=>({g,s})));
  const items=[...hs.map(h=>({k:'h',done:hDone(h,td),t:`${hIcon(h)} ${h.title}`,h})),...dg.map(x=>({k:'d',done:!!x.done,t:x.title,x})),...st.map(o=>({k:'s',done:!!o.s.done,t:o.s.title,o}))];
  if(!items.length)return'';const dn=items.filter(i=>i.done).length,p=dn/items.length,nx=items.find(i=>!i.done);
  const act=nx?(nx.k==='h'?`data-act="hTap" data-id="${nx.h.id}"`:nx.k==='d'?`data-act="toggleDay" data-id="${nx.x.id}"`:`data-act="toggleStep" data-g="${nx.o.g.id}" data-s="${nx.o.s.id}"`):'';
@@ -7520,10 +7775,9 @@ function cutSec(o,m){const i=o.indexOf(m);if(i<0)return o;const j=o.indexOf('</s
    keyboard), your bar's pages, and settings shortcuts. Edit pins and orders pages in place. Tap More again, the
    close button, the scrim or Back to close it. */
 const PG=[['today','Home','home','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['activity','Activity','flame','Steps, sleep, screen time, workouts'],['journal','Journal','journal','Moments and history'],['vista','Vista','map','Timeline and life map'],['ask','Ask','ai','Insights and AI planning'],['threads','Threads','thread','Conversations about goals and habits'],['lists','Lists','checklist','Checklists, packing and shopping lists you can share'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||p[0]==='bench'||p[0]==='lists'||VIEWS[p[0]]);
-/* phone home: one row of pages (4 + More, pages not in the bar first); More opens every page in the same box. Desktop has the rail, so it's hidden there. */
-function homeFeat(){const t=tabs6(),A=PG.filter(p=>p[0]!=='today'&&p[0]!=='settings'),L=[...A.filter(p=>!t.includes(p[0])),...A.filter(p=>t.includes(p[0]))],open=!!S.settings.hfOpen,show=open?L:L.slice(0,4);
- return`<nav class="hft mob rv${open?' open':''}" aria-label="Features">${show.map(([k,l,i])=>`<a class="hft-b" href="#/${k}"><span class="hft-i">${ic(i)}</span><b>${l}</b></a>`).join('')}${L.length>4?`<button class="hft-b" data-act="hfToggle" aria-expanded="${open}"><span class="hft-i">${ic(open?'plus':'menu')}</span><b>${open?'Less':'More'}</b></button>`:''}</nav>`}
-ACT.hfToggle=()=>{S.settings.hfOpen=!S.settings.hfOpen;save();const n=$('#view .hft');if(n)n.outerHTML=homeFeat()};
+/* phone home: every page in one row you swipe (pages not in the bar first); the next tile peeks in, so it reads as scrollable. Desktop has the rail, so it's hidden there. */
+function homeFeat(){const t=tabs6(),A=PG.filter(p=>p[0]!=='today'&&p[0]!=='settings'),L=[...A.filter(p=>!t.includes(p[0])),...A.filter(p=>t.includes(p[0]))];
+ return`<nav class="hft mob rv" aria-label="Pages"><div class="hft-s">${L.map(([k,l,i])=>`<a class="hft-b" href="#/${k}"><span class="hft-i">${ic(i)}</span><b>${l}</b></a>`).join('')}</div></nav>`}
 {const _ht=homeTop;homeTop=function(){return homeFeat()+_ht()}}
 const TMAX=5,TMIN=2;
 const tDef=()=>['today','habits','cal','goals',NATIVE?'activity':'journal'];

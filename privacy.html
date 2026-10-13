@@ -111,7 +111,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <h3>Google account details (only if you turn on sync)</h3>
 <p>The email address of the Google account you connect, and a short-lived access token that lets Plotline read and write its own sync file. See <a href="#sync">section 4</a>.</p>
 <h3>What Plotline does not collect</h3>
-<p>Plotline does not collect your location, contacts, device identifiers, advertising IDs, usage analytics, crash reports, health-sensor data, or any information from other apps. Some of the content you write may be personal or sensitive (for example, a habit you are trying to break or a note about your health). That content stays in your storage, as described below, and is never sent to us.</p>
+<p>Plotline does not collect your location (places you save for automatic check-offs stay in your own data; see <a href="#third">section 8</a> for address search), contacts, device identifiers, advertising IDs, usage analytics, crash reports, health-sensor data, or any information from other apps. Some of the content you write may be personal or sensitive (for example, a habit you are trying to break or a note about your health). That content stays in your storage, as described below, and is never sent to us.</p>
 
 <h2 id="storage">3. How and where your data is stored</h2>
 <p>This is every place Plotline keeps information.</p>
@@ -164,12 +164,13 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <li><b>Run at startup</b> (receive boot completed): to restore scheduled reminders after your phone restarts.</li>
 <li><b>Vibrate</b>: short feedback when you check something off.</li>
 </ul>
-<p>Plotline does not request camera, storage, location, contacts or microphone permissions. When you add a photo, Android’s own camera or file picker opens, and Plotline receives only the image you choose.</p>
+<p>Location is asked for only if you save a place for an automatic check-off, and is used on the phone to notice when you are there. Plotline does not request camera, storage or contacts permissions. When you add a photo, Android’s own camera or file picker opens, and Plotline receives only the image you choose.</p>
 
 <h2 id="third">8. Third-party services</h2>
 <ul>
 <li><b>Google</b> (sign-in and Drive), only if you turn on sync. Google’s <a href="https://policies.google.com/privacy" rel="noopener">Privacy Policy</a> applies to data stored in your Google account.</li>
 <li><b>GitHub Pages</b> hosts the web app. Like any web host, GitHub may record technical information such as your IP address when your browser loads the site. See <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub’s Privacy Statement</a>. The Android app loads its pages from inside the app. It contacts GitHub Pages only if you choose browser sign-in for sync, because Google returns you to the web app’s address to finish signing in.</li>
+<li><b>Photon / OpenStreetMap</b> (photon.komoot.io), only when you add a place: the words you type to search an address, and a rounded position (about 1 km) to rank results and suggest spots nearby. When you tap “use my location”, a position rounded to about 10 m is sent once to look up the address. Nothing else is sent, and no account is involved.</li>
 <li><b>AI assistants and share targets</b> you choose to use, as described in sections 5 and 6.</li>
 </ul>
 <p>Plotline includes no third-party SDKs, analytics libraries, advertising networks or crash reporters. Fonts are bundled with the app and are not loaded from outside services.</p>
