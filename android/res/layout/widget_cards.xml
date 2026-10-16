@@ -11,7 +11,7 @@
     </FrameLayout>
     <LinearLayout android:gravity="center" android:orientation="horizontal" android:id="@id/w_nav" android:layout_width="fill_parent" android:layout_height="wrap_content" android:paddingTop="6.0dip">
         <TextView android:textSize="18.0sp" android:textColor="#ffeceae3" android:gravity="center" android:id="@id/w_prev" android:background="@drawable/widget_chip" android:layout_width="44.0dip" android:layout_height="34.0dip" android:text="‹" android:contentDescription="Previous" />
-        <View android:layout_width="28.0dip" android:layout_height="1.0dip" />
+        <FrameLayout android:layout_width="28.0dip" android:layout_height="1.0dip" />
         <TextView android:textSize="18.0sp" android:textColor="#ffeceae3" android:gravity="center" android:id="@id/w_next" android:background="@drawable/widget_chip" android:layout_width="44.0dip" android:layout_height="34.0dip" android:text="›" android:contentDescription="Next" />
     </LinearLayout>
 </LinearLayout>

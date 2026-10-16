@@ -117,7 +117,7 @@ function itemRow(L,i){const r=ro(L);return`<div class="ls-it${i.done?' done':''}
  <input class="ls-t" value="${esc(i.t)}" data-lsedit="${i.id}" maxlength="200" aria-label="Item" ${r?'readonly':''}>
  ${i.pin?`<button class="ls-pin" data-act="lsPin" data-id="${L.id}" data-i="${i.id}" aria-label="Unpin" title="Pinned · tap to unpin" ${r?'disabled':''}>📌</button>`:''}${+i.rem>Date.now()&&!i.done?`<span class="ls-rem data" title="Reminder">🔔 ${esc(dueTxt(ymd(new Date(+i.rem))))} ${esc(fmtTime(`${pad2(new Date(+i.rem).getHours())}:${pad2(new Date(+i.rem).getMinutes())}`))}</span>`:''}
  ${i.due?`<button class="ls-dc${dueCl(i.due,i.done)}" data-act="lsItemDue" data-id="${L.id}" data-i="${i.id}" ${r?'disabled':''}>${esc(dueTxt(i.due))}</button>`:r?'':`<button class="ibtn sm ls-ib" data-act="lsItemDue" data-id="${L.id}" data-i="${i.id}" aria-label="Set a date" title="Set a date">${ic('cal')}</button>`}
- ${r?'':`<button class="ibtn sm ls-ib ls-x" data-act="lsDel" data-id="${L.id}" data-i="${i.id}" aria-label="Remove item" title="Remove">${ic('trash')}</button>`}</div>`}
+ ${r?'':`<button class="ibtn sm ls-ib ls-x" data-act="lsItemMenu" data-id="${L.id}" data-i="${i.id}" aria-label="More for this item" title="Pin, move, remind, delete">${ic('more')}</button>`}</div>`}
 function vList(id){if(id&&id.startsWith('j~')){const[,doc,key]=id.split('~');setTimeout(()=>join(doc,key),0);return`<header class="ph"><div><h1>List</h1><div class="data">Opening the shared list…</div></div></header>`}
  const L=LBY(id);if(!L)return`<header class="ph"><div><h1>List</h1></div></header><div class="empty rv"><p>This list isn’t on this device.</p><div class="actions"><a class="btn pri" href="#/lists">All lists</a></div></div>`;
  const I=live(L),open=I.filter(i=>!i.done),done=I.filter(i=>i.done),s=stats(L),r=ro(L),showDone=st(L).showDone!==false;
@@ -228,6 +228,25 @@ window.cardsFromQueue=a=>{const op=String(a.op||''),t=String(a.t||'').trim().sli
  return false};
 /* list-item reminders for the phone's alarm list (set in the widget or kept from an earlier one) */
 window.listAlarms=(t0,out)=>{lists().forEach(Lx=>live(Lx).forEach(i=>{if(!i.done&&+i.rem>t0)out.push({at:+i.rem,title:i.t,body:`${Lx.emoji||'📝'} ${Lx.title}`,k:'litem',l:Lx.id,i:i.id,rp:false})}))};
+/* an item's ⋯ menu: done, pin, move, date, reminder, delete (the same things the home-screen Cards widget can do) */
+const remTxt=at=>`${dueTxt(ymd(new Date(at)))} ${fmtTime(`${pad2(new Date(at).getHours())}:${pad2(new Date(at).getMinutes())}`)}`;
+const dtLocal=at=>{const d=new Date(at);return`${ymd(d)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`};
+ACT.lsItemMenu=d=>{const[Lx,i]=IT(d);if(!i||ro(Lx))return;const b=(op,icon,label,cls='')=>`<button class="${cls}" data-act="lsItemDo" data-id="${Lx.id}" data-i="${i.id}" data-op="${op}">${ic(icon)}${label}</button>`;
+ const same=live(Lx).filter(y=>!!y.pin===!!i.pin),k=same.indexOf(i),rem=+i.rem>Date.now()?+i.rem:0;
+ openSheet(`<div class="data">${esc(Lx.emoji||'📝')} ${esc(Lx.title)}</div><h2 style="margin-top:6px">${esc(i.t)}</h2><div class="menu">
+ ${b(i.done?'undone':'done','check',i.done?'Mark not done':'Mark done')}
+ ${b(i.pin?'unpin':'pin','pin',i.pin?'Unpin':'Pin to the top')}
+ ${k>0?b('top','up','Move to the top')+b('up','up','Move up'):''}${k>=0&&k<same.length-1?b('down','down','Move down'):''}
+ <button data-act="lsItemDue" data-id="${Lx.id}" data-i="${i.id}">${ic('cal')}${i.due?'Change the date · '+esc(dueTxt(i.due)):'Set a date'}</button>
+ <button data-act="lsRemSheet" data-id="${Lx.id}" data-i="${i.id}">${ic('bell')}${rem?'Reminder · '+esc(remTxt(rem)):'Remind me…'}</button>
+ ${b('del','trash','Delete','danger')}</div>`)};
+ACT.lsItemDo=d=>{const[Lx,i]=IT(d);if(!i)return;closeSheet();if(d.op==='del'){ACT.lsDel(d);return}
+ if(cardsFromQueue({src:'list',id:Lx.id,i:i.id,op:d.op,at:0})){if(d.op==='rem')toast('Reminder removed')}render(false)};
+ACT.lsRemSheet=d=>{const[Lx,i]=IT(d);if(!i||ro(Lx))return;const rem=+i.rem>Date.now()?+i.rem:0,soon=Date.now()+36e5;
+ openSheet(`<h2>Remind me</h2><p class="muted" style="margin-top:4px">${esc(i.t)}</p><form data-form="lsRem" data-id="${Lx.id}" data-i="${i.id}"><div class="field"><label>When</label><input type="datetime-local" name="at" required value="${dtLocal(rem||soon)}" min="${dtLocal(Date.now())}"></div>
+ <div class="actions">${rem?`<button type="button" class="btn ghost" data-act="lsItemDo" data-id="${Lx.id}" data-i="${i.id}" data-op="rem">No reminder</button>`:''}<button class="btn pri">Save</button></div></form>`)};
+FORM.lsRem=f=>{const L0=LBY(f.dataset.id),i=L0&&L0.items[f.dataset.i];if(!i)return;const v=new FormData(f).get('at'),at=v?new Date(v).getTime():0;
+ if(!(at>Date.now()))return toast('Pick a time that hasn’t passed yet');closeSheet();cardsFromQueue({src:'list',id:L0.id,i:i.id,op:'rem',at});if(typeof askNotif==='function')askNotif();render(false);toast('Reminder set for '+esc(remTxt(at)))};
 ACT.lsPin=d=>{const[Lx,i]=IT(d);if(!i||ro(Lx))return;i.pin=!i.pin;i.u=now();touch(Lx);render(false)};
 /* people opening a shared list link go straight to it, not the first-run welcome */
 if(typeof welcome==='function'){const _w=welcome;welcome=function(){if(/^#\/list\/j~/.test(location.hash))return;return _w.apply(this,arguments)}}
