@@ -12,7 +12,7 @@ const now=()=>Date.now(),C=()=>window.WBC;
 Object.assign(IC,{checklist:'<rect x="3.5" y="4" width="5" height="5" rx="1.2"/><path d="M4.8 6.6l1.1 1.1 1.9-2.2"/><rect x="3.5" y="13" width="5" height="5" rx="1.2"/><path d="M12 6.5h8.5M12 15.5h8.5"/>'});
 const lists=()=>S.lists||(S.lists=[]);
 const LBY=id=>lists().find(l=>l.id===id);
-const live=L=>Object.values(L.items||{}).filter(i=>!i.del).sort((a,b)=>(a.o||0)-(b.o||0));
+const live=L=>Object.values(L.items||{}).filter(i=>!i.del).sort((a,b)=>(!!b.pin-!!a.pin)||(a.o||0)-(b.o||0));
 const stats=L=>{const I=live(L),d=I.filter(i=>i.done).length;return{n:I.length,d,p:I.length?Math.round(d/I.length*100):0}};
 const dueTxt=ds=>{if(!ds)return'';const k=daysUntil(ds);return k===0?'Today':k===1?'Tomorrow':k===-1?'Yesterday':k<0?`${-k} days late`:k<7?dayName(ds):fmtDate(ds)};
 const dueCl=(ds,done)=>!ds||done?'':daysUntil(ds)<0?' late':daysUntil(ds)<=1?' soon':'';
@@ -115,6 +115,7 @@ function vLists(){const L=lists(),open=L.filter(l=>{const s=stats(l);return!s.n|
  :`<div class="empty rv"><p>No lists yet. Start one above, or open a link someone sent you.</p></div>`}`}
 function itemRow(L,i){const r=ro(L);return`<div class="ls-it${i.done?' done':''}" data-iid="${i.id}"><button class="ls-ck" data-act="lsTog" data-id="${L.id}" data-i="${i.id}" role="checkbox" aria-checked="${!!i.done}" aria-label="${esc(i.t)}" ${r?'disabled':''}>${ic('check')}</button>
  <input class="ls-t" value="${esc(i.t)}" data-lsedit="${i.id}" maxlength="200" aria-label="Item" ${r?'readonly':''}>
+ ${i.pin?`<button class="ls-pin" data-act="lsPin" data-id="${L.id}" data-i="${i.id}" aria-label="Unpin" title="Pinned · tap to unpin" ${r?'disabled':''}>📌</button>`:''}${+i.rem>Date.now()&&!i.done?`<span class="ls-rem data" title="Reminder">🔔 ${esc(dueTxt(ymd(new Date(+i.rem))))} ${esc(fmtTime(`${pad2(new Date(+i.rem).getHours())}:${pad2(new Date(+i.rem).getMinutes())}`))}</span>`:''}
  ${i.due?`<button class="ls-dc${dueCl(i.due,i.done)}" data-act="lsItemDue" data-id="${L.id}" data-i="${i.id}" ${r?'disabled':''}>${esc(dueTxt(i.due))}</button>`:r?'':`<button class="ibtn sm ls-ib" data-act="lsItemDue" data-id="${L.id}" data-i="${i.id}" aria-label="Set a date" title="Set a date">${ic('cal')}</button>`}
  ${r?'':`<button class="ibtn sm ls-ib ls-x" data-act="lsDel" data-id="${L.id}" data-i="${i.id}" aria-label="Remove item" title="Remove">${ic('trash')}</button>`}</div>`}
 function vList(id){if(id&&id.startsWith('j~')){const[,doc,key]=id.split('~');setTimeout(()=>join(doc,key),0);return`<header class="ph"><div><h1>List</h1><div class="data">Opening the shared list…</div></div></header>`}
@@ -176,6 +177,58 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset)return;
  if(t.dataset.lsedit){const L=LBY(cur.id),i=L&&L.items[t.dataset.lsedit];if(!i||ro(L))return;i.t=t.value.slice(0,200);i.u=now();L.u=now();clearTimeout(st(L).sv);st(L).sv=setTimeout(()=>{save();if(L.cloud)pushSoon(L)},500)}
  else if(t.dataset.lstitle){const L=LBY(t.dataset.lstitle);if(!L||ro(L))return;L.title=t.value.slice(0,80)||'List';L.mu=now();clearTimeout(st(L).sv);st(L).sv=setTimeout(()=>{save();if(L.cloud)pushSoon(L)},500)}});
 document.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t&&t.dataset&&(t.dataset.lsedit||t.dataset.lstitle)){e.preventDefault();t.blur()}});
+/* ---------------- home-screen "Cards" widget ----------------
+   The Android Cards widget shows lists, goals or threads as swipeable cards (or one of them as a full list) and
+   lets you tick, add, edit, pin, move, delete and set reminders right there. widgetCards() is its data (sent with
+   the rest of the widget payload); taps are queued natively as {k:'wi',src,id,i,op,...} and applied here by
+   cardsFromQueue() the next time the app opens. Reminders set from the widget are armed on the phone at once and
+   kept by listAlarms() so the app's own schedule doesn't drop them. */
+const pinFirst=(a,b)=>(!!b.pin-!!a.pin);
+window.widgetCards=()=>{const A=g=>areaOf(g.area).k;
+ const L=lists().filter(l=>!l.del).slice(0,24).map(l=>({id:l.id,t:l.title,e:l.emoji||'📝',a:lColor(l),sh:!!l.cloud,due:l.due||'',
+  items:live(l).slice(0,40).map(i=>({id:i.id,t:i.t,done:!!i.done,due:i.due||'',pin:!!i.pin,rem:+i.rem||0}))}));
+ const Gs=active().sort((a,b)=>(b.pinned-a.pinned)||(a.priority-b.priority)).slice(0,24).map(g=>({id:g.id,t:g.title,e:'🎯',a:g.color||A(g),p:pct(g),due:g.targetDate||'',
+  items:[...g.steps].sort(pinFirst).slice(0,40).map(s=>({id:s.id,t:s.title,done:!!s.done,due:s.due||'',time:s.time||'',pin:!!s.pin,rem:s.done?0:(reminderAt(s)||0)})),
+  subs:kids(g).filter(k=>k.status==='active').slice(0,8).map(k=>({id:k.id,t:k.title,p:pct(k)}))}));
+ const T=threads().filter(t=>t.status!=='done').sort((a,b)=>thrLast(b)-thrLast(a)).slice(0,24).map(t=>({id:t.id,t:t.title,e:(thrUps(t)[0]?thrTag(thrUps(t)[0].k)[1]:'🧵'),a:'learning',
+  items:[...thrUps(t)].sort(pinFirst).slice(0,30).map(u=>({id:u.id,t:trunc(u.x||'',160),e:thrTag(u.k)[1],at:u.t,pin:!!u.pin}))}));
+ return{cards:{lists:L,goals:Gs,thr:T}}};
+/* reorder: swap with the neighbour (or go to the top) among items in the same pinned group */
+function moveIn(arr,x,op){const same=arr.filter(y=>!!y.pin===!!x.pin),k=same.indexOf(x);if(k<0)return false;
+ const j=op==='up'?k-1:op==='down'?k+1:0;if(op==='top'){if(k===0)return false;same.splice(k,1);same.unshift(x)}else{if(j<0||j>=same.length)return false;[same[k],same[j]]=[same[j],same[k]]}
+ const other=arr.filter(y=>!!y.pin!==!!x.pin);return x.pin?[...same,...other]:[...other,...same]}
+window.cardsFromQueue=a=>{const op=String(a.op||''),t=String(a.t||'').trim().slice(0,200),at=+a.at||0,ts=+a.ts||Date.now();
+ if(a.src==='list'){const Lx=LBY(a.id);if(!Lx||ro(Lx))return false;const it=Lx.items[a.i];
+  if(op==='add'){if(!t||Lx.items[a.i])return false;const o=Math.max(0,...Object.values(Lx.items).map(i=>i.o||0))+1;Lx.items[a.i]={id:a.i,t,done:false,due:'',o,u:now()};touch(Lx);return true}
+  if(!it||it.del)return false;
+  if(op==='done'||op==='undone'){it.done=op==='done';it.dt=it.done?ymd():'';}
+  else if(op==='pin'||op==='unpin')it.pin=op==='pin';
+  else if(op==='del')it.del=true;
+  else if(op==='edit'){if(!t)return false;it.t=t}
+  else if(op==='rem')it.rem=at>0?at:0;
+  else if(op==='up'||op==='down'||op==='top'){const arr=moveIn(live(Lx).sort((x,y)=>(x.o||0)-(y.o||0)),it,op);if(!arr)return false;arr.forEach((y,k)=>{if(y.o!==k){y.o=k;y.u=now()}})}
+  else return false;
+  it.u=now();touch(Lx);return true}
+ if(a.src==='goal'){const g=G(a.id);if(!g)return false;const s=g.steps.find(x=>x.id===a.i);
+  if(op==='add'){if(!t||s)return false;g.steps.push({id:a.i,title:t,due:'',time:'',remind:'',reminded:false,note:'',repeat:'',done:false,doneAt:null});return true}
+  if(!s)return false;
+  if(op==='done'||op==='undone'){if(!!s.done!==(op==='done'))ACT.toggleStep({g:g.id,s:s.id});return true}
+  if(op==='pin'||op==='unpin')s.pin=op==='pin';
+  else if(op==='del'){g.steps=g.steps.filter(x=>x!==s);S.entries=S.entries.filter(e=>e.sid!==s.id)}
+  else if(op==='edit'){if(!t)return false;s.title=t}
+  else if(op==='rem'){if(at>0){const d=new Date(at);s.remind='c';s.remDate=ymd(d);s.remTime=`${pad2(d.getHours())}:${pad2(d.getMinutes())}`;s.reminded=false}else s.remind=''}
+  else if(op==='up'||op==='down'||op==='top'){const arr=moveIn([...g.steps].sort(pinFirst),s,op);if(!arr)return false;g.steps=arr}
+  else return false;
+  g.u=now();return true}
+ if(a.src==='thr'){const th=TH(a.id);if(!th)return false;
+  if(op==='add')return thrFromQueue({k:'thr',id:th.id,x:t,kind:a.kind||'note',t:ts,qid:a.i});
+  const u=(th.ups||[]).find(x=>x.id===a.i);if(!u||u.del)return false;
+  if(op==='pin'||op==='unpin')u.pin=op==='pin';else if(op==='del')u.del=1;else if(op==='edit'){if(!t)return false;u.x=t}else return false;
+  u.u=now();th.u=u.u;return true}
+ return false};
+/* list-item reminders for the phone's alarm list (set in the widget or kept from an earlier one) */
+window.listAlarms=(t0,out)=>{lists().forEach(Lx=>live(Lx).forEach(i=>{if(!i.done&&+i.rem>t0)out.push({at:+i.rem,title:i.t,body:`${Lx.emoji||'📝'} ${Lx.title}`,k:'litem',l:Lx.id,i:i.id,rp:false})}))};
+ACT.lsPin=d=>{const[Lx,i]=IT(d);if(!i||ro(Lx))return;i.pin=!i.pin;i.u=now();touch(Lx);render(false)};
 /* people opening a shared list link go straight to it, not the first-run welcome */
 if(typeof welcome==='function'){const _w=welcome;welcome=function(){if(/^#\/list\/j~/.test(location.hash))return;return _w.apply(this,arguments)}}
 
@@ -231,6 +284,7 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .ls-it.done .ls-t{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 60%,transparent)}
 #view .ls-ib{background:none;border-color:transparent;box-shadow:none;width:36px;height:36px;color:var(--muted);opacity:.7}#view .ls-ib:hover{color:var(--text);background:var(--surface-2)}.ls-ib{}#view .ls-it:hover .ls-ib,#view .ls-it:focus-within .ls-ib{opacity:1}
 
+.ls-pin{flex:none;background:none;border:0;padding:0 2px;font-size:14px;cursor:pointer}.ls-rem{flex:none;font-size:11px;color:var(--muted);white-space:nowrap}
 .ls-dh{margin-top:24px}.ls-none{padding:12px 8px}
 .ls-emos{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:14px}
 </style>`);

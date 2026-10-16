@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical" android:id="@id/cd_root" android:background="@drawable/widget_lc_learning" android:padding="16.0dip" android:layout_width="fill_parent" android:layout_height="fill_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout android:gravity="top" android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content">
+        <TextView android:textSize="10.5sp" android:textColor="#ffc8bcff" android:fontFamily="monospace" android:id="@id/cd_meta" android:layout_width="0.0dip" android:layout_height="wrap_content" android:layout_weight="1.0" android:text="0 OF 5 DONE · SHARED" android:letterSpacing="0.12" android:maxLines="2" android:ellipsize="end" />
+        <TextView android:textSize="17.0sp" android:textColor="#ffac93ff" android:fontFamily="sans-serif-condensed" android:gravity="center" android:id="@id/cd_badge" android:background="@drawable/widget_lc_badge" android:layout_width="38.0dip" android:layout_height="38.0dip" android:text="01" />
+    </LinearLayout>
+    <View android:id="@id/cd_gap" android:layout_width="fill_parent" android:layout_height="0.0dip" android:layout_weight="1.0" />
+    <TextView android:textSize="26.0sp" android:id="@id/cd_emoji" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4.0dip" android:text="📝" />
+    <TextView android:textSize="22.0sp" android:textStyle="bold" android:textColor="#ffeceae3" android:fontFamily="sans-serif-condensed" android:id="@id/cd_title" android:layout_width="fill_parent" android:layout_height="wrap_content" android:text="STUFF TO DO TODAY" android:maxLines="2" android:ellipsize="end" android:lineSpacingMultiplier="0.95" />
+    <LinearLayout android:orientation="vertical" android:id="@id/cd_rows" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_marginTop="4.0dip" />
+    <TextView android:textSize="12.0sp" android:textColor="#ff8f96ac" android:id="@id/cd_more" android:paddingTop="2.0dip" android:paddingBottom="2.0dip" android:layout_width="fill_parent" android:layout_height="wrap_content" android:text="+2 more" />
+    <ImageView android:id="@id/cd_prog" android:layout_width="fill_parent" android:layout_height="4.0dip" android:layout_marginTop="10.0dip" android:scaleType="fitXY" />
+    <LinearLayout android:gravity="center_vertical" android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_marginTop="8.0dip">
+        <TextView android:textSize="10.5sp" android:textColor="#ffeceae3" android:fontFamily="monospace" android:id="@id/cd_due" android:layout_width="0.0dip" android:layout_height="wrap_content" android:layout_weight="1.0" android:text="DUE TODAY" android:letterSpacing="0.12" android:maxLines="1" android:ellipsize="end" />
+        <TextView android:textSize="15.0sp" android:textColor="#ffeceae3" android:gravity="center" android:id="@id/cd_opts" android:background="@drawable/widget_chip" android:layout_width="34.0dip" android:layout_height="34.0dip" android:text="⋯" android:contentDescription="Card options" />
+        <TextView android:textSize="18.0sp" android:textColor="#ff1b1300" android:gravity="center" android:id="@id/cd_add" android:background="@drawable/widget_btn" android:layout_marginStart="6.0dip" android:layout_width="34.0dip" android:layout_height="34.0dip" android:text="+" android:contentDescription="Add" />
+    </LinearLayout>
+</LinearLayout>

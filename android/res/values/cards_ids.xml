@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ids for the Cards widget layouts. Skip any your app's values/ids.xml already declares (this file leaves out w_root, w_add and w_next, which the other widgets already use). -->
+<resources>
+    <item type="id" name="w_src" />
+    <item type="id" name="w_cfg" />
+    <item type="id" name="w_cstack" />
+    <item type="id" name="w_cempty" />
+    <item type="id" name="w_nav" />
+    <item type="id" name="w_prev" />
+    <item type="id" name="w_title" />
+    <item type="id" name="w_meta" />
+    <item type="id" name="w_pbar" />
+    <item type="id" name="w_clist" />
+    <item type="id" name="cd_root" />
+    <item type="id" name="cd_meta" />
+    <item type="id" name="cd_badge" />
+    <item type="id" name="cd_gap" />
+    <item type="id" name="cd_emoji" />
+    <item type="id" name="cd_title" />
+    <item type="id" name="cd_rows" />
+    <item type="id" name="cd_more" />
+    <item type="id" name="cd_prog" />
+    <item type="id" name="cd_due" />
+    <item type="id" name="cd_opts" />
+    <item type="id" name="cd_add" />
+    <item type="id" name="r_chk" />
+    <item type="id" name="r_t" />
+    <item type="id" name="r_m" />
+</resources>

@@ -4156,7 +4156,7 @@ function pushWidget(){if(!NATIVE||!NATIVE.widget||TOURING)return;const COL={heal
  const M=calItems(tn-7,tn+21),counts={};for(const k in M)counts[fromN(+k)]=M[k].length;
  const up=[];for(let k=tn;k<=tn+21&&up.length<8;k++)(M[k]||[]).forEach(x=>{if(!x.done&&up.length<8)up.push({t:x.t,d:fromN(k),time:x.time?fmtTime(x.time):'',c:cg(x.g),k:x.k,g:x.g?x.g.title:'',id:x.k==='day'?x.id:'',sid:x.s?x.s.id:''})});
  const goals=active().sort((a,b)=>(b.pinned-a.pinned)||(a.priority-b.priority)||(prog(b)-prog(a))).slice(0,4).map(g=>{const n=nextStep(g);return{id:g.id,t:g.title,p:pct(g),c:cg(g),a:areaName(g.area),n:n?n.title:'All steps done'}});
- try{NATIVE.widget(JSON.stringify({name:S.settings.name||'',items:nx,days,counts,up,goals,...widgetHabits(),...(typeof widgetThreads==='function'?widgetThreads():{})}))}catch(e){}}
+ try{NATIVE.widget(JSON.stringify({name:S.settings.name||'',items:nx,days,counts,up,goals,...widgetHabits(),...(typeof widgetThreads==='function'?widgetThreads():{}),...(typeof widgetCards==='function'?widgetCards():{})}))}catch(e){}}
 window.__route=r=>{closeSheet();RP=null;SHEET_LOCK=false;if(r==='hvista'){HV='vista';go('habits');return}const hu=/^(urge|routine|slip)-([a-z0-9]+)$/.exec(r||'');if(hu){go('habit/'+hu[2]);setTimeout(()=>{if(H(hu[2]))ACT[hu[1]==='routine'?'routineGo':hu[1]]({id:hu[2]})},450);return}const cd=/^cal-(\d{4}-\d{2}-\d{2})$/.exec(r||'');if(cd){CAL.d=cd[1];S.settings.layout.cal='day';go('cal');return}if(r==='add'){go('today');setTimeout(()=>{const i=$('.tg-add input');if(i){i.scrollIntoView({block:'center'});i.focus()}},450)}else if(r)go(r)};
 /* taps on home-screen widgets are queued natively and applied here */
 function applyWidgetQueue(){if(!NATIVE||!NATIVE.widgetQueue||TOURING)return;let q=[];const rq=[];try{q=JSON.parse(NATIVE.widgetQueue()||'[]')}catch(e){}if(!q.length)return;let n=0;
@@ -4164,6 +4164,7 @@ function applyWidgetQueue(){if(!NATIVE||!NATIVE.widgetQueue||TOURING)return;let 
   else if(a.k==='step'){const g=G(a.g),st=g&&g.steps.find(y=>y.id===a.s);if(st&&!st.done){ACT.toggleStep({g:a.g,s:a.s});n++}}
   else if(a.k==='habit'){const h=H(a.id);if(h&&validDate(a.d)&&a.d<=ymd()){hSetVal(h,a.d,+a.v||0);n++}}
   else if(a.k==='thr'||a.k==='thrnew'){if(typeof thrFromQueue==='function'&&thrFromQueue(a))n++}
+  else if(a.k==='wi'){try{if(typeof cardsFromQueue==='function'&&cardsFromQueue(a))n++}catch(e){}}
   else if(a.k==='hskip'){const h=H(a.id);if(h&&validDate(a.d)){h.skip[a.d]=1;h.ck={...h.ck,[a.d]:{...ckNew((h.ck||{})[a.d]),sk:1}};n++}}
   else if(a.k==='reply'&&a.text)rq.push(a)
   else if(a.k==='jnote'){/* replies stay with the reminder's history on the phone, never in the journal */}
@@ -4179,7 +4180,7 @@ function syncNative(){if(!NATIVE||TOURING)return;const now=Date.now(),L=[];
  const t=S.settings.timer;if(t&&t.end>now){const g=G(t.g),s=g&&g.steps.find(x=>x.id===t.s);L.push({at:t.end,title:'Focus session complete',body:s?`${t.m} min on “${s.title}”`:'',k:'timer',rp:false})}
  S.days.forEach(x=>{if(x.done)return;const at=dayRemAt(x);if(at&&at>now)L.push({at,title:x.title,body:(x.time?fmtTime(x.time)+' · ':'')+'Goal for '+(x.date===ymd(new Date(at))?'today':dayName(x.date)),k:'day',id:x.id,d:x.date})});
  S.goals.forEach(g=>{const at=goalTargetAt(g);if(at&&at>now)L.push({at,title:'Target: '+g.title,body:`${+g.remTarget?`${g.remTarget==='1'?'Tomorrow':'In '+g.remTarget+' days'}`:'Today'} is the target date · ${pct(g)}% there`,k:'checkin',g:g.id})});
- habitAlarms(now,L);wrapAlarms(now,L);try{autoSync()}catch(e){}const N=nlist(L);try{NATIVE.schedule(JSON.stringify(N.slice(0,60)))}catch(e){}replyModelSync()}
+ habitAlarms(now,L);wrapAlarms(now,L);if(typeof listAlarms==='function')listAlarms(now,L);try{autoSync()}catch(e){}const N=nlist(L);try{NATIVE.schedule(JSON.stringify(N.slice(0,60)))}catch(e){}replyModelSync()}
 window.__back=()=>{if(TR){endTour();return true}if($('#sheet').classList.contains('on')){if(RP){ACT.rpClose();return true}if(!SHEET_LOCK)closeSheet();return true}const f=document.querySelector('.fc.flip,.sc.flip,.jf.flip');if(f){f.classList.remove('flip');return true}if(cur.p!=='today'){history.length>1?history.back():go('today');return true}return false};
 function tick(){const now=Date.now(),td=ymd();let ch=false;
  S.goals.forEach(g=>{if(g.status!=='active')return;
