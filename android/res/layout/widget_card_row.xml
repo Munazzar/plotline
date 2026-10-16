@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:gravity="center_vertical" android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <TextView android:textSize="16.0sp" android:textColor="#ffac93ff" android:gravity="center" android:id="@id/r_chk" android:layout_width="30.0dip" android:layout_height="32.0dip" android:text="○" android:contentDescription="Tick" />
+    <TextView android:textSize="14.5sp" android:textColor="#ffc8bcff" android:gravity="center_vertical" android:id="@id/r_t" android:layout_width="0.0dip" android:layout_height="32.0dip" android:layout_weight="1.0" android:text="Zunnu cream" android:maxLines="1" android:ellipsize="end" />
+    <TextView android:textSize="11.0sp" android:textColor="#ff8f96ac" android:gravity="center_vertical|end" android:id="@id/r_m" android:layout_width="wrap_content" android:layout_height="32.0dip" android:paddingStart="6.0dip" android:maxLines="1" />
+</LinearLayout>

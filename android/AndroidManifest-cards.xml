@@ -1,0 +1,14 @@
+<!-- Cards widget: paste inside <application> in the Android app's AndroidManifest.xml -->
+<receiver android:name="com.munazzar.plotline.CardsWidget" android:exported="true" android:label="Plotline · Cards">
+    <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+    </intent-filter>
+    <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_cards_info"/>
+</receiver>
+<service android:name="com.munazzar.plotline.CardsService" android:exported="false" android:permission="android.permission.BIND_REMOTEVIEWS"/>
+<activity android:name="com.munazzar.plotline.CardsConfig" android:exported="true" android:excludeFromRecents="true" android:taskAffinity="com.munazzar.plotline.cards" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:windowSoftInputMode="stateHidden|adjustResize">
+    <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
+    </intent-filter>
+</activity>
+<activity android:name="com.munazzar.plotline.CardSheet" android:exported="false" android:excludeFromRecents="true" android:taskAffinity="com.munazzar.plotline.cards" android:launchMode="singleTask" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:windowSoftInputMode="stateHidden|adjustResize"/>

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider android:minWidth="180.0dip" android:minHeight="180.0dip" android:updatePeriodMillis="1800000" android:initialLayout="@layout/widget_cards" android:configure="com.munazzar.plotline.CardsConfig" android:resizeMode="horizontal|vertical" android:minResizeWidth="140.0dip" android:minResizeHeight="140.0dip" android:widgetCategory="home_screen" android:previewLayout="@layout/widget_card" android:targetCellWidth="3" android:targetCellHeight="3"
+  xmlns:android="http://schemas.android.com/apk/res/android" />
