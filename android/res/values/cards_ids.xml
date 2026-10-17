@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ids for the Cards widget layouts. Skip any your app's values/ids.xml already declares (this file leaves out w_root, w_add and w_next, which the other widgets already use). -->
+<!-- ids for the Cards widget layouts. Skip any your app's values/ids.xml already declares (this file leaves out w_root, w_add, w_next and w_count, which the other widgets already use). -->
 <resources>
     <item type="id" name="w_src" />
     <item type="id" name="w_cfg" />
-    <item type="id" name="w_cstack" />
+    <item type="id" name="w_cardbox" />
     <item type="id" name="w_cempty" />
     <item type="id" name="w_nav" />
     <item type="id" name="w_prev" />

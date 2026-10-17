@@ -20,7 +20,7 @@ import java.util.List;
 import org.json.JSONObject;
 
 /* Options for one Cards widget. Opens when the widget is added and from its ⚙ button:
-   what it shows (lists, goals or threads), swipe cards or one full list, how much detail, which items, and what
+   what it shows (lists, goals or threads), one big card or one full list, how much detail, which items, and what
    to hide (progress, counts, dates, pins and reminders, icons, numbers, done items, sub-goals). */
 public class CardsConfig extends Activity {
     int wid; Cards.Opt o;
@@ -73,7 +73,7 @@ public class CardsConfig extends Activity {
         label("Show");
         seg(new String[]{"list", "goal", "thr"}, new String[]{"📝 Lists", "🎯 Goals", "🧵 Threads"}, o.src, new Pick() { public void on(String v) { if (!v.equals(o.src)) { o.src = v; o.sel = ""; } } });
         label("Layout");
-        seg(new String[]{"cards", "list"}, new String[]{"Swipe cards", "One full list"}, o.style, new Pick() { public void on(String v) { o.style = v; } });
+        seg(new String[]{"cards", "list"}, new String[]{"Big card", "Full list"}, o.style, new Pick() { public void on(String v) { o.style = v; } });
         if ("list".equals(o.style)) {
             List<JSONObject> es = Cards.entries(Cards.load(this), o.src);
             if (!es.isEmpty()) {
