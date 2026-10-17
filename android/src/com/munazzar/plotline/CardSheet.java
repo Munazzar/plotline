@@ -280,7 +280,7 @@ public class CardSheet extends Activity {
             row(hide ? "◌" : "◉", hide ? "Hide done items" : "Show done items", false, new View.OnClickListener() { public void onClick(View v) { o.done = !hide; save(o); } });
         }
         final boolean full = "list".equals(o.style);
-        row(full ? "▤" : "☰", full ? "Back to swipe cards" : "Show this as a full list", false, new View.OnClickListener() { public void onClick(View v) {
+        row(full ? "▤" : "☰", full ? "Back to the big card" : "Show this as a full list", false, new View.OnClickListener() { public void onClick(View v) {
             o.style = full ? "cards" : "list"; o.sel = id; save(o);
         } });
         final String[] det = {"compact", "detailed", "full"}, detN = {"Compact", "Detailed", "Everything"};

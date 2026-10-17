@@ -1,6 +1,6 @@
 # Cards widget (Android)
 
-A home-screen widget that shows your lists, goals or threads as big swipeable cards, styled like the Lists
+A home-screen widget that shows your lists, goals or threads as one big card at a time, styled like the Lists
 carousel. The app side (data for the widget, applying widget changes, list-item reminders) is in `lists.js` and
 `index.html`. This folder holds the Android side, which goes into the Android wrapper build alongside the other
 widgets (`W`, `WidgetActions`, `ThreadsWidget` and the rest).
@@ -8,7 +8,7 @@ widgets (`W`, `WidgetActions`, `ThreadsWidget` and the rest).
 ## What it does
 
 - **Show**: Lists, Goals (steps, plus sub-goals) or Threads (updates). You pick per widget when you add it, or later from ⚙.
-- **Layout**: *Swipe cards* (a stack: swipe, or tap ‹ ›, to get to the next list) or *One full list* (every item in a scrolling list; ‹ › switch which list).
+- **Layout**: *Big card* (one full-width card; ‹ 01 / 05 › go to the next list) or *One full list* (every item in a scrolling list; ‹ › switch which list).
 - **Detail**: Compact (title and three open items, like the app's card), Detailed (six rows with dates, pins and reminders), Everything (twelve rows, done items and sub-goals).
 - **Items**: All, Open, Pinned or Due soon.
 - **Hide**: progress bar, done count, dates, pins and reminders, icon, card number, done items, sub-goals.
@@ -26,7 +26,7 @@ set on the widget is armed on the phone right away, so it rings even if the app 
 
 1. Copy `src/com/munazzar/plotline/*.java` next to the other Java sources.
 2. Copy `res/layout`, `res/drawable`, `res/xml` and `res/values/cards_ids.xml` into the app's `res/`.
-   `cards_ids.xml` leaves out `w_root`, `w_add` and `w_next`, which `values/ids.xml` already declares.
+   `cards_ids.xml` leaves out `w_root`, `w_add`, `w_next` and `w_count`, which `values/ids.xml` already declares.
 3. Paste `AndroidManifest-cards.xml` inside `<application>` in `AndroidManifest.xml`.
 4. Two one-line changes in existing files:
    - `W.java`, at the end of `updateAll()`: `CardsWidget.updateAll(c);` (so the widget redraws when the app sends new data)
