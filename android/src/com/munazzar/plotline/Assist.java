@@ -98,6 +98,8 @@ public class Assist {
         final Context cc = c;
         if (inApp == null) inApp = new WakeLoop(c, new WakeLoop.Cb() {
             public void heard(String cmd) { Assist.heard(cc, cmd); }
+            public void wake() { Assist.woke(cc); }
+            public void partial(String s) { Assist.partial(s); }
             public void state(String s) { Assist.state(s); }
         });
         inApp.config(o.optString("name", "Plot"), o.optString("lang", ""), o.optBoolean("cloud"));
@@ -111,6 +113,18 @@ public class Assist {
         MainActivity a = act.get();
         if (a != null) a.js(code);
     }
+
+    /* "Hey Plot" on its own: a short tone, and the page shows it's listening (the loop hears the command itself) */
+    static void woke(Context c) {
+        try {
+            final android.media.ToneGenerator t = new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 70);
+            t.startTone(android.media.ToneGenerator.TONE_PROP_ACK, 160);
+            H.postDelayed(new Runnable() { public void run() { t.release(); } }, 400);
+        } catch (Exception e) {}
+        if (resumed) js("window.__assist&&window.__assist('wake','native','')");
+    }
+
+    static void partial(String s) { if (resumed) js("window.__assist&&window.__assist('partial'," + JSONObject.quote(s) + ",'')"); }
 
     static void state(String s) { if (resumed) js("window.__assist&&window.__assist('wstate'," + JSONObject.quote(s) + ",'')"); }
 
@@ -128,6 +142,7 @@ public class Assist {
             try { c.startActivity(open(c, route)); return; } catch (Exception e) {}
         }
         notifyHeard(c, cmd, route);
+        apply(c); /* nothing on screen will take over, so keep listening */
     }
 
     static Intent open(Context c, String route) {

@@ -38,6 +38,8 @@ public class AssistService extends Service {
             final Context c = this;
             loop = new WakeLoop(this, new WakeLoop.Cb() {
                 public void heard(String cmd) { Assist.heard(c, cmd); }
+                public void wake() { Assist.woke(c); }
+                public void partial(String s) { Assist.partial(s); }
                 public void state(String s) { Assist.state(s); }
             });
         }

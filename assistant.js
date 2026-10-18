@@ -246,15 +246,16 @@ function wakePause(p){if(!NA||!NA.wakePause)return;try{NA.wakePause(!!p)}catch(e
 function wakeSync(){if(!NA||!NA.wake)return;const a=aset(),v=vset();try{NA.wake(JSON.stringify({on:!!(a.wake||a.bg),bg:!!a.bg,name:aname(),lang:v.lang||'',cloud:!!v.cloud}))}catch(e){}}
 window.__assist=(k,a,b)=>{
  if(k==='tts'){if(a===SPK&&(b==='done'||b==='err')){SPK=null;afterSpeak()}return}
- if(k==='wake'){asOpen();vib();listen();return}
- if(k==='cmd'){run(a,{spoken:true});return}
- if(k==='wstate'){AS.wst=a;paintHead();return}};
+ if(k==='wake'){asOpen();vib();if(a!=='native')return listen();hush();AS.listening=AS.nlis=true;const i=$('#asIn');if(i)i.value='';paintHead();return}
+ if(k==='partial'){const i=$('#asIn');if(AS.nlis&&i)i.value=a;return}
+ if(k==='cmd'){if(AS.nlis){AS.listening=AS.nlis=false;const i=$('#asIn');if(i)i.value=''}run(a,{spoken:true});return}
+ if(k==='wstate'){AS.wst=a;if(a==='timeout'&&AS.nlis){AS.listening=AS.nlis=false;const i=$('#asIn');if(i)i.value=''}paintHead();return}};
 function takePending(){if(!NA||!NA.takePending)return;let p='';try{p=NA.takePending()||''}catch(e){}if(p)setTimeout(()=>run(p,{spoken:true}),350)}
 
 /* ---------------- the sheet ---------------- */
 function headSub(){if(AS.busy)return AS.prog||'Thinking…';if(AS.listening)return'Listening…';if(SPK)return'Speaking…';const a=aset();if(NA&&(a.wake||a.bg)){const w=AS.wst||'';return w==='err'?'Can’t hear the wake word right now':w==='perm'?'Allow the microphone for the wake word':w==='unavailable'?'The wake word needs online speech allowed':`Say “${wakeWord()}” anytime`}return'Talk or type'}
 function asOpen(){AS.open=true;let el=$('#asv');if(!el){el=document.createElement('div');el.id='asv';el.className='aov asv';
- el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="ibtn sm" data-act="asClear" aria-label="Clear" title="Clear">${ic('plus')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form></div></section>`;
+ el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="as-stop" data-act="asStop" aria-label="Stop talking">■ Stop</button><button class="ibtn sm" data-act="asClear" aria-label="Clear" title="Clear">${ic('plus')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form></div></section>`;
  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'))}
  document.documentElement.classList.add('aov-on');paint(true);return el}
 function asClose(){AS.open=false;if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);hush();const el=$('#asv');document.documentElement.classList.remove('aov-on');if(!el)return;el.classList.remove('on');setTimeout(()=>{if(!AS.open)el.remove()},360);wakePause(false)}
@@ -268,7 +269,8 @@ function paint(scroll){const el=$('#asv');if(!el)return;paintHead();const b=el.q
 Object.assign(ACT,{
  asOpen:()=>{asOpen();setTimeout(()=>{if(!AS.turns.length&&NA&&typeof voiceAvail==='function'&&voiceAvail())listen();else $('#asIn')?.focus()},300)},
  asClose:()=>asClose(),
- asMic:()=>{if(VC&&VC.el&&VC.el.id==='asIn'){voiceStop(false,true);return}if(AS.busy){AS.ctl&&AS.ctl.abort();return}listen()},
+ asMic:()=>{if(VC&&VC.el&&VC.el.id==='asIn'){voiceStop(false,true);return}if(AS.busy){AS.ctl&&AS.ctl.abort();return}AS.nlis=false;listen()},
+ asStop:()=>{AS.after=null;if(AS.busy&&AS.ctl)AS.ctl.abort();if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);AS.listening=AS.nlis=false;hush();wakePause(false)},
  asTry:d=>run(d.q),
  asClear:()=>{AS.turns=[];AS.await=null;AS.undo={};hush();paint();pushWidget2()},
  asUndo:d=>{const f=AS.undo[d.id];if(!f)return;delete AS.undo[d.id];try{f()}catch(e){}const t=AS.turns.find(x=>x.id===d.id);if(t){t.chips=t.chips.filter(c=>!c.undo);t.a+=' (undone)'}paint();pushWidget2();toast('Undone')},
@@ -340,6 +342,8 @@ const css=document.createElement('style');css.textContent=`
 .as-mic i{position:absolute;inset:0;border-radius:50%;pointer-events:none}
 .as-mic.rec i{box-shadow:0 0 0 calc(3px + var(--lv,0) * 10px) color-mix(in srgb,var(--accent) 30%,transparent);transition:box-shadow .12s}
 .asv.lis .as-row{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
+.as-stop{display:none;flex:none;height:34px;padding:0 14px;border-radius:17px;border:0;background:var(--accent);color:var(--on-accent);font:700 13px var(--f-body);cursor:pointer}
+.asv.spk .as-stop,.asv.busy .as-stop,.asv.lis .as-stop{display:block}
 @media (prefers-reduced-motion:reduce){.as-big,.asv .as-av{animation:none!important}}`;
 document.head.appendChild(css);
 })();
