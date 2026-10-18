@@ -202,7 +202,53 @@ function todayRead(){const td=today(),D=S.days.filter(x=>x.date===td&&!x.done).s
 function journalRead(when){const d=when==='yesterday'?addDays(-1):today();const E=S.entries.filter(e=>e.type==='note'&&ymd(new Date(e.t))===d).sort((a,b)=>a.t-b.t);
  if(!E.length)return{say:`There's nothing in your journal for ${when||'today'} yet.`};const pub=E.filter(e=>!e.private);
  return{say:pub.length?`${cap(when||'today')} you wrote: ${pub.map(e=>trunc(((e.title?e.title+'. ':'')+(e.text||'')).replace(/\s+/g,' '),220)).join(' … ')}`:'Your journal entries for that day are private, so I won’t read them out.',chips:[['Open journal','~day/'+d]]}}
+/* ---------------- activity: steps, sleep, screen time, workouts, by day ---------------- */
+const MONS=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'],WDS=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+/* a day or span in the past: "this tuesday", "yesterday", "3 days ago", "oct 12", "last week" → {a,b} as day numbers */
+function pastSpan(t){const l=lcs(t),tn=dnum(ymd()),wd=new Date().getDay();let m;
+ const one=(n,lab)=>({a:n,b:n,one:1,lab});
+ if(/\b(?:day before yesterday)\b/.test(l))return one(tn-2);
+ if(/\byesterday\b|\blast night\b/.test(l))return one(tn-1);
+ if((m=/\b(\d+|a|one|two|three|four|five|six|seven)\s+days?\s+ago\b/.exec(l))){const n={a:1,one:1,two:2,three:3,four:4,five:5,six:6,seven:7}[m[1]]||+m[1];return one(tn-n)}
+ if((m=/\b(?:(this|last|past|previous)\s+)?(sun|mon|tue|wed|thu|fri|sat)[a-z]*\b/.exec(l))&&!/\b(?:sat(?:isf|ur(?!day)))/.test(m[0])){const d=['sun','mon','tue','wed','thu','fri','sat'].indexOf(m[2]);let back=(wd-d+7)%7;if(m[1]&&m[1]!=='this'&&back===0)back=7;if(m[1]==='last'&&/\blast\s+week\b/.test(l))back+=7;return one(tn-back)}
+ if((m=new RegExp('\\b(?:('+MONS.join('|')+')[a-z]*\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?|(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?('+MONS.join('|')+')[a-z]*)\\b').exec(l))){const mo=MONS.indexOf(m[1]||m[4]),dd=+(m[2]||m[3]),y=new Date().getFullYear();let ds=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');if(dnum(ds)>tn)ds=(y-1)+ds.slice(4);return one(dnum(ds))}
+ if((m=/\bon\s+the\s+(\d{1,2})(?:st|nd|rd|th)\b/.exec(l))){const d=new Date();let ds=ymd(new Date(d.getFullYear(),d.getMonth(),+m[1]));if(dnum(ds)>tn)ds=ymd(new Date(d.getFullYear(),d.getMonth()-1,+m[1]));return one(dnum(ds))}
+ const mon=(wd+6)%7;
+ if(/\blast\s+week\b/.test(l))return{a:tn-mon-7,b:tn-mon-1,lab:'last week'};
+ if(/\bthis\s+week\b/.test(l))return{a:tn-mon,b:tn,lab:'this week'};
+ if((m=/\b(?:last|past)\s+(\d+|seven|fourteen|thirty)\s+days\b/.exec(l))){const n={seven:7,fourteen:14,thirty:30}[m[1]]||+m[1];return{a:tn-n+1,b:tn,lab:`the last ${n} days`}}
+ if(/\b(?:past|last)\s+week\b/.test(l))return{a:tn-6,b:tn,lab:'the last 7 days'};
+ if(/\bthis\s+month\b/.test(l)){const d=new Date();return{a:dnum(ymd(new Date(d.getFullYear(),d.getMonth(),1))),b:tn,lab:'this month'}}
+ if(/\blast\s+month\b/.test(l)){const d=new Date();return{a:dnum(ymd(new Date(d.getFullYear(),d.getMonth()-1,1))),b:dnum(ymd(new Date(d.getFullYear(),d.getMonth(),0))),lab:'last month'}}
+ if(/\b(?:lately|recently|these days|this past week)\b/.test(l))return{a:tn-6,b:tn,lab:'the last 7 days'};
+ if(/\btoday\b|\bso far\b/.test(l))return one(tn);
+ return null}
+const ACTM=[
+ {k:'s',rx:/\bsteps?\b|\bwalk(?:ed|ing)?\b/,get:o=>o.s!=null&&+o.s>0?+o.s:null,say:v=>`${Math.round(v).toLocaleString()} steps`,sum:1},
+ {k:'z',rx:/\bsle(?:ep|pt)\b/,get:o=>+o.z>0?+o.z:null,say:v=>spMin(v)+' of sleep'},
+ {k:'m',rx:/\bscreen\s*time\b|\bon my phone\b/,get:o=>o.m!=null?+o.m:null,say:v=>spMin(v)+' of screen time',sum:1},
+ {k:'x',rx:/\bwork(?:ed)?\s*out\b|\bworkouts?\b|\bexercis/,get:o=>{const w=typeof wkMin==='function'?wkMin(o):+o.x;return w>0?w:null},say:v=>spMin(v)+' of exercise',sum:1},
+ {k:'dm',rx:/\bdistance\b|\bhow far\b|\b(?:km|kilomet|miles?)\b/,get:o=>+o.dm>0?+o.dm:null,say:v=>(v/1000).toFixed(1)+' km',sum:1},
+ {k:'c',rx:/\bcalories?\b|\bkcal\b/,get:o=>+o.c>0?+o.c:null,say:v=>Math.round(v).toLocaleString()+' calories',sum:1}];
+function spMin(m){m=Math.round(m||0);const h=Math.floor(m/60),r=m%60;return h?`${h} hour${h>1?'s':''}${r?` ${r} minute${r>1?'s':''}`:''}`:`${r} minute${r===1?'':'s'}`}
+function spDay(n){const tn=dnum(ymd());if(n===tn)return'today';if(n===tn-1)return'yesterday';const[y,mo,d]=fromN(n).split('-').map(Number);return'on '+new Date(y,mo-1,d).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}
+function actAsk(t){const l=lcs(t);if(!/^(?:how|what|did|when|which|was|were|tell|show|give)\b/.test(l))return null;const M=ACTM.find(x=>x.rx.test(l));if(!M)return null;
+ const L=(S.settings&&S.settings.actLog)||{},keys=Object.keys(L);if(!keys.length)return{say:'I don’t have any activity from your phone yet. Turn on activity in Plotline’s settings and I can tell you your steps, sleep and screen time.',chips:[['Open activity','activity']]};
+ let sp=pastSpan(l);const best=/\b(?:most|best|highest|max(?:imum)?)\b/.test(l),avg=/\baverage|\bper day\b|\ba day\b/.test(l);
+ if(!sp)sp=best||avg?{a:dnum(ymd())-6,b:dnum(ymd()),lab:'the last 7 days'}:{a:dnum(ymd()),b:dnum(ymd()),one:1};
+ if(sp.one){const ds=fromN(sp.a),o=L[ds],v=o?M.get(o):null,when=spDay(sp.a);
+  if(v==null)return{say:`I don’t have ${M.k==='s'?'step':M.k==='z'?'sleep':M.k==='m'?'screen time':M.k==='x'?'workout':M.k==='dm'?'distance':'calorie'} data for ${when.replace(/^on /,'')}.`,chips:[['Open activity','activity']]};
+  const goal=M.k==='s'?+((S.settings.act||{}).goal)||8000:0;
+  return{say:`${cap(when)} you ${M.k==='z'?'got':M.k==='m'?'had':M.k==='x'?'did':M.k==='s'?'walked':'logged'} ${M.say(v)}${goal?v>=goal?', past your goal of '+goal.toLocaleString()+'.':', '+(goal-v).toLocaleString()+' short of your '+goal.toLocaleString()+' goal.':'.'}`,chips:[['Open that day','activity']]}}
+ const vals=[];for(let n=sp.a;n<=sp.b;n++){const o=L[fromN(n)];const v=o?M.get(o):null;if(v!=null)vals.push([n,v])}
+ if(!vals.length)return{say:`I don’t have that for ${sp.lab}.`};
+ const tot=vals.reduce((a,x)=>a+x[1],0),av=tot/vals.length,top=vals.reduce((a,x)=>x[1]>a[1]?x:a);
+ if(best)return{say:`Your best day ${sp.lab==='this week'||sp.lab==='last week'?sp.lab:'in '+sp.lab} was ${spDay(top[0]).replace(/^on /,'')}, with ${M.say(top[1])}.`};
+ const days=vals.length+' day'+(vals.length>1?'s':'');
+ return{say:M.sum&&!avg?`${cap(sp.lab)}: ${M.say(tot)} over ${days}, about ${M.say(av)} a day. ${M.k==='m'?'Most':'Best'} was ${spDay(top[0]).replace(/^on /,'')}.`:`${cap(sp.lab)} you averaged ${M.say(av)} a day over ${days}.`}}
+
 function localAsk(q){const t=strip(q);let m;
+ {const a=actAsk(t);if(a)return a}
  if((m=/^(?:when|what day)\s+(?:did|was|were|have)\s+(?:i|we)\s+(?:last\s+)?(.+?)(?:\s+last)?\??$/i.exec(t))||(m=/^when\s+was\s+the\s+last\s+time\s+(?:i|we)\s+(.+?)\??$/i.exec(t))||(m=/^(?:the\s+)?last\s+time\s+(?:i|we)\s+(.+?)\??$/i.exec(t))||(m=/^when\s+was\s+(?:my|the)\s+last\s+(.+?)\??$/i.exec(t)))return lastTime(m[1])||{miss:m[1]};
  if((m=/^how\s+(?:many\s+times|often)\s+(?:did|have|do)\s+(?:i|we)\s+(.+?)(?:\s+(?:this|in the (?:last|past)|over the (?:last|past))\s+(week|month|year))?\??$/i.exec(t)))return countTimes(m[1],m[2]&&lcs(m[2]))||{miss:m[1]};
  if((m=/^what(?:'s| is| do i have)\s+(?:on|in)\s+(?:my\s+|the\s+)?(.+?)(?:\s+list)?\??$/i.exec(t))||(m=/^(?:read|show)\s+(?:me\s+)?(?:my\s+|the\s+)?(.+?)\s+list\??$/i.exec(t))){if(/^(?:today|my day|the agenda|my plate|for today)$/i.test(m[1]))return todayRead();const L=pick(S.lists||[],m[1],l=>l.title);if(L)return listRead(L)}
@@ -210,12 +256,47 @@ function localAsk(q){const t=strip(q);let m;
  if((m=/^what did i (?:write|journal|say)\s+(?:in my journal\s+)?(today|yesterday)?/i.exec(t)))return journalRead(m[1]&&lcs(m[1]));
  return null}
 function aiReady(){const e=typeof planEngine==='function'?planEngine():'';if(!e)return false;if(e==='wasm'){const s=insSet(),m=llmOf(s.llm);return!!(s.dl||{})[m[0]]}if(e==='native'){const m=llmOf(insSet().llm);return typeof natHave!=='function'||natHave(m)}return true}
-async function aiAnswer(q,onP){if(!aiReady())return null;const e=planEngine();
- const r=await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);const prompt=insPrompt(q,r,insStats(0,''),0);
- const msgs=[{role:'system',content:`You are ${aname()}, the voice assistant inside the Plotline app. Answer from the user's own data in one to three short sentences that sound natural read aloud. No lists, no markdown, no note numbers like [2]. If the data doesn't say, say so in one sentence. For anything unrelated to their own life, goals, habits, journal, threads or lists reply exactly: ${OFF_LINE}`},{role:'user',content:prompt}];
+/* what the assistant's AI gets to see: the date, recent activity day by day, today's plan, threads, lists, and the notes that match */
+function actLines(n){const L=(S.settings&&S.settings.actLog)||{},tn=dnum(ymd()),out=[];
+ for(let k=tn;k>tn-n;k--){const ds=fromN(k),o=L[ds];if(!o)continue;const[y,mo,d]=ds.split('-').map(Number);const w=typeof wkMin==='function'?wkMin(o):+o.x;
+  const b=[+o.s>0&&`${(+o.s).toLocaleString()} steps`,+o.dm>0&&`${(o.dm/1000).toFixed(1)} km`,+o.z>0&&`slept ${spMin(o.z)}`,w>0&&`exercise ${spMin(w)}`,o.m!=null&&`screen time ${spMin(o.m)}`,(o.w||[]).length&&`workouts: ${(o.w||[]).map(x=>x?((typeof ACT_EX!=='undefined'&&ACT_EX[x.k])||'workout')+(x.m?' '+spMin(x.m):''):'').filter(Boolean).join(', ')}`].filter(Boolean);
+  if(b.length)out.push(`- ${new Date(y,mo-1,d).toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}${k===tn?' (today, so far)':k===tn-1?' (yesterday)':''}: ${b.join(', ')}`)}
+ return out}
+function asCtx(q,r,hint,loc){const now=new Date(),thr=threads().filter(t=>t.status!=='archived').sort((a,b)=>(b.u||0)-(a.u||0)).slice(0,loc?6:12),A=actLines(loc?14:30);
+ let tr='';try{tr=todayRead().say||''}catch(e){}
+ return`TODAY IS ${now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}, ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}. Words like "this Tuesday", "last week" or "yesterday" mean dates relative to today.
+${hint?`
+LOOKED UP BY THE APP (exact, trust this)
+${hint}
+`:''}
+ABOUT ME
+${insOverview(loc?(IS_PHONE?900:1400):3000,q)}
+
+ACTIVITY FROM MY PHONE (newest first)
+${A.join('\n')||'- nothing synced'}
+
+TODAY
+${tr||'- nothing planned'}
+${thr.length?`
+MY THREADS
+${thr.map(t=>{const u=(t.ups||[]).filter(x=>!x.del&&x.x).slice(-1)[0];return`- ${t.title}${u?`: last update ${dayName(ymd(new Date(u.t)))} — ${trunc(u.x,90)}`:''}`}).join('\n')}
+`:''}${(S.lists||[]).length?`
+MY LISTS
+${(S.lists||[]).slice(0,10).map(L=>`- ${L.title}`).join('\n')}
+`:''}
+NOTES THAT MATCH
+${r.srcs.map((d,i)=>`[${i+1}] ${d.text}`).join('\n')||'(none)'}
+
+QUESTION
+${q}`}
+async function aiAnswer(q,onP,hint){if(!aiReady())return null;const e=planEngine(),loc=e!=='api'&&e!=='native';
+ const r=await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);const prompt=asCtx(q,r,hint,loc);
+ const msgs=[{role:'system',content:`You are ${aname()}, the voice assistant inside the Plotline app, like a personal Google Assistant that knows the user's own data. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. Answer the QUESTION in one to three short sentences that sound natural read aloud, using the data given: dates, activity numbers, plans, threads, lists and notes. If the app looked something up, use that answer. If the data doesn't have it, say what you do know in one sentence. For general questions (health, fitness, habits, planning, everyday facts), give a brief helpful answer. No lists, no markdown, no note numbers like [2]. Never answer with a refusal or a scope message.`},{role:'user',content:prompt}];
  let out='';const on=x=>{out+=x;onP&&onP('')};const opts={max_tokens:240,reading:'Thinking…'};
  if(e==='api')await apiChat(msgs,on,AS.ctl.signal,opts);else if(e==='native')await natChat(msgs,on,onP,()=>{out=''},opts);else await localChat(msgs,on,onP,0,()=>{out=''},false,opts);
- return out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'').replace(/[*#_`]/g,'').trim()||null}
+ out=out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'').replace(/[*#_`]/g,'').trim();
+ if(out.includes(OFF_LINE.slice(0,30))){const rest=out.replace(OFF_LINE,'').replace(/I can only help with[^.]*\.(?:\s*Try asking about your plan\.)?/i,'').trim();if(rest.length>12)out=rest}
+ return out||null}
 async function llmIntent(t){const e=typeof planEngine==='function'?planEngine():'';if(e!=='api'&&e!=='native'||!aiReady())return null;
  const schema={type:'object',properties:{action:{enum:['journal','new_thread','thread_update','reminder','list_add','today_goal','habit_done','question']},text:{type:'string'},target:{type:'string'},when:{type:'string'}},required:['action','text'],additionalProperties:false};
  const msgs=[{role:'system',content:'You turn one spoken request to a personal journal and habits app into JSON. Reply with JSON only.'},{role:'user',content:`Request: "${t}"\n\nactions: journal (add text to today's journal), new_thread (start a thread; text is its title), thread_update (target is the thread name), reminder (when is the time words like "tomorrow at 5pm"), list_add (target is the list name; text is the items), today_goal, habit_done (text is the habit), question (anything asked).`}];
@@ -233,7 +314,12 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
  try{const aw=AS.await;AS.await=null;
   if(aw)r=answerAwait(aw,text);
   if(!r){const p=parse(text);if(p)r=exec(p,text)}
-  if(!r)r=localAsk(text);
+  if(!r&&!aiReady())r=localAsk(text);
+  if(!r&&aiReady()){const st=strip(text),cmd=!QRX.test(st)||/^(?:can|could|would|will) you\b|\b(?:please|i want to|i need to|i'd like to)\b/i.test(st);
+   if(cmd&&!/^(?:can|could|would|will) you (?:tell|show|explain|remind me (?:what|when|how))/i.test(st)){status('Working it out…');const p=await llmIntent(st);if(p&&p.k)r=exec(p,text)}
+   if(!r){const L=localAsk(text);if(L&&(L.ask||L.await))r=L;
+    else{status('Thinking…');const a=await aiAnswer(text,status,L&&!L.miss?L.say:'').catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
+     r=a?{say:a,chips:L&&L.chips||[['Ask more','?'+text]]}:L&&!L.miss?L:{say:'Sorry, I couldn’t answer that right now.',chips:[['Open in Ask','?'+text]]}}}}
   if(r&&r.ask){const q=r.ask;status('Thinking…');const a=await aiAnswer(q,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});r=a?{say:a}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'To ask about things, open Ask once to set up the AI.',chips:[['Open in Ask','?'+q]]}}
   if(r&&r.miss){const miss=r.miss;r=null;status('Thinking…');const a=await aiAnswer(text,status).catch(()=>null);r=a?{say:a}:{say:`I couldn't find anything about ${quote(miss)} in your journal, threads, lists or habits.`}}
   if(!r&&!QRX.test(strip(text))&&/^(?:add|put|write|log|create|start|make|set|remind|schedule|note|save|mark|record|jot|track|new)\b/i.test(strip(text))){status('Working it out…');const p=await llmIntent(strip(text));if(p&&p.k)r=exec(p,text)}
