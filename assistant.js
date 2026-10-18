@@ -367,7 +367,10 @@ function speak(text){const t=String(text).replace(/[“”]/g,'"').replace(/[\u{
  if(window.speechSynthesis){try{const u=new SpeechSynthesisUtterance(t);if(vset().lang)u.lang=vset().lang;u.onend=u.onerror=()=>{if(SPK===id){SPK=null;afterSpeak()}};speechSynthesis.cancel();speechSynthesis.speak(u);return}catch(e){}}
  SPK=null;afterSpeak()}
 function hush(){SPK=null;try{if(NA&&NA.stopSpeaking)NA.stopSpeaking();else if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}paintHead()}
-function afterSpeak(){paintHead();const a=AS.after;AS.after=null;if(a==='listen'&&AS.open)setTimeout(()=>listen(),250);else wakePause(false)}
+function afterSpeak(){paintHead();const a=AS.after;AS.after=null;if(a==='listen'&&AS.open)setTimeout(()=>listen(),250);else{wakePause(false);handsOff()}}
+/* woken by "Hey Plot" while Plotline was closed or the phone locked: once the answer is spoken and nothing follows, step aside again */
+function handsOff(){if(!AS.bg||!NA||!NA.background)return;clearTimeout(AS.bgT);AS.bgT=setTimeout(()=>{if(!AS.bg||AS.busy||AS.listening||AS.await||SPK)return;AS.bg=false;asClose();try{NA.background()}catch(e){}},2500)}
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{if(AS.bg){AS.bg=false;clearTimeout(AS.bgT)}},true));
 
 /* ---------------- listening (the same mic as the rest of the app) ---------------- */
 function listen(){asOpen();const el=$('#asIn'),b=$('#asv .as-mic');if(!el||!b)return;if(typeof voiceAvail==='function'&&!voiceAvail()){toast('Voice isn’t available here. Type instead.');el.focus();return}hush();wakePause(true);el.value='';AS.listening=true;paintHead();voiceStart(el,b)}
@@ -376,7 +379,7 @@ function listen(){asOpen();const el=$('#asIn'),b=$('#asv .as-mic');if(!el||!b)re
 
 /* ---------------- wake word (Android) ---------------- */
 function wakePause(p){if(!NA||!NA.wakePause)return;try{NA.wakePause(!!p)}catch(e){}}
-function wakeSync(){if(!NA||!NA.wake)return;const a=aset(),v=vset();try{NA.wake(JSON.stringify({on:!!(a.wake||a.bg),bg:!!a.bg,name:aname(),lang:v.lang||'',cloud:!!v.cloud}))}catch(e){}}
+function wakeSync(){if(!NA||!NA.wake)return;const a=aset(),v=vset();try{NA.wake(JSON.stringify({on:!!(a.wake||a.bg),bg:!!a.bg,name:aname(),lang:v.lang||'',cloud:!!v.cloud,quiet:a.quiet!==false}))}catch(e){}}
 window.__assist=(k,a,b)=>{
  if(k==='tts'){if(a===SPK&&(b==='done'||b==='err')){SPK=null;afterSpeak()}return}
  if(k==='wake'){asOpen();vib();if(a!=='native')return listen();hush();AS.listening=AS.nlis=true;const i=$('#asIn');if(i)i.value='';paintHead();return}
@@ -413,8 +416,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&AS.open&&!$('#sheet
 window.addEventListener('hashchange',()=>{if(AS.open)asClose()});
 {const _b=window.__back;window.__back=()=>{if(AS.open){asClose();return true}return _b?_b():false}}
 
-/* routes from the widget, the app shortcut and the wake word: assistant, assistant-listen, assistant-type */
-{const _r=window.__route;window.__route=r=>{if(/^assistant/.test(r||'')){asOpen();const k=r.split('-')[1];setTimeout(()=>{if(k==='share'){if(shareIn())return;}takePending();if(k==='listen')listen();else if(k==='type')$('#asIn')?.focus()},450);return}return _r&&_r(r)}}
+/* routes from the widget, the app shortcut and the wake word: assistant, assistant-listen, assistant-type; the wake word heard in the background adds -bg */
+{const _r=window.__route;window.__route=r=>{if(/^assistant/.test(r||'')){if(/-bg$/.test(r))AS.bg=true;asOpen();const k=r.split('-')[1];setTimeout(()=>{if(k==='share'){if(shareIn())return;}takePending();if(k==='listen')listen();else if(k==='type')$('#asIn')?.focus()},450);return}return _r&&_r(r)}}
 
 /* the orb in every page's top bar */
 {const _g=gear;gear=function(){return(aset().btn?`<button class="ibtn as-btn" data-act="asOpen" aria-label="Talk to ${esc(aname())}" title="Talk to ${esc(aname())}"><span class="as-av"><i></i></span></button>`:'')+_g()}}
@@ -428,7 +431,8 @@ function assistHTML(){const a=aset(),st=nst(),v=vset();
  return`<section class="panel rv" id="assistPanel"><h3>Hey ${esc(aname())}</h3><p class="small muted">Your voice assistant. Ask it to add to today’s journal, start or update a thread, set a reminder, add to a list or mark a habit done, or ask things like “when did I last change my oil?”.</p>
  <div class="field"><label>Assistant’s name</label><input data-assist="name" maxlength="24" value="${esc(aname())}" placeholder="Plot"><small class="muted">You’ll say “Hey ${esc(aname())}”.</small></div>
  ${NA?row('wake',`Listen for “${esc(wakeWord())}” while Plotline is open`,'The phone’s speech recognizer listens in short rounds while the app is on screen',a.wake)+
- row('bg','Keep listening in the background',`Also works when Plotline is closed. Android shows a “Listening” notification the whole time and it uses more battery.${st.onDevice===false&&!v.cloud?' This phone has no on-device speech, so it needs online speech allowed.':''}`,a.bg)+
+ row('bg','Keep listening in the background',`Hands-free, even with the phone locked: say it and it answers out loud. Android needs a small silent notification while it listens, and it uses more battery.${st.onDevice===false&&!v.cloud?' This phone has no on-device speech, so it needs online speech allowed.':''}`,a.bg)+
+ row('quiet','Quiet listening','Mutes the speech recognizer’s start and stop beeps (and other notification sounds for that moment) so it doesn’t chime while it listens',a.quiet!==false)+
  (a.bg&&st.overlay===false?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>Let ${esc(aname())} pop up</b><small>So “${esc(wakeWord())}” can open Plotline over other apps. Without it you’ll get a notification to tap instead.</small></div><button class="btn sm" data-act="asOverlay">Allow</button></div>`:''):`<p class="small muted">The “${esc(wakeWord())}” wake word works in the Android app. Here, tap the orb at the top to talk.</p>`}
  <div class="field"><label>Read replies out loud</label><select data-assist="speak">${[['voice','When I talk to it'],['always','Always'],['never','Never']].map(([k,n])=>`<option value="${k}" ${a.speak===k?'selected':''}>${n}</option>`).join('')}</select></div>
  ${NA&&NA.openAssistSettings?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>${st.assistRole?`${esc(aname())} is your phone’s assistant`:`Use ${esc(aname())} as your phone’s assistant`}</b><small>${st.assistRole?'Press and hold the side button to talk to it from anywhere.':'Pick Plotline as the digital assistant app, then press and hold the side button to talk from anywhere. On Samsung: Settings › Advanced features › Side button › Press and hold › Digital assistant. This replaces Gemini on that button.'} You can also share text from any app to Plotline, or select text and tap Send to Plotline.</small></div><button class="btn sm" data-act="asRole">${st.assistRole?'Change':'Set up'}</button></div>`:''}

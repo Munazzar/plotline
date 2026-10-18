@@ -40,7 +40,7 @@ public class Assist {
     static String ttsLang = "";
     static String[] queued;
     static final Handler H = new Handler(Looper.getMainLooper());
-    static final String CH = "assistant";
+    static final String CH = "assistant", CH_HEARD = "assistant_heard";
 
     final Context c;
 
@@ -62,10 +62,10 @@ public class Assist {
         if (hooked) return;
         hooked = true;
         a.getApplication().registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
-            public void onActivityResumed(Activity x) { if (x instanceof MainActivity) { act = new WeakReference<MainActivity>((MainActivity) x); resumed = true; apply(x); } }
+            public void onActivityResumed(Activity x) { if (x instanceof MainActivity) { act = new WeakReference<MainActivity>((MainActivity) x); resumed = true; overLock(x); apply(x); } }
             public void onActivityPaused(Activity x) { if (x instanceof MainActivity) { resumed = false; apply(x); } }
-            public void onActivityCreated(Activity x, Bundle b) {}
-            public void onActivityStarted(Activity x) {}
+            public void onActivityCreated(Activity x, Bundle b) { if (x instanceof MainActivity) overLock(x); }
+            public void onActivityStarted(Activity x) { if (x instanceof MainActivity) overLock(x); }
             public void onActivityStopped(Activity x) {}
             public void onActivitySaveInstanceState(Activity x, Bundle b) {}
             public void onActivityDestroyed(Activity x) {}
@@ -116,6 +116,7 @@ public class Assist {
 
     /* "Hey Plot" on its own: a short tone, and the page shows it's listening (the loop hears the command itself) */
     static void woke(Context c) {
+        WakeLoop.unmute();
         try {
             final android.media.ToneGenerator t = new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 70);
             t.startTone(android.media.ToneGenerator.TONE_PROP_ACK, 160);
@@ -136,7 +137,8 @@ public class Assist {
             return;
         }
         prefs(c).edit().putString("pending", cmd).putLong("pendingAt", System.currentTimeMillis()).apply();
-        String route = cmd.isEmpty() ? "assistant-listen" : "assistant";
+        bgAt = System.currentTimeMillis();
+        String route = cmd.isEmpty() ? "assistant-listen-bg" : "assistant-bg"; /* -bg: step aside again after answering */
         boolean pop = Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(c);
         if (pop) {
             try { c.startActivity(open(c, route)); return; } catch (Exception e) {}
@@ -153,13 +155,46 @@ public class Assist {
         return i;
     }
 
+    /* Heard in the background with the phone locked or the screen off: Plotline comes up over the lock screen
+       (and turns the screen on) so it can answer out loud without unlocking, like Gemini does while you drive.
+       Only for a moment after "Hey Plot"; opening the app normally still goes through the lock screen. */
+    static long bgAt;
+
+    static void overLock(Activity x) {
+        boolean on = System.currentTimeMillis() - bgAt < 30000;
+        if (!on && !shownLocked) return;
+        shownLocked = on;
+        try {
+            if (Build.VERSION.SDK_INT >= 27) { x.setShowWhenLocked(on); x.setTurnScreenOn(on); }
+            else if (on) x.getWindow().addFlags(0x00080000 | 0x00200000); /* FLAG_SHOW_WHEN_LOCKED | FLAG_TURN_SCREEN_ON */
+            else x.getWindow().clearFlags(0x00080000 | 0x00200000);
+        } catch (Exception e) {}
+        if (on) bgAt = 0;
+    }
+    static boolean shownLocked;
+
+    /* back to whatever was on screen (or the lock screen) once a hands-free answer is done */
+    static void toBack() {
+        final MainActivity a = act.get();
+        if (a == null) return;
+        H.post(new Runnable() { public void run() {
+            try { if (shownLocked && Build.VERSION.SDK_INT >= 27) { a.setShowWhenLocked(false); a.setTurnScreenOn(false); shownLocked = false; } } catch (Exception e) {}
+            try { a.moveTaskToBack(true); } catch (Exception e) {}
+        } });
+    }
+
     static void notifyHeard(Context c, String cmd, String route) {
         try {
             NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
-            nm.createNotificationChannel(new NotificationChannel(CH, "Assistant", NotificationManager.IMPORTANCE_HIGH));
+            /* silent: no sound or buzz, but high enough to open Plotline straight away when the phone is locked */
+            NotificationChannel nc = new NotificationChannel(CH_HEARD, "Assistant", NotificationManager.IMPORTANCE_HIGH);
+            nc.setSound(null, null); nc.enableVibration(false);
+            nm.createNotificationChannel(nc);
+            try { nm.deleteNotificationChannel(CH); } catch (Exception e) {}
             PendingIntent pi = PendingIntent.getActivity(c, 2951, open(c, route), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            Notification n = new Notification.Builder(c, CH)
+            Notification n = new Notification.Builder(c, CH_HEARD)
                 .setSmallIcon(W.id(c, "ic_stat", "drawable")).setColor(0xFFFFB547)
+                .setFullScreenIntent(pi, true).setOnlyAlertOnce(true)
                 .setContentTitle(cmd.isEmpty() ? "I'm listening. Tap to talk" : "Tap to finish: “" + cmd + "”")
                 .setContentIntent(pi).setAutoCancel(true).setTimeoutAfter(120000)
                 .setCategory(Notification.CATEGORY_MESSAGE).build();
@@ -194,6 +229,7 @@ public class Assist {
                 tts.setLanguage(lang.isEmpty() ? Locale.getDefault() : Locale.forLanguageTag(lang));
             }
             tts.setSpeechRate((float) (rate > 0 ? rate : 1));
+            WakeLoop.unmute(); /* never answer into a hushed stream */
             ttsPause = true;
             applyNow(c);
             if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) { ttsPause = false; applyNow(c); done(id, "err"); }
@@ -214,6 +250,7 @@ public class Assist {
             o.put("bgOff", prefs(c).getBoolean("bgOff", false));
             o.put("assistRole", assistRole(c));
             o.put("share", true);
+            o.put("handsFree", true);
             prefs(c).edit().putBoolean("bgOff", false).apply();
             return o.toString();
         } catch (Exception e) { return "{}"; }
@@ -257,6 +294,10 @@ public class Assist {
         p.edit().remove("share").remove("shareAt").apply();
         return System.currentTimeMillis() - at < 600000 ? s : "";
     }
+
+    /* a hands-free answer is done: step aside (back to the lock screen or the app you were in) */
+    @JavascriptInterface
+    public void background() { toBack(); }
 
     /* is Plotline the phone's digital assistant (side button / long-press home)? */
     static boolean assistRole(Context c) {

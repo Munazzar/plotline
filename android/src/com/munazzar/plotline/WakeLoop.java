@@ -2,6 +2,7 @@ package com.munazzar.plotline;
 
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,6 +22,8 @@ import java.util.regex.Pattern;
    recognizer every few seconds, which is what made listening choppy; phones that refuse it fall back to rounds.
    "Hey Plot" on its own arms the loop: the next thing said (within 8 s) is the command, heard by the same
    session, so there is no gap or second beep before you speak.
+   Hands-free: the recognizer's start/stop beeps are hushed by muting the notification and system sounds (and media,
+   unless something is playing) for a moment around each round, so nothing chimes every few seconds while it listens.
    Runs on the main thread. Used by Assist (while the app is on screen) and AssistService (in the background). */
 final class WakeLoop implements RecognitionListener {
     interface Cb { void heard(String cmd); void wake(); void partial(String s); void state(String s); }
@@ -43,7 +46,64 @@ final class WakeLoop implements RecognitionListener {
     final Runnable goR = new Runnable() { public void run() { go(); } };
     final Runnable unstick = new Runnable() { public void run() { if (paused) setPaused(false); } };
 
-    WakeLoop(Context c, Cb cb) { this.c = c.getApplicationContext(); this.cb = cb; }
+    WakeLoop(Context c, Cb cb) { this.c = c.getApplicationContext(); this.cb = cb; restore(this.c); }
+
+    /* ---- hushing the recognizer's beeps ---- */
+    static final int[] QUIET = {AudioManager.STREAM_NOTIFICATION, AudioManager.STREAM_SYSTEM, AudioManager.STREAM_MUSIC};
+    static final java.util.HashSet<Integer> muted = new java.util.HashSet<Integer>();
+    static final Handler mh = new Handler(Looper.getMainLooper());
+    static Context mc;
+    static final Runnable unmuteR = new Runnable() { public void run() { unmute(); } };
+
+    /* mutes for ms, then puts every stream it muted back; streams the user muted themselves are left alone */
+    void hush(long ms) {
+        if (!quiet()) return;
+        mc = c;
+        AudioManager am = (AudioManager) c.getSystemService(Context.AUDIO_SERVICE);
+        if (am != null) {
+            boolean media = am.isMusicActive();
+            for (int st : QUIET) {
+                if (muted.contains(st) || (st == AudioManager.STREAM_MUSIC && media)) continue;
+                try {
+                    if (am.isStreamMute(st)) continue;
+                    am.adjustStreamVolume(st, AudioManager.ADJUST_MUTE, 0);
+                    muted.add(st);
+                } catch (Exception e) {}
+            }
+            save();
+        }
+        mh.removeCallbacks(unmuteR);
+        mh.postDelayed(unmuteR, ms);
+    }
+
+    static void unmute() {
+        mh.removeCallbacks(unmuteR);
+        if (muted.isEmpty() || mc == null) return;
+        AudioManager am = (AudioManager) mc.getSystemService(Context.AUDIO_SERVICE);
+        for (int st : muted) { try { if (am != null) am.adjustStreamVolume(st, AudioManager.ADJUST_UNMUTE, 0); } catch (Exception e) {} }
+        muted.clear();
+        save();
+    }
+
+    boolean quiet() { return Assist.cfg(c).optBoolean("quiet", true); }
+
+    /* remembered so a crash mid-hush can't leave the phone muted */
+    static void save() {
+        if (mc == null) return;
+        StringBuilder b = new StringBuilder();
+        for (int st : muted) b.append(st).append(',');
+        try { Assist.prefs(mc).edit().putString("hushed", b.toString()).apply(); } catch (Exception e) {}
+    }
+
+    static void restore(Context c) {
+        if (!muted.isEmpty()) return;
+        String s;
+        try { s = Assist.prefs(c).getString("hushed", ""); } catch (Exception e) { return; }
+        if (s == null || s.isEmpty()) return;
+        mc = c;
+        for (String t : s.split(",")) { try { if (!t.isEmpty()) muted.add(Integer.parseInt(t)); } catch (Exception e) {} }
+        unmute();
+    }
 
     void config(String n, String l, boolean cl) {
         ArrayList<String> t = new ArrayList<String>();
@@ -60,7 +120,7 @@ final class WakeLoop implements RecognitionListener {
 
     void start() { if (running) return; running = true; fails = 0; if (!paused) h.post(goR); }
 
-    void stop() { running = false; armedUntil = 0; h.removeCallbacks(unstick); h.removeCallbacks(disarm); kill(); destroy(); cb.state("off"); }
+    void stop() { unmute(); running = false; armedUntil = 0; h.removeCallbacks(unstick); h.removeCallbacks(disarm); kill(); destroy(); cb.state("off"); }
 
     /* paused while Plotline uses the mic itself or talks; resumes on its own after a while in case nobody says so */
     void setPaused(boolean p) {
@@ -101,6 +161,7 @@ final class WakeLoop implements RecognitionListener {
             }
             listening = true;
             started = System.currentTimeMillis();
+            hush(1200);
             rec.startListening(i);
             cb.state("listening");
         } catch (Exception e) {
@@ -197,6 +258,7 @@ final class WakeLoop implements RecognitionListener {
     final Runnable disarm = new Runnable() { public void run() { if (armedUntil > 0) { armedUntil = 0; cb.state("timeout"); } } };
 
     public void onResults(Bundle b) {
+        hush(900);
         if (handle(b)) return;
         next(armedUntil > 0 ? 0 : 120);
     }
@@ -204,9 +266,10 @@ final class WakeLoop implements RecognitionListener {
     /* segmented sessions (Android 13+): a result at every pause, the session keeps going */
     public void onSegmentResults(Bundle b) { handle(b); }
 
-    public void onEndOfSegmentedSession() { if (listening) next(80); }
+    public void onEndOfSegmentedSession() { hush(900); if (listening) next(80); }
 
     public void onError(int e) {
+        hush(900);
         listening = false;
         if (!running || paused) return;
         if (seg && System.currentTimeMillis() - started < 1500 && e != SpeechRecognizer.ERROR_NO_MATCH && e != SpeechRecognizer.ERROR_SPEECH_TIMEOUT && ++segFails >= 2) seg = false;
@@ -222,10 +285,10 @@ final class WakeLoop implements RecognitionListener {
         ArrayList<String> r = b == null ? null : b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
         if (r != null && !r.isEmpty()) { String m = match(r.get(0)); cb.partial(m != null ? m : r.get(0)); }
     }
-    public void onReadyForSpeech(Bundle b) {}
+    public void onReadyForSpeech(Bundle b) { hush(600); }
     public void onBeginningOfSpeech() {}
     public void onRmsChanged(float v) {}
     public void onBufferReceived(byte[] b) {}
-    public void onEndOfSpeech() {}
+    public void onEndOfSpeech() { hush(900); }
     public void onEvent(int t, Bundle b) {}
 }
