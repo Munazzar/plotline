@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lets Plotline be picked as the phone's digital assistant (Settings › Apps › Default apps › Digital assistant app).
+     The side button / long-press home then opens Plot. -->
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:sessionService="com.munazzar.plotline.AssistSessionService"
+    android:recognitionService="com.munazzar.plotline.AssistRecognizer"
+    android:supportsAssist="true"/>

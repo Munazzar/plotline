@@ -212,6 +212,8 @@ public class Assist {
             o.put("overlay", Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(c));
             o.put("bg", AssistService.me != null);
             o.put("bgOff", prefs(c).getBoolean("bgOff", false));
+            o.put("assistRole", assistRole(c));
+            o.put("share", true);
             prefs(c).edit().putBoolean("bgOff", false).apply();
             return o.toString();
         } catch (Exception e) { return "{}"; }
@@ -244,6 +246,41 @@ public class Assist {
         p.edit().remove("pending").remove("pendingAt").apply();
         try { ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(2951); } catch (Exception e) {}
         return System.currentTimeMillis() - at < 180000 ? s : "";
+    }
+
+    /* text shared into Plotline (Share › Plotline, or select text › Send to Plotline), kept by AssistEntry */
+    @JavascriptInterface
+    public String takeShare() {
+        SharedPreferences p = prefs(c);
+        String s = p.getString("share", "");
+        long at = p.getLong("shareAt", 0);
+        p.edit().remove("share").remove("shareAt").apply();
+        return System.currentTimeMillis() - at < 600000 ? s : "";
+    }
+
+    /* is Plotline the phone's digital assistant (side button / long-press home)? */
+    static boolean assistRole(Context c) {
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                android.app.role.RoleManager rm = (android.app.role.RoleManager) c.getSystemService(Context.ROLE_SERVICE);
+                if (rm != null && rm.isRoleAvailable("android.app.role.ASSISTANT")) return rm.isRoleHeld("android.app.role.ASSISTANT");
+            }
+            String a = Settings.Secure.getString(c.getContentResolver(), "assistant");
+            return a != null && a.startsWith(c.getPackageName() + "/");
+        } catch (Exception e) { return false; }
+    }
+
+    @JavascriptInterface
+    public void openAssistSettings() {
+        String[] acts = {"android.settings.MANAGE_DEFAULT_APPS_SETTINGS", "android.settings.VOICE_INPUT_SETTINGS", Settings.ACTION_SETTINGS};
+        for (String a : acts) {
+            try {
+                Intent i = new Intent(a);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                c.startActivity(i);
+                return;
+            } catch (Exception e) {}
+        }
     }
 
     @JavascriptInterface

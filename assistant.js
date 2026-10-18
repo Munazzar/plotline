@@ -157,8 +157,25 @@ function answerAwait(a,t){const x=clean(t);if(/^(?:cancel|stop|never ?mind|no|no
  if(a.k==='journal')return addJournal(x);if(a.k==='thrnew')return newThread(x);if(a.k==='today')return addToday(x);
  if(a.k==='remind'){const p=exec({k:'remind',x},x);return p}
  if(a.k==='remwhat')return addReminder(x,a.w);
+ if(a.k==='share')return shareTo(a.text,x);
  if(a.k==='remwhen'){const w=parseWhen(x);if(!w.found)return{say:'Sorry, when? You can say something like “at 5pm” or “tomorrow morning”.',listen:true,await:a};return addReminder(a.title,w)}
  return null}
+
+/* text shared in from another app: the reply says where it goes */
+function shareTo(text,x){const l=lcs(x),first=text.split(/\n/)[0].slice(0,80);
+ if(/\b(?:ask|explain|summari[sz]e|what|why|who|how|tell me|meaning)\b/.test(l)&&!/\b(?:add|put|save)\b/.test(l))return{ask:(/^ask(?: about it)?$/.test(l)?'Tell me about this':x)+':\n\n'+text};
+ if(/\bremind/.test(l)){const w=parseWhen(x);if(w.found)return addReminder(first,w);return{say:'Sure. When should I remind you?',listen:true,await:{k:'remwhen',title:first}}}
+ if(/\b(?:new|start|create|make)\b.*\bthread\b|^thread$/.test(l)){const m=x.match(/\b(?:called|named|titled)\s+(.+)$/i);return m?newThread(m[1],text):newThread(first,text===first?'':text)}
+ if(/\b(?:journal|diary)\b/.test(l))return addJournal(text);
+ if(/^(?:today|(?:to\s+)?(?:my\s+)?today'?s\s+goals?|goals?\s+for\s+today|my day)$/.test(l.replace(/^(?:(?:add|put|save)\s+(?:it|this)\s+)?(?:to|on|in|for)\s+/,'')))return addToday(first);
+ const m=l.match(/\b(?:to|in|on|into)\s+(.+)$/)||l.match(/^(.+)$/);
+ if(m){const r=addTo(text,m[1]);if(r)return r}
+ return{say:`I'm not sure where that is. Should I add it to today's journal?`,listen:true,await:{k:'yesno',yes:()=>addJournal(text)}}}
+function shareIn(){if(!NA||!NA.takeShare)return false;let t='';try{t=NA.takeShare()||''}catch(e){}t=t.trim();if(!t)return false;
+ const turn={q:'Shared: '+(t.length>220?t.slice(0,220)+'…':t),a:'Where should this go?',t:Date.now(),id:uid(),chips:[]};
+ const go=q=>()=>{if(!AS.busy){AS.await={k:'share',text:t};run(q)}};
+ turn.chips=[{t:'Add to journal',fn:go('Add it to my journal')},{t:'Start a thread',fn:go('Start a new thread')},{t:'Add to today',fn:go('Add it to today')},{t:'Ask about it',fn:go('Ask about it')}];
+ AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.await={k:'share',text:t};paint(true);$('#asIn')?.setAttribute('placeholder','Say where, like “my car thread”');return true}
 
 /* ---------------- asking things ---------------- */
 /* everything with a date and some words, to answer "when did I last…" without an AI */
@@ -211,12 +228,13 @@ const QRX=/^(?:who|what|when|where|why|how|which|is|are|was|were|do|does|did|hav
 async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegExp('^(?:(?:hey|hi|ok(?:ay)?)\\s+)?'+aname().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[,.!]?\\s*','i'),'');
  if(!text){listen();return}
  if(AS.busy){toast('Still working on the last one');return}
- asOpen();wakePause(true);const turn={q:text,a:'',chips:[],t:Date.now(),id:uid(),wait:true};AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.spoken=!!o.spoken;AS.busy=true;AS.ctl=new AbortController();paint(true);
+ asOpen();wakePause(true);$('#asIn')?.setAttribute('placeholder','Ask or tell me something…');const turn={q:text,a:'',chips:[],t:Date.now(),id:uid(),wait:true};AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.spoken=!!o.spoken;AS.busy=true;AS.ctl=new AbortController();paint(true);
  let r=null;
  try{const aw=AS.await;AS.await=null;
   if(aw)r=answerAwait(aw,text);
   if(!r){const p=parse(text);if(p)r=exec(p,text)}
   if(!r)r=localAsk(text);
+  if(r&&r.ask){const q=r.ask;status('Thinking…');const a=await aiAnswer(q,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});r=a?{say:a}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'To ask about things, open Ask once to set up the AI.',chips:[['Open in Ask','?'+q]]}}
   if(r&&r.miss){const miss=r.miss;r=null;status('Thinking…');const a=await aiAnswer(text,status).catch(()=>null);r=a?{say:a}:{say:`I couldn't find anything about ${quote(miss)} in your journal, threads, lists or habits.`}}
   if(!r&&!QRX.test(strip(text))&&/^(?:add|put|write|log|create|start|make|set|remind|schedule|note|save|mark|record|jot|track|new)\b/i.test(strip(text))){status('Working it out…');const p=await llmIntent(strip(text));if(p&&p.k)r=exec(p,text)}
   if(!r){status('Thinking…');const a=await aiAnswer(text,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
@@ -281,7 +299,7 @@ window.addEventListener('hashchange',()=>{if(AS.open)asClose()});
 {const _b=window.__back;window.__back=()=>{if(AS.open){asClose();return true}return _b?_b():false}}
 
 /* routes from the widget, the app shortcut and the wake word: assistant, assistant-listen, assistant-type */
-{const _r=window.__route;window.__route=r=>{if(/^assistant/.test(r||'')){asOpen();const k=r.split('-')[1];setTimeout(()=>{takePending();if(k==='listen')listen();else if(k==='type')$('#asIn')?.focus()},450);return}return _r&&_r(r)}}
+{const _r=window.__route;window.__route=r=>{if(/^assistant/.test(r||'')){asOpen();const k=r.split('-')[1];setTimeout(()=>{if(k==='share'){if(shareIn())return;}takePending();if(k==='listen')listen();else if(k==='type')$('#asIn')?.focus()},450);return}return _r&&_r(r)}}
 
 /* the orb in every page's top bar */
 {const _g=gear;gear=function(){return(aset().btn?`<button class="ibtn as-btn" data-act="asOpen" aria-label="Talk to ${esc(aname())}" title="Talk to ${esc(aname())}"><span class="as-av"><i></i></span></button>`:'')+_g()}}
@@ -298,6 +316,7 @@ function assistHTML(){const a=aset(),st=nst(),v=vset();
  row('bg','Keep listening in the background',`Also works when Plotline is closed. Android shows a “Listening” notification the whole time and it uses more battery.${st.onDevice===false&&!v.cloud?' This phone has no on-device speech, so it needs online speech allowed.':''}`,a.bg)+
  (a.bg&&st.overlay===false?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>Let ${esc(aname())} pop up</b><small>So “${esc(wakeWord())}” can open Plotline over other apps. Without it you’ll get a notification to tap instead.</small></div><button class="btn sm" data-act="asOverlay">Allow</button></div>`:''):`<p class="small muted">The “${esc(wakeWord())}” wake word works in the Android app. Here, tap the orb at the top to talk.</p>`}
  <div class="field"><label>Read replies out loud</label><select data-assist="speak">${[['voice','When I talk to it'],['always','Always'],['never','Never']].map(([k,n])=>`<option value="${k}" ${a.speak===k?'selected':''}>${n}</option>`).join('')}</select></div>
+ ${NA&&NA.openAssistSettings?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>${st.assistRole?`${esc(aname())} is your phone’s assistant`:`Use ${esc(aname())} as your phone’s assistant`}</b><small>${st.assistRole?'Press and hold the side button to talk to it from anywhere.':'Pick Plotline as the digital assistant app, then press and hold the side button to talk from anywhere. On Samsung: Settings › Advanced features › Side button › Press and hold › Digital assistant. This replaces Gemini on that button.'} You can also share text from any app to Plotline, or select text and tap Send to Plotline.</small></div><button class="btn sm" data-act="asRole">${st.assistRole?'Change':'Set up'}</button></div>`:''}
  ${row('btn','Assistant button in the top bar','The orb next to search and settings',a.btn)}
  <div class="actions left"><button class="btn sm pri" data-act="asOpen">Try it</button></div></section>`}
 {const _vh=voiceHTML;voiceHTML=function(){return _vh()+assistHTML()}}
@@ -305,7 +324,7 @@ document.addEventListener('change',async e=>{const t=e.target;if(!t.dataset||!t.
  if(k==='name'){v=String(v).replace(/[^\p{L}\p{N} '\-]/gu,'').trim().slice(0,24)||'Plot';v=cap(v)}
  if((k==='wake'||k==='bg')&&v){const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud){const ok=await voiceConsent();if(!ok){t.checked=false;return}}if(!(await permAsk('mic','android.permission.RECORD_AUDIO'))){t.checked=false;return toast('Allow the microphone to use the wake word')}if(k==='bg')askNotif()}
  S.settings.assist={...aset(),[k]:v};save();wakeSync();render(false);if((k==='wake'||k==='bg')&&v)toast(`Say “${wakeWord()}” to try it`)});
-Object.assign(ACT,{asWakeOn:async()=>{const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud&&!(await voiceConsent()))return;if(!(await permAsk('mic','android.permission.RECORD_AUDIO')))return toast('Allow the microphone to use the wake word');S.settings.assist={...aset(),wake:true};save();wakeSync();paint();toast(`Say “${wakeWord()}” while Plotline is open`)},asOverlay:()=>{try{NA.openOverlaySettings()}catch(e){}}});
+Object.assign(ACT,{asWakeOn:async()=>{const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud&&!(await voiceConsent()))return;if(!(await permAsk('mic','android.permission.RECORD_AUDIO')))return toast('Allow the microphone to use the wake word');S.settings.assist={...aset(),wake:true};save();wakeSync();paint();toast(`Say “${wakeWord()}” while Plotline is open`)},asOverlay:()=>{try{NA.openOverlaySettings()}catch(e){}},asRole:()=>{try{NA.openAssistSettings()}catch(e){}}});
 
 /* ---------------- start ---------------- */
 function rerender(){try{render(false)}catch(e){}}

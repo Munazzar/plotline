@@ -13,3 +13,34 @@
     <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_assist_info"/>
 </receiver>
 <service android:name="com.munazzar.plotline.AssistService" android:exported="false" android:foregroundServiceType="microphone"/>
+<!-- Phone assistant (side button / long-press home) and Share › Plotline, also inside <application>: -->
+<activity android:name="com.munazzar.plotline.AssistEntry" android:exported="true" android:label="Send to Plotline" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:noHistory="true" android:excludeFromRecents="true" android:taskAffinity="">
+    <intent-filter>
+        <action android:name="android.intent.action.ASSIST"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+    </intent-filter>
+    <intent-filter android:label="Plotline">
+        <action android:name="android.intent.action.SEND"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <data android:mimeType="text/plain"/>
+    </intent-filter>
+    <intent-filter>
+        <action android:name="android.intent.action.PROCESS_TEXT"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <data android:mimeType="text/plain"/>
+    </intent-filter>
+</activity>
+<service android:name="com.munazzar.plotline.AssistVIS" android:exported="true" android:label="Plotline" android:permission="android.permission.BIND_VOICE_INTERACTION">
+    <meta-data android:name="android.voice_interaction" android:resource="@xml/assist_interaction"/>
+    <intent-filter>
+        <action android:name="android.service.voice.VoiceInteractionService"/>
+    </intent-filter>
+</service>
+<service android:name="com.munazzar.plotline.AssistSessionService" android:exported="true" android:permission="android.permission.BIND_VOICE_INTERACTION"/>
+<service android:name="com.munazzar.plotline.AssistRecognizer" android:exported="true" android:label="Plotline">
+    <intent-filter>
+        <action android:name="android.speech.RecognitionService"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+    </intent-filter>
+    <meta-data android:name="android.speech" android:resource="@xml/assist_recognizer"/>
+</service>
