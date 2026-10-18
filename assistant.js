@@ -262,35 +262,64 @@ function actLines(n){const L=(S.settings&&S.settings.actLog)||{},tn=dnum(ymd()),
   const b=[+o.s>0&&`${(+o.s).toLocaleString()} steps`,+o.dm>0&&`${(o.dm/1000).toFixed(1)} km`,+o.z>0&&`slept ${spMin(o.z)}`,w>0&&`exercise ${spMin(w)}`,o.m!=null&&`screen time ${spMin(o.m)}`,(o.w||[]).length&&`workouts: ${(o.w||[]).map(x=>x?((typeof ACT_EX!=='undefined'&&ACT_EX[x.k])||'workout')+(x.m?' '+spMin(x.m):''):'').filter(Boolean).join(', ')}`].filter(Boolean);
   if(b.length)out.push(`- ${new Date(y,mo-1,d).toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}${k===tn?' (today, so far)':k===tn-1?' (yesterday)':''}: ${b.join(', ')}`)}
  return out}
-function asCtx(q,r,hint,loc){const now=new Date(),thr=threads().filter(t=>t.status!=='archived').sort((a,b)=>(b.u||0)-(a.u||0)).slice(0,loc?6:12),A=actLines(loc?14:30);
- let tr='';try{tr=todayRead().say||''}catch(e){}
- return`TODAY IS ${now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}, ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}. Words like "this Tuesday", "last week" or "yesterday" mean dates relative to today.
-${hint?`
-LOOKED UP BY THE APP (exact, trust this)
-${hint}
-`:''}
-ABOUT ME
-${insOverview(loc?(IS_PHONE?900:1400):3000,q)}
-
-ACTIVITY FROM MY PHONE (newest first)
-${A.join('\n')||'- nothing synced'}
-
-TODAY
-${tr||'- nothing planned'}
-${thr.length?`
-MY THREADS
-${thr.map(t=>{const u=(t.ups||[]).filter(x=>!x.del&&x.x).slice(-1)[0];return`- ${t.title}${u?`: last update ${dayName(ymd(new Date(u.t)))} — ${trunc(u.x,90)}`:''}`}).join('\n')}
-`:''}${(S.lists||[]).length?`
-MY LISTS
-${(S.lists||[]).slice(0,10).map(L=>`- ${L.title}`).join('\n')}
-`:''}
-NOTES THAT MATCH
-${r.srcs.map((d,i)=>`[${i+1}] ${d.text}`).join('\n')||'(none)'}
-
-QUESTION
-${q}`}
+/* ---------------- everything Plot knows: the user's whole app, picked to fit the question ---------------- */
+const asDay=ds=>{const[y,m,d]=ds.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})};
+const moodName=m=>{const x=(typeof MOODS!=='undefined'?MOODS:[]).find(z=>z[0]===m);return x?x[1].toLowerCase():String(m||'')};
+const tsDay=t=>ymd(new Date(t));
+const tr=(x,n)=>{x=String(x||'').replace(/\s+/g,' ').trim();return x.length>n?x.slice(0,n-1)+'…':x};
+/* days the question is about: the past day or span it names, and the next such day if it reads like a plan */
+function askDays(q){const out=[],tn=dnum(ymd()),sp=pastSpan(q);
+ if(sp)for(let n=Math.max(sp.a,sp.b-13);n<=sp.b;n++)out.push(fromN(n));
+ if(/\b(?:tomorrow|tonight|next|coming|upcoming|plan(?:ned)?|schedule[d]?|will|going to|do i have|have i got|is on|what's on|whats on)\b|\b(?:mon|tues|wednes|thurs|fri|satur|sun)day\b/i.test(q)){try{const w=parseWhen(q);if(w&&w.found&&w.date&&dnum(w.date)>=tn&&!out.includes(w.date))out.push(w.date)}catch(e){}}
+ return out}
+/* one day, across the whole app */
+function daySummary(ds){const L=[],o=((S.settings&&S.settings.actLog)||{})[ds],n=dnum(ds),tn=dnum(ymd());
+ if(o){const w=typeof wkMin==='function'?wkMin(o):+o.x;const b=[+o.s>0&&`${(+o.s).toLocaleString()} steps`,+o.dm>0&&`${(o.dm/1000).toFixed(1)} km`,+o.z>0&&`slept ${spMin(o.z)}`,w>0&&`exercise ${spMin(w)}`,o.m!=null&&`screen time ${spMin(o.m)}`].filter(Boolean);if(b.length)L.push('activity: '+b.join(', '))}
+ if(n<=tn){const dn=[],ms=[];S.habits.forEach(h=>{if(h.status!=='active'||h.kind==='quit')return;try{if(hDone(h,ds))dn.push(h.title);else if(hDue(h,ds)&&!(h.skip||{})[ds]&&n<tn)ms.push(h.title)}catch(e){}});if(dn.length)L.push('habits done: '+dn.join(', '));if(ms.length)L.push('habits missed: '+ms.join(', '))}
+ const D=S.days.filter(x=>x.date===ds).sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));if(D.length)L.push('plan: '+D.map(x=>`${x.time?x.time+' ':''}${x.title}${x.done?' (done)':n<tn?' (not done)':''}${x.remind!=null&&x.remind!==''?' (reminder)':''}`).join('; '));
+ const st=[];S.goals.forEach(g=>(g.steps||[]).forEach(x=>{if(x.done&&x.doneAt&&tsDay(x.doneAt)===ds)st.push(`${x.title} (goal ${g.title})`);else if(!x.done&&x.due===ds)st.push(`${x.title} due (goal ${g.title})`)}));if(st.length)L.push('goal steps: '+st.join('; '));
+ const E=S.entries.filter(e=>e.type==='note'&&tsDay(e.t)===ds).sort((a,b)=>a.t-b.t);if(E.length)L.push('journal: '+E.map(e=>e.private?'a private entry':`${e.mood?'['+moodName(e.mood)+'] ':''}${tr((e.title?e.title+'. ':'')+(e.text||''),220)}`).join(' | '));
+ const U=[];threads().forEach(t=>(t.ups||[]).forEach(u=>{if(!u.del&&u.x&&tsDay(u.t)===ds)U.push(`${t.title}: ${tr(u.x,120)}`)}));if(U.length)L.push('thread updates: '+U.join('; '));
+ const I=[];(S.lists||[]).forEach(l=>Object.values(l.items||{}).forEach(x=>{if(!x.del&&x.done&&x.dt===ds)I.push(`${x.t} (${l.title})`)}));if(I.length)L.push('list items done: '+I.join(', '));
+ return`${asDay(ds)}${n===tn?' (today)':n===tn-1?' (yesterday)':n===tn+1?' (tomorrow)':''}: ${L.join('. ')||'nothing recorded'}`}
+function habitLine(h,full){const td=ymd(),tn=dnum(td);if(h.kind==='quit')return`- ${h.title}: quitting${typeof qDays==='function'?', '+qDays(h)+' days free':''}`;
+ let wk='';for(let k=tn-6;k<=tn;k++){const ds=fromN(k);let c='·';try{c=hDone(h,ds)?'✓':hDue(h,ds)?(k===tn?'…':'✗'):'·'}catch(e){}wk+=c}
+ let last='';try{const ds=Object.keys(h.log||{}).concat(Object.keys(h.rs||{})).filter(d=>/^\d{4}-\d\d-\d\d$/.test(d)&&hVal(h,d)>0).sort().pop();if(ds)last=asDay(ds)}catch(e){}
+ let streak='';try{streak=hStreak(h)}catch(e){}
+ return`- ${h.title}: ${typeof freqText==='function'?freqText(h).toLowerCase():''}${h.time?' at '+h.time:''}, streak ${streak}, today ${(()=>{try{return hDone(h,td)?'done':hDue(h,td)?'not done yet':'not due'}catch(e){return'?'}})()}, last 7 days ${wk}${last?', last done '+last:''}${full&&h.cue?', cue: '+h.cue:''}${full&&h.why?', why: '+tr(h.why,120):''}`}
+function goalLine(g,full){const nx=typeof nextStep==='function'?nextStep(g):null,open=(g.steps||[]).filter(x=>!x.done);
+ return`- ${g.title}: ${g.status}${typeof pct==='function'?', '+pct(g)+'% done':''}${g.targetDate?', target '+asDay(g.targetDate):''}${nx?`, next step: ${nx.title}${nx.due?' (due '+asDay(nx.due)+')':''}`:''}${full&&open.length>1?`, other open steps: ${open.slice(1,6).map(x=>x.title+(x.due?' ('+x.due+')':'')).join('; ')}`:''}${full&&g.why?', why: '+tr(g.why,140):''}`}
+/* names from the user's data that the question mentions: those get the full detail */
+const GEN=new Set(['go','do','get','make','have','day','time','take','new','my','daily','every','week','month','thing','stuff','work','start','stop','more','less','good','one','two','three']);
+function named(q){const qt=new Set(toks(q)),hit=t=>{const tt=toks(t);if(!tt.length)return 0;const m=tt.filter(w=>qt.has(w)||w.length>=4&&[...qt].some(x=>x.length>=4&&(x.startsWith(w)||w.startsWith(x)))),real=m.filter(w=>!GEN.has(w)&&!/^\d+$/.test(w));return real.length&&m.length>=Math.ceil(tt.length*.3)?m.length/tt.length:0};
+ const by=(xs,f)=>xs.map(x=>[x,hit(f(x))]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
+ return{h:by(S.habits.filter(h=>h.status!=='archived'),h=>h.title),g:by(S.goals,g=>g.title),t:by(threads().filter(t=>t.status!=='archived'),t=>t.title),l:by(S.lists||[],l=>l.title)}}
+function asCtx(q,r,hint,big){const now=new Date(),tn=dnum(ymd()),lq=lcs(q),N=named(q),days=askDays(q);
+ const head=`TODAY IS ${now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}, ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}.${S.settings.name?` The user's name is ${S.settings.name}.`:''} Words like "this Tuesday", "last week" or "yesterday" are dates relative to today. In habit rows, "last 7 days" runs oldest to today: ✓ done, ✗ missed, · not due, … due today and not done yet.`;
+ const sec=[];const add=(title,lines,score)=>{lines=lines.filter(Boolean);if(lines.length)sec.push({title,lines,score})};
+ if(hint)add('LOOKED UP BY THE APP (exact, trust this)',[hint],100);
+ add('THE DAYS ASKED ABOUT',days.map(daySummary),days.length?90:0);
+ add('MENTIONED BY NAME',[...N.h.map(h=>habitLine(h,1)),...N.g.map(g=>goalLine(g,1)),...N.t.map(t=>{const U=thrUps(t).slice(0,8);return`- thread ${t.title} (${t.status||'open'}): ${U.map(u=>tsDay(u.t)+' '+tr(u.x,140)).join(' · ')||'no updates'}`}),...N.l.map(l=>{const I=Object.values(l.items||{}).filter(x=>!x.del);return`- list ${l.title}: to do: ${I.filter(x=>!x.done).map(x=>x.t).join(', ')||'nothing'}; done: ${I.filter(x=>x.done).length}`})],85);
+ const kw=(rx,b)=>rx.test(lq)?b:0;
+ add('TODAY',[daySummary(ymd())],kw(/\btoday|tonight|now|so far|left|agenda|plate\b/,70)+20);
+ add('HABITS',S.habits.filter(h=>h.status==='active').map(h=>habitLine(h,0)),kw(/habit|streak|routine|did i|have i|miss|skip|quit|every ?day|consisten|daily/,60)+12);
+ add('GOALS',S.goals.filter(g=>g.status==='active').map(g=>goalLine(g,0)).concat(S.goals.filter(g=>g.status==='done').length?[`- achieved so far: ${S.goals.filter(g=>g.status==='done').slice(-8).map(g=>g.title).join(', ')}`]:[]),kw(/goal|plan|progress|step|next|target|achiev|working on|focus/,60)+11);
+ const up=S.days.filter(x=>!x.done&&dnum(x.date)>=tn-7&&dnum(x.date)<=tn+21).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.time||'99').localeCompare(b.time||'99'));
+ add('PLANS AND REMINDERS (not done)',up.map(x=>`- ${asDay(x.date)}${x.time?' '+x.time:''}: ${x.title}${dnum(x.date)<tn?' (overdue)':''}`),kw(/remind|plan|schedul|tomorrow|week|upcoming|coming|calendar|appointment|meeting|todo|to-do|to do|overdue|due/,60)+10);
+ const M=[];S.entries.filter(e=>e.type==='note'&&e.mood&&!e.private&&dnum(tsDay(e.t))>tn-21).sort((a,b)=>b.t-a.t).forEach(e=>M.push(`- ${asDay(tsDay(e.t))}: ${moodName(e.mood)}`));
+ add('MOODS (last 3 weeks)',M,kw(/mood|feel|felt|happy|sad|stress|anxi|tired|energ|emotion|week been|been doing/,60)+6);
+ add('ACTIVITY FROM THE PHONE (newest first)',actLines(big?30:14),kw(/step|walk|sleep|slept|screen|phone|exercis|workout|run|distance|calor|active|activity|health|fit/,60)+8);
+ const J=S.entries.filter(e=>e.type==='note'&&!e.private).sort((a,b)=>b.t-a.t).slice(0,big?12:5).map(e=>`- ${asDay(tsDay(e.t))}${e.mood?' ['+moodName(e.mood)+']':''}: ${tr((e.title?e.title+'. ':'')+(e.text||''),big?400:160)}`);
+ add('RECENT JOURNAL',J,kw(/journal|wrote|write|diary|note|entry|said|thought|remember/,60)+7);
+ add('MATCHING NOTES FROM ALL MY DATA',(r&&r.srcs||[]).map(d=>'- '+tr(d.text,big?600:260)),45);
+ add('THREADS',threads().filter(t=>t.status!=='archived').sort((a,b)=>(b.u||0)-(a.u||0)).slice(0,big?20:8).map(t=>{const u=thrUps(t)[0];return`- ${t.title}${t.status==='done'?' (done)':''}${u?`: last update ${asDay(tsDay(u.t))}, ${tr(u.x,big?160:80)}`:''}`}),kw(/thread|project|car|house|update|status|progress|last time|when did/,50)+5);
+ add('LISTS',(S.lists||[]).map(l=>{const I=Object.values(l.items||{}).filter(x=>!x.del),o=I.filter(x=>!x.done);return`- ${l.title}: ${o.length} to do${o.length?': '+o.slice(0,big?15:6).map(x=>x.t).join(', '):''}`}),kw(/list|grocer|shopping|buy|pack|to-?do|items?/,60)+4);
+ sec.sort((a,b)=>b.score-a.score);
+ const budget=big?30000:5200;let used=head.length+q.length+40;const parts=[head];
+ for(const s of sec){let block=`\n${s.title}\n`;for(const l of s.lines){if(used+block.length+l.length+1>budget)break;block+=l+'\n'}if(block.split('\n').length>3||s.lines.length&&block.length>s.title.length+3){used+=block.length;parts.push(block)}if(used>=budget)break}
+ return parts.join('\n')+`\nQUESTION\n${q}`}
 async function aiAnswer(q,onP,hint){if(!aiReady())return null;const e=planEngine(),loc=e!=='api'&&e!=='native';
- const r=await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);const prompt=asCtx(q,r,hint,loc);
+ const r=await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);const prompt=asCtx(q,r,hint,!loc&&e==='api');
  const msgs=[{role:'system',content:`You are ${aname()}, the voice assistant inside the Plotline app, like a personal Google Assistant that knows the user's own data. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. Answer the QUESTION in one to three short sentences that sound natural read aloud, using the data given: dates, activity numbers, plans, threads, lists and notes. If the app looked something up, use that answer. If the data doesn't have it, say what you do know in one sentence. For general questions (health, fitness, habits, planning, everyday facts), give a brief helpful answer. No lists, no markdown, no note numbers like [2]. Never answer with a refusal or a scope message.`},{role:'user',content:prompt}];
  let out='';const on=x=>{out+=x;onP&&onP('')};const opts={max_tokens:240,reading:'Thinking…'};
  if(e==='api')await apiChat(msgs,on,AS.ctl.signal,opts);else if(e==='native')await natChat(msgs,on,onP,()=>{out=''},opts);else await localChat(msgs,on,onP,0,()=>{out=''},false,opts);
@@ -417,7 +446,7 @@ function rerender(){try{render(false)}catch(e){}}
 function bgCheck(){if(nst().bgOff&&aset().bg){S.settings.assist={...aset(),bg:false};save();rerender()}}
 setTimeout(()=>{bgCheck();wakeSync();pushWidget2();takePending()},1200);
 window.addEventListener('app-resume',()=>{setTimeout(()=>{bgCheck();wakeSync();takePending()},300)});
-window.PLOT_ASSIST={run,parse,parseWhen,localAsk,aname};
+window.PLOT_ASSIST={run,asCtx,parse,parseWhen,localAsk,aname};
 
 const css=document.createElement('style');css.textContent=`
 .as-av{position:relative;width:30px;height:30px;border-radius:50%;flex:none;display:block;background:radial-gradient(circle at 35% 30%,#fff7 0,transparent 42%),conic-gradient(from 200deg,var(--accent),var(--c-learning),var(--c-career),var(--c-health),var(--accent));box-shadow:0 0 0 1px var(--line-2),0 6px 18px -6px var(--accent)}
