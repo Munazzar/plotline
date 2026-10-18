@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ids for the Assistant widget (w_root is already declared by the other widgets) -->
+<resources>
+    <item type="id" name="as_w_name" />
+    <item type="id" name="as_w_hint" />
+    <item type="id" name="as_w_body" />
+    <item type="id" name="as_w_q" />
+    <item type="id" name="as_w_a" />
+    <item type="id" name="as_w_talk" />
+    <item type="id" name="as_w_type" />
+</resources>
