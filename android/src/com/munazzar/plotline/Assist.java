@@ -98,6 +98,8 @@ public class Assist {
         final Context cc = c;
         if (inApp == null) inApp = new WakeLoop(c, new WakeLoop.Cb() {
             public void heard(String cmd) { Assist.heard(cc, cmd); }
+            public void wake() { Assist.woke(cc); }
+            public void partial(String s) { Assist.partial(s); }
             public void state(String s) { Assist.state(s); }
         });
         inApp.config(o.optString("name", "Plot"), o.optString("lang", ""), o.optBoolean("cloud"));
@@ -111,6 +113,18 @@ public class Assist {
         MainActivity a = act.get();
         if (a != null) a.js(code);
     }
+
+    /* "Hey Plot" on its own: a short tone, and the page shows it's listening (the loop hears the command itself) */
+    static void woke(Context c) {
+        try {
+            final android.media.ToneGenerator t = new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 70);
+            t.startTone(android.media.ToneGenerator.TONE_PROP_ACK, 160);
+            H.postDelayed(new Runnable() { public void run() { t.release(); } }, 400);
+        } catch (Exception e) {}
+        if (resumed) js("window.__assist&&window.__assist('wake','native','')");
+    }
+
+    static void partial(String s) { if (resumed) js("window.__assist&&window.__assist('partial'," + JSONObject.quote(s) + ",'')"); }
 
     static void state(String s) { if (resumed) js("window.__assist&&window.__assist('wstate'," + JSONObject.quote(s) + ",'')"); }
 
@@ -128,6 +142,7 @@ public class Assist {
             try { c.startActivity(open(c, route)); return; } catch (Exception e) {}
         }
         notifyHeard(c, cmd, route);
+        apply(c); /* nothing on screen will take over, so keep listening */
     }
 
     static Intent open(Context c, String route) {
@@ -197,6 +212,8 @@ public class Assist {
             o.put("overlay", Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(c));
             o.put("bg", AssistService.me != null);
             o.put("bgOff", prefs(c).getBoolean("bgOff", false));
+            o.put("assistRole", assistRole(c));
+            o.put("share", true);
             prefs(c).edit().putBoolean("bgOff", false).apply();
             return o.toString();
         } catch (Exception e) { return "{}"; }
@@ -229,6 +246,41 @@ public class Assist {
         p.edit().remove("pending").remove("pendingAt").apply();
         try { ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(2951); } catch (Exception e) {}
         return System.currentTimeMillis() - at < 180000 ? s : "";
+    }
+
+    /* text shared into Plotline (Share › Plotline, or select text › Send to Plotline), kept by AssistEntry */
+    @JavascriptInterface
+    public String takeShare() {
+        SharedPreferences p = prefs(c);
+        String s = p.getString("share", "");
+        long at = p.getLong("shareAt", 0);
+        p.edit().remove("share").remove("shareAt").apply();
+        return System.currentTimeMillis() - at < 600000 ? s : "";
+    }
+
+    /* is Plotline the phone's digital assistant (side button / long-press home)? */
+    static boolean assistRole(Context c) {
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                android.app.role.RoleManager rm = (android.app.role.RoleManager) c.getSystemService(Context.ROLE_SERVICE);
+                if (rm != null && rm.isRoleAvailable("android.app.role.ASSISTANT")) return rm.isRoleHeld("android.app.role.ASSISTANT");
+            }
+            String a = Settings.Secure.getString(c.getContentResolver(), "assistant");
+            return a != null && a.startsWith(c.getPackageName() + "/");
+        } catch (Exception e) { return false; }
+    }
+
+    @JavascriptInterface
+    public void openAssistSettings() {
+        String[] acts = {"android.settings.MANAGE_DEFAULT_APPS_SETTINGS", "android.settings.VOICE_INPUT_SETTINGS", Settings.ACTION_SETTINGS};
+        for (String a : acts) {
+            try {
+                Intent i = new Intent(a);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                c.startActivity(i);
+                return;
+            } catch (Exception e) {}
+        }
     }
 
     @JavascriptInterface

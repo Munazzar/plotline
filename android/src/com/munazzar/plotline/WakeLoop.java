@@ -17,9 +17,13 @@ import java.util.regex.Pattern;
    speech (or a few seconds of quiet) and the next one starts straight away. Uses the on-device recognizer when
    the phone has one (Android 12+), so audio stays on the phone; otherwise the regular one, only if online speech
    is allowed in Settings. "hey plot add milk to groceries" in one breath is heard as the wake word plus a command.
+   On Android 13+ a round is one long "segmented" session (a minute, split at each pause) instead of a new
+   recognizer every few seconds, which is what made listening choppy; phones that refuse it fall back to rounds.
+   "Hey Plot" on its own arms the loop: the next thing said (within 8 s) is the command, heard by the same
+   session, so there is no gap or second beep before you speak.
    Runs on the main thread. Used by Assist (while the app is on screen) and AssistService (in the background). */
 final class WakeLoop implements RecognitionListener {
-    interface Cb { void heard(String cmd); void state(String s); }
+    interface Cb { void heard(String cmd); void wake(); void partial(String s); void state(String s); }
 
     static final String[] PRE = {"hey", "hi", "hay", "ok", "okay", "hello", "yo", "hei"};
     static final Pattern WORD = Pattern.compile("[\\p{L}\\p{N}']+");
@@ -32,7 +36,9 @@ final class WakeLoop implements RecognitionListener {
     String[] name = {"plot"};
     String lang = "";
     boolean cloud;
-    int fails;
+    int fails, segFails;
+    boolean seg = Build.VERSION.SDK_INT >= 33, forceCloud;
+    long started, armedUntil;
 
     final Runnable goR = new Runnable() { public void run() { go(); } };
     final Runnable unstick = new Runnable() { public void run() { if (paused) setPaused(false); } };
@@ -54,7 +60,7 @@ final class WakeLoop implements RecognitionListener {
 
     void start() { if (running) return; running = true; fails = 0; if (!paused) h.post(goR); }
 
-    void stop() { running = false; h.removeCallbacks(unstick); kill(); destroy(); cb.state("off"); }
+    void stop() { running = false; armedUntil = 0; h.removeCallbacks(unstick); h.removeCallbacks(disarm); kill(); destroy(); cb.state("off"); }
 
     /* paused while Plotline uses the mic itself or talks; resumes on its own after a while in case nobody says so */
     void setPaused(boolean p) {
@@ -75,7 +81,7 @@ final class WakeLoop implements RecognitionListener {
         if (c.checkSelfPermission("android.permission.RECORD_AUDIO") != 0) { cb.state("perm"); return; }
         try {
             if (rec == null) {
-                onDevice = onDeviceAvailable(c);
+                onDevice = !forceCloud && onDeviceAvailable(c);
                 if (onDevice) rec = (SpeechRecognizer) SpeechRecognizer.class.getMethod("createOnDeviceSpeechRecognizer", Context.class).invoke(null, c);
                 else if (cloud && SpeechRecognizer.isRecognitionAvailable(c)) rec = SpeechRecognizer.createSpeechRecognizer(c);
                 else { cb.state("unavailable"); return; }
@@ -89,7 +95,12 @@ final class WakeLoop implements RecognitionListener {
             i.putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 1800L);
             i.putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 1500L);
             if (lang != null && !lang.isEmpty()) i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, lang);
+            if (seg) {
+                i.putExtra("android.speech.extra.SEGMENTED_SESSION", "android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS");
+                i.putExtra("android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 60000L);
+            }
             listening = true;
+            started = System.currentTimeMillis();
             rec.startListening(i);
             cb.state("listening");
         } catch (Exception e) {
@@ -166,28 +177,51 @@ final class WakeLoop implements RecognitionListener {
         return null;
     }
 
-    public void onResults(Bundle b) {
-        fails = 0;
+    /* one finished stretch of speech: a command after "hey plot", or the wake word (with or without one) */
+    boolean handle(Bundle b) {
+        fails = 0; segFails = 0;
+        ArrayList<String> r = b == null ? null : b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+        if (r == null || r.isEmpty() || !running || paused) return false;
         String m = best(b);
-        if (m != null && running && !paused) {
-            listening = false;
-            setPaused(true);
-            cb.heard(m);
-            return;
-        }
-        next(150);
+        if (m == null && armedUntil > System.currentTimeMillis()) m = r.get(0).trim();
+        if (m == null) return false;
+        if (m.isEmpty()) { armedUntil = System.currentTimeMillis() + 8000; h.removeCallbacks(disarm); h.postDelayed(disarm, 8000); cb.wake(); return false; }
+        armedUntil = 0;
+        h.removeCallbacks(disarm);
+        listening = false;
+        setPaused(true);
+        cb.heard(m);
+        return true;
     }
+
+    final Runnable disarm = new Runnable() { public void run() { if (armedUntil > 0) { armedUntil = 0; cb.state("timeout"); } } };
+
+    public void onResults(Bundle b) {
+        if (handle(b)) return;
+        next(armedUntil > 0 ? 0 : 120);
+    }
+
+    /* segmented sessions (Android 13+): a result at every pause, the session keeps going */
+    public void onSegmentResults(Bundle b) { handle(b); }
+
+    public void onEndOfSegmentedSession() { if (listening) next(80); }
 
     public void onError(int e) {
         listening = false;
         if (!running || paused) return;
-        if (e == SpeechRecognizer.ERROR_NO_MATCH || e == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) { fails = 0; next(200); return; }
+        if (seg && System.currentTimeMillis() - started < 1500 && e != SpeechRecognizer.ERROR_NO_MATCH && e != SpeechRecognizer.ERROR_SPEECH_TIMEOUT && ++segFails >= 2) seg = false;
+        if (e == SpeechRecognizer.ERROR_NO_MATCH || e == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) { fails = 0; next(120); return; }
         if (e == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) { cb.state("perm"); return; }
+        if ((e == 12 || e == 13) && onDevice && cloud) forceCloud = true; /* on-device can't do this language */
         destroy();
         retry();
     }
 
-    public void onPartialResults(Bundle b) {}
+    public void onPartialResults(Bundle b) {
+        if (armedUntil <= System.currentTimeMillis()) return;
+        ArrayList<String> r = b == null ? null : b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+        if (r != null && !r.isEmpty()) { String m = match(r.get(0)); cb.partial(m != null ? m : r.get(0)); }
+    }
     public void onReadyForSpeech(Bundle b) {}
     public void onBeginningOfSpeech() {}
     public void onRmsChanged(float v) {}

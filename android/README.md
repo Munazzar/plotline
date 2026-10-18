@@ -54,11 +54,20 @@ word, a voice and a widget, through a second JavaScript interface, `window.Plotl
 - **Widget** (`AssistWidget`, Plotline · Assistant): the last thing you said and the reply, with Talk (opens the app
   listening) and Type. Widgets can't use the mic or take typing themselves.
 - **App shortcut**: long-press the app icon › Assistant.
+- **Phone assistant** (`AssistVIS`, `AssistSessionService`, `AssistRecognizer`): Plotline can be picked as the
+  digital assistant app (Settings › Apps › Default apps; on Samsung, Side button › Press and hold › Digital assistant).
+  Holding the side button then opens Plot listening, through `AssistEntry`. Android requires an assistant to also offer
+  a speech recognizer, so `AssistRecognizer` passes recognition on to the phone's own one (Google's when installed).
+- **Share to Plot** (`AssistEntry`): Share › Plotline from any app, and Send to Plotline on selected text. The text is
+  kept for `takeShare()` and Plotline opens on the assistant, which asks where it goes (journal, a thread, today, a
+  list) or answers a question about it.
 
 ## Adding it to the Android build
 
-1. Compile `Assist.java`, `AssistService.java`, `AssistWidget.java` and `WakeLoop.java` with the other sources.
+1. Compile `Assist.java`, `AssistService.java`, `AssistWidget.java`, `WakeLoop.java`, `AssistEntry.java`, `AssistVIS.java`,
+   `AssistSessionService.java` and `AssistRecognizer.java` with the other sources.
 2. Copy `res/layout/widget_assist.xml`, `res/xml/widget_assist_info.xml`, `res/xml/assist_shortcuts.xml`,
+   `res/xml/assist_interaction.xml`, `res/xml/assist_recognizer.xml`,
    `res/values/assist_ids.xml` and `res/values/assist_strings.xml` into the app's `res/`.
 3. Add the lines in `AndroidManifest-assist.xml` where its comments say.
 4. One line in `MainActivity.onCreate`, after `PlotlineNative` is added:

@@ -157,8 +157,25 @@ function answerAwait(a,t){const x=clean(t);if(/^(?:cancel|stop|never ?mind|no|no
  if(a.k==='journal')return addJournal(x);if(a.k==='thrnew')return newThread(x);if(a.k==='today')return addToday(x);
  if(a.k==='remind'){const p=exec({k:'remind',x},x);return p}
  if(a.k==='remwhat')return addReminder(x,a.w);
+ if(a.k==='share')return shareTo(a.text,x);
  if(a.k==='remwhen'){const w=parseWhen(x);if(!w.found)return{say:'Sorry, when? You can say something like “at 5pm” or “tomorrow morning”.',listen:true,await:a};return addReminder(a.title,w)}
  return null}
+
+/* text shared in from another app: the reply says where it goes */
+function shareTo(text,x){const l=lcs(x),first=text.split(/\n/)[0].slice(0,80);
+ if(/\b(?:ask|explain|summari[sz]e|what|why|who|how|tell me|meaning)\b/.test(l)&&!/\b(?:add|put|save)\b/.test(l))return{ask:(/^ask(?: about it)?$/.test(l)?'Tell me about this':x)+':\n\n'+text};
+ if(/\bremind/.test(l)){const w=parseWhen(x);if(w.found)return addReminder(first,w);return{say:'Sure. When should I remind you?',listen:true,await:{k:'remwhen',title:first}}}
+ if(/\b(?:new|start|create|make)\b.*\bthread\b|^thread$/.test(l)){const m=x.match(/\b(?:called|named|titled)\s+(.+)$/i);return m?newThread(m[1],text):newThread(first,text===first?'':text)}
+ if(/\b(?:journal|diary)\b/.test(l))return addJournal(text);
+ if(/^(?:today|(?:to\s+)?(?:my\s+)?today'?s\s+goals?|goals?\s+for\s+today|my day)$/.test(l.replace(/^(?:(?:add|put|save)\s+(?:it|this)\s+)?(?:to|on|in|for)\s+/,'')))return addToday(first);
+ const m=l.match(/\b(?:to|in|on|into)\s+(.+)$/)||l.match(/^(.+)$/);
+ if(m){const r=addTo(text,m[1]);if(r)return r}
+ return{say:`I'm not sure where that is. Should I add it to today's journal?`,listen:true,await:{k:'yesno',yes:()=>addJournal(text)}}}
+function shareIn(){if(!NA||!NA.takeShare)return false;let t='';try{t=NA.takeShare()||''}catch(e){}t=t.trim();if(!t)return false;
+ const turn={q:'Shared: '+(t.length>220?t.slice(0,220)+'…':t),a:'Where should this go?',t:Date.now(),id:uid(),chips:[]};
+ const go=q=>()=>{if(!AS.busy){AS.await={k:'share',text:t};run(q)}};
+ turn.chips=[{t:'Add to journal',fn:go('Add it to my journal')},{t:'Start a thread',fn:go('Start a new thread')},{t:'Add to today',fn:go('Add it to today')},{t:'Ask about it',fn:go('Ask about it')}];
+ AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.await={k:'share',text:t};paint(true);$('#asIn')?.setAttribute('placeholder','Say where, like “my car thread”');return true}
 
 /* ---------------- asking things ---------------- */
 /* everything with a date and some words, to answer "when did I last…" without an AI */
@@ -211,12 +228,13 @@ const QRX=/^(?:who|what|when|where|why|how|which|is|are|was|were|do|does|did|hav
 async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegExp('^(?:(?:hey|hi|ok(?:ay)?)\\s+)?'+aname().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[,.!]?\\s*','i'),'');
  if(!text){listen();return}
  if(AS.busy){toast('Still working on the last one');return}
- asOpen();wakePause(true);const turn={q:text,a:'',chips:[],t:Date.now(),id:uid(),wait:true};AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.spoken=!!o.spoken;AS.busy=true;AS.ctl=new AbortController();paint(true);
+ asOpen();wakePause(true);$('#asIn')?.setAttribute('placeholder','Ask or tell me something…');const turn={q:text,a:'',chips:[],t:Date.now(),id:uid(),wait:true};AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.spoken=!!o.spoken;AS.busy=true;AS.ctl=new AbortController();paint(true);
  let r=null;
  try{const aw=AS.await;AS.await=null;
   if(aw)r=answerAwait(aw,text);
   if(!r){const p=parse(text);if(p)r=exec(p,text)}
   if(!r)r=localAsk(text);
+  if(r&&r.ask){const q=r.ask;status('Thinking…');const a=await aiAnswer(q,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});r=a?{say:a}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'To ask about things, open Ask once to set up the AI.',chips:[['Open in Ask','?'+q]]}}
   if(r&&r.miss){const miss=r.miss;r=null;status('Thinking…');const a=await aiAnswer(text,status).catch(()=>null);r=a?{say:a}:{say:`I couldn't find anything about ${quote(miss)} in your journal, threads, lists or habits.`}}
   if(!r&&!QRX.test(strip(text))&&/^(?:add|put|write|log|create|start|make|set|remind|schedule|note|save|mark|record|jot|track|new)\b/i.test(strip(text))){status('Working it out…');const p=await llmIntent(strip(text));if(p&&p.k)r=exec(p,text)}
   if(!r){status('Thinking…');const a=await aiAnswer(text,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
@@ -246,15 +264,16 @@ function wakePause(p){if(!NA||!NA.wakePause)return;try{NA.wakePause(!!p)}catch(e
 function wakeSync(){if(!NA||!NA.wake)return;const a=aset(),v=vset();try{NA.wake(JSON.stringify({on:!!(a.wake||a.bg),bg:!!a.bg,name:aname(),lang:v.lang||'',cloud:!!v.cloud}))}catch(e){}}
 window.__assist=(k,a,b)=>{
  if(k==='tts'){if(a===SPK&&(b==='done'||b==='err')){SPK=null;afterSpeak()}return}
- if(k==='wake'){asOpen();vib();listen();return}
- if(k==='cmd'){run(a,{spoken:true});return}
- if(k==='wstate'){AS.wst=a;paintHead();return}};
+ if(k==='wake'){asOpen();vib();if(a!=='native')return listen();hush();AS.listening=AS.nlis=true;const i=$('#asIn');if(i)i.value='';paintHead();return}
+ if(k==='partial'){const i=$('#asIn');if(AS.nlis&&i)i.value=a;return}
+ if(k==='cmd'){if(AS.nlis){AS.listening=AS.nlis=false;const i=$('#asIn');if(i)i.value=''}run(a,{spoken:true});return}
+ if(k==='wstate'){AS.wst=a;if(a==='timeout'&&AS.nlis){AS.listening=AS.nlis=false;const i=$('#asIn');if(i)i.value=''}paintHead();return}};
 function takePending(){if(!NA||!NA.takePending)return;let p='';try{p=NA.takePending()||''}catch(e){}if(p)setTimeout(()=>run(p,{spoken:true}),350)}
 
 /* ---------------- the sheet ---------------- */
 function headSub(){if(AS.busy)return AS.prog||'Thinking…';if(AS.listening)return'Listening…';if(SPK)return'Speaking…';const a=aset();if(NA&&(a.wake||a.bg)){const w=AS.wst||'';return w==='err'?'Can’t hear the wake word right now':w==='perm'?'Allow the microphone for the wake word':w==='unavailable'?'The wake word needs online speech allowed':`Say “${wakeWord()}” anytime`}return'Talk or type'}
 function asOpen(){AS.open=true;let el=$('#asv');if(!el){el=document.createElement('div');el.id='asv';el.className='aov asv';
- el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="ibtn sm" data-act="asClear" aria-label="Clear" title="Clear">${ic('plus')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form></div></section>`;
+ el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="as-stop" data-act="asStop" aria-label="Stop talking">■ Stop</button><button class="ibtn sm" data-act="asClear" aria-label="Clear" title="Clear">${ic('plus')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form></div></section>`;
  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'))}
  document.documentElement.classList.add('aov-on');paint(true);return el}
 function asClose(){AS.open=false;if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);hush();const el=$('#asv');document.documentElement.classList.remove('aov-on');if(!el)return;el.classList.remove('on');setTimeout(()=>{if(!AS.open)el.remove()},360);wakePause(false)}
@@ -268,7 +287,8 @@ function paint(scroll){const el=$('#asv');if(!el)return;paintHead();const b=el.q
 Object.assign(ACT,{
  asOpen:()=>{asOpen();setTimeout(()=>{if(!AS.turns.length&&NA&&typeof voiceAvail==='function'&&voiceAvail())listen();else $('#asIn')?.focus()},300)},
  asClose:()=>asClose(),
- asMic:()=>{if(VC&&VC.el&&VC.el.id==='asIn'){voiceStop(false,true);return}if(AS.busy){AS.ctl&&AS.ctl.abort();return}listen()},
+ asMic:()=>{if(VC&&VC.el&&VC.el.id==='asIn'){voiceStop(false,true);return}if(AS.busy){AS.ctl&&AS.ctl.abort();return}AS.nlis=false;listen()},
+ asStop:()=>{AS.after=null;if(AS.busy&&AS.ctl)AS.ctl.abort();if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);AS.listening=AS.nlis=false;hush();wakePause(false)},
  asTry:d=>run(d.q),
  asClear:()=>{AS.turns=[];AS.await=null;AS.undo={};hush();paint();pushWidget2()},
  asUndo:d=>{const f=AS.undo[d.id];if(!f)return;delete AS.undo[d.id];try{f()}catch(e){}const t=AS.turns.find(x=>x.id===d.id);if(t){t.chips=t.chips.filter(c=>!c.undo);t.a+=' (undone)'}paint();pushWidget2();toast('Undone')},
@@ -279,7 +299,7 @@ window.addEventListener('hashchange',()=>{if(AS.open)asClose()});
 {const _b=window.__back;window.__back=()=>{if(AS.open){asClose();return true}return _b?_b():false}}
 
 /* routes from the widget, the app shortcut and the wake word: assistant, assistant-listen, assistant-type */
-{const _r=window.__route;window.__route=r=>{if(/^assistant/.test(r||'')){asOpen();const k=r.split('-')[1];setTimeout(()=>{takePending();if(k==='listen')listen();else if(k==='type')$('#asIn')?.focus()},450);return}return _r&&_r(r)}}
+{const _r=window.__route;window.__route=r=>{if(/^assistant/.test(r||'')){asOpen();const k=r.split('-')[1];setTimeout(()=>{if(k==='share'){if(shareIn())return;}takePending();if(k==='listen')listen();else if(k==='type')$('#asIn')?.focus()},450);return}return _r&&_r(r)}}
 
 /* the orb in every page's top bar */
 {const _g=gear;gear=function(){return(aset().btn?`<button class="ibtn as-btn" data-act="asOpen" aria-label="Talk to ${esc(aname())}" title="Talk to ${esc(aname())}"><span class="as-av"><i></i></span></button>`:'')+_g()}}
@@ -296,6 +316,7 @@ function assistHTML(){const a=aset(),st=nst(),v=vset();
  row('bg','Keep listening in the background',`Also works when Plotline is closed. Android shows a “Listening” notification the whole time and it uses more battery.${st.onDevice===false&&!v.cloud?' This phone has no on-device speech, so it needs online speech allowed.':''}`,a.bg)+
  (a.bg&&st.overlay===false?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>Let ${esc(aname())} pop up</b><small>So “${esc(wakeWord())}” can open Plotline over other apps. Without it you’ll get a notification to tap instead.</small></div><button class="btn sm" data-act="asOverlay">Allow</button></div>`:''):`<p class="small muted">The “${esc(wakeWord())}” wake word works in the Android app. Here, tap the orb at the top to talk.</p>`}
  <div class="field"><label>Read replies out loud</label><select data-assist="speak">${[['voice','When I talk to it'],['always','Always'],['never','Never']].map(([k,n])=>`<option value="${k}" ${a.speak===k?'selected':''}>${n}</option>`).join('')}</select></div>
+ ${NA&&NA.openAssistSettings?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>${st.assistRole?`${esc(aname())} is your phone’s assistant`:`Use ${esc(aname())} as your phone’s assistant`}</b><small>${st.assistRole?'Press and hold the side button to talk to it from anywhere.':'Pick Plotline as the digital assistant app, then press and hold the side button to talk from anywhere. On Samsung: Settings › Advanced features › Side button › Press and hold › Digital assistant. This replaces Gemini on that button.'} You can also share text from any app to Plotline, or select text and tap Send to Plotline.</small></div><button class="btn sm" data-act="asRole">${st.assistRole?'Change':'Set up'}</button></div>`:''}
  ${row('btn','Assistant button in the top bar','The orb next to search and settings',a.btn)}
  <div class="actions left"><button class="btn sm pri" data-act="asOpen">Try it</button></div></section>`}
 {const _vh=voiceHTML;voiceHTML=function(){return _vh()+assistHTML()}}
@@ -303,7 +324,7 @@ document.addEventListener('change',async e=>{const t=e.target;if(!t.dataset||!t.
  if(k==='name'){v=String(v).replace(/[^\p{L}\p{N} '\-]/gu,'').trim().slice(0,24)||'Plot';v=cap(v)}
  if((k==='wake'||k==='bg')&&v){const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud){const ok=await voiceConsent();if(!ok){t.checked=false;return}}if(!(await permAsk('mic','android.permission.RECORD_AUDIO'))){t.checked=false;return toast('Allow the microphone to use the wake word')}if(k==='bg')askNotif()}
  S.settings.assist={...aset(),[k]:v};save();wakeSync();render(false);if((k==='wake'||k==='bg')&&v)toast(`Say “${wakeWord()}” to try it`)});
-Object.assign(ACT,{asWakeOn:async()=>{const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud&&!(await voiceConsent()))return;if(!(await permAsk('mic','android.permission.RECORD_AUDIO')))return toast('Allow the microphone to use the wake word');S.settings.assist={...aset(),wake:true};save();wakeSync();paint();toast(`Say “${wakeWord()}” while Plotline is open`)},asOverlay:()=>{try{NA.openOverlaySettings()}catch(e){}}});
+Object.assign(ACT,{asWakeOn:async()=>{const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud&&!(await voiceConsent()))return;if(!(await permAsk('mic','android.permission.RECORD_AUDIO')))return toast('Allow the microphone to use the wake word');S.settings.assist={...aset(),wake:true};save();wakeSync();paint();toast(`Say “${wakeWord()}” while Plotline is open`)},asOverlay:()=>{try{NA.openOverlaySettings()}catch(e){}},asRole:()=>{try{NA.openAssistSettings()}catch(e){}}});
 
 /* ---------------- start ---------------- */
 function rerender(){try{render(false)}catch(e){}}
@@ -340,6 +361,8 @@ const css=document.createElement('style');css.textContent=`
 .as-mic i{position:absolute;inset:0;border-radius:50%;pointer-events:none}
 .as-mic.rec i{box-shadow:0 0 0 calc(3px + var(--lv,0) * 10px) color-mix(in srgb,var(--accent) 30%,transparent);transition:box-shadow .12s}
 .asv.lis .as-row{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
+.as-stop{display:none;flex:none;height:34px;padding:0 14px;border-radius:17px;border:0;background:var(--accent);color:var(--on-accent);font:700 13px var(--f-body);cursor:pointer}
+.asv.spk .as-stop,.asv.busy .as-stop,.asv.lis .as-stop{display:block}
 @media (prefers-reduced-motion:reduce){.as-big,.asv .as-av{animation:none!important}}`;
 document.head.appendChild(css);
 })();
