@@ -46,10 +46,16 @@ word, a voice and a widget, through a second JavaScript interface, `window.Plotl
   opens the assistant listening. It pauses while Plotline uses the mic itself or is talking.
 - **While the app is open**: `Assist` runs the loop whenever MainActivity is on screen (found with activity lifecycle
   callbacks, so MainActivity itself needs no changes beyond registering the interface).
-- **In the background** (`AssistService`): a foreground service of type microphone with a "Listening" notification and
-  a Stop button. Android only allows this when it is started while the app is open. A command heard in the background
-  is kept and Plotline is opened on the assistant; Android only lets it open itself with "Display over other apps", so
-  without that permission a notification asks you to tap.
+- **In the background** (`AssistService`): a foreground service of type microphone with a silent, minimum-importance
+  "Listening" notification and a Stop button. Android only allows this when it is started while the app is open. A
+  command heard in the background is kept and Plotline is opened on the assistant (route `assistant-bg`); Android only
+  lets it open itself with "Display over other apps", otherwise a silent full-screen-intent notification
+  (`USE_FULL_SCREEN_INTENT`) opens it when the phone is locked, or asks you to tap.
+- **Hands-free**: right after a background wake, MainActivity shows over the lock screen and turns the screen on, so
+  the answer is spoken without unlocking; once it's done and nothing follows, `background()` sends Plotline back.
+  "Quiet listening" (`quiet` in the config, on by default) mutes the notification and system streams (and media,
+  unless something is playing) for a moment around each recognizer round so its start/stop beeps don't play; streams
+  are always unmuted before speaking, on stop, and on the next start after a crash.
 - **Voice**: Android's text-to-speech (`TextToSpeech`). The `TTS_SERVICE` query is needed to find the engine on Android 11+.
 - **Widget** (`AssistWidget`, Plotline · Assistant): the last thing you said and the reply, with Talk (opens the app
   listening) and Type. Widgets can't use the mic or take typing themselves.

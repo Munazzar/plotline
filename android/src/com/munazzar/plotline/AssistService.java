@@ -15,7 +15,7 @@ import org.json.JSONObject;
    with a notification shown the whole time. Its Stop button turns background listening off. */
 public class AssistService extends Service {
     static AssistService me;
-    static final String CH = "assistant_listen", STOP = "com.munazzar.plotline.ASSIST_STOP";
+    static final String CH = "assistant_listen_quiet", OLD_CH = "assistant_listen", STOP = "com.munazzar.plotline.ASSIST_STOP";
     static final int FG_MICROPHONE = 128; // ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE (API 30)
     WakeLoop loop;
 
@@ -58,15 +58,19 @@ public class AssistService extends Service {
     boolean foreground() {
         try {
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            nm.createNotificationChannel(new NotificationChannel(CH, "Listening for the wake word", NotificationManager.IMPORTANCE_LOW));
+            /* the lowest importance: no sound, no buzz, no status-bar icon, just a quiet line in the shade (Android requires one) */
+            NotificationChannel ch = new NotificationChannel(CH, "Listening for the wake word", NotificationManager.IMPORTANCE_MIN);
+            ch.setSound(null, null); ch.enableVibration(false); ch.setShowBadge(false);
+            nm.createNotificationChannel(ch);
+            try { nm.deleteNotificationChannel(OLD_CH); } catch (Exception e) {}
             String name = Assist.cfg(this).optString("name", "Plot");
             PendingIntent open = PendingIntent.getActivity(this, 2952, Assist.open(this, "assistant-listen"), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             PendingIntent stop = PendingIntent.getService(this, 2953, new Intent(this, AssistService.class).setAction(STOP), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             Notification n = new Notification.Builder(this, CH)
                 .setSmallIcon(W.id(this, "ic_stat", "drawable")).setColor(0xFFFFB547)
                 .setContentTitle("Listening for “Hey " + name + "”")
-                .setContentText("Tap to talk now")
-                .setContentIntent(open).setOngoing(true)
+                .setContentText("Say “Hey " + name + "” any time. Tap to talk now")
+                .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true).setShowWhen(false)
                 .addAction(new Notification.Action.Builder(null, "Stop listening", stop).build())
                 .build();
             startForeground(2950, n, FG_MICROPHONE);
