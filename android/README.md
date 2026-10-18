@@ -34,3 +34,32 @@ set on the widget is armed on the phone right away, so it rings even if the app 
 
 It follows the same rules as the other Java: no lambdas, framework views only, compiles against API 30.
 It was compiled and packaged into a debug APK with apktool, dex2jar and the API 30 jar, but hasn't been run on a phone yet.
+
+# Hey Plot assistant (Android)
+
+The voice assistant itself (commands, answers, the sheet, settings) is in `assistant.js`. This side gives it a wake
+word, a voice and a widget, through a second JavaScript interface, `window.PlotlineAssist` (`Assist`).
+
+- **Wake word** (`WakeLoop`): the phone's speech recognizer listens in rounds for "hey <name>" (also hi / ok / okay,
+  and near misses like "hey plat"). It uses the on-device recognizer when the phone has one, otherwise the regular one
+  only if online speech is allowed. "Hey Plot, add milk to groceries" in one breath runs straight away; "Hey Plot" alone
+  opens the assistant listening. It pauses while Plotline uses the mic itself or is talking.
+- **While the app is open**: `Assist` runs the loop whenever MainActivity is on screen (found with activity lifecycle
+  callbacks, so MainActivity itself needs no changes beyond registering the interface).
+- **In the background** (`AssistService`): a foreground service of type microphone with a "Listening" notification and
+  a Stop button. Android only allows this when it is started while the app is open. A command heard in the background
+  is kept and Plotline is opened on the assistant; Android only lets it open itself with "Display over other apps", so
+  without that permission a notification asks you to tap.
+- **Voice**: Android's text-to-speech (`TextToSpeech`). The `TTS_SERVICE` query is needed to find the engine on Android 11+.
+- **Widget** (`AssistWidget`, Plotline · Assistant): the last thing you said and the reply, with Talk (opens the app
+  listening) and Type. Widgets can't use the mic or take typing themselves.
+- **App shortcut**: long-press the app icon › Assistant.
+
+## Adding it to the Android build
+
+1. Compile `Assist.java`, `AssistService.java`, `AssistWidget.java` and `WakeLoop.java` with the other sources.
+2. Copy `res/layout/widget_assist.xml`, `res/xml/widget_assist_info.xml`, `res/xml/assist_shortcuts.xml`,
+   `res/values/assist_ids.xml` and `res/values/assist_strings.xml` into the app's `res/`.
+3. Add the lines in `AndroidManifest-assist.xml` where its comments say.
+4. One line in `MainActivity.onCreate`, after `PlotlineNative` is added:
+   `web.addJavascriptInterface(new Assist(this), "PlotlineAssist");`

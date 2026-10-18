@@ -1,0 +1,15 @@
+<!-- Hey Plot assistant. Next to the other <uses-permission> lines: -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+<!-- inside <queries> (text-to-speech engines are hidden from apps targeting Android 11+ without it): -->
+<intent><action android:name="android.intent.action.TTS_SERVICE"/></intent>
+<!-- inside the MainActivity <activity> (long-press the app icon › Assistant): -->
+<meta-data android:name="android.app.shortcuts" android:resource="@xml/assist_shortcuts"/>
+<!-- inside <application>: -->
+<receiver android:name="com.munazzar.plotline.AssistWidget" android:exported="true" android:label="Plotline · Assistant">
+    <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+    </intent-filter>
+    <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_assist_info"/>
+</receiver>
+<service android:name="com.munazzar.plotline.AssistService" android:exported="false" android:foregroundServiceType="microphone"/>

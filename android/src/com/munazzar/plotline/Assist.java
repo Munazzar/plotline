@@ -1,0 +1,248 @@
+package com.munazzar.plotline;
+
+import android.app.Activity;
+import android.app.Application;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.Settings;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
+import android.webkit.JavascriptInterface;
+import java.lang.ref.WeakReference;
+import java.util.Locale;
+import org.json.JSONObject;
+
+/* window.PlotlineAssist: the Android side of the "Hey Plot" assistant (assistant.js).
+   - speak / stopSpeaking: Android's text-to-speech reads the replies.
+   - wake(cfg) / wakePause: the wake word. While Plotline is on screen a WakeLoop runs here; with "keep listening
+     in the background" on, AssistService runs it instead, with its "Listening" notification.
+   - A wake word heard while the app is on screen goes straight to the page (window.__assist). Heard in the
+     background, the command is kept (takePending) and Plotline is opened on the assistant. Android only lets
+     an app open itself from the background with "Display over other apps", so without it a notification asks.
+   - widget(json): the last exchange, for the Plotline · Assistant home-screen widget.
+   Callbacks: window.__assist(kind, a, b) with kind tts (id, start|done|err), wake, cmd (text), wstate (state). */
+public class Assist {
+    static WeakReference<MainActivity> act = new WeakReference<MainActivity>(null);
+    static boolean resumed, hooked, jsPause, ttsPause;
+    static WakeLoop inApp;
+    static TextToSpeech tts;
+    static boolean ttsReady;
+    static String ttsLang = "";
+    static String[] queued;
+    static final Handler H = new Handler(Looper.getMainLooper());
+    static final String CH = "assistant";
+
+    final Context c;
+
+    Assist(MainActivity a) {
+        c = a.getApplicationContext();
+        act = new WeakReference<MainActivity>(a);
+        resumed = true;
+        hook(a);
+    }
+
+    static SharedPreferences prefs(Context c) { return c.getSharedPreferences("plotline_assist", 0); }
+
+    static JSONObject cfg(Context c) {
+        try { return new JSONObject(prefs(c).getString("cfg", "{}")); } catch (Exception e) { return new JSONObject(); }
+    }
+
+    /* know when the app is on screen, without touching MainActivity */
+    static void hook(Activity a) {
+        if (hooked) return;
+        hooked = true;
+        a.getApplication().registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
+            public void onActivityResumed(Activity x) { if (x instanceof MainActivity) { act = new WeakReference<MainActivity>((MainActivity) x); resumed = true; apply(x); } }
+            public void onActivityPaused(Activity x) { if (x instanceof MainActivity) { resumed = false; apply(x); } }
+            public void onActivityCreated(Activity x, Bundle b) {}
+            public void onActivityStarted(Activity x) {}
+            public void onActivityStopped(Activity x) {}
+            public void onActivitySaveInstanceState(Activity x, Bundle b) {}
+            public void onActivityDestroyed(Activity x) {}
+        });
+    }
+
+    /* start or stop listening to match the settings, whether the app is on screen, and pauses */
+    static void apply(final Context cx) {
+        H.post(new Runnable() { public void run() { applyNow(cx.getApplicationContext()); } });
+    }
+
+    static void applyNow(Context c) {
+        JSONObject o = cfg(c);
+        boolean on = o.optBoolean("on"), bg = o.optBoolean("bg");
+        boolean pause = jsPause || ttsPause;
+        if (on && bg) {
+            stopInApp();
+            if (AssistService.me == null) {
+                if (resumed) {
+                    try {
+                        Intent i = new Intent(c, AssistService.class);
+                        if (Build.VERSION.SDK_INT >= 26) c.startForegroundService(i); else c.startService(i);
+                    } catch (Exception e) {}
+                }
+            } else AssistService.me.sync(pause);
+            return;
+        }
+        if (AssistService.me != null) AssistService.me.stopSelf();
+        if (!on || !resumed) { stopInApp(); return; }
+        final Context cc = c;
+        if (inApp == null) inApp = new WakeLoop(c, new WakeLoop.Cb() {
+            public void heard(String cmd) { Assist.heard(cc, cmd); }
+            public void state(String s) { Assist.state(s); }
+        });
+        inApp.config(o.optString("name", "Plot"), o.optString("lang", ""), o.optBoolean("cloud"));
+        inApp.setPaused(pause);
+        inApp.start();
+    }
+
+    static void stopInApp() { if (inApp != null) { inApp.stop(); inApp = null; } }
+
+    static void js(String code) {
+        MainActivity a = act.get();
+        if (a != null) a.js(code);
+    }
+
+    static void state(String s) { if (resumed) js("window.__assist&&window.__assist('wstate'," + JSONObject.quote(s) + ",'')"); }
+
+    /* the wake word was heard; cmd is what followed it ("" if nothing) */
+    static void heard(Context c, String cmd) {
+        MainActivity a = act.get();
+        if (a != null && resumed) {
+            js(cmd.isEmpty() ? "window.__assist&&window.__assist('wake','','')" : "window.__assist&&window.__assist('cmd'," + JSONObject.quote(cmd) + ",'')");
+            return;
+        }
+        prefs(c).edit().putString("pending", cmd).putLong("pendingAt", System.currentTimeMillis()).apply();
+        String route = cmd.isEmpty() ? "assistant-listen" : "assistant";
+        boolean pop = Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(c);
+        if (pop) {
+            try { c.startActivity(open(c, route)); return; } catch (Exception e) {}
+        }
+        notifyHeard(c, cmd, route);
+    }
+
+    static Intent open(Context c, String route) {
+        Intent i = new Intent(c, MainActivity.class);
+        i.setAction("com.munazzar.plotline.ROUTE." + route);
+        i.putExtra("route", route);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        return i;
+    }
+
+    static void notifyHeard(Context c, String cmd, String route) {
+        try {
+            NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+            nm.createNotificationChannel(new NotificationChannel(CH, "Assistant", NotificationManager.IMPORTANCE_HIGH));
+            PendingIntent pi = PendingIntent.getActivity(c, 2951, open(c, route), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            Notification n = new Notification.Builder(c, CH)
+                .setSmallIcon(W.id(c, "ic_stat", "drawable")).setColor(0xFFFFB547)
+                .setContentTitle(cmd.isEmpty() ? "I'm listening. Tap to talk" : "Tap to finish: “" + cmd + "”")
+                .setContentIntent(pi).setAutoCancel(true).setTimeoutAfter(120000)
+                .setCategory(Notification.CATEGORY_MESSAGE).build();
+            nm.notify(2951, n);
+        } catch (Exception e) {}
+    }
+
+    /* ---------------- text to speech ---------------- */
+    static void speakNow(final Context c, final String id, final String text, final String lang, final double rate) {
+        if (tts == null) {
+            queued = new String[]{id, text, lang, String.valueOf(rate)};
+            tts = new TextToSpeech(c, new TextToSpeech.OnInitListener() {
+                public void onInit(int st) {
+                    ttsReady = st == TextToSpeech.SUCCESS;
+                    String[] q = queued; queued = null;
+                    if (!ttsReady) { if (q != null) done(q[0], "err"); tts = null; return; }
+                    tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                        public void onStart(String u) { ttsPause = true; apply(c); }
+                        public void onDone(String u) { ttsPause = false; apply(c); done(u, "done"); }
+                        public void onError(String u) { ttsPause = false; apply(c); done(u, "err"); }
+                        public void onStop(String u, boolean i) { ttsPause = false; apply(c); done(u, "done"); }
+                    });
+                    if (q != null) speakNow(c, q[0], q[1], q[2], Double.parseDouble(q[3]));
+                }
+            });
+            return;
+        }
+        if (!ttsReady) { queued = new String[]{id, text, lang, String.valueOf(rate)}; return; }
+        try {
+            if (!lang.equals(ttsLang)) {
+                ttsLang = lang;
+                tts.setLanguage(lang.isEmpty() ? Locale.getDefault() : Locale.forLanguageTag(lang));
+            }
+            tts.setSpeechRate((float) (rate > 0 ? rate : 1));
+            ttsPause = true;
+            applyNow(c);
+            if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) { ttsPause = false; applyNow(c); done(id, "err"); }
+        } catch (Exception e) { ttsPause = false; done(id, "err"); }
+    }
+
+    static void done(String id, String k) { js("window.__assist&&window.__assist('tts'," + JSONObject.quote(id) + "," + JSONObject.quote(k) + ")"); }
+
+    /* ---------------- the page's side ---------------- */
+    @JavascriptInterface
+    public String state() {
+        try {
+            JSONObject o = new JSONObject();
+            o.put("tts", true);
+            o.put("onDevice", WakeLoop.onDeviceAvailable(c));
+            o.put("overlay", Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(c));
+            o.put("bg", AssistService.me != null);
+            o.put("bgOff", prefs(c).getBoolean("bgOff", false));
+            prefs(c).edit().putBoolean("bgOff", false).apply();
+            return o.toString();
+        } catch (Exception e) { return "{}"; }
+    }
+
+    @JavascriptInterface
+    public void speak(final String id, final String text, final String lang, final double rate) {
+        H.post(new Runnable() { public void run() { speakNow(c, id, text == null ? "" : text, lang == null ? "" : lang, rate); } });
+    }
+
+    @JavascriptInterface
+    public void stopSpeaking() {
+        H.post(new Runnable() { public void run() { try { if (tts != null) tts.stop(); } catch (Exception e) {} ttsPause = false; applyNow(c); } });
+    }
+
+    @JavascriptInterface
+    public void wake(String json) {
+        try { new JSONObject(json); prefs(c).edit().putString("cfg", json).apply(); } catch (Exception e) { return; }
+        apply(c);
+    }
+
+    @JavascriptInterface
+    public void wakePause(boolean p) { jsPause = p; apply(c); }
+
+    @JavascriptInterface
+    public String takePending() {
+        SharedPreferences p = prefs(c);
+        String s = p.getString("pending", "");
+        long at = p.getLong("pendingAt", 0);
+        p.edit().remove("pending").remove("pendingAt").apply();
+        try { ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(2951); } catch (Exception e) {}
+        return System.currentTimeMillis() - at < 180000 ? s : "";
+    }
+
+    @JavascriptInterface
+    public void widget(String json) {
+        prefs(c).edit().putString("w", json).apply();
+        AssistWidget.updateAll(c);
+    }
+
+    @JavascriptInterface
+    public void openOverlaySettings() {
+        try {
+            Intent i = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + c.getPackageName()));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            c.startActivity(i);
+        } catch (Exception e) {}
+    }
+}

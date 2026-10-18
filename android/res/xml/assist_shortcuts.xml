@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="assistant" android:enabled="true" android:icon="@mipmap/ic_launcher" android:shortcutShortLabel="@string/as_short" android:shortcutLongLabel="@string/as_long">
+        <intent android:action="com.munazzar.plotline.ROUTE.assistant-listen" android:targetPackage="com.munazzar.plotline" android:targetClass="com.munazzar.plotline.MainActivity">
+            <extra android:name="route" android:value="assistant-listen" />
+        </intent>
+    </shortcut>
+</shortcuts>
