@@ -3195,6 +3195,16 @@ html:is([data-theme=glass],[data-theme=glasslight]) .rm-ch .chip.on:not(#_){back
 }
 html[data-anim=snappy]::view-transition-old(root){animation-duration:.14s}
 html[data-anim=snappy]::view-transition-new(root){animation-duration:.24s}
+/* Home: a calmer header, and the Customize Home sheet */
+@media(max-width:820px){html[data-pg=today] #view>.ph{row-gap:12px;margin-bottom:24px}
+ html[data-pg=today] #view>.ph>div:first-child>h1{grid-column:1/-1;grid-row:2;font-size:clamp(34px,10.4vw,48px);line-height:.95}
+ html[data-pg=today] #view>.ph>div:first-child>.data{grid-column:1;grid-row:1;align-self:center;margin:0;line-height:1.5}}
+.hcust{display:flex;justify-content:center;margin:34px 0 6px}.hcust .link{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-weight:600}.hcust svg{width:16px;height:16px}
+.hmq-b svg{width:17px;height:17px;color:var(--accent)}
+.hc-l{display:flex;flex-direction:column;gap:6px;margin:14px 0 6px}
+.hc-r{display:flex;align-items:center;gap:12px;padding:10px 6px 10px 12px;border-radius:16px;border:1px solid var(--line);background:var(--surface)}
+.hc-r span{flex:1;min-width:0;display:flex;flex-direction:column}.hc-r b{font-size:15px}.hc-r small{color:var(--muted);font-size:12.5px}
+.hc-r .sw{flex:none;width:auto;margin:0;padding:0;border:0;background:none}.hc-r.off span{opacity:.5}.hc-r .ibtn{width:36px;height:36px;border-radius:11px}.hc-r .ibtn[disabled]{opacity:.25}
 @media(min-width:821px){.wr-done{display:none}}
 /* Writing an entry is a full-screen page on a phone: the editor takes whatever room is left above the keyboard,
    and the formatting bar stays in view while you scroll. Swipe down or Back still closes it. */
@@ -5046,7 +5056,7 @@ let RANIM=true;
 let viewSet=(v,h)=>{v.innerHTML=h};
 /* a page that fails to build shows what went wrong instead of leaving the previous page on screen */
 function viewErr(e){console.error(e);return`<header class="ph"><div><h1>Can’t open this</h1><div class="data">Something on this page didn’t load</div></div></header><div class="empty rv in"><p>Plotline hit a problem building this page. Your data is safe.</p><p class="small muted" style="font-family:var(--f-mono);overflow-wrap:anywhere">${esc(String(e&&e.message||e).slice(0,200))}</p><div class="actions"><button class="btn" onclick="history.back()">Go back</button><a class="btn pri" href="#/today">Home</a></div></div>`}
-function render(anim=true){RANIM=anim;const v=$('#view');const y=scrollY;if(cur.p!=='map')MP=null;let h;try{h=VIEWS[cur.p](cur.id)}catch(e){h=viewErr(e)}viewSet(v,h);if(!anim)window.scrollTo(0,y);
+function render(anim=true){RANIM=anim;document.documentElement.dataset.pg=cur.p;const v=$('#view');const y=scrollY;if(cur.p!=='map')MP=null;let h;try{h=VIEWS[cur.p](cur.id)}catch(e){h=viewErr(e)}viewSet(v,h);if(!anim)window.scrollTo(0,y);
  document.querySelectorAll('[data-nav]').forEach(a=>{const on=a.dataset.nav===(({goal:'goals',habit:'habits',road:'vista',map:'vista',ai:'ask',threads:'journal',thread:'journal',activity:'today',day:'cal'})[cur.p]||cur.p);a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
  imgCSS();zfixAll();if(typeof hvInit==='function')hvInit();if(typeof authBanner==='function')authBanner();if(typeof micDecorate==='function')micDecorate($('#view'));moveInd();placeSegs();initHS();reveal(anim);fillSpine(anim);if(S.settings.focus)buildFloater();
  if(cur.p==='map')requestAnimationFrame(initMap);
@@ -7538,8 +7548,8 @@ Object.assign(ACT,{pvHab:d=>{const s=aiHabSel(),i=+d.i;s.has(i)?s.delete(i):s.ad
 NAV[0]=['today','Home','home'];
 function aiPlanCard(where){if(where==='home'&&S.settings.aipHide)return`<section class="aip aip-min rv"><button class="aip-mb" data-act="aiStart"><span class="aip-i">${ic('ai')}</span><span class="aip-mt"><b>Plan with AI</b><small>Describe a goal, get steps and habits</small></span></button><button class="ibtn aip-x" data-act="aipShow" aria-label="Expand Plan with AI">${ic('chev')}</button></section>`;
  return`<section class="aip rv${where==='ask'?' in-ask':''}"><span class="aip-i">${ic('ai')}</span><div class="aip-b"><b>Plan with AI</b><p>Say what you want in your own words, like “get fit by summer”, “save for a house” or “a calmer morning”. The AI drafts a goal with steps, dates and the habits to get there. You check and edit everything before anything is saved.</p><div class="aip-a"><button class="btn pri sm" data-act="aiStart">${ic('ai')}Start a plan</button><button class="btn sm" data-act="aiChangeStart">Rework my plan</button>${where==='home'?`<button class="btn ghost sm" data-act="aipHide">Minimize</button>`:''}</div></div></section>`}
-function homeQuick(){const Q=[['aiStart','✨','Plan with AI'],['newGoal','🎯','Goal'],['newHabit','✅','Habit'],['addEntry','✍️','Write'],['thrNew','🧵','Thread'],['askGo','💬','Ask'],['dayToday','📅','Today in full']];
- return`<div class="hmq rv" role="toolbar" aria-label="Quick actions">${Q.map(([a,e,l])=>`<button class="hmq-b" data-act="${a}"><span>${e}</span>${l}</button>`).join('')}</div>`}
+function homeQuick(){const Q=[['aiStart','ai','Plan with AI'],['newGoal','goals','Goal'],['newHabit','check','Habit'],['addEntry','edit','Write'],['thrNew','journal','Thread'],['askGo','search','Ask'],['dayToday','cal','Today in full']];
+ return`<div class="hmq rv" role="toolbar" aria-label="Quick actions">${Q.map(([a,e,l])=>`<button class="hmq-b" data-act="${a}">${ic(e)}${l}</button>`).join('')}</div>`}
 function homeDay(){const td=ymd(),hs=S.habits.filter(h=>h.status==='active'&&h.kind!=='quit'&&hDue(h,td)&&!(h.skip&&h.skip[td])&&!((h.ck||{})[td]||{}).sk),dg=S.days.filter(x=>x.date===td),st=active().flatMap(g=>g.steps.filter(s=>s.due===td).map(s=>({g,s})));
  const items=[...hs.map(h=>({k:'h',done:hDone(h,td),t:`${hIcon(h)} ${h.title}`,h})),...dg.map(x=>({k:'d',done:!!x.done,t:x.title,x})),...st.map(o=>({k:'s',done:!!o.s.done,t:o.s.title,o}))];
  if(!items.length)return'';const dn=items.filter(i=>i.done).length,p=dn/items.length,nx=items.find(i=>!i.done);
@@ -7996,11 +8006,27 @@ ACT.hsnTap=d=>{const h=H(d.id);if(!h||d.d>today()||h.kind==='quit')return;h.skip
 habitsStrip=function(){return hSnap(7,'home')};
 
 /* ---------- home: a clearer order ---------- */
-const HOME_ORDER=['head','demo','share','feat','quick','day','weekly','snap','goals','next','act','insights','coming','pinned','threads','other','aip'];
+/* Home shows a focused day by default. Each device can switch sections on or off and reorder them (Customize Home);
+   the choice lives in S.settings, so it stays on this device. The header, sample-data banner and sharing invites always show. */
+const HOME_ORDER=['head','demo','share','feat','day','weekly','goals','snap','next','coming','insights','act','quick','pinned','threads','aip','other'];
+const HOME_FIXED=['head','demo','share','other'],HOME_OFF0=['quick','pinned','threads','aip'];
+const HOME_NAME={feat:['Page shortcuts','Activity, Timeline, Ask, Thread, Agent'],day:['Your day','Progress ring and what’s next'],weekly:['Weekly review nudge','At the end of the week'],goals:['Today’s goals','Your checklist for today'],snap:['Habits','This week at a glance'],next:['Up next','The next step on your top goal'],coming:['Coming up','Next steps on other goals'],insights:['Insights','Streaks and patterns worth knowing'],act:['Activity','Steps and sleep'],quick:['Quick add','Buttons to add a goal, habit, entry…'],pinned:['Pinned goals','Goals you pinned'],threads:['Threads','Your running logs'],aip:['Plan with AI','Turn a wish into a plan']};
+const homeCfg=()=>{const c=S.settings.homeSecs||{};const o=(c.order||[]).filter(k=>HOME_ORDER.includes(k));HOME_ORDER.forEach(k=>{if(!o.includes(k))o.splice(Math.max(0,HOME_ORDER.indexOf(k)),0,k)});return{order:o,off:c.off||HOME_OFF0}};
 function homeKey(n){const c=n.classList,h=((n.querySelector(':scope>.st-h h3')||{}).textContent||'').trim().toLowerCase();
  if(n.tagName==='HEADER')return'head';if(c.contains('demob'))return'demo';if(c.contains('sh-today'))return'share';if(c.contains('hft'))return'feat';if(c.contains('hmq'))return'quick';if(c.contains('hday'))return'day';if(c.contains('hsnap'))return'snap';if(n.id==='actCard')return'act';if(c.contains('aip'))return'aip';if(n.dataset&&n.dataset.act==='weekly')return'weekly';if(n.querySelector(':scope>.now'))return'next';
  if(h.startsWith('insight'))return'insights';if(h.startsWith('today'))return'goals';if(h.startsWith('coming'))return'coming';if(h.startsWith('pinned'))return'pinned';if(h.startsWith('thread'))return'threads';return'other'}
-function homeOrder(html){const t=document.createElement('template');t.innerHTML=html;const N=[...t.content.children];if(N.length<3)return html;const L=N.map((n,i)=>({n,i,r:HOME_ORDER.indexOf(homeKey(n))}));L.sort((a,b)=>a.r-b.r||a.i-b.i);return L.map(x=>x.n.outerHTML).join('')}
+function homeOrder(html){const t=document.createElement('template');t.innerHTML=html;const N=[...t.content.children];if(N.length<3)return html;const C=homeCfg();
+ const L=N.map((n,i)=>({n,i,k:homeKey(n)})).filter(x=>HOME_FIXED.includes(x.k)||!C.off.includes(x.k)).map(x=>({...x,r:x.k==='head'?-2:x.k==='demo'||x.k==='share'?-1:C.order.indexOf(x.k)}));L.sort((a,b)=>a.r-b.r||a.i-b.i);
+ const hid=C.off.filter(k=>HOME_NAME[k]).length;
+ return L.map(x=>x.n.outerHTML).join('')+`<div class="hcust rv"><button class="link" data-act="homeCust">${ic('tune')}Customize Home${hid?` · ${hid} hidden`:''}</button></div>`}
+function homeCustHTML(){const C=homeCfg(),ks=C.order.filter(k=>HOME_NAME[k]);
+ return`<div class="data">Home</div><h2 style="margin-top:6px">Customize Home</h2><p class="small muted">Pick what Home shows and in what order. Saved on this device only.</p><div class="hc-l">${ks.map((k,i)=>`<div class="hc-r${C.off.includes(k)?' off':''}"><label class="sw hc-sw"><input type="checkbox" data-hc="${k}" ${C.off.includes(k)?'':'checked'} aria-label="Show ${HOME_NAME[k][0]}"><i></i></label><span><b>${HOME_NAME[k][0]}</b><small>${HOME_NAME[k][1]}</small></span><button class="ibtn sm" data-act="homeMv" data-k="${k}" data-d="-1" aria-label="Move ${HOME_NAME[k][0]} up" ${i?'':'disabled'}>${ic('up')}</button><button class="ibtn sm" data-act="homeMv" data-k="${k}" data-d="1" aria-label="Move ${HOME_NAME[k][0]} down" ${i<ks.length-1?'':'disabled'}>${ic('down')}</button></div>`).join('')}</div>
+ <div class="actions"><button class="btn ghost" data-act="homeReset">Reset</button><button class="btn pri" data-act="close">Done</button></div>`}
+function homeCustPaint(){const sh=$('#sheet'),l=sh.querySelector('.hc-l');if(!l)return;const y=sh.scrollTop;sh.innerHTML='<div class="grab"></div>'+homeCustHTML();sh.scrollTop=y;if(cur.p==='today')render(false)}
+Object.assign(ACT,{homeCust:()=>openSheet(homeCustHTML()),
+ homeMv:d=>{const C=homeCfg(),ks=C.order.filter(k=>HOME_NAME[k]),i=ks.indexOf(d.k),j=i+(+d.d);if(i<0||j<0||j>=ks.length)return;[ks[i],ks[j]]=[ks[j],ks[i]];S.settings.homeSecs={order:ks,off:C.off};save();homeCustPaint()},
+ homeReset:()=>{delete S.settings.homeSecs;save();homeCustPaint()}});
+document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.hc;if(!k)return;const C=homeCfg(),off=C.off.filter(x=>x!==k);if(!e.target.checked)off.push(k);S.settings.homeSecs={order:C.order,off};save();homeCustPaint()});
 {const _vt=vToday;vToday=function(){return homeOrder(_vt())};VIEWS.today=vToday}
 
 /* ---------- habit summary: tap a bar to see that day ---------- */
