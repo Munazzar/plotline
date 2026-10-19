@@ -87,7 +87,7 @@ function markDone(name){const h=pick(S.habits.filter(x=>!x.archived),name,x=>x.t
  const x=pick(S.days.filter(y=>y.date===today()&&!y.done),name,y=>y.title);
  if(x){x.done=true;x.doneAt=Date.now();save();rerender();return{say:`Done: ${quote(x.title)}.`,undo:()=>{x.done=false;x.doneAt=null;save();rerender()},chips:[['Open today','today']]}}
  return{say:`I couldn't find a habit or goal for today called ${quote(name)}.`}}
-const PAGES={today:'today',home:'today',goals:'goals',habits:'habits',journal:'journal',threads:'threads',lists:'lists',calendar:'cal',settings:'settings',ask:'ask',insights:'ask',activity:'activity'};
+const PAGES={today:'today',home:'today',goals:'goals',habits:'habits',journal:'journal',thread:'threads',threads:'threads',lists:'lists',calendar:'cal',settings:'settings',ask:'ask',insights:'ask',activity:'activity',timeline:'road',vista:'road',map:'map',agent:'agent'};
 
 /* "add X to Y": Y can be a list, a thread, the journal or today */
 function addTo(what,where){const w=lcs(where).replace(/^(?:my|the)\s+/,'').trim();
@@ -100,7 +100,31 @@ function addTo(what,where){const w=lcs(where).replace(/^(?:my|the)\s+/,'').trim(
  return null}
 const splitItems=s=>String(s).split(/\s*,\s*(?:and\s+)?|\s+and\s+(?=\S)/i).map(clean).filter(Boolean);
 
-function parse(raw){const t=strip(raw),l=lcs(t);let m;if(!t)return null;
+/* typed or misheard keywords: "jounel", "journel", "general entry", "liost", "lsit", "thred". Only the command words get fixed,
+   only near the start or end where commands live, and only when the word isn't a real word of its own ("lost", "threat") */
+function osa(a,b){const m=a.length,n=b.length,d=[];for(let i=0;i<=m;i++){d[i]=[i];for(let j=1;j<=n;j++)d[i][j]=i?0:j}
+ for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){const c=a[i-1]===b[j-1]?0:1;d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1)}return d[m][n]}
+const KEYW=['journal','diary','entry','thread','list','reminder','remind','habit'];
+const REALW=new Set('lost last least lust lint lift list lists mist fist gist entre enter entire entity threat threats three tread treat thready dairy dear diet habitat rabbit remain remained remains reminds remainder journey journals tourney entry entries'.split(' '));
+const KFIX={jounel:'journal',jounal:'journal',journl:'journal',jurnal:'journal',jornal:'journal',jornel:'journal',jurnel:'journal',jernal:'journal',journall:'journal',jouranl:'journal',joural:'journal',journa:'journal',jounral:'journal',dairy_entry:'diary',thred:'thread',threed:'thread',therad:'thread',thead:'thread',trhead:'thread',liost:'list',lsit:'list',lst:'list',lis:'list',lisst:'list',listt:'list',ilst:'list',entery:'entry',enrty:'entry',entyr:'entry',entree:'entry',entri:'entry',entrie:'entry',remidner:'reminder',reminer:'reminder',remider:'reminder'};
+function fixWord(w){const lw=lcs(w);if(KFIX[lw])return KFIX[lw];if(lw.length<4||REALW.has(lw)||KEYW.includes(lw))return w;
+ let best=null,bd=9;KEYW.forEach(k=>{const d=osa(lw,k),ok=k.length>=6?2:1;if(d<=ok&&d<bd&&lw[0]===k[0]){bd=d;best=k}});return best||w}
+function normCmd(t){t=String(t||'').replace(/\b(?:general|journey|germinal)\s+(entry|entries|note)\b/gi,'journal $1').replace(/\bdairy\s+(entry|note)\b/gi,'diary $1').replace(/\bjournal\s+(?:and\s+)?tree\b/gi,'journal entry');
+ const parts=t.split(/(\s+)/),words=parts.filter((_,i)=>i%2===0),n=words.length;let wi=0;
+ return parts.map((p,i)=>{if(i%2)return p;const k=wi++;if(k>7&&k<n-4)return p;const m=/^([^\p{L}]*)([\p{L}']+)([^\p{L}]*)$/u.exec(p);if(!m)return p;const f=fixWord(m[2]);return f===m[2]?p:m[1]+f+m[3]}).join('')}
+/* what's left after the command words: "make a journal entry that says I ran 5k" → "I ran 5k" */
+const SAYS=/^(?:(?:that|which)\s+(?:says?|reads?|goes)|saying|says|reading|with(?:\s+the\s+text)?|that|about|of|on|re|regarding|like)\b\s*[:,\-–—]?\s*|^[:,\-–—]\s*/i;
+const body=s=>{s=clean(s);for(let i=0;i<3;i++){const n=s.replace(SAYS,'');if(n===s)break;s=n}return clean(s.replace(/\s+(?:to|in|into|on)\s+(?:my\s+|the\s+)?(?:today'?s\s+)?(?:journal|diary)(?:\s+entry)?$/i,''))};
+const VERB='(?:add|put|write|save|log|note(?:\\s+down)?|jot(?:\\s+down)?|record|make|create|start|begin|open|do|take|type|enter|compose|draft|set\\s+up|kick\\s+off|new)';
+const DET='(?:(?:a|an|the|my|new|today\'?s|another|one|quick|fresh|brand\\s+new)\\s+)*';
+const RX_J1=new RegExp(`^(?:${VERB}\\s+)?(?:(?:in|into|to|on)\\s+)?${DET}(?:journal|diary)(?:\\s+(?:entry|entries|note|post|page|log))?(?:\\s+for\\s+today|\\s+today(?=$|\\s*[:,\\-–—]))?(?=$|[\\s:,\\-–—])\\s*(.*)$`,'i');
+const RX_J2=new RegExp(`^(?:${VERB}\\s+)${DET}(?:entry|diary\\s+note)(?:\\s+(?:in|into|to|on)\\s+(?:my\\s+|the\\s+)?(?:journal|diary))?(?:\\s+for\\s+today|\\s+today(?=$|\\s*[:,\\-–—]))?(?=$|[\\s:,\\-–—])\\s*(.*)$`,'i');
+const RX_T=new RegExp(`^(?:(?:${VERB}|add)\\s+${DET}|${DET}new\\s+)thread(?=$|[\\s:,\\-–—])\\s*(?:(?:called|named|titled|about|for|on|regarding)\\s+)?[:,\\-–—]?\\s*(.*)$`,'i');
+const RX_L=new RegExp(`^(?:${VERB}|add)\\s+${DET}(?:(.{1,40}?)\\s+)?(?:list|checklist)(?=$|[\\s:,\\-–—])\\s*(?:(?:called|named|titled|for|of)\\s+(.*?))?\\s*(?:(?::|,|-|–|—|\\bwith\\b|\\bcontaining\\b|\\bincluding\\b|\\bthat\\s+has\\b|\\bhaving\\b)\\s*(.*))?$`,'i');
+function newList(title,items){title=cap(clean(title).replace(/^(?:a|an|the|my)\s+/i,'')).slice(0,60)||'New list';const now=Date.now(),L={id:uid(),title,emoji:/groc|shop|food/i.test(title)?'🛒':/pack|trip|travel/i.test(title)?'🎒':/to-?do|task/i.test(title)?'✅':'📝',due:'',items:{},u:now,mu:now,created:now,cloud:null};
+ (items||[]).map(x=>cap(clean(x))).filter(Boolean).forEach((x,i)=>{const id=uid();L.items[id]={id,t:x,done:false,due:'',o:i,u:now}});(S.lists||(S.lists=[])).unshift(L);save();rerender();const n=Object.keys(L.items).length;
+ return{say:`Made a new list, ${quote(L.title)}${n?` with ${n} item${n===1?'':'s'}`:''}.`,undo:()=>{S.lists=S.lists.filter(x=>x.id!==L.id);save();rerender()},chips:[['Open list','list/'+L.id]]}}
+function parse(raw){const t=strip(normCmd(raw)),l=lcs(t);let m;if(!t)return null;
  if(/^(?:cancel|stop|never ?mind|nothing|forget it|that'?s all|no thanks?)$/i.test(t))return{k:'cancel'};
  if(/^(?:what can you do|help|what do you do|how do i use you|what can i say)/i.test(t))return{k:'help'};
  if((m=/^(?:call yourself|your name is(?: now)?|change your name to|rename yourself(?: to)?|i(?:'ll| will) call you)\s+(.+)$/i.exec(t)))return{k:'name',v:m[1]};
@@ -110,16 +134,26 @@ function parse(raw){const t=strip(raw),l=lcs(t);let m;if(!t)return null;
  if(/^what(?:'s| is) the time|^what time is it/i.test(t))return{k:'time'};
  if(/^what(?:'s| is) (?:the |today'?s )?date|^what day is (?:it|today)/i.test(t))return{k:'date'};
  if((m=/^(?:open|show(?: me)?|go to|take me to)\s+(?:my\s+|the\s+)?(\w+)(?:\s+page)?$/i.exec(t))&&PAGES[lcs(m[1])])return{k:'open',r:PAGES[lcs(m[1])]};
+ /* journal, any phrasing: "make a journal entry that says…", "new jounel entry: …", "write in my diary about…", "journal that…" */
+ if((m=/^(?:add|put|write|save|log|note|jot(?:\s+down)?|record)\s+(.+?)\s+(?:to|in|into|on)\s+(?:my\s+)?(?:today'?s\s+)?(?:journal|diary)(?:\s+(?:entry\s+)?(?:for\s+)?today)?$/i.exec(t))&&!/^(?:this|that|it|something|an?\s+entry|a\s+new\s+entry)$/i.test(m[1]))return{k:'journal',x:body(m[1])};
+ if((m=/^(.+?)[,.;]?\s+(?:(?:please\s+)?(?:add|put|save|write|log|jot|note)(?:\s+down)?)\s+(?:that|this|it)\s+(?:down\s+)?(?:to|in|into|on)\s+(?:my\s+)?(?:today'?s\s+)?(?:journal|diary)(?:\s+entry)?$/i.exec(t)))return{k:'journal',x:body(m[1])};
+ if((m=RX_J1.exec(t))||(m=RX_J2.exec(t)))return{k:'journal',x:body(m[1])};
+ /* lists: "make a grocery list with milk, eggs", "create a new list called packing: passport, charger" */
+ if((m=RX_L.exec(t))&&!/\s(?:to|on|in|into)\s+(?:my\s+|the\s+)?\S.*\blist$/i.test(t)&&!/^add\s+.+\s+to\s/i.test(t)){const title=clean(m[2]||m[1]||'').replace(/^(?:a|an|the|my|new)\s+/i,'').replace(/^(?:of\s+)?/i,'');return{k:'listnew',title,items:m[3]?splitItems(m[3]):[]}}
  /* journal */
  if((m=/^(?:add|put|write|save|log|note|jot(?:\s+down)?|record)\s+(?:this|that|it|the following|something)?\s*(?:to|in|into|on)\s+(?:my\s+)?(?:today'?s\s+)?(?:journal|diary)(?:\s+(?:entry\s+)?for\s+today)?(?:\s+(?:that|saying))?\s*[:,\-]?\s*(.*)$/i.exec(t)))return{k:'journal',x:m[1]};
  if((m=/^(?:add|put|write|save|log|note|jot(?:\s+down)?|record)\s+(.+?)\s+(?:to|in|into|on)\s+(?:my\s+)?(?:today'?s\s+)?(?:journal|diary)(?:\s+(?:entry\s+)?for\s+today)?$/i.exec(t)))return{k:'journal',x:m[1]};
  if((m=/^(?:journal|dear diary|diary|journal entry|new journal entry)\s*[:,\-]?\s*(.*)$/i.exec(t)))return{k:'journal',x:m[1]};
  if((m=/^(?:make a note|take a note|note down|write down|note)\s+(?:that\s+)?(.+)$/i.exec(t)))return{k:'journal',x:m[1]};
  /* threads */
+ if((m=RX_T.exec(t))&&!/^add\s+(?!a\s|an\s|new\s)/i.test(t)){const p=m[1].split(/\s*(?::|\s+(?:with|saying)\s+(?:the\s+)?(?:first\s+)?(?:update|note)?\s*)\s*/i);return{k:'thrnew',title:p[0]||'',x:p.slice(1).join(' ')}}
  if((m=/^(?:add|start|create|make|open|begin)\s+(?:a\s+)?new\s+thread\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))||(m=/^(?:start|create|make|begin)\s+(?:a\s+)?thread\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))||(m=/^new\s+thread\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))){const p=m[1].split(/\s*(?::|\s+(?:with|saying)\s+(?:the\s+)?(?:first\s+)?(?:update|note)?\s*)\s*/i);return{k:'thrnew',title:p[0]||'',x:p.slice(1).join(' ')}}
  if((m=/^update\s+(?:my\s+|the\s+)?(.+?)\s+thread\s*(?:with|:|,|saying)\s*(.+)$/i.exec(t)))return{k:'add',x:m[2],to:m[1]+' thread'};
  /* reminders */
  if((m=/^(?:remind me|set (?:a |an |me a )?(?:reminder|alarm)|create (?:a )?reminder|add (?:a )?reminder|reminder|don'?t let me forget)\b\s*(.*)$/i.exec(t)))return{k:'remind',x:m[1]};
+ /* agent tasks: "every morning summarise my emails", "each Friday look at my calendar and plan the weekend" */
+ if(/\b(?:every|each)\s+(?:day|morning|afternoon|evening|night|weekday|week|hour|\d+\s+hours|other\s+day|(?:mon|tues|wednes|thurs|fri|satur|sun)day)\b/i.test(t)&&/\b(?:summari[sz]e|check|look|review|brief|tell|go through|scan|watch|plan|suggest|find|read|see|give|send|catch me up|keep an eye)\b/i.test(t))return{k:'agent',x:t};
+ if((m=/^(?:keep an eye on|watch|monitor)\s+(.+)$/i.exec(t)))return{k:'agent',x:t};
  /* done */
  if((m=/^(?:mark|log|check(?:\s+off)?|tick(?:\s+off)?)\s+(?:my\s+)?(.+?)\s+(?:as\s+)?(?:done|complete|completed|finished)(?:\s+for\s+today)?$/i.exec(t))||(m=/^i\s+(?:just\s+)?(?:did|finished|completed|done)\s+(?:my\s+)?(.+?)(?:\s+today)?$/i.exec(t)))return{k:'done',x:m[1]};
  /* today's goals */
@@ -128,7 +162,9 @@ function parse(raw){const t=strip(raw),l=lcs(t);let m;if(!t)return null;
  if((m=/^(?:add|put|throw|stick)\s+(.+)\s+(?:to|on|in|onto|into)\s+(?:my\s+|the\s+)?(.+?)$/i.exec(t)))return{k:'add',x:m[1],to:m[2]};
  return null}
 
+window.PlotDo={addJournal,newThread,addToThread,addToday,addReminder,addTo,newList,parseWhen,pick,splitItems,body,aiReady:()=>aiReady()};
 function exec(p,raw){const A=aset();switch(p.k){
+ case'agent':return window.agentFromVoice?agentFromVoice(p.x):{say:'The agent isn’t available here.'};
  case'cancel':return{say:'Okay.'};
  case'hello':return{say:`Hi! What can I do for you?`,listen:true};
  case'thanks':return{say:pickOne(['Anytime.','You got it.','Happy to help.'])};
@@ -137,8 +173,9 @@ function exec(p,raw){const A=aset();switch(p.k){
  case'date':return{say:`It's ${longDate(Date.now())}.`};
  case'help':return{say:`Try “add went for a long walk to my journal”, “start a thread called car maintenance”, “remind me to call mom at 6pm”, “add milk and eggs to my groceries list”, “mark reading done”, or ask “when did I last change my oil?”`};
  case'name':{const n=clean(p.v).replace(/[^\p{L}\p{N} '\-]/gu,'').slice(0,24);if(!n)return{say:'What should I be called?'};const old=aname();S.settings.assist={...A,name:cap(n)};save();wakeSync();paintHead();return{say:`Okay, call me ${aname()}. Say “Hey ${aname()}” from now on.`,undo:()=>{S.settings.assist={...aset(),name:old};save();wakeSync();paintHead()}}}
- case'open':setTimeout(()=>{go(p.r)},500);return{say:`Opening ${p.r==='cal'?'your calendar':p.r}.`};
+ case'open':setTimeout(()=>{go(p.r)},500);return{say:`Opening ${({cal:'your calendar',road:'your timeline',map:'your life map',threads:'your threads'})[p.r]||p.r}.`};
  case'journal':return p.x?addJournal(p.x):{say:'What should I add to today’s journal?',listen:true,await:{k:'journal'}};
+ case'listnew':if(!p.title&&!p.items.length)return{say:'What should I call the new list?',listen:true,await:{k:'listnew'}};return newList(p.title||'New list',p.items);
  case'thrnew':if(!p.title)return{say:'What should I call the new thread?',listen:true,await:{k:'thrnew'}};return newThread(p.title,p.x);
  case'today':return p.x?addToday(p.x):{say:'What’s the goal for today?',listen:true,await:{k:'today'}};
  case'done':return markDone(p.x);
@@ -154,7 +191,7 @@ const pickOne=a=>a[Math.floor(Math.random()*a.length)];
 /* a follow-up to the assistant's own question */
 function answerAwait(a,t){const x=clean(t);if(/^(?:cancel|stop|never ?mind|no|nope|forget it)$/i.test(x))return{say:'Okay, never mind.'};
  if(a.k==='yesno')return/^(?:yes|yeah|yep|sure|ok(?:ay)?|please|do it|go ahead)\b/i.test(x)?a.yes():null;
- if(a.k==='journal')return addJournal(x);if(a.k==='thrnew')return newThread(x);if(a.k==='today')return addToday(x);
+ if(a.k==='journal')return addJournal(body(x));if(a.k==='listnew'){const q=x.split(/\s*(?::|\bwith\b)\s*/i);return newList(q[0],q[1]?splitItems(q[1]):[])}if(a.k==='thrnew')return newThread(x);if(a.k==='today')return addToday(x);
  if(a.k==='remind'){const p=exec({k:'remind',x},x);return p}
  if(a.k==='remwhat')return addReminder(x,a.w);
  if(a.k==='share')return shareTo(a.text,x);
@@ -255,7 +292,7 @@ function localAsk(q){const t=strip(q);let m;
  if(/^what(?:'s| is| do i have)\s+(?:on\s+)?(?:for\s+)?(?:today|my plan|on my plate|planned today)|^what(?:'s| are) my goals for today|^what do i (?:have|need) to do today/i.test(t))return todayRead();
  if((m=/^what did i (?:write|journal|say)\s+(?:in my journal\s+)?(today|yesterday)?/i.exec(t)))return journalRead(m[1]&&lcs(m[1]));
  return null}
-function aiReady(){const e=typeof planEngine==='function'?planEngine():'';if(!e)return false;if(e==='wasm'){const s=insSet(),m=llmOf(s.llm);return!!(s.dl||{})[m[0]]}if(e==='native'){const m=llmOf(insSet().llm);return typeof natHave!=='function'||natHave(m)}return true}
+function aiReady(){const e=typeof planEngine==='function'?planEngine():'';if(!e)return false;if(e!=='api'&&typeof isLrtM==='function'&&isLrtM(llmOf(insSet().llm))&&(e==='wasm'||lrtOn()))return!!(insSet().dl||{})[llmOf(insSet().llm)[0]];if(e==='wasm'){const s=insSet(),m=llmOf(s.llm);return!!(s.dl||{})[m[0]]}if(e==='native'){const m=llmOf(insSet().llm);return typeof natHave!=='function'||natHave(m)}return true}
 /* what the assistant's AI gets to see: the date, recent activity day by day, today's plan, threads, lists, and the notes that match */
 function actLines(n){const L=(S.settings&&S.settings.actLog)||{},tn=dnum(ymd()),out=[];
  for(let k=tn;k>tn-n;k--){const ds=fromN(k),o=L[ds];if(!o)continue;const[y,mo,d]=ds.split('-').map(Number);const w=typeof wkMin==='function'?wkMin(o):+o.x;
@@ -326,12 +363,12 @@ async function aiAnswer(q,onP,hint){if(!aiReady())return null;const e=planEngine
  out=out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'').replace(/[*#_`]/g,'').trim();
  if(out.includes(OFF_LINE.slice(0,30))){const rest=out.replace(OFF_LINE,'').replace(/I can only help with[^.]*\.(?:\s*Try asking about your plan\.)?/i,'').trim();if(rest.length>12)out=rest}
  return out||null}
-async function llmIntent(t){const e=typeof planEngine==='function'?planEngine():'';if(e!=='api'&&e!=='native'||!aiReady())return null;
- const schema={type:'object',properties:{action:{enum:['journal','new_thread','thread_update','reminder','list_add','today_goal','habit_done','question']},text:{type:'string'},target:{type:'string'},when:{type:'string'}},required:['action','text'],additionalProperties:false};
- const msgs=[{role:'system',content:'You turn one spoken request to a personal journal and habits app into JSON. Reply with JSON only.'},{role:'user',content:`Request: "${t}"\n\nactions: journal (add text to today's journal), new_thread (start a thread; text is its title), thread_update (target is the thread name), reminder (when is the time words like "tomorrow at 5pm"), list_add (target is the list name; text is the items), today_goal, habit_done (text is the habit), question (anything asked).`}];
- let out='';try{if(e==='api')await apiChat(msgs,x=>{out+=x},AS.ctl.signal,{schema,max_tokens:160,temperature:0});else await natChat(msgs,x=>{out+=x},null,null,{schema,max_tokens:160,temperature:0});const j=JSON.parse(out.slice(out.indexOf('{'),out.lastIndexOf('}')+1));
+async function llmIntent(t){const e=typeof planEngine==='function'?planEngine():'',fast=e!=='api'&&isLrtM(llmOf(insSet().llm));if(e!=='api'&&e!=='native'&&!fast||!aiReady())return null;
+ const schema={type:'object',properties:{action:{enum:['journal','new_thread','thread_update','reminder','new_list','list_add','today_goal','habit_done','agent_task','question']},text:{type:'string'},target:{type:'string'},when:{type:'string'}},required:['action','text'],additionalProperties:false};
+ const msgs=[{role:'system',content:'You turn one spoken or typed request to a personal journal and habits app into JSON. Requests can be phrased any way, misspelled ("jounel", "liost", "thred") or misheard ("general entry" means journal entry). Reply with JSON only. The text field holds only what should be saved: never the command words ("make a journal entry", "add to my list", "that says"), never the target name.'},{role:'user',content:`Request: "${t}"\n\nactions: journal (save text to today's journal), new_thread (start a thread; text is its title), thread_update (target is the thread name; text is the update), reminder (when is the time words like "tomorrow at 5pm"), new_list (text is the list name; target is its items separated by commas, or empty), list_add (target is the list name; text is the items), today_goal, habit_done (text is the habit), agent_task (something to do on a schedule or keep an eye on, like "every morning summarise my emails"; text is the task), question (anything asked).`}];
+ let out='';try{if(e==='api')await apiChat(msgs,x=>{out+=x},AS.ctl.signal,{schema,max_tokens:160,temperature:0});else if(e==='wasm')await localChat(msgs,x=>{out+=x},null,0,null,false,{schema,max_tokens:160,temperature:0});else await natChat(msgs,x=>{out+=x},null,null,{schema,max_tokens:160,temperature:0});const j=JSON.parse(out.slice(out.indexOf('{'),out.lastIndexOf('}')+1));
   const x=String(j.text||''),tg=String(j.target||''),w=String(j.when||'');
-  return{journal:{k:'journal',x},new_thread:{k:'thrnew',title:x},thread_update:{k:'add',x,to:tg+' thread'},reminder:{k:'remind',x:x+(w?' '+w:'')},list_add:{k:'add',x,to:tg+' list'},today_goal:{k:'today',x},habit_done:{k:'done',x}}[j.action]||null}catch(err){return null}}
+  return{journal:{k:'journal',x:body(x)},new_thread:{k:'thrnew',title:x},thread_update:{k:'add',x,to:tg+' thread'},reminder:{k:'remind',x:x+(w?' '+w:'')},list_add:{k:'add',x,to:tg+' list'},new_list:{k:'listnew',title:x,items:tg?splitItems(tg):[]},today_goal:{k:'today',x},habit_done:{k:'done',x},agent_task:{k:'agent',x}}[j.action]||null}catch(err){return null}}
 
 /* ---------------- one request, start to finish ---------------- */
 const QRX=/^(?:who|what|when|where|why|how|which|is|are|was|were|do|does|did|have|has|had|can i|should i|tell me|show me|list|summari[sz]e|give me)\b/i;
@@ -379,7 +416,7 @@ function listen(){asOpen();const el=$('#asIn'),b=$('#asv .as-mic');if(!el||!b)re
 
 /* ---------------- wake word (Android) ---------------- */
 function wakePause(p){if(!NA||!NA.wakePause)return;try{NA.wakePause(!!p)}catch(e){}}
-function wakeSync(){if(!NA||!NA.wake)return;const a=aset(),v=vset();try{NA.wake(JSON.stringify({on:!!(a.wake||a.bg),bg:!!a.bg,name:aname(),lang:v.lang||'',cloud:!!v.cloud,quiet:a.quiet!==false}))}catch(e){}}
+function wakeSync(){if(!NA||!NA.wake)return;const a=aset(),v=vset();try{NA.wake(JSON.stringify({on:!!(a.wake||a.bg),bg:!!a.bg,name:aname(),lang:v.lang||'',cloud:!!v.cloud,quiet:a.quiet!==false,cues:a.cues!==false}))}catch(e){}}
 window.__assist=(k,a,b)=>{
  if(k==='tts'){if(a===SPK&&(b==='done'||b==='err')){SPK=null;afterSpeak()}return}
  if(k==='wake'){asOpen();vib();if(a!=='native')return listen();hush();AS.listening=AS.nlis=true;const i=$('#asIn');if(i)i.value='';paintHead();return}
@@ -387,6 +424,15 @@ window.__assist=(k,a,b)=>{
  if(k==='cmd'){if(AS.nlis){AS.listening=AS.nlis=false;const i=$('#asIn');if(i)i.value=''}run(a,{spoken:true});return}
  if(k==='wstate'){AS.wst=a;if(a==='timeout'&&AS.nlis){AS.listening=AS.nlis=false;const i=$('#asIn');if(i)i.value=''}paintHead();return}};
 function takePending(){if(!NA||!NA.takePending)return;let p='';try{p=NA.takePending()||''}catch(e){}if(p)setTimeout(()=>run(p,{spoken:true}),350)}
+
+/* listening cues: a bright rising two-note chime when it starts listening and a falling one when it stops, loud enough
+   to hear across a room (the phone's own recognizer beeps are hushed). Android plays these natively for the wake word;
+   this one is for the mic button and the browser. */
+let ACX=null;
+window.asCue=k=>{if(aset().cues===false)return;try{ACX=ACX||new(window.AudioContext||window.webkitAudioContext)();const c=ACX;if(c.state==='suspended')c.resume();const t0=c.currentTime+.02,g=c.createGain();g.connect(c.destination);g.gain.value=1;
+ const notes=k==='start'?[[784,0],[1175,.11]]:[[1047,0],[659,.12]];
+ notes.forEach(([f,d])=>{[1,2].forEach((h,j)=>{const o=c.createOscillator(),e=c.createGain();o.type=j?'triangle':'sine';o.frequency.value=f*h;o.connect(e);e.connect(g);const a=t0+d,v=j?.18:.75;e.gain.setValueAtTime(0,a);e.gain.linearRampToValueAtTime(v,a+.012);e.gain.exponentialRampToValueAtTime(.001,a+.26);o.start(a);o.stop(a+.3)})})}catch(e){}
+ try{navigator.vibrate&&navigator.vibrate(k==='start'?[18]:[10,60,10])}catch(e){}};
 
 /* ---------------- the sheet ---------------- */
 function headSub(){if(AS.busy)return AS.prog||'Thinking…';if(AS.listening)return'Listening…';if(SPK)return'Speaking…';const a=aset();if(NA&&(a.wake||a.bg)){const w=AS.wst||'';return w==='err'?'Can’t hear the wake word right now':w==='perm'?'Allow the microphone for the wake word':w==='unavailable'?'The wake word needs online speech allowed':`Say “${wakeWord()}” anytime`}return'Talk or type'}
@@ -432,6 +478,7 @@ function assistHTML(){const a=aset(),st=nst(),v=vset();
  <div class="field"><label>Assistant’s name</label><input data-assist="name" maxlength="24" value="${esc(aname())}" placeholder="Plot"><small class="muted">You’ll say “Hey ${esc(aname())}”.</small></div>
  ${NA?row('wake',`Listen for “${esc(wakeWord())}” while Plotline is open`,'The phone’s speech recognizer listens in short rounds while the app is on screen',a.wake)+
  row('bg','Keep listening in the background',`Hands-free, even with the phone locked: say it and it answers out loud. Android needs a small silent notification while it listens, and it uses more battery.${st.onDevice===false&&!v.cloud?' This phone has no on-device speech, so it needs online speech allowed.':''}`,a.bg)+
+ row('cues','Listening sounds','A clear chime when I start listening and another when I stop',a.cues!==false)+
  row('quiet','Quiet listening','Mutes the speech recognizer’s start and stop beeps (and other notification sounds for that moment) so it doesn’t chime while it listens',a.quiet!==false)+
  (a.bg&&st.overlay===false?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>Let ${esc(aname())} pop up</b><small>So “${esc(wakeWord())}” can open Plotline over other apps. Without it you’ll get a notification to tap instead.</small></div><button class="btn sm" data-act="asOverlay">Allow</button></div>`:''):`<p class="small muted">The “${esc(wakeWord())}” wake word works in the Android app. Here, tap the orb at the top to talk.</p>`}
  <div class="field"><label>Read replies out loud</label><select data-assist="speak">${[['voice','When I talk to it'],['always','Always'],['never','Never']].map(([k,n])=>`<option value="${k}" ${a.speak===k?'selected':''}>${n}</option>`).join('')}</select></div>

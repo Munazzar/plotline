@@ -114,23 +114,23 @@ public class Assist {
         if (a != null) a.js(code);
     }
 
-    /* "Hey Plot" on its own: a short tone, and the page shows it's listening (the loop hears the command itself) */
+    /* "Hey Plot" on its own: the start chime, and the page shows it's listening (the loop hears the command itself) */
     static void woke(Context c) {
         WakeLoop.unmute();
-        try {
-            final android.media.ToneGenerator t = new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 70);
-            t.startTone(android.media.ToneGenerator.TONE_PROP_ACK, 160);
-            H.postDelayed(new Runnable() { public void run() { t.release(); } }, 400);
-        } catch (Exception e) {}
+        Chime.start(c);
         if (resumed) js("window.__assist&&window.__assist('wake','native','')");
     }
 
     static void partial(String s) { if (resumed) js("window.__assist&&window.__assist('partial'," + JSONObject.quote(s) + ",'')"); }
 
-    static void state(String s) { if (resumed) js("window.__assist&&window.__assist('wstate'," + JSONObject.quote(s) + ",'')"); }
+    static void state(String s) {
+        Context cx = act.get() != null ? act.get() : WakeLoop.mc;
+        if ("timeout".equals(s) && cx != null) { WakeLoop.unmute(); Chime.stop(cx); } /* gave up waiting for the command */
+        if (resumed) js("window.__assist&&window.__assist('wstate'," + JSONObject.quote(s) + ",'')"); }
 
     /* the wake word was heard; cmd is what followed it ("" if nothing) */
     static void heard(Context c, String cmd) {
+        if (!cmd.isEmpty()) { WakeLoop.unmute(); Chime.stop(c); } /* got the command: the stop chime */
         MainActivity a = act.get();
         if (a != null && resumed) {
             js(cmd.isEmpty() ? "window.__assist&&window.__assist('wake','','')" : "window.__assist&&window.__assist('cmd'," + JSONObject.quote(cmd) + ",'')");
@@ -251,9 +251,43 @@ public class Assist {
             o.put("assistRole", assistRole(c));
             o.put("share", true);
             o.put("handsFree", true);
+            o.put("http", true);
             prefs(c).edit().putBoolean("bgOff", false).apply();
             return o.toString();
         } catch (Exception e) { return "{}"; }
+    }
+
+    /* http(id, {url, method, headers, body}): a request for a connector whose server doesn't allow browser pages (Notion).
+       Only https and only the hosts below; the answer comes back as window.__http(id, status, body). */
+    static final String[] HTTP_HOSTS = {"api.notion.com"};
+
+    @JavascriptInterface
+    public void http(final String id, final String json) {
+        new Thread(new Runnable() { public void run() {
+            int code = 0; String out;
+            try {
+                JSONObject o = new JSONObject(json);
+                java.net.URL u = new java.net.URL(o.getString("url"));
+                boolean ok = "https".equals(u.getProtocol());
+                if (ok) { ok = false; for (String h : HTTP_HOSTS) if (h.equals(u.getHost())) ok = true; }
+                if (!ok) throw new Exception("host not allowed");
+                java.net.HttpURLConnection h = (java.net.HttpURLConnection) u.openConnection();
+                h.setConnectTimeout(15000); h.setReadTimeout(30000);
+                h.setRequestMethod(o.optString("method", "GET"));
+                JSONObject hd = o.optJSONObject("headers");
+                if (hd != null) { java.util.Iterator<String> k = hd.keys(); while (k.hasNext()) { String n = k.next(); h.setRequestProperty(n, hd.optString(n)); } }
+                String body = o.optString("body", "");
+                if (body.length() > 0) { h.setDoOutput(true); java.io.OutputStream os = h.getOutputStream(); os.write(body.getBytes("UTF-8")); os.close(); }
+                code = h.getResponseCode();
+                java.io.InputStream in = code >= 400 ? h.getErrorStream() : h.getInputStream();
+                java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+                if (in != null) { byte[] buf = new byte[8192]; int n; while ((n = in.read(buf)) > 0 && bo.size() < 4000000) bo.write(buf, 0, n); in.close(); }
+                out = bo.toString("UTF-8");
+                h.disconnect();
+            } catch (Exception e) { out = String.valueOf(e.getMessage()); }
+            final String js = "window.__http&&window.__http(" + JSONObject.quote(id) + "," + code + "," + JSONObject.quote(out) + ")";
+            H.post(new Runnable() { public void run() { js(js); } });
+        } }).start();
     }
 
     @JavascriptInterface

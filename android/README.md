@@ -56,6 +56,11 @@ word, a voice and a widget, through a second JavaScript interface, `window.Plotl
   "Quiet listening" (`quiet` in the config, on by default) mutes the notification and system streams (and media,
   unless something is playing) for a moment around each recognizer round so its start/stop beeps don't play; streams
   are always unmuted before speaking, on stop, and on the next start after a crash.
+- **Listening sounds** (`Chime`): a rising two-note chime when it starts listening and a falling one when it stops
+  (command heard, or it gave up), each with a short buzz. Synthesised with `AudioTrack` on the assistant audio usage,
+  so they stay clear while the recognizer's own beeps are hushed. `cues` in the config turns them off.
+- **Connector requests** (`http(id, json)`): an https request for an agent connection whose server won't answer web
+  pages (Notion). Only hosts in `HTTP_HOSTS`; the answer comes back as `window.__http(id, status, body)`.
 - **Voice**: Android's text-to-speech (`TextToSpeech`). The `TTS_SERVICE` query is needed to find the engine on Android 11+.
 - **Widget** (`AssistWidget`, Plotline · Assistant): the last thing you said and the reply, with Talk (opens the app
   listening) and Type. Widgets can't use the mic or take typing themselves.
@@ -71,7 +76,7 @@ word, a voice and a widget, through a second JavaScript interface, `window.Plotl
 ## Adding it to the Android build
 
 1. Compile `Assist.java`, `AssistService.java`, `AssistWidget.java`, `WakeLoop.java`, `AssistEntry.java`, `AssistVIS.java`,
-   `AssistSessionService.java` and `AssistRecognizer.java` with the other sources.
+   `AssistSessionService.java`, `AssistRecognizer.java` and `Chime.java` with the other sources.
 2. Copy `res/layout/widget_assist.xml`, `res/xml/widget_assist_info.xml`, `res/xml/assist_shortcuts.xml`,
    `res/xml/assist_interaction.xml`, `res/xml/assist_recognizer.xml`,
    `res/values/assist_ids.xml` and `res/values/assist_strings.xml` into the app's `res/`.
