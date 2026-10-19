@@ -356,6 +356,17 @@ async function aiCall(system,user,{json=true,signal}={}){const p=wbs().prov,P=PR
  if(P[1]==='gemini')return((j.candidates||[])[0]?.content?.parts||[]).map(x=>x.text||'').join('');
  return j.choices?.[0]?.message?.content||''}
 
+/* a picture plus a prompt, for Ink's "Read with …" (handwriting and photos to text). '' = the picked provider can't */
+window.aiVisionName=()=>{const p=wbs().prov,P=PROV[p];if(!P||['plotline','deepseek','groq'].includes(p))return'';if(!keyOf(p)&&p!=='ollama'&&p!=='custom')return'';if(!provUrl(p)||!provModel(p))return'';return P[0].replace(/ \(.*\)$/,'').replace(/^Anthropic /,'')};
+window.aiVision=async(prompt,dataUrl,{signal}={})=>{const p=wbs().prov,P=PROV[p],key=keyOf(p),url=provUrl(p),model=provModel(p),mt=(/^data:([^;]+);/.exec(dataUrl)||[])[1]||'image/png',b64=dataUrl.slice(dataUrl.indexOf(',')+1);
+ if(!window.aiVisionName())throw new Error('Pick an AI with a key in Workbench › AI first');let r;
+ try{if(P[1]==='anthropic')r=await fetch(url+'/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model,max_tokens:8000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]}]})});
+  else if(P[1]==='gemini')r=await fetch(`${url}/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',signal,headers:{'content-type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{role:'user',parts:[{inline_data:{mime_type:mt,data:b64}},{text:prompt}]}]})});
+  else r=await fetch(url+'/chat/completions',{method:'POST',signal,headers:{'content-type':'application/json',...(key?{Authorization:'Bearer '+key}:{}),...(p==='openrouter'?{'HTTP-Referer':webBase(),'X-Title':'Plotline'}:{})},body:JSON.stringify({model,messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:dataUrl}}]}]})})}
+ catch(e){if(e.name==='AbortError')throw e;throw new Error(`Couldn’t reach ${P[0]}. Check your connection.`)}
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(`${P[0]} said ${r.status}: ${String((j.error&&(j.error.message||j.error))||'').slice(0,180)}`);
+ if(P[1]==='anthropic')return(j.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('');if(P[1]==='gemini')return((j.candidates||[])[0]?.content?.parts||[]).map(x=>x.text||'').join('');return j.choices?.[0]?.message?.content||''};
+
 const ROLE='You are a senior product strategist and systems architect working with me on a visual board in Plotline Workbench. You think in short, concrete items (one idea per item) and connect them so the structure is obvious at a glance.';
 const SPEC=`Reply with exactly one JSON object inside a \`\`\`json code block, and nothing outside it:
 
