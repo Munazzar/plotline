@@ -3178,6 +3178,35 @@ html:is([data-theme=glass],[data-theme=glasslight]) .rm-ch .chip.on:not(#_){back
 .pl-msg{margin:14px 4px 4px;font-size:13px;color:var(--muted)}.pl-msg svg{width:14px;height:14px;vertical-align:-2px}
 .pl-hint{margin-top:8px}.pl-src{margin:10px 0 0;text-align:center;font-size:10.5px;color:var(--muted);opacity:.7}
 .pl-cur{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin:10px 2px 0;font-size:12.5px;color:var(--muted)}.pl-cur span{flex-basis:100%}.pl-cur .link{margin-left:auto}
+/* ================= 1.35 polish: one rhythm, quicker motion, room to write =================
+   Kept together at the end so it wins over older rules without hunting through them. */
+#view .panel+.panel{margin-top:14px}
+.scrim{transition-duration:.3s}
+@media(max-width:820px){
+ .sheet{transition:transform .3s cubic-bezier(.4,0,.2,1),visibility 0s .3s}
+ .sheet.on{transition:transform .42s var(--ease),visibility 0s}
+ /* toasts sit just above the tab bar, never over a page title */
+ .toast{top:auto;bottom:calc(92px + var(--sab,env(safe-area-inset-bottom)));transform:translate(-50%,24px)}
+ .toast.on{transform:translate(-50%,0)}
+ .toast:not(.on){transition:transform .3s var(--ease),opacity .2s,visibility 0s .3s}
+ /* Plan with AI: the step number sits above its step, so the writing box gets the full width */
+ .fstep{grid-template-columns:1fr;gap:6px;padding:22px 0}.fnum{font-size:34px}
+ #aiText,#aiChange{min-height:170px}#agQ{min-height:96px}
+}
+html[data-anim=snappy]::view-transition-old(root){animation-duration:.14s}
+html[data-anim=snappy]::view-transition-new(root){animation-duration:.24s}
+@media(min-width:821px){.wr-done{display:none}}
+/* Writing an entry is a full-screen page on a phone: the editor takes whatever room is left above the keyboard,
+   and the formatting bar stays in view while you scroll. Swipe down or Back still closes it. */
+@media(max-width:820px){
+ .sheet.wsheet{top:0;bottom:auto;height:var(--vvh,100dvh);max-height:none;border-radius:0;border:0;padding-top:calc(6px + var(--sat,env(safe-area-inset-top)));display:flex;flex-direction:column}
+ .sheet.wsheet>.grab{margin-bottom:8px;flex:none}
+ .sheet.wsheet>.wr{flex:1 0 auto;display:flex;flex-direction:column;gap:12px}
+ .sheet.wsheet .wr-ed{flex:1 0 auto;min-height:max(220px,calc(var(--vvh,100dvh) - 330px))}
+ .sheet.wsheet .wr-tb{position:sticky;top:-6px;z-index:3;background:var(--bg-2);box-shadow:0 8px 14px -10px rgba(0,0,0,.5)}
+ .sheet.wsheet .wr-mood{flex:none}
+ .wr-top{flex-wrap:nowrap}.wr-top .data{flex:0 1 auto;min-width:0;max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wr-pills{flex:1;min-width:0}
+}
 </style>
 </head>
 <body>
@@ -3191,6 +3220,13 @@ html:is([data-theme=glass],[data-theme=glasslight]) .rm-ch .chip.on:not(#_){back
 <div class="sbar" aria-hidden="true"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tpill" id="tpill" role="timer"></div>
 <script>
+/* Dates are formatted hundreds of times per screen. toLocale*String builds a new formatter on every call, which is
+   slow on phones, so keep one formatter per locale and options and reuse it. Same output. */
+(()=>{const C=new Map(),P=Date.prototype,wrap=(name,def)=>{const o=P[name];P[name]=function(loc,opt){if(isNaN(this))return o.call(this,loc,opt);
+ const k=name+'|'+(loc==null?'':String(loc))+'|'+(opt?JSON.stringify(opt):'');let f=C.get(k);
+ if(!f){try{const op=Object.assign({},opt||{});if(!Object.keys(op).some(x=>/^(weekday|era|year|month|day|hour|minute|second|dateStyle|timeStyle|dayPeriod|fractionalSecondDigits|timeZoneName)$/.test(x)))Object.assign(op,def);f=new Intl.DateTimeFormat(loc,op)}catch(e){return o.call(this,loc,opt)}C.set(k,f)}return f.format(this)}};
+ wrap('toLocaleDateString',{year:'numeric',month:'numeric',day:'numeric'});wrap('toLocaleTimeString',{hour:'numeric',minute:'numeric',second:'numeric'});
+ wrap('toLocaleString',{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric'})})();
 /* ================= utils ================= */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -4149,6 +4185,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!SHEET_LOCK)closeSh
  sh.addEventListener('touchend',end);sh.addEventListener('touchcancel',end);
  sh.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')return;if(e.clientY-sh.getBoundingClientRect().top<64)begin(e.clientX,e.clientY,e.target)});
  addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&D)move(e.clientX,e.clientY,null)});addEventListener('pointerup',e=>{if(e.pointerType==='mouse')end()})})();
+/* --vvh is the height that's really visible, so full-screen writing ends at the top of the keyboard */
+(()=>{const vv=window.visualViewport;if(!vv)return;const set=()=>document.documentElement.style.setProperty('--vvh',Math.round(vv.height)+'px');vv.addEventListener('resize',set);set()})();
 function askConfirm(t,msg,ok,fn,danger=true){CONF=fn;openSheet(`<h2>${t}</h2><p class="muted">${msg}</p><div class="actions"><button class="btn ghost" data-act="close">Cancel</button><button class="btn ${danger?'danger':'pri'}" data-act="confirmOk">${ok}</button></div>`)}
 function toast(msg,undo){const t=$('#toast');t.innerHTML=`<span>${msg}</span>${undo?`<button class="link" data-act="undo">Undo</button>`:''}`;UNDO=undo||null;t.classList.add('on');clearTimeout(TT);TT=setTimeout(()=>t.classList.remove('on'),undo?5200:2600)}
 const undoPoint=()=>{const s=JSON.stringify(S);return()=>{S=JSON.parse(s);save();render(false)}};
@@ -4889,7 +4927,7 @@ let WR=null,WRT=0;
 function writeSheet(e,gid,date){const ed=!!e;PHOTO=ed?(e.img||null):null;WR={id:ed?e.id:null,gid:ed?e.goalId:(gid||null),date:date||(ed?ymd(new Date(e.t)):ymd())};
  const day=WR.date,sib=S.entries.filter(x=>x.type==='note'&&ymd(new Date(x.t))===day).sort((a,b)=>a.t-b.t);
  openSheet(`<div class="wr">
- <div class="wr-top"><span class="data" id="wrStat">${ed?'Saved':'New entry · starts saving as you write'}</span><div class="wr-pills">${sib.map((x,k)=>`<button class="wr-pill${e&&x.id===e.id?' on':''}" data-act="wrOpen" data-id="${x.id}">${x.mood?x.mood+' ':''}${esc(trunc(x.title||'Entry '+(k+1),18))}</button>`).join('')}<button class="wr-pill add" data-act="wrNew" data-d="${day}">${ic('plus')}New</button></div></div>
+ <div class="wr-top"><span class="data" id="wrStat">${ed?'Saved':'New entry · starts saving as you write'}</span><div class="wr-pills">${sib.map((x,k)=>`<button class="wr-pill${e&&x.id===e.id?' on':''}" data-act="wrOpen" data-id="${x.id}">${x.mood?x.mood+' ':''}${esc(trunc(x.title||'Entry '+(k+1),18))}</button>`).join('')}<button class="wr-pill add" data-act="wrNew" data-d="${day}">${ic('plus')}New</button></div><button type="button" class="btn sm pri wr-done" data-act="wrDone">Done</button></div>
  <input class="wr-title" id="wrTitle" maxlength="90" placeholder="Title · e.g. Morning gratitude, Late-night vent" value="${esc(ed?e.title||'':'')}">
  <div class="wr-mood" role="radiogroup" aria-label="Mood">${MOODS.map(([m,n])=>`<button type="button" class="wr-m${ed&&e.mood===m?' on':''}" data-act="wrMood" data-m="${m}" aria-pressed="${ed&&e.mood===m}" title="${n}"><span>${m}</span><small>${n}</small></button>`).join('')}</div>
  <div class="wr-tb" role="toolbar" aria-label="Formatting"><button type="button" data-cmd="bold" aria-label="Bold"><b>B</b></button><button type="button" data-cmd="italic" aria-label="Italic"><i>I</i></button><button type="button" data-cmd="underline" aria-label="Underline"><u>U</u></button><button type="button" data-cmd="hilite" aria-label="Highlight"><mark>H</mark></button><button type="button" data-cmd="insertUnorderedList" aria-label="Bullet list">${ic('menu')}</button><button type="button" data-cmd="removeFormat" aria-label="Clear formatting">Tx</button><span style="flex:1"></span><button type="button" class="wr-pr" data-act="wrPrompt">${ic('ai')}Prompt</button></div>
@@ -5871,7 +5909,9 @@ function voiceHTML(){const v=vset(),st=vstate();
  <div class="field"><label>Language</label><select data-voice="lang">${[['','Same as my phone'],['en-US','English (US)'],['en-GB','English (UK)'],['en-IN','English (India)'],['ur-PK','Urdu'],['hi-IN','Hindi'],['ar-SA','Arabic'],['es-ES','Spanish'],['fr-FR','French']].map(([k,n])=>`<option value="${k}" ${v.lang===k?'selected':''}>${n}</option>`).join('')}</select></div></section>`}
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.voice)return;const k=t.dataset.voice;S.settings.voice={...vset(),[k]:t.type==='checkbox'?t.checked:t.value};save();render(false)});
 /* put a mic in each place you write (once per element) */
-function micDecorate(root){if(!vset().on||!voiceAvail())return;(root||document).querySelectorAll(VOICE_SEL.join(',')).forEach(el=>{if(el.dataset.mic)return;el.dataset.mic=1;const host=el.parentElement;if(!host)return;host.classList.add('has-mic');if(/flex|grid/.test(getComputedStyle(host).display))host.classList.add('mic-flow');
+function micDecorate(root){if(!vset().on||!voiceAvail())return;const L=[...(root||document).querySelectorAll(VOICE_SEL.join(','))].filter(el=>!el.dataset.mic&&el.parentElement);
+ /* read every host's layout first, then change the page, so the browser works out styles once instead of once per field */
+ const fl=L.map(el=>/flex|grid/.test(getComputedStyle(el.parentElement).display));L.forEach((el,i)=>{el.dataset.mic=1;const host=el.parentElement;host.classList.add('has-mic');if(fl[i])host.classList.add('mic-flow');
  const b=document.createElement('button');b.type='button';b.className='mic';b.setAttribute('aria-label','Speak instead of typing');b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><i></i>';
  b.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();VC&&VC.el===el?voiceStop():voiceStart(el,b)});if(el.nextSibling)host.insertBefore(b,el.nextSibling);else host.appendChild(b)})}
 function vInsert(el,base,text){if(el.isContentEditable){el.dataset.vbase=el.dataset.vbase||'';return}const sep=base&&!/\s$/.test(base)&&text?' ':'';el.value=base+sep+text;el.dispatchEvent(new Event('input',{bubbles:true}))}
