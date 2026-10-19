@@ -1,0 +1,238 @@
+/* ================= Agent: tasks Plot runs for you, with your other apps =================
+   You give the agent tasks in your own words ("every morning, look at my calendar and unread email and tell me what
+   matters"), pick when they run and what they may read, and it does them with the AI picked in Settings › AI & voice
+   (Gemma 4 on this device, or your own server). Each run reads the sources the task allows, then writes a short
+   summary and up to six suggestions: add a goal for today, set a reminder, add to the journal, a list or a thread,
+   or put an event on your Google Calendar. Suggestions wait in the agent's inbox for a tap, unless the task is set to
+   "Do it", which adds the Plotline ones straight away (calendar events always wait for you).
+   Connections:
+   - Google Calendar (read and add events), Gmail (read only), Google Drive (file names and dates): the same Google
+     sign-in as Drive sync, with the extra permission asked for when you turn one on.
+   - Notion: an internal integration token you paste in. Notion's API doesn't answer web pages, so the Android app sends
+     those requests itself (PlotlineAssist.http); in a browser it needs a small proxy address of your own.
+   When it runs: tasks run while Plotline is open (checked every minute and when you come back to the app). A task
+   that comes due while the app is closed shows a notification at its time; opening Plotline runs it.
+   Everything here (tasks, inbox, connections) is a setting of this device: it isn't synced, so each device's agent
+   has its own. */
+(()=>{
+'use strict';
+Object.assign(IC,{agent:'<path d="M12 3v2.5"/><circle cx="12" cy="2.6" r=".9"/><rect x="4.5" y="6" width="15" height="11.5" rx="4"/><path d="M9.2 11.2v.6M14.8 11.2v.6M9.5 14.5c1.6 1 3.4 1 5 0M2.5 11v3M21.5 11v3M9 17.5V21M15 17.5V21"/>',plug:'<path d="M9 2v5M15 2v5M6.5 7h11v3.5a5.5 5.5 0 0 1-11 0z"/><path d="M12 16v6"/>'});
+const now=()=>Date.now(),NA=window.PlotlineAssist||null;
+const ADEF={on:true,tasks:[],inbox:[]};
+const ag=()=>S.settings.agent=Object.assign({},ADEF,S.settings.agent||{});
+const CDEF={gcal:false,gmail:false,gdrive:false,notion:false,proxy:''};
+const cset=()=>S.settings.conn=Object.assign({},CDEF,S.settings.conn||{});
+const NOTK='plotline.notion';
+const notionKey=()=>{try{return localStorage.getItem(NOTK)||''}catch(e){return''}};
+
+/* ---------------- connections ---------------- */
+const SC={gcal:'https://www.googleapis.com/auth/calendar.events',gmail:'https://www.googleapis.com/auth/gmail.readonly',gdrive:'https://www.googleapis.com/auth/drive.metadata.readonly'};
+const CN={plot:['Plotline','Your goals, habits, journal, threads and lists'],gcal:['Google Calendar','Your events, and adding new ones'],gmail:['Gmail','Recent email: sender, subject and preview. Read only'],gdrive:['Google Drive','Names and dates of your recent files'],notion:['Notion','Pages you shared with your integration']};
+window.connScopes=()=>{const c=cset();return Object.keys(SC).filter(k=>c[k]).map(k=>' '+SC[k]).join('')};
+const connOn=k=>k==='plot'||(k==='notion'?!!(cset().notion&&notionKey()):!!cset()[k]);
+async function googleConsent(){tokDrop();scopeSync();if(NATIVE&&NATIVE.googleToken){S.settings.sync.native=true;return nativeAuth(true)}return webAuth('consent')}
+async function gapi(url,opt={}){let t=tokGet();
+ if(!t){if(NATIVE&&S.settings.sync.native)t=await token(false);else throw new Error('Sign in to Google again in Agent › Connections')}
+ const r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+t}});
+ if(r.status===401){tokDrop();try{NATIVE&&NATIVE.invalidateToken&&NATIVE.invalidateToken(t)}catch(e){}throw new Error('Sign in to Google again in Agent › Connections')}
+ if(r.status===403){let m='';try{m=(await r.json()).error.message}catch(e){}throw new Error(/not been used|disabled/i.test(m)?'This Google API isn’t turned on for Plotline’s Google project yet':'Plotline needs permission for this. Turn the connection off and on again')}
+ if(!r.ok)throw new Error('Google said '+r.status);return r.json()}
+const iso=d=>new Date(d).toISOString();
+async function calEvents(days){const a=new Date();a.setHours(0,0,0,0);const j=await gapi(`https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=60&timeMin=${iso(a)}&timeMax=${iso(a.getTime()+days*864e5)}`);
+ return(j.items||[]).filter(e=>e.status!=='cancelled').map(e=>({title:e.summary||'(no title)',start:e.start.dateTime||e.start.date,all:!e.start.dateTime,where:e.location||''}))}
+async function calAdd(x){let body;if(x.time){const st=new Date(x.date+'T'+x.time);body={summary:x.title,start:{dateTime:iso(st)},end:{dateTime:iso(st.getTime()+(x.dur||60)*6e4)}}}
+ else{const e=new Date(x.date+'T12:00');e.setDate(e.getDate()+1);body={summary:x.title,start:{date:x.date},end:{date:ymd(e)}}}
+ return gapi('https://www.googleapis.com/calendar/v3/calendars/primary/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}
+async function mailRecent(q,n){const j=await gapi(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${n}&q=${encodeURIComponent(q)}`);const out=[];
+ for(const m0 of j.messages||[]){try{const m=await gapi(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m0.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject`);const h=k=>(((m.payload||{}).headers||[]).find(x=>x.name===k)||{}).value||'';
+  out.push({from:h('From').replace(/\s*<[^>]*>/,'').replace(/"/g,'').trim(),subject:h('Subject'),t:+m.internalDate,snippet:(m.snippet||'').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&'),unread:(m.labelIds||[]).includes('UNREAD')})}catch(e){}}return out}
+async function driveRecent(n){const j=await gapi(`https://www.googleapis.com/drive/v3/files?pageSize=${n}&orderBy=modifiedTime%20desc&q=${encodeURIComponent("trashed=false and mimeType!='application/vnd.google-apps.folder'")}&fields=files(name,mimeType,modifiedTime)`);
+ return(j.files||[]).map(f=>({name:f.name,kind:(f.mimeType||'').split(/[./]/).pop().replace('vnd-google-apps-',''),t:Date.parse(f.modifiedTime)}))}
+const HTTPCB={};window.__http=(id,st,b)=>{const f=HTTPCB[id];if(f)f(st,b)};
+function nfetch(path,body){return new Promise((res,rej)=>{const key=notionKey();if(!key)return rej(new Error('Add your Notion token in Agent › Connections'));
+ const url='https://api.notion.com/v1/'+path,headers={Authorization:'Bearer '+key,'Notion-Version':'2022-06-28','Content-Type':'application/json'},done=(st,txt)=>{let j=null;try{j=JSON.parse(txt)}catch(e){}st>=200&&st<300&&j?res(j):rej(new Error('Notion said '+(st||'no answer')+((j&&j.message)?': '+j.message:'')))};
+ if(NA&&NA.http){const id='h'+uid();const t=setTimeout(()=>{delete HTTPCB[id];rej(new Error('Notion didn’t answer'))},45000);HTTPCB[id]=(st,b)=>{clearTimeout(t);delete HTTPCB[id];done(st,b)};NA.http(id,JSON.stringify({url,method:body?'POST':'GET',headers,body:body?JSON.stringify(body):''}));return}
+ const px=cset().proxy.trim();if(!px)return rej(new Error('Notion works in the Android app. In a browser it needs a proxy address (Agent › Connections)'));
+ fetch(px.replace(/\/+$/,'')+'/'+url,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined}).then(async r=>done(r.status,await r.text())).catch(e=>rej(new Error('Couldn’t reach your Notion proxy')))})}
+const ntitle=p=>{const pr=p.properties||{};for(const k in pr){const v=pr[k];if(v&&v.type==='title')return(v.title||[]).map(t=>t.plain_text).join('')||'Untitled'}return'Untitled'};
+async function notionRecent(n){const j=await nfetch('search',{page_size:n,sort:{direction:'descending',timestamp:'last_edited_time'},filter:{property:'object',value:'page'}});
+ const out=[];for(const p of(j.results||[]).slice(0,n)){const o={title:ntitle(p),t:Date.parse(p.last_edited_time),text:''};
+  if(out.length<4){try{const b=await nfetch(`blocks/${p.id}/children?page_size=25`);o.text=(b.results||[]).map(x=>((x[x.type]||{}).rich_text||[]).map(r=>r.plain_text).join('')).filter(Boolean).join(' · ').slice(0,400)}catch(e){}}out.push(o)}return out}
+
+/* ---------------- what the agent reads ---------------- */
+const tm=t=>new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const dd=t=>{const d=new Date(t),k=dnum(ymd(d))-dnum(ymd());return k===0?'today':k===1?'tomorrow':k===-1?'yesterday':d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})};
+const tr=(s,n)=>{s=String(s||'').replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n-1)+'…':s};
+function plotLines(big){const td=ymd(),L=[];const days=S.days.filter(x=>x.date>=td&&x.date<=addDays(2)).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+ if(days.length)L.push('Plan: '+days.map(x=>`${dd(x.date+'T12:00')}${x.time?' '+fmtTime(x.time):''} ${x.title}${x.done?' (done)':''}`).join('; '));
+ const hs=S.habits.filter(h=>h.status==='active'&&h.kind!=='quit');if(hs.length)L.push('Habits today: '+hs.slice(0,12).map(h=>`${h.title} ${typeof hDone==='function'&&hDone(h,td)?'done':'not yet'}`).join('; '));
+ const gs=S.goals.filter(g=>g.status==='active').slice(0,big?12:6);if(gs.length)L.push('Active goals: '+gs.map(g=>{const n=typeof nextStep==='function'&&nextStep(g);return`${g.title}${n?' (next: '+n.title+')':''}`}).join('; '));
+ const th=(S.threads||[]).filter(t=>t.status!=='archived'&&t.status!=='done').sort((a,b)=>(b.u||0)-(a.u||0)).slice(0,big?10:5);if(th.length)L.push('Threads: '+th.map(t=>t.title).join('; '));
+ const ls=(S.lists||[]).slice(0,big?10:5);if(ls.length)L.push('Lists: '+ls.map(l=>l.title).join('; '));
+ const je=S.entries.filter(e=>e.type==='note'&&!e.private&&now()-e.t<3*864e5).sort((a,b)=>b.t-a.t).slice(0,3);if(je.length)L.push('Recent journal: '+je.map(e=>`${dd(e.t)}: ${tr(e.text||e.title,big?240:120)}`).join(' | '));
+ return L}
+async function gather(src,big){const out=[],errs=[];const sec=(t,L)=>{if(L&&L.length)out.push(t+'\n'+L.map(x=>'- '+x).join('\n'))};const n=big?20:10;
+ const jobs={plot:async()=>sec('PLOTLINE',plotLines(big)),
+  gcal:async()=>{const E=await calEvents(big?14:7);sec('CALENDAR (next '+(big?14:7)+' days)',E.length?E.map(e=>`${dd(e.start)}${e.all?' all day':' '+tm(e.start)} ${e.title}${e.where?' @ '+tr(e.where,40):''}`):['No events'])},
+  gmail:async()=>{const M=await mailRecent('newer_than:2d -category:promotions -category:social',big?15:8);sec('EMAIL (last 2 days)',M.length?M.map(m=>`${m.unread?'[unread] ':''}${dd(m.t)} from ${tr(m.from,40)}: ${tr(m.subject,90)} · ${tr(m.snippet,big?200:110)}`):['No new email'])},
+  gdrive:async()=>{const F=await driveRecent(n);sec('DRIVE (recently changed files)',F.map(f=>`${dd(f.t)} ${f.name} (${f.kind})`))},
+  notion:async()=>{const P=await notionRecent(big?10:6);sec('NOTION (recently edited pages)',P.map(p=>`${dd(p.t)} ${p.title}${p.text?': '+tr(p.text,big?300:150):''}`))}};
+ for(const k of src){if(!jobs[k]||!connOn(k))continue;try{await jobs[k]()}catch(e){errs.push(`${CN[k][0]}: ${e.message||e}`)}}
+ return{text:out.join('\n\n'),errs}}
+
+/* ---------------- one run ---------------- */
+const SUGT=['today','reminder','journal','list_add','thread_update','new_thread','calendar_event'];
+const SCHEMA={type:'object',properties:{summary:{type:'string'},suggestions:{type:'array',maxItems:6,items:{type:'object',properties:{type:{enum:SUGT},text:{type:'string'},target:{type:'string'},date:{type:'string'},time:{type:'string'}},required:['type','text'],additionalProperties:false}}},required:['summary','suggestions'],additionalProperties:false};
+async function llm(msgs,opts){const e=planEngine();let out='';const on=x=>{out+=x};
+ if(e==='api')await apiChat(msgs,on,null,opts);else if(e==='native')await natChat(msgs,on,null,null,opts);else if(e==='wasm')await localChat(msgs,on,null,0,null,false,opts);else throw new Error('Pick an AI for the agent in Settings › AI & voice');
+ return out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').trim()}
+const aiOk=()=>window.PlotDo&&PlotDo.aiReady?PlotDo.aiReady():!!planEngine();
+function parseJSON(s){try{return JSON.parse(s)}catch(e){}const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a){try{return JSON.parse(s.slice(a,b+1))}catch(e){}}return null}
+let BUSY=null;
+async function runTask(t,manual){if(BUSY)return manual&&toast('The agent is busy with “'+BUSY+'”');if(!aiOk()){if(manual)toast('Pick an AI first: Settings › AI & voice');return}
+ BUSY=t.title;paintSoon();const A=ag(),e=planEngine(),big=e==='api'||!IS_PHONE;
+ try{const g=await gather(t.src&&t.src.length?t.src:['plot'],big);const d=new Date();
+  const sys=`You are ${String((S.settings.assist||{}).name||'Plot').slice(0,24)}, the user's personal agent inside the Plotline app. It is ${d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})}, ${tm(d)}. Do the TASK using only the DATA. Reply with one JSON object: "summary" is 1 to 5 short sentences to the user about what matters (plain words, no lists, no markdown); "suggestions" are 0 to 6 concrete things the app can do for them, grounded in the data: today (a goal for today; text is the goal), reminder (text, date YYYY-MM-DD, time HH:MM), journal (text to save), list_add (target is a list name, text the items), thread_update (target is a thread name, text the update), new_thread (text is its title), calendar_event (text is the title, date, time). Don't suggest things that are already in the plan. Never invent facts.`;
+  const msgs=[{role:'system',content:sys},{role:'user',content:`TASK: ${t.prompt}\n\nDATA\n${g.text||'(nothing to read)'}${g.errs.length?'\n\nCouldn’t read: '+g.errs.join('; '):''}`}];
+  const raw=await llm(msgs,{schema:SCHEMA,max_tokens:big?700:500,temperature:.2});const j=parseJSON(raw)||{summary:raw.slice(0,600),suggestions:[]};
+  const sugs=(Array.isArray(j.suggestions)?j.suggestions:[]).filter(x=>x&&SUGT.includes(x.type)&&String(x.text||'').trim()).slice(0,6).map(x=>({id:uid(),type:x.type,text:tr(x.text,200),target:tr(x.target||'',60),date:/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')?x.date:'',time:/^\d{2}:\d{2}$/.test(x.time||'')?x.time:'',st:''}));
+  const item={id:uid(),t:now(),task:t.id,title:t.title,summary:tr(j.summary||'',900),sugs,errs:g.errs,seen:false};
+  if(t.mode==='do')for(const s of sugs)if(s.type!=='calendar_event'){try{await apply(s,true)}catch(e){}}
+  A.inbox.unshift(item);A.inbox=A.inbox.slice(0,40);t.last=now();t.err='';save();
+  if(!manual&&document.hidden&&typeof notify==='function')notify('Plot · '+t.title,tr(item.summary,140));
+  return item}
+ catch(e){t.err=String(e&&e.message||e);t.last=now();save();if(manual)toast('The agent couldn’t finish: '+esc(t.err))}
+ finally{BUSY=null;t.next=nextAt(t,now());save();paintSoon();try{syncNative()}catch(e){}}}
+
+/* a suggestion becomes the real thing */
+async function apply(s,quiet){const D=window.PlotDo;if(!D)throw new Error('not ready');let r=null;
+ const w=s.date?{date:s.date,time:s.time||'09:00',found:true}:D.parseWhen(s.text);
+ switch(s.type){
+  case'today':r=D.addToday(s.text);break;
+  case'reminder':r=D.addReminder(w.found?(s.date?s.text:w.rest||s.text):s.text,w.found?w:{date:addDays(1),time:'09:00'});break;
+  case'journal':r=D.addJournal(s.text);break;
+  case'list_add':{const L=s.target&&D.pick(S.lists||[],s.target,l=>l.title);r=L?D.addTo(s.text,L.title+' list'):D.newList(s.target||'New list',D.splitItems(s.text));break}
+  case'thread_update':{const T=s.target&&D.pick((S.threads||[]).filter(t=>t.status!=='archived'),s.target,t=>t.title);r=T?D.addToThread(T,s.text):D.newThread(s.target||s.text,s.target?s.text:'');break}
+  case'new_thread':r=D.newThread(s.text);break;
+  case'calendar_event':await calAdd({title:s.text,date:s.date||ymd(),time:s.time||''});r={say:'Added to your Google Calendar'};break}
+ s.st='done';save();if(!quiet&&r&&r.say)toast(esc(r.say));return r}
+
+/* ---------------- when tasks run ---------------- */
+const WHEN=[['open','Each time I open Plotline'],['hourly','Every hour'],['3h','Every 3 hours'],['daily','Every day at…'],['weekdays','Weekdays at…'],['weekly','Every week on…'],['manual','Only when I tap Run']];
+const DOW=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function nextAt(t,from){const k=t.when||'daily';if(k==='manual')return 0;if(k==='open')return(t.last||0)+4*36e5;if(k==='hourly')return from+36e5;if(k==='3h')return from+3*36e5;
+ const[h,m]=(t.at||'08:00').split(':').map(Number);const d=new Date(from);d.setSeconds(0,0);d.setHours(h,m);
+ for(let i=0;i<9;i++){if(d.getTime()>from&&(k==='daily'||(k==='weekdays'&&d.getDay()%6!==0)||(k==='weekly'&&d.getDay()===+(t.dow||0))))return d.getTime();d.setDate(d.getDate()+1);d.setHours(h,m)}return from+864e5}
+const whenTxt=t=>{const k=t.when||'daily',at=fmtTime(t.at||'08:00');return k==='daily'?'Every day at '+at:k==='weekdays'?'Weekdays at '+at:k==='weekly'?`${DOW[+(t.dow||0)]}s at ${at}`:(WHEN.find(x=>x[0]===k)||[0,''])[1]};
+async function due(){if(BUSY||!ag().on||typeof S==='undefined')return;const A=ag(),t0=now();
+ for(const t of A.tasks){if(!t.on||(t.when||'daily')==='manual')continue;if(!t.next)t.next=t.when==='open'?t0:nextAt(t,t.created||t0);
+  if(t.next<=t0){if(!aiOk())return;if((typeof IN!=='undefined'&&IN.busy)||(window.AS_BUSY))return;await runTask(t,false);return}}}
+window.agentAlarms=(n,L)=>{if(!ag().on)return;ag().tasks.forEach(t=>{if(!t.on||!['daily','weekdays','weekly'].includes(t.when))return;const at=t.next&&t.next>n?t.next:nextAt(t,n);L.push({at,title:'Plot · '+t.title,body:'Open Plotline and I’ll run it',k:'agent',id:t.id})})};
+setInterval(()=>{if(!document.hidden)due()},60e3);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(due,2500)});
+window.addEventListener('app-resume',()=>setTimeout(due,2500));
+setTimeout(due,6000);
+
+/* ---------------- ready-made tasks ---------------- */
+const TPL=[
+ {k:'brief',title:'Morning brief',prompt:'Look at my calendar for today, my unread email and today’s plan. Tell me what matters today and what to watch out for. Suggest goals for today and reminders for anything with a time.',when:'daily',at:'07:30',src:['plot','gcal','gmail']},
+ {k:'mail',title:'Email to tasks',prompt:'Go through my recent email. Find anything that needs me to do something or has a deadline, and suggest a goal for today or a reminder for each. Skip newsletters and receipts.',when:'3h',src:['gmail','plot']},
+ {k:'evening',title:'Evening review',prompt:'Look at what I did today: goals done and not done, habits, and my journal. Write a short, kind review, and suggest what to carry over to tomorrow as reminders.',when:'daily',at:'21:00',src:['plot']},
+ {k:'week',title:'Plan my week',prompt:'Look at my calendar for the next 7 days and my active goals. Point out busy days and free time, and suggest goals and reminders that move my goals forward in the free time.',when:'weekly',dow:0,at:'18:00',src:['plot','gcal']},
+ {k:'notion',title:'Notion catch-up',prompt:'Look at the Notion pages I edited recently. Summarise what changed, and suggest thread updates or goals for today that follow from them.',when:'daily',at:'12:00',src:['notion','plot']},
+ {k:'deadlines',title:'Spot deadlines',prompt:'Find dates and deadlines mentioned in my email, calendar and plan in the next two weeks that I don’t have reminders for yet, and suggest reminders for them.',when:'daily',at:'09:00',src:['gmail','gcal','plot']}];
+function addTask(o){const t={id:uid(),title:o.title||'New task',prompt:o.prompt||'',when:o.when||'daily',at:o.at||'08:00',dow:o.dow||0,src:o.src||['plot'],mode:o.mode||'suggest',on:true,created:now(),last:0,next:0,err:''};t.next=t.when==='open'?now():nextAt(t,now());ag().tasks.push(t);save();try{syncNative()}catch(e){}return t}
+
+/* "Hey Plot, every morning summarise my emails" */
+window.agentFromVoice=x=>{const s=String(x||'');let when='daily',at='08:00',dow=0;const l=s.toLowerCase();
+ const W=window.PlotDo&&PlotDo.parseWhen(s);if(W&&W.time&&/\d|noon|midnight/.test(l))at=W.time;
+ if(/every\s+evening|each\s+evening|every\s+night/.test(l))at=W&&W.time&&/\d/.test(l)?at:'19:00';else if(/every\s+afternoon/.test(l))at=/\d/.test(l)?at:'14:00';else if(/every\s+morning|each\s+morning/.test(l))at=/\d/.test(l)?at:'08:00';
+ if(/every\s+hour/.test(l))when='hourly';else if(/every\s+\d+\s+hours/.test(l))when='3h';else if(/every\s+weekday/.test(l))when='weekdays';else{const m=/every\s+(sun|mon|tues|wednes|thurs|fri|satur)day/.exec(l);if(m){when='weekly';dow=['sun','mon','tues','wednes','thurs','fri','satur'].indexOf(m[1])}else if(/every\s+week/.test(l)){when='weekly';dow=1}else if(/^(keep an eye on|watch|monitor)/.test(l))when='3h'}
+ const src=['plot'];if(/calendar|meeting|event|schedule/.test(l))src.push('gcal');if(/e-?mail|inbox|gmail|message/.test(l))src.push('gmail');if(/drive|file|doc/.test(l))src.push('gdrive');if(/notion/.test(l))src.push('notion');
+ const title=tr(s.replace(/^(?:every|each)\s+\S+(?:\s+at\s+\S+(?:\s*[ap]m)?)?\s*,?\s*/i,'').replace(/^(?:keep an eye on|watch|monitor)\s+/i,'Watch ').replace(/^./,c=>c.toUpperCase()),50);
+ const t=addTask({title,prompt:s,when,at,dow,src});const miss=src.filter(k=>k!=='plot'&&!connOn(k)).map(k=>CN[k][0]);
+ return{say:`Okay, I'll do that ${whenTxt(t).replace(/^Every/,'every').replace(/^Weekdays/,'on weekdays')}.${miss.length?` Connect ${miss.join(' and ')} on the Agent page so I can read ${miss.length>1?'them':'it'}.`:''}`,undo:()=>{ag().tasks=ag().tasks.filter(x=>x.id!==t.id);save()},chips:[['Open agent','agent']]}};
+
+/* ---------------- the Agent page ---------------- */
+const SUGN={today:'Goal for today',reminder:'Reminder',journal:'Journal',list_add:'Add to list',thread_update:'Thread update',new_thread:'New thread',calendar_event:'Calendar event'};
+const sugLine=s=>`${s.type==='list_add'||s.type==='thread_update'?esc(s.target)+': ':''}${esc(s.text)}${s.date||s.time?` <span class="muted">· ${esc(s.date?dd(s.date+'T12:00'):'')}${s.time?' '+esc(fmtTime(s.time)):''}</span>`:''}`;
+function inboxHTML(){const I=ag().inbox;if(!I.length)return'';
+ return`<section class="rv ag-inbox"><div class="st-h"><h3>Inbox</h3>${I.length?`<button class="link" data-act="agClear">Clear</button>`:''}</div>${I.slice(0,12).map(it=>`<article class="panel ag-it${it.seen?'':' new'}"><div class="ag-h"><b>${esc(it.title)}</b><small class="muted">${esc(dd(it.t))} · ${esc(tm(it.t))}</small></div>${it.summary?`<p>${esc(it.summary)}</p>`:''}
+  ${it.sugs.length?`<ul class="ag-s">${it.sugs.map(s=>`<li class="${s.st}"><span class="ag-k">${SUGN[s.type]}</span><span class="ag-x">${sugLine(s)}</span>${s.st==='done'?`<span class="ag-ok">${ic('check')}</span>`:s.st==='no'?'<span class="muted small">Skipped</span>':`<span class="ag-b"><button class="ibtn sm" data-act="agYes" data-i="${it.id}" data-s="${s.id}" aria-label="Do it" title="Do it">${ic('check')}</button><button class="ibtn sm" data-act="agNo" data-i="${it.id}" data-s="${s.id}" aria-label="Skip" title="Skip">${ic('plus')}</button></span>`}</li>`).join('')}</ul>${it.sugs.filter(s=>!s.st).length>1?`<div class="actions left"><button class="btn sm" data-act="agAll" data-i="${it.id}">Do all</button></div>`:''}`:''}
+  ${it.errs&&it.errs.length?`<p class="small muted">Couldn’t read: ${esc(it.errs.join('; '))}</p>`:''}</article>`).join('')}</section>`}
+function tasksHTML(){const T=ag().tasks;
+ return`<section class="rv"><div class="st-h"><h3>Tasks</h3><button class="link" data-act="agNew">New task</button></div>${T.length?`<div class="ag-tl">${T.map(t=>`<div class="panel ag-t${t.on?'':' off'}"><div class="ag-h"><b>${esc(t.title)}</b><label class="sw mini"><input type="checkbox" data-agon="${t.id}" ${t.on?'checked':''} aria-label="Run this task"><i></i></label></div>
+  <p class="small">${esc(tr(t.prompt,160))}</p><p class="small muted">${esc(whenTxt(t))} · ${t.src.map(k=>CN[k]?CN[k][0]+(k!=='plot'&&!connOn(k)?' (not connected)':''):'').join(', ')}${t.mode==='do'?' · adds things itself':''}${t.last?' · last ran '+esc(dd(t.last))+' '+esc(tm(t.last)):''}</p>${t.err?`<p class="small" style="color:var(--danger,#e66)">${esc(t.err)}</p>`:''}
+  <div class="actions left"><button class="btn sm pri" data-act="agRun" data-id="${t.id}" ${BUSY?'disabled':''}>${BUSY===t.title?'Running…':'Run now'}</button><button class="btn sm ghost" data-act="agEdit" data-id="${t.id}">Edit</button></div></div>`).join('')}</div>`:`<p class="small muted">No tasks yet. Start from one of these, or write your own.</p>`}
+ <div class="chips" style="margin-top:10px">${TPL.map(x=>`<button class="chip" data-act="agTpl" data-k="${x.k}">${ic('plus')}${esc(x.title)}</button>`).join('')}</div></section>`}
+function connHTML(){const c=cset(),nk=notionKey();
+ const row=k=>{const on=connOn(k);return`<div class="ag-c"><span><b>${CN[k][0]}</b><small>${CN[k][1]}</small></span>${on?`<button class="btn sm ghost" data-act="agDisc" data-k="${k}">Disconnect</button>`:`<button class="btn sm" data-act="agConn" data-k="${k}">Connect</button>`}</div>`};
+ return`<section class="panel rv" id="agConn"><h3>Connections</h3><p class="small muted">What the agent may read. Google uses the same sign-in as Drive sync and asks for the extra permission when you connect. Nothing is sent anywhere except to the AI you picked.</p>${['gcal','gmail','gdrive','notion'].map(row).join('')}
+  ${c.notion||nk?`<div class="field"><label>Notion integration token</label><input type="password" data-agk="notion" value="${esc(nk)}" placeholder="ntn_…" autocomplete="off"><small class="muted">Make one at notion.so/my-integrations, then share the pages you want with it. The token stays on this device.</small></div>${NA&&NA.http?'':`<div class="field"><label>Proxy for Notion in a browser</label><input data-agk="proxy" value="${esc(c.proxy)}" placeholder="https://your-proxy.example" autocomplete="off" spellcheck="false"><small class="muted">Notion doesn’t answer web pages directly. The Android app doesn’t need this.</small></div>`}`:''}</section>`}
+function vAgent(){const A=ag(),e=planEngine(),ready=aiOk();const unseen=A.inbox.filter(i=>!i.seen).length;
+ if(unseen)setTimeout(()=>{A.inbox.forEach(i=>i.seen=true);save()},1500);
+ return`<header class="ph"><div><h1>Agent</h1><div class="data">${ready?`Runs on this device with ${esc(planEngineName())}`:'Pick an AI to start'}</div></div><div class="ph-r"><button class="btn pri" data-act="agNew">${ic('plus')}<span>Task</span></button>${typeof gear==='function'?gear():''}</div></header>
+ ${ready?'':`<div class="panel rv"><p>The agent thinks with the AI from Settings › AI & voice. Gemma 4 runs on this device; your own server works too.</p><div class="actions left"><a class="btn pri" href="#/settings/voice">Pick an AI</a></div></div>`}
+ <section class="panel rv ag-ask"><div class="field"><label for="agQ">Ask the agent to do something now</label><textarea id="agQ" rows="2" placeholder="Look at my email and calendar and tell me what I’m forgetting"></textarea></div><div class="ag-src">${Object.keys(CN).map(k=>`<label class="chip${connOn(k)?'':' dim'}"><input type="checkbox" data-agsrc="${k}" ${connOn(k)&&k!=='gdrive'?'checked':''} ${connOn(k)?'':'disabled'}>${CN[k][0]}</label>`).join('')}</div><div class="actions left"><button class="btn pri" data-act="agAsk" ${BUSY?'disabled':''}>${BUSY?'Working…':'Go'}</button></div></section>
+ ${inboxHTML()}${tasksHTML()}${connHTML()}
+ <label class="sw rv" style="margin-top:14px"><span>Run tasks on their own<small>Off pauses every task. They still run when you tap Run now.</small></span><input type="checkbox" data-agon="all" ${A.on?'checked':''}><i></i></label>`}
+VIEWS.agent=vAgent;
+let PT=0;function paintSoon(){clearTimeout(PT);PT=setTimeout(()=>{if(cur.p==='agent'&&!$('#sheet').classList.contains('on'))render(false)},60)}
+
+function editSheet(t){const n=!t;t=t||{title:'',prompt:'',when:'daily',at:'08:00',dow:1,src:['plot'],mode:'suggest'};
+ openSheet(`<div class="data">Agent</div><h2 style="margin-top:6px">${n?'New task':'Edit task'}</h2>
+ <div class="field"><label for="agT">Name</label><input id="agT" value="${esc(t.title)}" placeholder="Morning brief" maxlength="60"></div>
+ <div class="field"><label for="agP">What should it do?</label><textarea id="agP" rows="4" placeholder="Look at my calendar and email and tell me what matters today">${esc(t.prompt)}</textarea></div>
+ <div class="field"><label for="agW">When</label><select id="agW">${WHEN.map(([k,l])=>`<option value="${k}" ${t.when===k?'selected':''}>${l}</option>`).join('')}</select></div>
+ <div class="field ag-at"><label for="agAt">Time</label><input id="agAt" type="time" value="${esc(t.at||'08:00')}"></div>
+ <div class="field ag-dow"><label for="agD">Day</label><select id="agD">${DOW.map((d,i)=>`<option value="${i}" ${+t.dow===i?'selected':''}>${d}</option>`).join('')}</select></div>
+ <div class="field"><label>It may read</label><div class="ag-src">${Object.keys(CN).map(k=>`<label class="chip"><input type="checkbox" data-agt="${k}" ${t.src.includes(k)?'checked':''}>${CN[k][0]}${k!=='plot'&&!connOn(k)?' · connect first':''}</label>`).join('')}</div></div>
+ <div class="field"><label>With what it finds</label><div class="radios sm wrap"><label><input type="radio" name="agM" value="suggest" ${t.mode!=='do'?'checked':''}><span>Suggest, I’ll tap</span></label><label><input type="radio" name="agM" value="do" ${t.mode==='do'?'checked':''}><span>Do it: add goals, reminders and notes itself</span></label></div></div>
+ <div class="actions">${n?'':`<button class="btn danger" data-act="agDel" data-id="${t.id}">Delete</button>`}<button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="agSave" data-id="${n?'':t.id}">Save</button></div>`);
+ const sync=()=>{const w=$('#agW').value;$('.ag-at').hidden=!['daily','weekdays','weekly'].includes(w);$('.ag-dow').hidden=w!=='weekly'};$('#agW').addEventListener('change',sync);sync()}
+const findIt=d=>{const it=ag().inbox.find(x=>x.id===d.i);return[it,it&&it.sugs.find(s=>s.id===d.s)]};
+Object.assign(ACT,{
+ agNew:()=>editSheet(null),
+ agEdit:d=>{const t=ag().tasks.find(x=>x.id===d.id);if(t)editSheet(t)},
+ agTpl:d=>{const x=TPL.find(y=>y.k===d.k);if(!x)return;const t=addTask(x);const miss=t.src.filter(k=>k!=='plot'&&!connOn(k)).map(k=>CN[k][0]);toast(`Added “${esc(t.title)}” · ${esc(whenTxt(t))}${miss.length?' · connect '+esc(miss.join(' and ')):''}`);render(false)},
+ agSave:d=>{const title=$('#agT').value.trim(),prompt=$('#agP').value.trim();if(!prompt)return toast('Say what the task should do');
+  const o={title:title||tr(prompt,40),prompt,when:$('#agW').value,at:$('#agAt').value||'08:00',dow:+$('#agD').value,src:[...document.querySelectorAll('[data-agt]:checked')].map(x=>x.dataset.agt),mode:(document.querySelector('input[name=agM]:checked')||{}).value||'suggest'};if(!o.src.length)o.src=['plot'];
+  if(d.id){const t=ag().tasks.find(x=>x.id===d.id);if(t){Object.assign(t,o);t.next=t.when==='open'?now():nextAt(t,now());save()}}else addTask(o);try{syncNative()}catch(e){}closeSheet();render(false)},
+ agDel:d=>askConfirm('Delete this task?','Its results in the inbox stay.','Delete',()=>{const A=ag();A.tasks=A.tasks.filter(x=>x.id!==d.id);save();try{syncNative()}catch(e){}closeSheet();render(false)}),
+ agRun:async d=>{const t=ag().tasks.find(x=>x.id===d.id);if(!t)return;const it=await runTask(t,true);if(it)toast('Done. See the inbox')},
+ agAsk:async()=>{const q=($('#agQ')||{}).value||'';if(!q.trim())return toast('Say what you’d like done');const src=[...document.querySelectorAll('[data-agsrc]:checked')].map(x=>x.dataset.agsrc);
+  const t={id:'ask',title:tr(q,50),prompt:q,src:src.length?src:['plot'],mode:'suggest',when:'manual'};const it=await runTask(t,true);if(it)toast('Done. See the inbox')},
+ agYes:async d=>{const[it,s]=findIt(d);if(!s||s.st)return;try{await apply(s)}catch(e){toast('Couldn’t do that: '+esc(e.message||e))}render(false)},
+ agNo:d=>{const[it,s]=findIt(d);if(!s)return;s.st='no';save();render(false)},
+ agAll:async d=>{const it=ag().inbox.find(x=>x.id===d.i);if(!it)return;let n=0;for(const s of it.sugs)if(!s.st){try{await apply(s,true);n++}catch(e){}}toast(`Done ${n} of them`);render(false)},
+ agClear:()=>askConfirm('Clear the inbox?','Suggestions you haven’t acted on are dropped.','Clear',()=>{ag().inbox=[];save();render(false)}),
+ agConn:async d=>{const k=d.k,c=cset();
+  if(k==='notion'){c.notion=true;save();render(false);setTimeout(()=>{const i=document.querySelector('[data-agk=notion]');if(i)i.focus()},120);return}
+  if(!cfg().clientId)return toast('Set up Google sign-in in Settings › You & sync first');
+  c[k]=true;save();try{await googleConsent();toast(`${CN[k][0]} connected`)}catch(e){c[k]=false;save();scopeSync();toast('Google sign-in didn’t finish: '+esc(e&&e.message||'cancelled'))}render(false)},
+ agDisc:d=>{const c=cset();c[d.k]=false;if(d.k==='notion'){try{localStorage.removeItem(NOTK)}catch(e){}}save();scopeSync();toast(CN[d.k][0]+' disconnected');render(false)}});
+document.addEventListener('change',e=>{const x=e.target;if(!x.dataset)return;
+ if(x.dataset.agon){if(x.dataset.agon==='all')ag().on=x.checked;else{const t=ag().tasks.find(y=>y.id===x.dataset.agon);if(t){t.on=x.checked;if(t.on)t.next=t.when==='open'?now():nextAt(t,now())}}save();try{syncNative()}catch(_){}render(false)}
+ else if(x.dataset.agk==='notion'){try{x.value.trim()?localStorage.setItem(NOTK,x.value.trim()):localStorage.removeItem(NOTK)}catch(_){}cset().notion=!!x.value.trim();save();if(x.value.trim())nfetch('users/me').then(()=>toast('Notion connected')).catch(err=>toast(esc(err.message)));render(false)}
+ else if(x.dataset.agk==='proxy'){cset().proxy=x.value.trim();save()}});
+
+/* the agent in the app: a page in More (PG in index.html), a section in Settings, new results on Home */
+{const _ss=setSecs;setSecs=function(){const L=_ss(),i=L.findIndex(x=>x.k==='voice');L.splice(i<0?L.length:i+1,0,{k:'agent',t:'Agent & connections',ic:'agent',sub:()=>{const n=ag().tasks.filter(t=>t.on).length,c=['gcal','gmail','gdrive','notion'].filter(connOn).length;return`${n} task${n===1?'':'s'} · ${c} connection${c===1?'':'s'}`},html:()=>connHTML()+`<div class="actions left rv" style="margin-top:12px"><a class="btn" href="#/agent">${ic('agent')}Open the Agent</a></div>`});return L}}
+if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){const n=ag().inbox.filter(i=>!i.seen).length;return(n?`<a class="panel rv ag-home" href="#/agent"><span class="ag-hi">${ic('agent')}</span><span><b>Plot has ${n} new result${n===1?'':'s'}</b><small>${esc(tr(ag().inbox[0].summary||ag().inbox[0].title,90))}</small></span>${ic('next','ico-s')}</a>`:'')+_ht()}}
+
+const css=document.createElement('style');css.textContent=`
+.ag-h{display:flex;align-items:center;justify-content:space-between;gap:10px}.ag-h small{white-space:nowrap}
+.ag-it{margin-bottom:12px}.ag-it.new{box-shadow:inset 3px 0 0 var(--accent)}.ag-it p{margin:8px 0}
+.ag-s{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ag-s li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--text) 5%,transparent)}
+.ag-s li.done,.ag-s li.no{opacity:.6}.ag-k{font:600 11px var(--f-mono,monospace);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);min-width:84px}
+.ag-x{flex:1;min-width:0;overflow-wrap:anywhere}.ag-b{display:flex;gap:4px}.ag-b .ibtn:last-child svg{transform:rotate(45deg)}.ag-ok{color:var(--accent)}
+.ag-tl{display:flex;flex-direction:column;gap:10px}.ag-t.off{opacity:.55}.ag-t p{margin:6px 0}
+.ag-c{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent)}.ag-c span{display:flex;flex-direction:column}.ag-c small{color:var(--muted);font-size:12px}
+.ag-src{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.ag-src .chip input{margin:0 6px 0 0}.ag-src .chip.dim{opacity:.5}
+.ag-home{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;margin-bottom:12px}.ag-home span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}.ag-home small{color:var(--muted);font-size:12px}
+.ag-hi{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
+.sw.mini{margin:0}`;
+document.head.appendChild(css);
+if(typeof booted!=='undefined'&&booted&&/^#\/agent(\/|$)/.test(location.hash)&&cur.p!=='agent')route();
+})();
