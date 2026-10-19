@@ -152,8 +152,8 @@ final class WakeLoop implements RecognitionListener {
             i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
             i.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
             i.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, c.getPackageName());
-            i.putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 1800L);
-            i.putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 1500L);
+            i.putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 2800L);
+            i.putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2200L);
             if (lang != null && !lang.isEmpty()) i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, lang);
             if (seg) {
                 i.putExtra("android.speech.extra.SEGMENTED_SESSION", "android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS");

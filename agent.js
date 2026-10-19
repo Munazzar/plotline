@@ -86,10 +86,14 @@ const SCHEMA={type:'object',properties:{summary:{type:'string'},suggestions:{typ
 async function llm(msgs,opts){const e=planEngine();let out='';const on=x=>{out+=x};
  if(e==='api')await apiChat(msgs,on,null,opts);else if(e==='native')await natChat(msgs,on,null,null,opts);else if(e==='wasm')await localChat(msgs,on,null,0,null,false,opts);else throw new Error('Pick an AI for the agent in Settings › AI & voice');
  return out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').trim()}
-const aiOk=()=>window.PlotDo&&PlotDo.aiReady?PlotDo.aiReady():!!planEngine();
+/* an AI is picked as soon as Settings › AI & voice has an engine; an on-device model may still need its one-time
+   download, which a manual run (or Download now) does. Scheduled runs wait for it, so nothing downloads gigabytes unasked. */
+const aiPicked=()=>!!planEngine();
+const aiOk=()=>window.PlotDo&&PlotDo.aiReady?PlotDo.aiReady():aiPicked();
+const aiModel=()=>{try{return llmOf(insSet().llm)}catch(e){return null}};
 function parseJSON(s){try{return JSON.parse(s)}catch(e){}const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a){try{return JSON.parse(s.slice(a,b+1))}catch(e){}}return null}
-let BUSY=null;
-async function runTask(t,manual){if(BUSY)return manual&&toast('The agent is busy with “'+BUSY+'”');if(!aiOk()){if(manual)toast('Pick an AI first: Settings › AI & voice');return}
+let BUSY=null,AGDL='';
+async function runTask(t,manual){if(BUSY)return manual&&toast('The agent is busy with “'+BUSY+'”');if(!aiPicked()){if(manual)toast('Pick an AI first: Settings › AI & voice');return}if(manual&&!aiOk())aiMark();
  BUSY=t.title;paintSoon();const A=ag(),e=planEngine(),big=e==='api'||!IS_PHONE;
  try{const g=await gather(t.src&&t.src.length?t.src:['plot'],big);const d=new Date();
   const sys=`You are ${String((S.settings.assist||{}).name||'Plot').slice(0,24)}, the user's personal agent inside the Plotline app. It is ${d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})}, ${tm(d)}. Do the TASK using only the DATA. Reply with one JSON object: "summary" is 1 to 5 short sentences to the user about what matters (plain words, no lists, no markdown); "suggestions" are 0 to 6 concrete things the app can do for them, grounded in the data: today (a goal for today; text is the goal), reminder (text, date YYYY-MM-DD, time HH:MM), journal (text to save), list_add (target is a list name, text the items), thread_update (target is a thread name, text the update), new_thread (text is its title), calendar_event (text is the title, date, time). Don't suggest things that are already in the plan. Never invent facts.`;
@@ -169,10 +173,12 @@ function connHTML(){const c=cset(),nk=notionKey();
  const row=k=>{const on=connOn(k);return`<div class="ag-c"><span><b>${CN[k][0]}</b><small>${CN[k][1]}</small></span>${on?`<button class="btn sm ghost" data-act="agDisc" data-k="${k}">Disconnect</button>`:`<button class="btn sm" data-act="agConn" data-k="${k}">Connect</button>`}</div>`};
  return`<section class="panel rv" id="agConn"><h3>Connections</h3><p class="small muted">What the agent may read. Google uses the same sign-in as Drive sync and asks for the extra permission when you connect. Nothing is sent anywhere except to the AI you picked.</p>${['gcal','gmail','gdrive','notion'].map(row).join('')}
   ${c.notion||nk?`<div class="field"><label>Notion integration token</label><input type="password" data-agk="notion" value="${esc(nk)}" placeholder="ntn_…" autocomplete="off"><small class="muted">Make one at notion.so/my-integrations, then share the pages you want with it. The token stays on this device.</small></div>${NA&&NA.http?'':`<div class="field"><label>Proxy for Notion in a browser</label><input data-agk="proxy" value="${esc(c.proxy)}" placeholder="https://your-proxy.example" autocomplete="off" spellcheck="false"><small class="muted">Notion doesn’t answer web pages directly. The Android app doesn’t need this.</small></div>`}`:''}</section>`}
-function vAgent(){const A=ag(),e=planEngine(),ready=aiOk();const unseen=A.inbox.filter(i=>!i.seen).length;
+function aiMark(){const s=insSet(),m=aiModel();if(m&&planEngine()!=='api'){s.dl={...(s.dl||{}),[m[0]]:1};save()}}
+function vAgent(){const A=ag(),e=planEngine(),picked=aiPicked(),ready=picked;const m=aiModel(),dl=picked&&!aiOk()&&e!=='api'&&m;const unseen=A.inbox.filter(i=>!i.seen).length;
  if(unseen)setTimeout(()=>{A.inbox.forEach(i=>i.seen=true);save()},1500);
  return`<header class="ph"><div><h1>Agent</h1><div class="data">${ready?`Runs on this device with ${esc(planEngineName())}`:'Pick an AI to start'}</div></div><div class="ph-r"><button class="btn pri" data-act="agNew">${ic('plus')}<span>Task</span></button>${typeof gear==='function'?gear():''}</div></header>
- ${ready?'':`<div class="panel rv"><p>The agent thinks with the AI from Settings › AI & voice. Gemma 4 runs on this device; your own server works too.</p><div class="actions left"><a class="btn pri" href="#/settings/voice">Pick an AI</a></div></div>`}
+ ${ready?'':`<div class="panel rv"><p>${insSet().engine==='copy'?'“Copy to any AI” can’t run tasks on its own. Pick On this device or Your AI server in Settings › AI & voice.':'The agent thinks with the AI from Settings › AI & voice. Gemma 4 runs on this device; your own server works too.'}</p><div class="actions left"><a class="btn pri" href="#/settings/voice">Pick an AI</a></div></div>`}
+ ${dl?`<div class="panel rv"><p><b>${esc(String(m[1]).split(' · ')[0])}</b> downloads once (${m[3]} GB) the first time it runs, then works offline. Tasks you run yourself download it; scheduled tasks wait until it’s here.</p><div class="actions left"><button class="btn pri" data-act="agDl" ${AGDL?'disabled':''}>${AGDL?esc(AGDL):'Download now'}</button></div></div>`:''}
  <section class="panel rv ag-ask"><div class="field"><label for="agQ">Ask the agent to do something now</label><textarea id="agQ" rows="2" placeholder="Look at my email and calendar and tell me what I’m forgetting"></textarea></div><div class="ag-src">${Object.keys(CN).map(k=>`<label class="chip${connOn(k)?'':' dim'}"><input type="checkbox" data-agsrc="${k}" ${connOn(k)&&k!=='gdrive'?'checked':''} ${connOn(k)?'':'disabled'}>${CN[k][0]}</label>`).join('')}</div><div class="actions left"><button class="btn pri" data-act="agAsk" ${BUSY?'disabled':''}>${BUSY?'Working…':'Go'}</button></div></section>
  ${inboxHTML()}${tasksHTML()}${connHTML()}
  <label class="sw rv" style="margin-top:14px"><span>Run tasks on their own<small>Off pauses every task. They still run when you tap Run now.</small></span><input type="checkbox" data-agon="all" ${A.on?'checked':''}><i></i></label>`}
@@ -200,6 +206,8 @@ Object.assign(ACT,{
   if(d.id){const t=ag().tasks.find(x=>x.id===d.id);if(t){Object.assign(t,o);t.next=t.when==='open'?now():nextAt(t,now());save()}}else addTask(o);try{syncNative()}catch(e){}closeSheet();render(false)},
  agDel:d=>askConfirm('Delete this task?','Its results in the inbox stay.','Delete',()=>{const A=ag();A.tasks=A.tasks.filter(x=>x.id!==d.id);save();try{syncNative()}catch(e){}closeSheet();render(false)}),
  agRun:async d=>{const t=ag().tasks.find(x=>x.id===d.id);if(!t)return;const it=await runTask(t,true);if(it)toast('Done. See the inbox')},
+ agDl:async()=>{if(AGDL)return;AGDL='Starting…';render(false);const e=planEngine(),msgs=[{role:'user',content:'Reply with OK.'}],on=()=>{},p=x=>{AGDL=(typeof x==='string'?x:x&&x.text)||AGDL;const b=document.querySelector('[data-act=agDl]');if(b)b.textContent=AGDL};
+  try{aiMark();if(e==='native')await natChat(msgs,on,p,null,{});else await localChat(msgs,on,p,0,null,false,{});AGDL='';toast('Ready. The agent runs on this device now')}catch(x){AGDL='';toast('Couldn’t download: '+esc(x&&x.message||x))}render(false)},
  agAsk:async()=>{const q=($('#agQ')||{}).value||'';if(!q.trim())return toast('Say what you’d like done');const src=[...document.querySelectorAll('[data-agsrc]:checked')].map(x=>x.dataset.agsrc);
   const t={id:'ask',title:tr(q,50),prompt:q,src:src.length?src:['plot'],mode:'suggest',when:'manual'};const it=await runTask(t,true);if(it)toast('Done. See the inbox')},
  agYes:async d=>{const[it,s]=findIt(d);if(!s||s.st)return;try{await apply(s)}catch(e){toast('Couldn’t do that: '+esc(e.message||e))}render(false)},
