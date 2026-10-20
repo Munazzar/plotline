@@ -18,7 +18,12 @@ const ADEF={name:'Plot',wake:false,bg:false,speak:'voice',btn:true};
 const aset=()=>({...ADEF,...(S.settings.assist||{})});
 const aname=()=>String(aset().name||'').replace(/[^\p{L}\p{N} '\-]/gu,'').replace(/\s+/g,' ').trim().slice(0,24)||'Plot';
 const wakeWord=()=>'Hey '+aname();
-const AS={turns:[],busy:false,listening:false,await:null,undo:{},spoken:false,after:null,ctl:null};
+const AS={turns:[],busy:false,listening:false,await:null,undo:{},spoken:false,after:null,ctl:null,cid:null,kind:'chat',last:0};
+/* every chat and talk is kept as its own conversation (convs.js): AS.cid is the one on screen. After a long pause the next
+   message starts a new one; the earlier one stays in Conversations, where it can be read and continued. */
+const CV_GAP=30*60e3;
+function convSync(){if(!window.CONV)return;const L=AS.turns.filter(t=>!t.wait&&t.a);if(!L.length)return;AS.cid=CONV.sync(AS.cid,AS.kind,L);AS.last=Date.now()}
+function convFresh(kind){AS.turns=[];AS.await=null;AS.undo={};AS.cid=null;AS.kind=kind||'chat'}
 const nst=()=>{if(!NA||!NA.state)return{};try{return JSON.parse(NA.state())}catch(e){return{}}};
 const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
 const lcs=s=>String(s||'').toLowerCase();
@@ -381,6 +386,7 @@ const QRX=/^(?:who|what|when|where|why|how|which|is|are|was|were|do|does|did|hav
 async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegExp('^(?:(?:hey|hi|ok(?:ay)?)\\s+)?'+aname().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[,.!]?\\s*','i'),'');
  if(!text){listen();return}
  if(AS.busy){toast('Still working on the last one');return}
+ if(AS.turns.length&&AS.last&&Date.now()-AS.last>CV_GAP)convFresh('chat');
  asOpen();wakePause(true);$('#asIn')?.setAttribute('placeholder','Ask or tell me something…');const turn={q:text,a:'',chips:[],t:Date.now(),id:uid(),wait:true};AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.spoken=!!o.spoken;AS.busy=true;AS.ctl=new AbortController();paint(true);
  let r=null;AS.acts=null;
  try{const aw=AS.await;AS.await=null;const blk=window.AIX&&AIX.block(text);if(blk)r={say:blk};
@@ -459,7 +465,7 @@ window.asCue=k=>{if(aset().cues===false)return;cuePlay(cueOf(k));try{navigator.v
 /* ---------------- the sheet ---------------- */
 function headSub(){if(AS.busy)return AS.prog||'Thinking…';if(AS.listening)return'Listening…';if(SPK)return'Speaking…';const a=aset();if(NA&&(a.wake||a.bg)){const w=AS.wst||'';return w==='err'?'Can’t hear the wake word right now':w==='perm'?'Allow the microphone for the wake word':w==='unavailable'?'The wake word needs online speech allowed':`Say “${wakeWord()}” anytime`}return'Talk or type'}
 function asOpen(){AS.open=true;let el=$('#asv');if(!el){el=document.createElement('div');el.id='asv';el.className='aov asv';
- el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="as-stop" data-act="asStop" aria-label="Stop talking">■ Stop</button><button class="ibtn sm" data-act="liveOpen" aria-label="Talk out loud" title="Talk out loud">${ic('live')}</button><button class="ibtn sm" data-act="asClear" aria-label="Clear" title="Clear">${ic('plus')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form>${window.AIX?AIX.note('as-note'):''}</div></section>`;
+ el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="as-stop" data-act="asStop" aria-label="Stop talking">■ Stop</button><button class="ibtn sm" data-act="liveOpen" aria-label="Talk out loud" title="Talk out loud">${ic('live')}</button><button class="ibtn sm" data-act="convGo" aria-label="Conversation history" title="History">${ic('hist')}</button><button class="ibtn sm" data-act="asClear" aria-label="New conversation" title="New conversation">${ic('plus')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form>${window.AIX?AIX.note('as-note'):''}</div></section>`;
  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'))}
  document.documentElement.classList.add('aov-on');paint(true);return el}
 function asClose(){AS.open=false;if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);hush();const el=$('#asv');document.documentElement.classList.remove('aov-on');if(!el)return;el.classList.remove('on');setTimeout(()=>{if(!AS.open)el.remove()},360);wakePause(false)}
@@ -469,14 +475,14 @@ function chipHTML(t,c,i){return c.undo?`<button class="btn sm ghost" data-act="a
 function paint(scroll){const el=$('#asv');if(!el)return;paintHead();const b=el.querySelector('.as-b');
  b.innerHTML=AS.turns.length?AS.turns.map(t=>`<div class="as-t"><p class="as-q">${esc(t.q)}</p><div class="as-a${t.wait?' wait':''}"><span class="as-dot" aria-hidden="true"></span><div><p>${t.wait?'<i></i><i></i><i></i>':esc(t.a).replace(/\n+/g,'<br>')}</p>${t.chips&&t.chips.length?`<div class="as-ch">${t.chips.map((c,i)=>chipHTML(t,c,i)).join('')}</div>`:''}</div></div></div>`).join(''):
  `<div class="as-empty"><button class="as-big" data-act="asMic" aria-label="Talk"><i></i></button><p><b>Hi, I’m ${esc(aname())}.</b> Tap and talk${NA&&(aset().wake||aset().bg)?`, or say “${esc(wakeWord())}”`:''}. Ask me anything.</p><button class="btn sm pri" data-act="liveOpen" style="margin:4px 0 6px">${ic('live')}Start a conversation</button>${NA&&!aset().wake&&!aset().bg?`<button class="btn sm" data-act="asWakeOn" style="margin:4px 0 6px">Turn on “${esc(wakeWord())}”</button>`:''}<div class="as-sugs">${['Add “had a great workout” to my journal','When did I last change my oil?','Remind me to call mom at 6pm','What do I have today?'].map(s=>`<button class="as-sug" data-act="asTry" data-q="${esc(s.replace(/[“”]/g,''))}">${esc(s)}</button>`).join('')}</div></div>`;
- if(scroll)b.scrollTop=b.scrollHeight}
+ if(scroll)b.scrollTop=b.scrollHeight;convSync()}
 Object.assign(ACT,{
  asOpen:()=>{asOpen();setTimeout(()=>{if(!AS.turns.length&&NA&&typeof voiceAvail==='function'&&voiceAvail())listen();else $('#asIn')?.focus()},300)},
  asClose:()=>asClose(),
  asMic:()=>{if(VC&&VC.el&&VC.el.id==='asIn'){voiceStop(false,true);return}if(AS.busy){AS.ctl&&AS.ctl.abort();return}AS.nlis=false;listen()},
  asStop:()=>{AS.after=null;if(AS.busy&&AS.ctl)AS.ctl.abort();if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);AS.listening=AS.nlis=false;hush();wakePause(false)},
  asTry:d=>run(d.q),
- asClear:()=>{AS.turns=[];AS.await=null;AS.undo={};hush();paint();pushWidget2()},
+ asClear:()=>{convFresh('chat');hush();paint();pushWidget2()},
  asUndo:d=>{const f=AS.undo[d.id];if(!f)return;delete AS.undo[d.id];try{f()}catch(e){}const t=AS.turns.find(x=>x.id===d.id);if(t){t.chips=t.chips.filter(c=>!c.undo);t.a+=' (undone)'}paint();pushWidget2();toast('Undone')},
  asChip:d=>{const t=AS.turns.find(x=>x.id===d.id),c=t&&t.chips[+d.i];if(!c)return;if(c.fn)return c.fn();const r=c.r||'';if(r[0]==='?'){asClose();askWith(r.slice(1));return}asClose();setTimeout(()=>window.__route(r.replace(/^~/,'')),380)}});
 Object.assign(FORM,{asSend:f=>{const i=f.querySelector('input'),v=i.value.trim();if(!v)return listen();i.value='';run(v,{spoken:false})}});
@@ -524,7 +530,11 @@ window.PLOT_ASSIST={run,asCtx,parse,parseWhen,localAsk,aname,ctx:asCtx,
  /* for the live conversation (ai.js) */
  command:t=>{const p=parse(t);if(!p||['hello','thanks','cancel','help','whoami','live'].includes(p.k))return null;if(p.k==='done'){const r=exec(p,t);return r&&r.undo?r:null}const r=exec(p,t);return r&&!r.await?r:null},
  lookup:t=>localAsk(t),say:(t,done,ov)=>speak(t,done||(()=>{}),ov),hush:()=>hush(),close:()=>{if(AS.open)asClose()},
- addTurn:(q,a)=>{AS.turns.push({q,a,chips:[],t:Date.now(),id:uid(),live:1});AS.turns=AS.turns.slice(-30);pushWidget2()}};
+ addTurn:(q,a)=>{AS.turns.push({q,a,chips:[],t:Date.now(),id:uid(),live:1});AS.turns=AS.turns.slice(-30);convSync();pushWidget2()},
+ /* conversations: talk mode joins the one on screen if it was just used, else starts its own; resume loads a saved one */
+ begin:kind=>{if(!(AS.turns.length&&AS.last&&Date.now()-AS.last<CV_GAP/2))convFresh(kind);return AS.turns.filter(t=>!t.wait&&t.a).map(t=>({q:t.q,a:t.a}))},
+ resume:id=>{const c=window.CONV&&CONV.get(id);if(!c)return false;hush();AS.turns=c.turns.map(t=>({q:t.q,a:t.a,chips:[],t:t.t,id:t.id})).slice(-30);AS.cid=c.id;AS.kind=c.k==='ask'?'chat':c.k;AS.await=null;AS.undo={};AS.last=Date.now();if(AS.open)paint(true);return true},
+ current:()=>AS.cid};
 
 const css=document.createElement('style');css.textContent=`
 .as-cues{display:grid;gap:0}.as-cue{display:flex;gap:8px;align-items:center}.as-cue select{flex:1;min-width:0}.as-cue .ibtn{flex:none}

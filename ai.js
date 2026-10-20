@@ -40,7 +40,7 @@ const ACT_SYS=`When something the user says could become part of their plan in P
 ACTION: habit | Read 10 pages before bed
 Types: goal (something to achieve), habit (something to do regularly), routine (a short sequence; add | and the steps separated by commas), list (add | and the items separated by commas), journal (the text to save in today's journal), reminder (add | and when, like "tomorrow at 9am"), today (a goal for today), thread (something to keep track of over time). At most two ACTION lines, only when they would really help, and never for things already in their plan.`;
 const ACT_RX=/^[ \t>*-]*ACTION\s*:\s*([a-z_ ]+?)\s*\|\s*([^|\n]+?)(?:\s*\|\s*([^\n]*?))?\s*$/gim;
-function parseActs(text){const acts=[];const clean=String(text||'').replace(ACT_RX,(m,k,a,b)=>{k=k.toLowerCase().replace(/\s+/g,'');if(k==='todo'||k==='todaygoal')k='today';if(AK[k]&&a.trim()&&acts.length<3)acts.push({id:uid(),k,t:tr(a,120),x:tr(b||'',300),st:''});return''}).replace(/\n{3,}/g,'\n\n').trim();return{clean,acts}}
+function parseActs(text,max=3){const acts=[];const clean=String(text||'').replace(ACT_RX,(m,k,a,b)=>{k=k.toLowerCase().replace(/\s+/g,'');if(k==='todo'||k==='todaygoal')k='today';if(AK[k]&&a.trim()&&acts.length<max)acts.push({id:uid(),k,t:tr(a,120),x:tr(b||'',300),st:''});return''}).replace(/\n{3,}/g,'\n\n').trim();return{clean,acts}}
 /* the half-written "ACTI…" line at the end of a streaming answer stays hidden */
 const hideActs=s=>String(s||'').replace(ACT_RX,'').replace(/(^|\n)[ \t>*-]*A(?:C(?:T(?:I(?:O(?:N(?:\s*:[^\n]*)?)?)?)?)?)?$/,'$1').replace(/\s+$/,'');
 const actLabel=a=>`${AK[a.k]}: ${a.t}`;
@@ -175,11 +175,15 @@ function lvState(st,hint){LV.st=st;const el=$('#live');if(!el)return;el.dataset.
  const m=$('#lvMute');if(m){m.innerHTML=ic(LV.muted?'micoff':'mic');m.classList.toggle('off',LV.muted)}}
 function lvCap(){const c=$('#lvCap');if(!c)return;const ready=aiReady()&&!MM.busy;
  c.innerHTML=`${LV.you?`<p class="lv-you">${esc(LV.you)}</p>`:''}${LV.ai?`<p class="lv-ai">${esc(LV.ai)}</p>`:''}${actChips(LV.pend,'lvAct')}${ready||LV.you||LV.ai?'':modelCard('live')||''}`;c.scrollTop=c.scrollHeight}
-function liveOpen(first){if(window.PLOT_ASSIST&&PLOT_ASSIST.close)PLOT_ASSIST.close();const el=lvEl();LV.open=true;LV.you='';LV.ai=aiReady()?'':`To talk about anything, ${nm()} needs its AI on this ${NATIVE?'phone':'device'}. You can still ask me to add things.`;LV.pend=[];
+function liveOpen(first,o){if(window.PLOT_ASSIST&&PLOT_ASSIST.close)PLOT_ASSIST.close();
+ /* talk mode is one conversation in Conversations: it carries on the one just used (or a resumed one), else starts fresh */
+ if(o&&o.resume&&window.PLOT_ASSIST&&PLOT_ASSIST.resume)PLOT_ASSIST.resume(o.resume);LV.resumed=!!(o&&o.resume);
+ const prev=window.PLOT_ASSIST&&PLOT_ASSIST.begin?PLOT_ASSIST.begin('talk'):[];LV.hist=prev.slice(-6).flatMap(t=>[{role:'user',content:t.q},{role:'assistant',content:t.a}]);
+ const el=lvEl();LV.open=true;LV.you='';LV.ai=aiReady()?'':`To talk about anything, ${nm()} needs its AI on this ${NATIVE?'phone':'device'}. You can still ask me to add things.`;LV.pend=[];
  document.documentElement.classList.add('lv-on');requestAnimationFrame(()=>el.classList.add('on'));try{NA&&NA.wakePause&&NA.wakePause(true)}catch(e){}lvState('idle');lvCap();
  if(first)setTimeout(()=>lvHeard(first),350);else if(!aiReady()&&!MM.busy)lvState('idle','');else setTimeout(()=>lvGreet(),350)}
-function lvGreet(){const h=new Date().getHours(),n=S.settings.name;const g=LV.hist.length?'I’m listening.':`${h<12?'Good morning':h<17?'Hey':'Good evening'}${n?', '+n:''}. What’s on your mind?`;LV.ai=g;lvCap();lvSay(g)}
-function liveClose(){if(!LV.open)return;LV.open=false;LV.gen++;if(document.querySelector('.vdlg')&&ACT.vcNo)ACT.vcNo();try{LV.ctl&&LV.ctl.abort()}catch(e){}if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);if(window.PLOT_ASSIST)PLOT_ASSIST.hush();
+function lvGreet(){const h=new Date().getHours(),n=S.settings.name;const g=LV.resumed?'Let’s pick up where we left off. Go ahead.':LV.hist.length?'I’m listening.':`${h<12?'Good morning':h<17?'Hey':'Good evening'}${n?', '+n:''}. What’s on your mind?`;LV.ai=g;lvCap();lvSay(g)}
+function liveClose(){if(!LV.open)return;LV.open=false;LV.gen++;const vno=()=>{if(!LV.open&&document.querySelector('.vdlg')&&ACT.vcNo)ACT.vcNo()};vno();setTimeout(vno,500);setTimeout(vno,1500);try{LV.ctl&&LV.ctl.abort()}catch(e){}if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);if(window.PLOT_ASSIST)PLOT_ASSIST.hush();
  const el=$('#live');document.documentElement.classList.remove('lv-on');if(el){el.classList.remove('on');setTimeout(()=>{if(!LV.open)el.remove()},380)}try{NA&&NA.wakePause&&NA.wakePause(false)}catch(e){}}
 function lvListen(){if(!LV.open||LV.muted)return lvState('idle');if(typeof voiceAvail==='function'&&!voiceAvail()){LV.typing=true;$('.lv-type').hidden=false;lvState('idle','Voice isn’t available here. Type instead.');return}
  if(window.PLOT_ASSIST)PLOT_ASSIST.hush();const i=$('#lvIn');i.value='';LV.you='';lvCap();lvState('listen');if(window.asCue)asCue('start');voiceStart(i,$('#lvOrb'))}
