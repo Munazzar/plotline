@@ -203,9 +203,13 @@ public class Assist {
     }
 
     /* ---------------- text to speech ---------------- */
-    static void speakNow(final Context c, final String id, final String text, final String lang, final double rate) {
+    static String ttsVoice = "";
+    static void speakNow(final Context c, final String id, final String text, final String lang, final double rate) { speakNow(c, id, text, lang, rate, 1, ""); }
+
+    /* the voice the user picked (Settings › Voice), by name; "" keeps the engine's default for the language */
+    static void speakNow(final Context c, final String id, final String text, final String lang, final double rate, final double pitch, final String voice) {
         if (tts == null) {
-            queued = new String[]{id, text, lang, String.valueOf(rate)};
+            queued = new String[]{id, text, lang, String.valueOf(rate), String.valueOf(pitch), voice};
             tts = new TextToSpeech(c, new TextToSpeech.OnInitListener() {
                 public void onInit(int st) {
                     ttsReady = st == TextToSpeech.SUCCESS;
@@ -217,23 +221,43 @@ public class Assist {
                         public void onError(String u) { ttsPause = false; apply(c); done(u, "err"); }
                         public void onStop(String u, boolean i) { ttsPause = false; apply(c); done(u, "done"); }
                     });
-                    if (q != null) speakNow(c, q[0], q[1], q[2], Double.parseDouble(q[3]));
+                    voicesReady();
+                    if (q != null && q[0] != null) speakNow(c, q[0], q[1], q[2], Double.parseDouble(q[3]), Double.parseDouble(q[4]), q[5]);
                 }
             });
             return;
         }
-        if (!ttsReady) { queued = new String[]{id, text, lang, String.valueOf(rate)}; return; }
+        if (!ttsReady) { queued = new String[]{id, text, lang, String.valueOf(rate), String.valueOf(pitch), voice}; return; }
         try {
-            if (!lang.equals(ttsLang)) {
-                ttsLang = lang;
+            if (!lang.equals(ttsLang) || !voice.equals(ttsVoice)) {
+                ttsLang = lang; ttsVoice = voice;
                 tts.setLanguage(lang.isEmpty() ? Locale.getDefault() : Locale.forLanguageTag(lang));
+                if (!voice.isEmpty() && tts.getVoices() != null)
+                    for (android.speech.tts.Voice v : tts.getVoices()) if (voice.equals(v.getName())) { tts.setVoice(v); break; }
             }
             tts.setSpeechRate((float) (rate > 0 ? rate : 1));
+            tts.setPitch((float) (pitch > 0 ? pitch : 1));
             WakeLoop.unmute(); /* never answer into a hushed stream */
             ttsPause = true;
             applyNow(c);
             if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) { ttsPause = false; applyNow(c); done(id, "err"); }
         } catch (Exception e) { ttsPause = false; done(id, "err"); }
+    }
+
+    /* the engine's voices, for the voice picker: [{n: name, l: language tag, q: quality, net: needs internet}] */
+    static String voiceList = "";
+    static void voicesReady() {
+        try {
+            org.json.JSONArray a = new org.json.JSONArray();
+            if (tts != null && tts.getVoices() != null) for (android.speech.tts.Voice v : tts.getVoices()) {
+                if (v.getFeatures() != null && v.getFeatures().contains("notInstalled")) continue;
+                JSONObject o = new JSONObject();
+                o.put("n", v.getName()); o.put("l", v.getLocale().toLanguageTag()); o.put("q", v.getQuality()); o.put("net", v.isNetworkConnectionRequired());
+                a.put(o);
+            }
+            voiceList = a.toString();
+        } catch (Exception e) { voiceList = "[]"; }
+        js("window.__assist&&window.__assist('voices','','')");
     }
 
     static void done(String id, String k) { js("window.__assist&&window.__assist('tts'," + JSONObject.quote(id) + "," + JSONObject.quote(k) + ")"); }
@@ -293,6 +317,31 @@ public class Assist {
     @JavascriptInterface
     public void speak(final String id, final String text, final String lang, final double rate) {
         H.post(new Runnable() { public void run() { speakNow(c, id, text == null ? "" : text, lang == null ? "" : lang, rate); } });
+    }
+
+    @JavascriptInterface
+    public void speak2(final String id, final String text, final String lang, final double rate, final double pitch, final String voice) {
+        H.post(new Runnable() { public void run() { speakNow(c, id, text == null ? "" : text, lang == null ? "" : lang, rate, pitch, voice == null ? "" : voice); } });
+    }
+
+    /* "" until the engine has started; then window.__assist('voices') tells the page to ask again */
+    @JavascriptInterface
+    public String voices() {
+        if (tts == null) H.post(new Runnable() { public void run() {
+            if (tts != null) return;
+            queued = new String[]{null, "", "", "1", "1", ""};
+            speakNow(c, null, "", "", 1, 1, "");
+        } });
+        return tts != null && ttsReady ? voiceList : "";
+    }
+
+    /* Android's text-to-speech settings, where more voices can be downloaded */
+    @JavascriptInterface
+    public void openTtsSettings() {
+        String[] acts = {"com.android.settings.TTS_SETTINGS", Settings.ACTION_SETTINGS};
+        for (String a : acts) {
+            try { Intent i = new Intent(a); i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); c.startActivity(i); return; } catch (Exception e) {}
+        }
     }
 
     @JavascriptInterface

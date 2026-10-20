@@ -77,36 +77,46 @@ async function gather(src,big){const out=[],errs=[];const sec=(t,L)=>{if(L&&L.le
   gmail:async()=>{const M=await mailRecent('newer_than:2d -category:promotions -category:social',big?15:8);sec('EMAIL (last 2 days)',M.length?M.map(m=>`${m.unread?'[unread] ':''}${dd(m.t)} from ${tr(m.from,40)}: ${tr(m.subject,90)} · ${tr(m.snippet,big?200:110)}`):['No new email'])},
   gdrive:async()=>{const F=await driveRecent(n);sec('DRIVE (recently changed files)',F.map(f=>`${dd(f.t)} ${f.name} (${f.kind})`))},
   notion:async()=>{const P=await notionRecent(big?10:6);sec('NOTION (recently edited pages)',P.map(p=>`${dd(p.t)} ${p.title}${p.text?': '+tr(p.text,big?300:150):''}`))}};
- for(const k of src){if(!jobs[k]||!connOn(k))continue;try{await jobs[k]()}catch(e){errs.push(`${CN[k][0]}: ${e.message||e}`)}}
+ for(const k of src){if(!jobs[k]||!connOn(k))continue;step('Reading '+CN[k][0]+'…');try{await jobs[k]()}catch(e){errs.push(`${CN[k][0]}: ${e.message||e}`)}}
  return{text:out.join('\n\n'),errs}}
 
 /* ---------------- one run ---------------- */
-const SUGT=['today','reminder','journal','list_add','thread_update','new_thread','calendar_event'];
+const SUGT=['today','reminder','journal','list_add','thread_update','new_thread','calendar_event','goal','habit'];
 const SCHEMA={type:'object',properties:{summary:{type:'string'},suggestions:{type:'array',maxItems:6,items:{type:'object',properties:{type:{enum:SUGT},text:{type:'string'},target:{type:'string'},date:{type:'string'},time:{type:'string'}},required:['type','text'],additionalProperties:false}}},required:['summary','suggestions'],additionalProperties:false};
-async function llm(msgs,opts){const e=planEngine();let out='';const on=x=>{out+=x};
- if(e==='api')await apiChat(msgs,on,null,opts);else if(e==='native')await natChat(msgs,on,null,null,opts);else if(e==='wasm')await localChat(msgs,on,null,0,null,false,opts);else throw new Error('Pick an AI for the agent in Settings › AI & voice');
+async function llm1(msgs,opts){const e=planEngine();let out='';const on=x=>{out+=x};const onP=x=>{if(x)step(x)};
+ if(e==='api')await apiChat(msgs,on,null,opts);else if(e==='native')await natChat(msgs,on,onP,()=>{out=''},opts);else if(e==='wasm')await localChat(msgs,on,onP,0,()=>{out=''},false,opts);else throw new Error('Pick an AI for the agent in Settings › AI & voice');
  return out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').trim()}
+/* JSON with the schema first; if the engine refuses the schema or the answer isn't JSON, once more asking for plain JSON */
+async function llm(msgs,opts){let raw='',err=null;try{raw=await llm1(msgs,opts)}catch(e){err=e}
+ if(parseJSON(raw))return raw;if(err&&/Pick an AI|download|memory|stopped/i.test(err.message||''))throw err;
+ step('Trying again…');const o={...opts};delete o.schema;const m2=msgs.map((m,i)=>i===0?{...m,content:m.content+'\n\nReply with only the JSON object, starting with { and ending with }.'}:m);
+ try{const r2=await llm1(m2,o);return r2||raw}catch(e){if(raw)return raw;throw err||e}}
+let STEP='';const step=t=>{STEP=t;const el=document.getElementById('agStep');if(el)el.textContent=t;else paintSoon()};
 /* an AI is picked as soon as Settings › AI & voice has an engine; an on-device model may still need its one-time
    download, which a manual run (or Download now) does. Scheduled runs wait for it, so nothing downloads gigabytes unasked. */
 const aiPicked=()=>!!planEngine();
-const aiOk=()=>window.PlotDo&&PlotDo.aiReady?PlotDo.aiReady():aiPicked();
+const aiOk=()=>window.AIX?AIX.ready():window.PlotDo&&PlotDo.aiReady?PlotDo.aiReady():aiPicked();
 const aiModel=()=>{try{return llmOf(insSet().llm)}catch(e){return null}};
 function parseJSON(s){try{return JSON.parse(s)}catch(e){}const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a){try{return JSON.parse(s.slice(a,b+1))}catch(e){}}return null}
-let BUSY=null,AGDL='';
-async function runTask(t,manual){if(BUSY)return manual&&toast('The agent is busy with “'+BUSY+'”');if(!aiPicked()){if(manual)toast('Pick an AI first: Settings › AI & voice');return}if(manual&&!aiOk())aiMark();
- BUSY=t.title;paintSoon();const A=ag(),e=planEngine(),big=e==='api'||!IS_PHONE;
+let BUSY=null,AGDL='',AGERR='',AGQ='';
+async function runTask(t,manual){if(BUSY)return manual&&toast('The agent is busy with “'+BUSY+'”');if(!aiPicked()){if(manual)toast('Pick an AI first: Settings › AI & voice');return}
+ if(manual&&!aiOk()){if(window.AIX){toast('Setting up the AI first. This happens once.');await AIX.setup({quiet:true});if(!aiOk())return}else aiMark()}
+ BUSY=t.title;AGERR='';STEP='Starting…';paintSoon();const A=ag(),e=planEngine(),big=e==='api'||!IS_PHONE;
  try{const g=await gather(t.src&&t.src.length?t.src:['plot'],big);const d=new Date();
-  const sys=`You are ${String((S.settings.assist||{}).name||'Plot').slice(0,24)}, the user's personal agent inside the Plotline app. It is ${d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})}, ${tm(d)}. Do the TASK using only the DATA. Reply with one JSON object: "summary" is 1 to 5 short sentences to the user about what matters (plain words, no lists, no markdown); "suggestions" are 0 to 6 concrete things the app can do for them, grounded in the data: today (a goal for today; text is the goal), reminder (text, date YYYY-MM-DD, time HH:MM), journal (text to save), list_add (target is a list name, text the items), thread_update (target is a thread name, text the update), new_thread (text is its title), calendar_event (text is the title, date, time). Don't suggest things that are already in the plan. Never invent facts.`;
+  const sys=`You are ${String((S.settings.assist||{}).name||'Plot').slice(0,24)}, the user's personal agent inside the Plotline app. It is ${d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})}, ${tm(d)}. Do the TASK using only the DATA. Reply with one JSON object: "summary" is 1 to 5 short sentences to the user about what matters (plain words, no lists, no markdown); "suggestions" are 0 to 6 concrete things the app can do for them, grounded in the data: today (a goal for today; text is the goal), reminder (text, date YYYY-MM-DD, time HH:MM), journal (text to save), list_add (target is a list name, text the items), thread_update (target is a thread name, text the update), new_thread (text is its title), calendar_event (text is the title, date, time), goal (a new goal to work towards), habit (something to do regularly). Don't suggest things that are already in the plan. Never invent facts. ${window.AIX?AIX.safety():''}`;
   const msgs=[{role:'system',content:sys},{role:'user',content:`TASK: ${t.prompt}\n\nDATA\n${g.text||'(nothing to read)'}${g.errs.length?'\n\nCouldn’t read: '+g.errs.join('; '):''}`}];
-  const raw=await llm(msgs,{schema:SCHEMA,max_tokens:big?700:500,temperature:.2});const j=parseJSON(raw)||{summary:raw.slice(0,600),suggestions:[]};
+  step('Thinking…');const raw=await llm(msgs,{schema:SCHEMA,max_tokens:big?700:500,temperature:.2,reading:'Thinking…'});let j=parseJSON(raw);
+  /* not JSON: keep the words as the summary, and pick up any "ACTION: type | text" lines */
+  if(!j){const P=window.AIX?AIX.parseActs(raw):{clean:raw,acts:[]},map={goal:'goal',habit:'habit',routine:'habit',list:'list_add',journal:'journal',reminder:'reminder',today:'today',thread:'new_thread'};j={summary:P.clean.replace(/[{}"\[\]]/g,'').slice(0,700),suggestions:P.acts.map(a=>({type:map[a.k],text:a.k==='list'?a.x||a.t:a.t,target:a.k==='list'?a.t:''}))}}
+  if(!String(j.summary||'').trim()&&!(j.suggestions||[]).length)throw new Error('The AI gave an empty answer. Try again, or pick another model in Settings › AI & voice.');
   const sugs=(Array.isArray(j.suggestions)?j.suggestions:[]).filter(x=>x&&SUGT.includes(x.type)&&String(x.text||'').trim()).slice(0,6).map(x=>({id:uid(),type:x.type,text:tr(x.text,200),target:tr(x.target||'',60),date:/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')?x.date:'',time:/^\d{2}:\d{2}$/.test(x.time||'')?x.time:'',st:''}));
   const item={id:uid(),t:now(),task:t.id,title:t.title,summary:tr(j.summary||'',900),sugs,errs:g.errs,seen:false};
   if(t.mode==='do')for(const s of sugs)if(s.type!=='calendar_event'){try{await apply(s,true)}catch(e){}}
   A.inbox.unshift(item);A.inbox=A.inbox.slice(0,40);t.last=now();t.err='';save();
   if(!manual&&document.hidden&&typeof notify==='function')notify('Plot · '+t.title,tr(item.summary,140));
   return item}
- catch(e){t.err=String(e&&e.message||e);t.last=now();save();if(manual)toast('The agent couldn’t finish: '+esc(t.err))}
- finally{BUSY=null;t.next=nextAt(t,now());save();paintSoon();try{syncNative()}catch(e){}}}
+ catch(e){t.err=String(e&&e.message||e);t.last=now();save();if(manual){AGERR=`“${t.title}” couldn’t finish: ${t.err}`;toast('The agent couldn’t finish')}}
+ finally{BUSY=null;STEP='';t.next=nextAt(t,now());save();paintSoon();try{syncNative()}catch(e){}}}
 
 /* a suggestion becomes the real thing */
 async function apply(s,quiet){const D=window.PlotDo;if(!D)throw new Error('not ready');let r=null;
@@ -118,7 +128,8 @@ async function apply(s,quiet){const D=window.PlotDo;if(!D)throw new Error('not r
   case'list_add':{const L=s.target&&D.pick(S.lists||[],s.target,l=>l.title);r=L?D.addTo(s.text,L.title+' list'):D.newList(s.target||'New list',D.splitItems(s.text));break}
   case'thread_update':{const T=s.target&&D.pick((S.threads||[]).filter(t=>t.status!=='archived'),s.target,t=>t.title);r=T?D.addToThread(T,s.text):D.newThread(s.target||s.text,s.target?s.text:'');break}
   case'new_thread':r=D.newThread(s.text);break;
-  case'calendar_event':await calAdd({title:s.text,date:s.date||ymd(),time:s.time||''});r={say:'Added to your Google Calendar'};break}
+  case'calendar_event':await calAdd({title:s.text,date:s.date||ymd(),time:s.time||''});r={say:'Added to your Google Calendar'};break;
+  case'goal':case'habit':r=window.AIX?AIX.doAct({k:s.type,t:s.text,x:''}):null;break}
  s.st='done';save();if(!quiet&&r&&r.say)toast(esc(r.say));return r}
 
 /* ---------------- when tasks run ---------------- */
@@ -158,7 +169,7 @@ window.agentFromVoice=x=>{const s=String(x||'');let when='daily',at='08:00',dow=
  return{say:`Okay, I'll do that ${whenTxt(t).replace(/^Every/,'every').replace(/^Weekdays/,'on weekdays')}.${miss.length?` Connect ${miss.join(' and ')} on the Agent page so I can read ${miss.length>1?'them':'it'}.`:''}`,undo:()=>{ag().tasks=ag().tasks.filter(x=>x.id!==t.id);save()},chips:[['Open agent','agent']]}};
 
 /* ---------------- the Agent page ---------------- */
-const SUGN={today:'Goal for today',reminder:'Reminder',journal:'Journal',list_add:'Add to list',thread_update:'Thread update',new_thread:'New thread',calendar_event:'Calendar event'};
+const SUGN={today:'Goal for today',reminder:'Reminder',journal:'Journal',list_add:'Add to list',thread_update:'Thread update',new_thread:'New thread',calendar_event:'Calendar event',goal:'New goal',habit:'New habit'};
 const sugLine=s=>`${s.type==='list_add'||s.type==='thread_update'?esc(s.target)+': ':''}${esc(s.text)}${s.date||s.time?` <span class="muted">· ${esc(s.date?dd(s.date+'T12:00'):'')}${s.time?' '+esc(fmtTime(s.time)):''}</span>`:''}`;
 function inboxHTML(){const I=ag().inbox;if(!I.length)return'';
  return`<section class="rv ag-inbox"><div class="st-h"><h3>Inbox</h3>${I.length?`<button class="link" data-act="agClear">Clear</button>`:''}</div>${I.slice(0,12).map(it=>`<article class="panel ag-it${it.seen?'':' new'}"><div class="ag-h"><b>${esc(it.title)}</b><small class="muted">${esc(dd(it.t))} · ${esc(tm(it.t))}</small></div>${it.summary?`<p>${esc(it.summary)}</p>`:''}
@@ -178,8 +189,10 @@ function vAgent(){const A=ag(),e=planEngine(),picked=aiPicked(),ready=picked;con
  if(unseen)setTimeout(()=>{A.inbox.forEach(i=>i.seen=true);save()},1500);
  return`<header class="ph"><div><h1>Agent</h1><div class="data">${ready?`Runs on this device with ${esc(planEngineName())}`:'Pick an AI to start'}</div></div><div class="ph-r"><button class="btn pri" data-act="agNew">${ic('plus')}<span>Task</span></button>${typeof gear==='function'?gear():''}</div></header>
  ${ready?'':`<div class="panel rv"><p>${insSet().engine==='copy'?'“Copy to any AI” can’t run tasks on its own. Pick On this device or Your AI server in Settings › AI & voice.':'The agent thinks with the AI from Settings › AI & voice. Gemma 4 runs on this device; your own server works too.'}</p><div class="actions left"><a class="btn pri" href="#/settings/voice">Pick an AI</a></div></div>`}
- ${dl?`<div class="panel rv"><p><b>${esc(String(m[1]).split(' · ')[0])}</b> downloads once (${m[3]} GB) the first time it runs, then works offline. Tasks you run yourself download it; scheduled tasks wait until it’s here.</p><div class="actions left"><button class="btn pri" data-act="agDl" ${AGDL?'disabled':''}>${AGDL?esc(AGDL):'Download now'}</button></div></div>`:''}
- <section class="panel rv ag-ask"><div class="field"><label for="agQ">Ask the agent to do something now</label><textarea id="agQ" rows="2" placeholder="Look at my email and calendar and tell me what I’m forgetting"></textarea></div><div class="ag-src">${Object.keys(CN).map(k=>`<label class="chip${connOn(k)?'':' dim'}"><input type="checkbox" data-agsrc="${k}" ${connOn(k)&&k!=='gdrive'?'checked':''} ${connOn(k)?'':'disabled'}>${CN[k][0]}</label>`).join('')}</div><div class="actions left"><button class="btn pri" data-act="agAsk" ${BUSY?'disabled':''}>${BUSY?'Working…':'Go'}</button></div></section>
+ ${dl&&window.AIX?`<div class="rv">${AIX.modelCard('agent')}<p class="small muted">Scheduled tasks wait until the model is set up. Tasks you run yourself set it up first.</p></div>`:dl?`<div class="panel rv"><p><b>${esc(String(m[1]).split(' · ')[0])}</b> downloads once (${m[3]} GB) the first time it runs, then works offline.</p><div class="actions left"><button class="btn pri" data-act="agDl" ${AGDL?'disabled':''}>${AGDL?esc(AGDL):'Download now'}</button></div></div>`:''}
+ ${BUSY?`<div class="panel rv ag-run"><span class="ag-spin" aria-hidden="true"></span><span><b>Working on “${esc(BUSY)}”</b><small id="agStep">${esc(STEP||'Starting…')}</small></span></div>`:''}
+ ${AGERR?`<div class="panel rv ag-err"><p>${esc(AGERR)}</p><div class="actions left"><button class="btn sm ghost" data-act="agErrX">Dismiss</button><a class="btn sm ghost" href="#/settings/voice">AI settings</a></div></div>`:''}
+ <section class="panel rv ag-ask"><div class="field"><label for="agQ">Ask the agent to do something now</label><textarea id="agQ" rows="2" placeholder="Look at my email and calendar and tell me what I’m forgetting">${esc(AGQ)}</textarea></div><div class="ag-src">${Object.keys(CN).map(k=>`<label class="chip${connOn(k)?'':' dim'}"><input type="checkbox" data-agsrc="${k}" ${connOn(k)&&k!=='gdrive'?'checked':''} ${connOn(k)?'':'disabled'}>${CN[k][0]}</label>`).join('')}</div><div class="actions left"><button class="btn pri" data-act="agAsk" ${BUSY?'disabled':''}>${BUSY?'Working…':'Go'}</button></div></section>
  ${inboxHTML()}${tasksHTML()}${connHTML()}
  <label class="sw rv" style="margin-top:14px"><span>Run tasks on their own<small>Off pauses every task. They still run when you tap Run now.</small></span><input type="checkbox" data-agon="all" ${A.on?'checked':''}><i></i></label>`}
 VIEWS.agent=vAgent;
@@ -208,9 +221,10 @@ Object.assign(ACT,{
  agRun:async d=>{const t=ag().tasks.find(x=>x.id===d.id);if(!t)return;const it=await runTask(t,true);if(it)toast('Done. See the inbox')},
  agDl:async()=>{if(AGDL)return;AGDL='Starting…';render(false);const e=planEngine(),msgs=[{role:'user',content:'Reply with OK.'}],on=()=>{},p=x=>{AGDL=(typeof x==='string'?x:x&&x.text)||AGDL;const b=document.querySelector('[data-act=agDl]');if(b)b.textContent=AGDL};
   try{aiMark();if(e==='native')await natChat(msgs,on,p,null,{});else await localChat(msgs,on,p,0,null,false,{});AGDL='';toast('Ready. The agent runs on this device now')}catch(x){AGDL='';toast('Couldn’t download: '+esc(x&&x.message||x))}render(false)},
- agAsk:async()=>{const q=($('#agQ')||{}).value||'';if(!q.trim())return toast('Say what you’d like done');const src=[...document.querySelectorAll('[data-agsrc]:checked')].map(x=>x.dataset.agsrc);
-  const t={id:'ask',title:tr(q,50),prompt:q,src:src.length?src:['plot'],mode:'suggest',when:'manual'};const it=await runTask(t,true);if(it)toast('Done. See the inbox')},
+ agAsk:async()=>{const q=($('#agQ')||{}).value||'';if(!q.trim())return toast('Say what you’d like done');AGQ=q;const src=[...document.querySelectorAll('[data-agsrc]:checked')].map(x=>x.dataset.agsrc);
+  const t={id:'ask',title:tr(q,50),prompt:q,src:src.length?src:['plot'],mode:'suggest',when:'manual'};const it=await runTask(t,true);if(it){AGQ='';toast('Done. See the inbox');render(false)}},
  agYes:async d=>{const[it,s]=findIt(d);if(!s||s.st)return;try{await apply(s)}catch(e){toast('Couldn’t do that: '+esc(e.message||e))}render(false)},
+ agErrX:()=>{AGERR='';render(false)},
  agNo:d=>{const[it,s]=findIt(d);if(!s)return;s.st='no';save();render(false)},
  agAll:async d=>{const it=ag().inbox.find(x=>x.id===d.i);if(!it)return;let n=0;for(const s of it.sugs)if(!s.st){try{await apply(s,true);n++}catch(e){}}toast(`Done ${n} of them`);render(false)},
  agClear:()=>askConfirm('Clear the inbox?','Suggestions you haven’t acted on are dropped.','Clear',()=>{ag().inbox=[];save();render(false)}),
@@ -240,7 +254,10 @@ const css=document.createElement('style');css.textContent=`
 .ag-src{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}.ag-src .chip{position:relative;color:var(--muted)}.ag-src .chip input{position:absolute;opacity:0;pointer-events:none}.ag-src .chip::before{content:'';width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;box-sizing:border-box}.ag-src .chip:has(input:checked){color:var(--text);background:color-mix(in srgb,var(--accent) 14%,var(--surface));border-color:color-mix(in srgb,var(--accent) 55%,transparent)}.ag-src .chip:has(input:checked)::before{background:var(--accent);border-color:var(--accent)}.ag-src .chip:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}.ag-src .chip.dim{opacity:.45}
 .ag-home{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;margin-bottom:12px}.ag-home span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}.ag-home small{color:var(--muted);font-size:12px}
 .ag-hi{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
-.sw.ag-sw{margin:0;padding:0;border:0}`;
+.sw.ag-sw{margin:0;padding:0;border:0}
+.ag-run{display:flex;align-items:center;gap:12px;margin-bottom:12px}.ag-run>span:last-child{display:flex;flex-direction:column;min-width:0}.ag-run small{color:var(--muted);font-size:12.5px}
+.ag-spin{width:22px;height:22px;border-radius:50%;flex:none;border:2.5px solid color-mix(in srgb,var(--accent) 25%,transparent);border-top-color:var(--accent);animation:mmSpin .8s linear infinite}
+.ag-err{margin-bottom:12px;border-color:color-mix(in srgb,var(--danger,#e66) 45%,transparent)}.ag-err p{margin:0 0 4px}`;
 document.head.appendChild(css);
 if(typeof booted!=='undefined'&&booted&&/^#\/agent(\/|$)/.test(location.hash)&&cur.p!=='agent')route();
 })();

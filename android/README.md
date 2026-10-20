@@ -62,6 +62,9 @@ word, a voice and a widget, through a second JavaScript interface, `window.Plotl
 - **Connector requests** (`http(id, json)`): an https request for an agent connection whose server won't answer web
   pages (Notion). Only hosts in `HTTP_HOSTS`; the answer comes back as `window.__http(id, status, body)`.
 - **Voice**: Android's text-to-speech (`TextToSpeech`). The `TTS_SERVICE` query is needed to find the engine on Android 11+.
+  `voices()` lists the engine's installed voices (empty until the engine has started; `window.__assist('voices')` says when to ask
+  again), `speak2(id, text, lang, rate, pitch, voice)` speaks with the voice picked in Settings, and `openTtsSettings()` opens
+  Android's text-to-speech settings to install more.
 - **Widget** (`AssistWidget`, Plotline · Assistant): the last thing you said and the reply, with Talk (opens the app
   listening) and Type. Widgets can't use the mic or take typing themselves.
 - **App shortcut**: long-press the app icon › Assistant.
