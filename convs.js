@@ -50,7 +50,7 @@ function vChat(id){const c=get(id);if(!c)return`<header class="ph"><div><a class
  const K=KIND[c.k]||KIND.chat;
  return`<div class="crumb"><a href="#/chats" class="ibtn" data-act="navBack" aria-label="Back">${ic('back')}</a><div class="ph-r"><button class="ibtn" data-act="convMore" data-id="${c.id}" aria-label="More">${ic('more')}</button></div></div>
  <h2 class="cv-t">${esc(c.title||'Conversation')}</h2><p class="cv-m">${K[0]} · ${when(c.t0)} · ${c.turns.length} message${c.turns.length===1?'':'s'}</p>
- <div class="cv-x rv">${c.turns.map(t=>`<div class="cv-q"><p>${esc(t.q).replace(/\n/g,'<br>')}</p></div><div class="cv-a"><span class="cv-av" aria-hidden="true"></span><p>${esc(t.a).replace(/\n+/g,'<br>')}</p></div>`).join('')}</div>
+ <div class="cv-x rv">${c.turns.map(t=>`<div class="cv-q"><p>${esc(t.q).replace(/\n/g,'<br>')}</p></div><div class="cv-a"><span class="cv-av" aria-hidden="true"></span><div class="ai-md">${window.AIX&&AIX.md?AIX.md(t.a):'<p>'+esc(t.a).replace(/\n+/g,'<br>')+'</p>'}</div></div>`).join('')}</div>
  <div class="cv-bar"><button class="btn pri cv-mkb" data-act="convMake" data-id="${c.id}">${ic('ai')}Make something from this</button><button class="btn" data-act="convChat" data-id="${c.id}">${ic('chat')}Continue</button><button class="btn" data-act="convTalk" data-id="${c.id}" aria-label="Continue out loud">${ic('live')}Talk</button></div>`}
 VIEWS.chats=vChats;
 document.addEventListener('input',e=>{if(e.target.id!=='cvQ')return;CF.q=e.target.value;listPaint()});

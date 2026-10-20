@@ -112,7 +112,23 @@ function modelCard(w){const i=mInfo();if(!i)return'';const have=mHave(i),busy=MM
  return`<div class="mm" data-w="${w||''}"><div class="mm-h"><span class="mm-ic">${ic('ai')}</span><span class="mm-t"><b>${esc(i.name)}</b><small>${esc(i.gb+' GB · '+where)}</small></span><span class="mm-tag ${have&&!busy?'ok':''}">${tag}</span></div>${body}${btns?`<div class="actions left">${btns}</div>`:''}</div>`}
 Object.assign(ACT,{mmGo:()=>mmRun()});
 /* other parts of the app ask: is it ready, and if not, show this card */
-window.AIX={safety:aiSafety,block:aiBlock,care:aiCare,note:noteHTML,parseActs,hideActs,actChips,keepActs,doAct,actLabel,chat:aiChat,modelCard,setup:mmRun,ready:()=>aiReady()&&!MM.busy,ACT_SYS};
+/* ---------------- the answer canvas ----------------
+   AI answers are free-form Markdown, and this lays them out: headings, bullet and numbered lists, tables, bold, italic,
+   inline code and links. Everything is escaped first, so a model can't inject HTML. */
+function mdCanvas(src){const L=String(src||'').replace(/\r/g,'').replace(/<think>[\s\S]*?(<\/think>|$)/g,'').split('\n');let o='',list='',i=0;
+ const inl=x=>esc(x).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[\s(])[*_](?!\s)([^*_\n]+?)[*_](?=[\s).,;:!?]|$)/g,'$1<i>$2</i>').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>').replace(/(^|\s)(https?:\/\/[^\s<]+)/g,'$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+ const close=()=>{if(list){o+=`</${list}>`;list=''}};const cells=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+ while(i<L.length){const raw=L[i],l=raw.trim();let m;
+  if(/^\|.*\|$/.test(l)&&i+1<L.length&&/^\|?\s*:?-{2,}/.test(L[i+1].trim())){close();const h=cells(l);i+=2;const R=[];while(i<L.length&&/^\|.*\|$/.test(L[i].trim())){R.push(cells(L[i]));i++}
+   o+=`<div class="md-tw"><table class="md-t"><thead><tr>${h.map(c=>`<th>${inl(c)}</th>`).join('')}</tr></thead><tbody>${R.map(r=>`<tr>${h.map((_,k)=>`<td>${inl(r[k]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;continue}
+  if((m=/^(#{1,4})\s+(.*)$/.exec(l))){close();o+=`<h${Math.min(6,m[1].length+2)} class="md-h">${inl(m[2])}</h${Math.min(6,m[1].length+2)}>`}
+  else if((m=/^[-*•]\s+(.*)$/.exec(l))){if(list!=='ul'){close();o+='<ul>';list='ul'}o+=`<li>${inl(m[1])}</li>`}
+  else if((m=/^\d+[.)]\s+(.*)$/.exec(l))){if(list!=='ol'){close();o+='<ol>';list='ol'}o+=`<li>${inl(m[1])}</li>`}
+  else if(/^(-{3,}|\*{3,})$/.test(l)){close();o+='<hr>'}
+  else if(/^>\s?/.test(l)){close();o+=`<blockquote>${inl(l.replace(/^>\s?/,''))}</blockquote>`}
+  else if(l){close();o+=`<p>${inl(l)}</p>`}else close();i++}
+ close();return o}
+window.AIX={md:mdCanvas,safety:aiSafety,block:aiBlock,care:aiCare,note:noteHTML,parseActs,hideActs,actChips,keepActs,doAct,actLabel,chat:aiChat,modelCard,setup:mmRun,ready:()=>aiReady()&&!MM.busy,ACT_SYS};
 
 /* ---------------- voices ---------------- */
 const VSTY=[['natural','Natural',1,1],['calm','Calm',.9,.94],['bright','Bright',1.05,1.15],['deep','Deep',.95,.8],['quick','Quick',1.25,1.02]];
@@ -233,6 +249,10 @@ if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){return _ht(
 {const _r=window.__route;window.__route=r=>{if(r==='assistant-live'){liveOpen();return}return _r&&_r(r)}}
 
 const css=document.createElement('style');css.textContent=`
+.ai-md{min-width:0;overflow-wrap:anywhere}.ai-md p{margin:0 0 8px;line-height:1.5}.ai-md p:last-child{margin-bottom:0}.ai-md .md-h{margin:14px 0 6px;font:700 15px/1.3 var(--f-body);text-transform:none;letter-spacing:0}.ai-md h3.md-h{font-size:16.5px}.ai-md .md-h:first-child{margin-top:0}
+.ai-md ul,.ai-md ol{margin:4px 0 10px;padding-left:22px}.ai-md li{margin:3px 0;line-height:1.45}.ai-md li::marker{color:var(--accent)}.ai-md code{font:500 .9em var(--f-mono,monospace);padding:1px 5px;border-radius:6px;background:color-mix(in srgb,var(--text) 8%,transparent)}
+.ai-md a{color:var(--accent)}.ai-md hr{border:0;border-top:1px solid var(--line);margin:12px 0}.ai-md blockquote{margin:8px 0;padding:4px 12px;border-left:3px solid var(--accent);color:var(--muted)}
+.md-tw{overflow-x:auto;margin:8px 0 12px;border:1px solid var(--line);border-radius:12px}.md-t{border-collapse:collapse;width:100%;font-size:13.5px}.md-t th,.md-t td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}.md-t th{font-weight:700;background:color-mix(in srgb,var(--accent) 8%,transparent);white-space:nowrap}.md-t tr:last-child td{border-bottom:0}
 .ai-note{display:block;margin:8px 0 0;font-size:11.5px;line-height:1.3;color:var(--muted);text-align:center}.ai-note svg{width:13px;height:13px;opacity:.8;vertical-align:-2px;margin-right:5px}
 .ai-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .ai-act{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:18px;border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--text);font:600 13px var(--f-body);cursor:pointer;text-align:left}
