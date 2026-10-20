@@ -99,7 +99,9 @@ const OVS=[];let INKB=0;
 function overlay(cls,html,onBack){const el=document.createElement('div');el.className='ink-ov '+cls;el.innerHTML=html;document.body.appendChild(el);document.documentElement.classList.add('ink-open');
  const o={el,onBack,close(){const i=OVS.indexOf(o);if(i<0)return;OVS.splice(i,1);el.classList.add('out');setTimeout(()=>el.remove(),220);if(!OVS.length)document.documentElement.classList.remove('ink-open');if(!o.pop&&history.state&&history.state.ink){INKB++;try{history.back()}catch(e){INKB--}}}};
  OVS.push(o);try{history.pushState({ink:OVS.length},'')}catch(e){}requestAnimationFrame(()=>el.classList.add('on'));return o}
-addEventListener('popstate',e=>{if(INKB){INKB--;e.stopImmediatePropagation();return}const o=OVS[OVS.length-1];if(o){e.stopImmediatePropagation();o.pop=true;o.onBack?o.onBack():o.close()}},true);
+/* index.html registers window.__inkPop as the very first popstate listener, so an overlay's own history step is
+   handled before the sheet's or Focus's Back handling ever sees it (listeners run in the order they were added) */
+window.__inkPop=()=>{if(INKB){INKB--;return true}const o=OVS[OVS.length-1];if(o){o.pop=true;o.onBack?o.onBack():o.close();return true}return false};
 {const _b=window.__back;window.__back=function(){const o=OVS[OVS.length-1];if(o){o.onBack?o.onBack():o.close();return true}return _b.apply(this,arguments)}}
 addEventListener('keydown',e=>{const o=OVS[OVS.length-1];if(!o)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();o.onBack?o.onBack():o.close();return}if(o.key)o.key(e)},true);
 function ask(title,msg,btns){return new Promise(res=>{const d=document.createElement('div');d.className='ink-ask';d.innerHTML=`<div class="ink-ask-b" role="alertdialog" aria-label="${esc(title)}"><h3>${esc(title)}</h3>${msg?`<p>${esc(msg)}</p>`:''}<div class="ink-ask-a">${btns.map(([k,n,c])=>`<button class="btn ${c||''}" data-k="${k}">${esc(n)}</button>`).join('')}</div></div>`;
@@ -289,13 +291,31 @@ let TW=null,TLANG='',TPROG=null;
 async function tess(code,prog){TPROG=prog;if(TW&&TLANG===code)return TW;if(TW){try{(await TW).terminate()}catch(e){}TW=null}
  if(!window.Tesseract){prog&&prog('Getting the text reader ready (first time only)…');await loadJS(TJS)}TLANG=code;
  TW=Tesseract.createWorker(code,1,{logger:m=>{if(!TPROG)return;const st=String(m.status||'');TPROG(/recogni/i.test(st)?`Reading… ${Math.round((m.progress||0)*100)}%`:/load|init|download/i.test(st)?'Getting the text reader ready (first time only)…':'Reading…')}}).catch(e=>{TW=null;throw e});return TW}
-/* grayscale + adaptive threshold (Bradley): shadows and uneven light on a photo of paper turn white, ink turns black */
-function binarize(src){const w=src.width,h=src.height,x=src.getContext('2d',{willReadFrequently:true}),d=x.getImageData(0,0,w,h),g=new Float32Array(w*h),I=new Float64Array((w+1)*(h+1));
- for(let i=0,j=0;i<g.length;i++,j+=4)g[i]=.299*d.data[j]+.587*d.data[j+1]+.114*d.data[j+2];
+/* grayscale + adaptive threshold (Bradley): shadows and uneven light on a photo of paper turn white, ink turns black.
+   The grey is smoothed first and a pixel needs real contrast with its surroundings, so camera noise on a table or in a
+   shadow stays white; then specks and the dark frame a photo's page edge and shadow make are wiped out */
+function binarize(src){const w=src.width,h=src.height,x=src.getContext('2d',{willReadFrequently:true}),d=x.getImageData(0,0,w,h),g=new Float32Array(w*h),t=new Float32Array(w*h),I=new Float64Array((w+1)*(h+1));
+ let gm=0;for(let i=0,j=0;i<g.length;i++,j+=4)gm+=g[i]=.299*d.data[j]+.587*d.data[j+1]+.114*d.data[j+2];
+ /* light writing on a dark page (a dark-mode screenshot, a blackboard): flip it */
+ if(gm/g.length<105)for(let i=0;i<g.length;i++)g[i]=255-g[i];
+ for(let y=0;y<h;y++){const r=y*w;for(let xx=0;xx<w;xx++){const a=xx?xx-1:0,c=xx<w-1?xx+1:xx;t[r+xx]=(g[r+a]+g[r+xx]+g[r+c])/3}}
+ for(let y=0;y<h;y++){const u=(y?y-1:0)*w,m=y*w,dn=(y<h-1?y+1:y)*w;for(let xx=0;xx<w;xx++)g[m+xx]=(t[u+xx]+t[m+xx]+t[dn+xx])/3}
  for(let y=0;y<h;y++){let r=0;for(let xx=0;xx<w;xx++){r+=g[y*w+xx];I[(y+1)*(w+1)+xx+1]=I[y*(w+1)+xx+1]+r}}
- const s=Math.max(8,Math.round(Math.max(w,h)/22)),hs=s>>1,o=document.createElement('canvas');o.width=w;o.height=h;const ox=o.getContext('2d',{willReadFrequently:true}),od=ox.createImageData(w,h),bin=new Uint8Array(w*h);
- for(let y=0;y<h;y++){const y0=Math.max(0,y-hs),y1=Math.min(h-1,y+hs);for(let xx=0;xx<w;xx++){const x0=Math.max(0,xx-hs),x1=Math.min(w-1,xx+hs),cnt=(x1-x0+1)*(y1-y0+1),sum=I[(y1+1)*(w+1)+x1+1]-I[y0*(w+1)+x1+1]-I[(y1+1)*(w+1)+x0]+I[y0*(w+1)+x0],i=y*w+xx,dark=g[i]*cnt<=sum*.86&&g[i]<215;bin[i]=dark?1:0;const v=dark?0:255,j=i*4;od.data[j]=od.data[j+1]=od.data[j+2]=v;od.data[j+3]=255}}
+ const s=Math.max(8,Math.round(Math.max(w,h)/22)),hs=s>>1,bin=new Uint8Array(w*h);
+ for(let y=0;y<h;y++){const y0=Math.max(0,y-hs),y1=Math.min(h-1,y+hs);for(let xx=0;xx<w;xx++){const x0=Math.max(0,xx-hs),x1=Math.min(w-1,xx+hs),cnt=(x1-x0+1)*(y1-y0+1),mean=(I[(y1+1)*(w+1)+x1+1]-I[y0*(w+1)+x1+1]-I[(y1+1)*(w+1)+x0]+I[y0*(w+1)+x0])/cnt,v=g[y*w+xx];bin[y*w+xx]=v<=mean*.86&&mean-v>=16&&v<215?1:0}}
+ despeckle(bin,w,h);
+ const o=document.createElement('canvas');o.width=w;o.height=h;const ox=o.getContext('2d',{willReadFrequently:true}),od=ox.createImageData(w,h);
+ for(let i=0,j=0;i<bin.length;i++,j+=4){const v=bin[i]?0:255;od.data[j]=od.data[j+1]=od.data[j+2]=v;od.data[j+3]=255}
  ox.putImageData(od,0,0);return{canvas:o,bin,w,h,rgb:d.data}}
+/* connected blobs of ink: drop specks and anything far bigger than the writing (page edges, shadows, a table's grain) */
+function despeckle(bin,w,h){const lab=new Int32Array(w*h),st=new Int32Array(w*h),C=[];let n=0;
+ for(let i=0;i<bin.length;i++){if(!bin[i]||lab[i])continue;n++;let sp=0,a=0,x0=w,y0=h,x1=0,y1=0;st[sp++]=i;lab[i]=n;
+  while(sp){const k=st[--sp],y=(k/w)|0,xx=k-y*w;a++;if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(y<y0)y0=y;if(y>y1)y1=y;
+   for(let dy=-1;dy<=1;dy++){const yy=y+dy;if(yy<0||yy>=h)continue;for(let dx=-1;dx<=1;dx++){const q=xx+dx;if(q<0||q>=w)continue;const j=yy*w+q;if(bin[j]&&!lab[j]){lab[j]=n;st[sp++]=j}}}}
+  C.push({a,bw:x1-x0+1,bh:y1-y0+1})}
+ if(!C.length)return;const minA=Math.max(3,Math.round(w*h/1.2e6)),hs=C.filter(c=>c.a>=minA*3).map(c=>c.bh).sort((p,q)=>p-q),mh=hs[hs.length>>1]||20;
+ const drop=new Uint8Array(n+1);C.forEach((c,k)=>{if(c.a<minA||(c.bh>mh*5&&c.bw>mh*5)||(c.bw>w*.6&&c.bh>h*.25))drop[k+1]=1});
+ for(let i=0;i<bin.length;i++)if(lab[i]&&drop[lab[i]])bin[i]=0}
 /* highlight: the light pixels behind a word are coloured while the page isn't (bold can't be told apart reliably from a
    photo on the device, so it's left to the AI reader) */
 function wordStyles(words,B){if(!B)return;const{bin,w,rgb}=B;let bgR=0,bgG=0,bgB=0,bn=0;
@@ -308,14 +328,16 @@ function wordsHTML(ws){let o='';for(let i=0;i<ws.length;){const b=!!ws[i]._bold,
 /* lines (reading order, each {text, x0,y0,x1,y1, fs?, words?}) → paragraphs, line breaks, headings and lists.
    OCR often drops or garbles list markers (• read as «, + or *; a box as O), so a line lined up with its neighbours'
    markers counts as an item too. */
-const BUL=/^([•·●○◦▪■➢➤►‣⁃∙*«»+~–—-]|e(?=\s+\p{Lu}))\s+/u,NUM=/^(\(?\d{1,3}[.)]|[a-hA-H][.)])\s+/,CHK=/^(\[\s?\]|\[[xX✓✔v]\]|[☐☑☒□✓✔]|[O0o](?=\s+\p{Lu}))\s*/u;
+const BUL=/^([•·●○◦▪■➢➤►‣⁃∙*«»+~–—-]|e(?=\s+\p{Lu}))\s+/u,NUM=/^(\(?\d{1,3}[.)]|[a-hA-H][.)])\s+/,CHK=/^(\[\s?\]|\[[xX✓✔v]\]|[☐☑☒□✓✔]|[O0o](?=\s+\p{Lu})|\[[1lIJ|]\]?(?=\s+\p{Lu}))\s*/u;
 function linesToHTML(L){L=L.filter(l=>String(l.text||'').trim());if(!L.length)return'';
  const md=a=>{a=a.slice().sort((x,y)=>x-y);return a[a.length>>1]||1},mh=md(L.map(l=>l.y1-l.y0)),fs=md(L.map(l=>l.fs||l.y1-l.y0)),cw=mh*.55;
  const left=Math.min(...L.map(l=>l.x0)),right=Math.max(...L.map(l=>l.x1)),span=Math.max(1,right-left);
  L.forEach(l=>{const raw=l.text.trim();let m;l.raw=raw;if((m=CHK.exec(raw))&&raw.length>m[0].length){l.kind='chk';l.mk=m[0];l.on=/[xX✓✔v☑☒]/.test(m[1])}else if((m=BUL.exec(raw))){l.kind='ul';l.mk=m[0]}else if((m=NUM.exec(raw))){l.kind='ol';l.mk=m[0]}
   if(l.kind&&l.words&&l.words.length>1)l.tx=l.words[1].bbox?l.words[1].bbox.x0:l.x0});
  L.forEach((l,i)=>{if(l.kind)return;for(const n of[L[i-1],L[i+1]]){if(!n||!n.kind||n.kind==='ol')continue;const gap=Math.abs(n===L[i-1]?l.y0-n.y1:n.y0-l.y1);if(gap>mh*1.2)continue;
-  if(Math.abs(l.x0-n.x0)<cw*1.2&&l.x0>left+cw){l.kind=n.kind;l.mk='';break}if(n.kind==='chk'&&n.tx&&Math.abs(l.x0-n.tx)<cw*1.2&&n===L[i-1]&&l.raw.length<60){l.kind='chk';l.mk='';break}}});
+  if(Math.abs(l.x0-n.x0)<cw*1.2&&l.x0>left+cw){l.kind=n.kind;l.mk='';break}if(n.kind==='chk'&&n.tx&&Math.abs(l.x0-n.tx)<cw*1.2&&n===L[i-1]&&l.raw.length<60){l.kind='chk';l.mk='';break}
+  /* a box read as a stray letter («J», «1») right under or over another checkbox line */
+  if(n.kind==='chk'&&l.words&&l.words.length>1&&Math.abs(l.x0-n.x0)<cw*1.2&&String(l.words[0].text).length<=2&&l.words[0].confidence<70&&/^\p{Lu}/u.test(String(l.words[1].text))){l.kind='chk';l.mk=String(l.words[0].text);l.on=false;break}}});
  const out=[];let para=null,list=null,prev=null;
  const flushP=()=>{if(para){out.push(`<p>${para.h}</p>`);para=null}};
  const flushL=()=>{if(!list)return;if(list.t==='chk')out.push(`<p>${list.items.map(i=>i.h).join('<br>')}</p>`);else{const r=items=>{let s='',i=0;while(i<items.length){const it=items[i],kids=[];i++;while(i<items.length&&items[i].lv>it.lv)kids.push(items[i++]);s+=`<li>${it.h}${kids.length?`<${list.t}>${r(kids.map(k=>({...k,lv:k.lv-1})))}</${list.t}>`:''}</li>`}return s};out.push(`<${list.t}>${r(list.items)}</${list.t}>`)}list=null};
@@ -329,7 +351,7 @@ function linesToHTML(L){L=L.filter(l=>String(l.text||'').trim());if(!L.length)re
    else{const full=prev.x1>=right-span*.16;if(full&&/[-‐]$/.test(para.h)&&/^\p{Ll}/u.test(raw))para.h=para.h.replace(/[-‐]$/,'')+html;else para.h+=(full?' ':'<br>')+html}}
   prev=l}
  flushP();flushL();return out.join('')}
-function tessLines(data,B,sc){const L=[],W_=[];for(const bl of data.blocks||[])for(const pa of bl.paragraphs||[])for(const ln of pa.lines||[]){const ws=(ln.words||[]).filter((w,i)=>String(w.text||'').trim()&&(w.confidence>18||String(w.text).length>2||(i===0&&/^[^\p{L}\p{N}]{1,2}$/u.test(String(w.text).trim()))));if(!ws.length)continue;W_.push(...ws);L.push({text:ws.map(w=>w.text).join(' '),fs:ln.rowAttributes&&ln.rowAttributes.rowHeight?ln.rowAttributes.rowHeight/sc:0,x0:ln.bbox.x0/sc,y0:ln.bbox.y0/sc,x1:ln.bbox.x1/sc,y1:ln.bbox.y1/sc,words:ws,conf:ln.confidence})}
+function tessLines(data,B,sc){const L=[],W_=[];for(const bl of data.blocks||[])for(const pa of bl.paragraphs||[])for(const ln of pa.lines||[]){const ws=(ln.words||[]).filter((w,i)=>{const t=String(w.text||'').trim();if(!t)return false;if(!/[\p{L}\p{N}]/u.test(t))return i===0?/^[•·●○◦▪■➢➤►‣⁃∙*«»+~–—\-\[\]☐☑☒□✓✔]{1,3}$/u.test(t):w.confidence>75&&/^[&@#%$€£()"'“”‘’!?.,:;\/=]+$/.test(t);return w.confidence>18||t.length>2});if(!ws.length)continue;W_.push(...ws);L.push({text:ws.map(w=>w.text).join(' '),fs:ln.rowAttributes&&ln.rowAttributes.rowHeight?ln.rowAttributes.rowHeight/sc:0,x0:ln.bbox.x0/sc,y0:ln.bbox.y0/sc,x1:ln.bbox.x1/sc,y1:ln.bbox.y1/sc,words:ws,conf:ln.confidence})}
  wordStyles(W_,B);return L}
 /* Chrome's built-in handwriting recognizer (on-device; ChromeOS today), fed the real strokes line by line */
 function inkLines(strokes){const it=strokes.map((s,i)=>({s,i,b:bbox(s)}));const hs=it.map(x=>x.b[3]-x.b[1]).filter(h=>h>3).sort((a,b)=>a-b),mh=hs[hs.length>>1]||20;
@@ -357,11 +379,18 @@ const AIP=`You turn a picture into editable notes. Reply with HTML only, using j
 - A table becomes one line per row with cells separated by " · ".`;
 function aiClean(s){s=String(s||'').trim().replace(/^```(?:html)?\s*/i,'').replace(/```\s*$/,'').trim();if(!/<(p|ul|ol|br|b|li)\b/i.test(s))s=s.split(/\n{2,}/).map(p=>`<p>${escH(p).replace(/\n/g,'<br>')}</p>`).join('');return s}
 async function aiRead(dataUrl,ink,signal){if(!window.aiVision)throw new Error('AI isn’t set up');return aiClean(await window.aiVision(AIP+(ink?'\nThe picture is handwriting written on a tablet.':''),dataUrl,{signal}))}
+/* how sure the reader was of the last photo, 0-100 (the review panel warns when it's low) */
+let OCRCONF=100;
+const confOf=L=>{let c=0,n=0;for(const l of L)for(const w of l.words||[]){const k=String(w.text).length;c+=w.confidence*k;n+=k}return n?c/n:0};
 async function ocrCanvas(src,prog){const L=lang();let sc=1,cv=src;const mx=Math.max(src.width,src.height);
  if(mx<1400){sc=Math.min(2.5,1800/mx);cv=document.createElement('canvas');cv.width=Math.round(src.width*sc);cv.height=Math.round(src.height*sc);const x=cv.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(src,0,0,cv.width,cv.height)}
+ else if(mx>2600)cv=scaleTo(src,2600);
  prog&&prog('Cleaning up the picture…');await new Promise(r=>setTimeout(r,30));const B=binarize(cv);const w=await tess(L[0],prog);
  try{await w.setParameters({preserve_interword_spaces:'1'})}catch(e){}const{data}=await w.recognize(B.canvas,{},{blocks:true,text:true});
- return linesToHTML(tessLines(data,B,1))}
+ let lines=tessLines(data,B,1),cf=confOf(lines);
+ /* unsure: try once more on the photo itself (Tesseract's own threshold) and keep whichever it was surer of */
+ if(cf<70){try{const r2=await w.recognize(cv,{},{blocks:true,text:true}),l2=tessLines(r2.data,B,1),c2=confOf(l2);if(c2>cf+5&&l2.length){lines=l2;cf=c2}}catch(e){}}
+ OCRCONF=lines.length?cf:100;return linesToHTML(lines)}
 
 /* ---------------- the review panel: what was read, editable, then inserted ---------------- */
 /* src: {ink:[strokes]} or {canvas, photo}; onInsert(html, keep) */
@@ -376,9 +405,11 @@ function review({src,title,keepLabel,onInsert}){const aiN=window.aiVisionName?ai
  async function run(useAI){ins.disabled=true;tx.classList.add('busy');ctl&&ctl.abort();ctl=new AbortController();const me=ctl;
   try{let html='';
    if(useAI){prog(`Asking ${aiN}…`);const url=src.ink?inkCanvas(src.ink).toDataURL('image/png'):(src.canvas.width*src.canvas.height>4e6?scaleTo(src.canvas,2000):src.canvas).toDataURL('image/jpeg',.9);html=await aiRead(url,!!src.ink,me.signal);usedAI=true}
-   else if(src.ink){html=await hwRead(src.ink).catch(()=>null);if(html==null||!html)html=await ocrCanvas(inkCanvas(src.ink),prog)}
+   else if(src.ink){OCRCONF=100;html=await hwRead(src.ink).catch(()=>null);if(html==null||!html)html=await ocrCanvas(inkCanvas(src.ink),prog)}
    else html=await ocrCanvas(src.canvas,prog);
-   if(me!==ctl)return;html=cleanHTML(html);tx.innerHTML=html||'';prog(html?(useAI?`Read by ${aiN}. Check it, edit anything, then Insert.`:'Check it, edit anything, then Insert.'):'No text found.'+(aiN&&!useAI?` Try Read with ${aiN}.`:' Try a sharper, closer picture.'));ins.disabled=!html}
+   const unsure=!useAI&&html&&OCRCONF<62;
+   const ab=el.querySelector('[data-k=ai]');if(ab){ab.classList.toggle('pri',!!unsure);ab.classList.toggle('ghost',!unsure)}
+   if(me!==ctl)return;html=cleanHTML(html);tx.innerHTML=html||'';prog(html?(useAI?`Read by ${aiN}. Check it, edit anything, then Insert.`:unsure?(aiN?`Parts of this may be misread (hard to read on the device). Fix them, or tap Read with ${aiN}.`:(src.ink?'Parts of this may be misread. Fix them, or write a little larger and neater.':'Parts of this may be misread (hard to read on the device). Fix them, or try a closer, evenly lit photo.')):'Check it, edit anything, then Insert.'):'No text found.'+(aiN&&!useAI?` Try Read with ${aiN}.`:' Try a sharper, closer picture.'));ins.disabled=!html}
   catch(e){if(e&&e.name==='AbortError')return;prog(String(e&&e.message||e))}tx.classList.remove('busy')}
  el.addEventListener('click',async e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;
   if(k==='x'){ctl&&ctl.abort();o.close()}else if(k==='ai')run(true);
@@ -462,5 +493,5 @@ document.addEventListener('dragover',e=>{if(e.target.closest&&e.target.closest('
 document.addEventListener('drop',e=>{const t=e.target.closest&&e.target.closest('#wrEd,textarea[data-fmt]');if(!t)return;const f=imgFile(e.dataTransfer);if(!f)return;e.preventDefault();scan(targetOf(t),f)},true);
 /* editing a thread update: its sketches come along in the form's tray */
 {const _u=ACT.thrUpEdit;ACT.thrUpEdit=function(d){const r=_u.apply(this,arguments);const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u),f=document.querySelector('#sheet form[data-form=thrUpEdit]');if(f&&u){f._sk=(u.sk||[]).slice();tray(f)}return r}}
-window.inkPad=pad;window.inkScan=scan;window.inkTest={pack,unpack,snapShape,linesToHTML,marks,binarize,ocrCanvas,inkCanvas};
+window.inkPad=pad;window.inkScan=scan;window.inkTest={pack,unpack,snapShape,linesToHTML,marks,binarize,ocrCanvas,inkCanvas,conf:()=>OCRCONF};
 })();

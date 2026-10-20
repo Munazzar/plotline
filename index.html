@@ -3408,6 +3408,8 @@ html.sm-on .tabbar{display:none}
 <div class="sbar" aria-hidden="true"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tpill" id="tpill" role="timer"></div>
 <script>
+/* Back for Ink's full-screen pads and photo screens (ink.js) runs before every other popstate handler */
+addEventListener('popstate',e=>{if(window.__inkPop&&window.__inkPop(e))e.stopImmediatePropagation()});
 /* Dates are formatted hundreds of times per screen. toLocale*String builds a new formatter on every call, which is
    slow on phones, so keep one formatter per locale and options and reuse it. Same output. */
 (()=>{const C=new Map(),P=Date.prototype,wrap=(name,def)=>{const o=P[name];P[name]=function(loc,opt){if(isNaN(this))return o.call(this,loc,opt);
