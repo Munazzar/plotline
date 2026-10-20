@@ -3437,7 +3437,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.36.0';
+const APP_VER='1.36.1';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -5395,7 +5395,9 @@ async function localLLM(onP,cpuOnly){const m=llmOf(insSet().llm),gpu=useGPU()&&!
  Browsers on a laptop and phones whose WebView has WebGPU. The 2 GB model downloads once into this device's private
  storage (OPFS), then loads from there offline. In the Android app Gemma runs on the CPU with the native llama.cpp unless
  "Run Gemma on the GPU" is on, because phone GPU drivers vary. The LiteRT-LM library itself comes from the npm CDN. */
-const LRT_V='0.18.1',LRT_LIB=[`https://cdn.jsdelivr.net/npm/@litert-lm/core@${LRT_V}/+esm`,`https://esm.sh/@litert-lm/core@${LRT_V}`],LRT_WASM=[`https://cdn.jsdelivr.net/npm/@litert-lm/core@${LRT_V}/wasm/`,`https://unpkg.com/@litert-lm/core@${LRT_V}/wasm/`];
+/* pinned to 0.18.0: 0.18.1 ships a runtime that doesn't match its own JavaScript, so loading any model fails with
+   "m.delete is not a function" (checked in Chrome with WebGPU; 0.18.0 and the 0.19 nightlies load fine) */
+const LRT_V='0.18.0',LRT_LIB=[`https://cdn.jsdelivr.net/npm/@litert-lm/core@${LRT_V}/+esm`,`https://esm.sh/@litert-lm/core@${LRT_V}`],LRT_WASM=[`https://cdn.jsdelivr.net/npm/@litert-lm/core@${LRT_V}/wasm/`,`https://unpkg.com/@litert-lm/core@${LRT_V}/wasm/`];
 let LRT_OK=null,LRT=null,LRT_ID='',LRT_P=null;
 const lrtProbe=(async()=>{try{LRT_OK=!!(navigator.gpu&&await navigator.gpu.requestAdapter())}catch(e){LRT_OK=false}
  try{const s=insSet();if(!s.g4){s.g4=1;if(s.engine==='local'&&(LRT_OK||NAT_OK()))s.llm='gemma4-e2b';save()}}catch(e){}return LRT_OK})();
