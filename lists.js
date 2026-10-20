@@ -129,6 +129,12 @@ function vList(id){if(id&&id.startsWith('j~')){const[,doc,key]=id.split('~');set
  <section class="ls-list rv">${open.map(i=>itemRow(L,i)).join('')||(I.length?'<p class="small muted ls-none">Everything’s done 🎉</p>':'')}</section>
  ${done.length?`<div class="st-h rv ls-dh"><button class="link" data-act="lsDoneT" data-id="${L.id}">${showDone?'Hide':'Show'} done · ${done.length}</button>${r?'':`<button class="link" data-act="lsClear" data-id="${L.id}">Clear done</button>`}</div>${showDone?`<section class="ls-list rv">${done.map(i=>itemRow(L,i)).join('')}</section>`:''}`:''}`}
 VIEWS.lists=vLists;VIEWS.list=vList;
+/* 1.37 selection mode (index.html): remove many items of one list, or many lists, at once. Each returns an undo. */
+window.lsBulk={
+ items:(id,iids)=>{const L=LBY(id);if(!L||ro(L))return null;const I=iids.map(k=>L.items[k]).filter(i=>i&&!i.del);I.forEach(i=>{i.del=true;i.u=now()});touch(L);
+  return()=>{I.forEach(i=>{i.del=false;i.u=now()});touch(L);render(false)}},
+ lists:ids=>{const D=lists().filter(l=>ids.includes(l.id));S.lists=lists().filter(l=>!ids.includes(l.id));S.dead=S.dead||{};D.forEach(l=>{S.dead[l.id]=now()});save();
+  return()=>{D.forEach(l=>{delete S.dead[l.id];l.mu=l.u=now()});S.lists=[...D,...lists()];save();render(false)}}};
 
 /* ---------------- actions ---------------- */
 const IT=(d)=>{const L=LBY(d.id);return[L,L&&L.items[d.i]]};
