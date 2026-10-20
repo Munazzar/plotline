@@ -427,7 +427,7 @@ function listen(pre){asOpen();const el=$('#asIn'),b=$('#asv .as-mic');if(!el||!b
 
 /* ---------------- wake word (Android) ---------------- */
 function wakePause(p){if(!NA||!NA.wakePause)return;try{NA.wakePause(!!p)}catch(e){}}
-function wakeSync(){if(!NA||!NA.wake)return;const a=aset(),v=vset();try{NA.wake(JSON.stringify({on:!!(a.wake||a.bg),bg:!!a.bg,name:aname(),lang:v.lang||'',cloud:!!v.cloud,quiet:a.quiet!==false,cues:a.cues!==false}))}catch(e){}}
+function wakeSync(){if(!NA||!NA.wake)return;const a=aset(),v=vset();try{NA.wake(JSON.stringify({on:!!(a.wake||a.bg),bg:!!a.bg,name:aname(),lang:v.lang||'',cloud:!!v.cloud,quiet:a.quiet!==false,cues:a.cues!==false,cueStart:cueOf('start'),cueDone:cueOf('done')}))}catch(e){}}
 window.__assist=(k,a,b)=>{
  if(k==='tts'){if(a===SPK&&(b==='done'||b==='err')){SPK=null;spoke()}return}
  if(k==='voices'){window.dispatchEvent(new Event('plot-voices'));return}
@@ -439,14 +439,22 @@ window.__assist=(k,a,b)=>{
  if(k==='wstate'){AS.wst=a;if(a==='timeout'&&AS.nlis){AS.listening=AS.nlis=false;const i=$('#asIn');if(i)i.value=''}paintHead();return}};
 function takePending(){if(!NA||!NA.takePending)return;let p='';try{p=NA.takePending()||''}catch(e){}if(p)setTimeout(()=>run(p,{spoken:true}),350)}
 
-/* listening cues: a bright rising two-note chime when it starts listening and a falling one when it stops, loud enough
-   to hear across a room (the phone's own recognizer beeps are hushed). Android plays these natively for the wake word;
-   this one is for the mic button and the browser. */
+/* listening cues: a chime when it starts listening and another when it stops, loud enough to hear across a room (the
+   phone's own recognizer beeps are hushed). Pick each one in Settings › AI & voice. Android plays the same sounds natively
+   for the wake word (Chime.java has the same table); this one is for the mic button, conversation mode and the browser.
+   n: notes [Hz, start s]; h: overtone ratio; hv: overtone level; d: decay (s); w: main wave */
+const CUES={rise:{n:'Rising',f:[[784,0],[1175,.11]],h:2,hv:.18,d:.26},fall:{n:'Falling',f:[[1047,0],[659,.12]],h:2,hv:.18,d:.26},
+ bell:{n:'Bell',f:[[1319,0]],h:2.76,hv:.35,d:.7},glass:{n:'Glass',f:[[2093,0]],h:3,hv:.15,d:.5},
+ soft:{n:'Soft',f:[[523,0],[659,.14]],h:2,hv:.08,d:.4},pop:{n:'Pop',f:[[988,0]],h:2,hv:.1,d:.09},
+ tap:{n:'Double tap',f:[[880,0],[880,.11]],h:2,hv:.12,d:.08},marimba:{n:'Marimba up',f:[[523,0],[659,.09],[784,.18]],h:3.9,hv:.3,d:.22},
+ marimbad:{n:'Marimba down',f:[[784,0],[659,.09],[523,.18]],h:3.9,hv:.3,d:.22},low:{n:'Low hum',f:[[330,0]],h:2,hv:.25,d:.35},
+ chirp:{n:'Chirp',f:[[1568,0],[2093,.06]],h:2,hv:.05,d:.07},none:{n:'Silent (buzz only)',f:[]}};
+window.CUES=CUES;
+const cueOf=k=>{const a=aset(),id=k==='start'?(a.cueStart||'rise'):(a.cueDone||'fall');return CUES[id]?id:k==='start'?'rise':'fall'};
 let ACX=null;
-window.asCue=k=>{if(aset().cues===false)return;try{ACX=ACX||new(window.AudioContext||window.webkitAudioContext)();const c=ACX;if(c.state==='suspended')c.resume();const t0=c.currentTime+.02,g=c.createGain();g.connect(c.destination);g.gain.value=1;
- const notes=k==='start'?[[784,0],[1175,.11]]:[[1047,0],[659,.12]];
- notes.forEach(([f,d])=>{[1,2].forEach((h,j)=>{const o=c.createOscillator(),e=c.createGain();o.type=j?'triangle':'sine';o.frequency.value=f*h;o.connect(e);e.connect(g);const a=t0+d,v=j?.18:.75;e.gain.setValueAtTime(0,a);e.gain.linearRampToValueAtTime(v,a+.012);e.gain.exponentialRampToValueAtTime(.001,a+.26);o.start(a);o.stop(a+.3)})})}catch(e){}
- try{navigator.vibrate&&navigator.vibrate(k==='start'?[18]:[10,60,10])}catch(e){}};
+function cuePlay(id){const q=CUES[id];if(!q||!q.f.length)return;try{ACX=ACX||new(window.AudioContext||window.webkitAudioContext)();const c=ACX;if(c.state==='suspended')c.resume();const t0=c.currentTime+.02,g=c.createGain();g.connect(c.destination);g.gain.value=1;
+ q.f.forEach(([f,d])=>{[1,q.h].forEach((h,j)=>{const o=c.createOscillator(),e=c.createGain();o.type=j?'triangle':'sine';o.frequency.value=f*h;o.connect(e);e.connect(g);const a=t0+d,v=j?q.hv:.75,dd=j?q.d*.6:q.d;e.gain.setValueAtTime(0,a);e.gain.linearRampToValueAtTime(v,a+.008);e.gain.exponentialRampToValueAtTime(.001,a+dd);o.start(a);o.stop(a+dd+.04)})})}catch(e){}}
+window.asCue=k=>{if(aset().cues===false)return;cuePlay(cueOf(k));try{navigator.vibrate&&navigator.vibrate(k==='start'?[18]:[10,60,10])}catch(e){}};
 
 /* ---------------- the sheet ---------------- */
 function headSub(){if(AS.busy)return AS.prog||'Thinking…';if(AS.listening)return'Listening…';if(SPK)return'Speaking…';const a=aset();if(NA&&(a.wake||a.bg)){const w=AS.wst||'';return w==='err'?'Can’t hear the wake word right now':w==='perm'?'Allow the microphone for the wake word':w==='unavailable'?'The wake word needs online speech allowed':`Say “${wakeWord()}” anytime`}return'Talk or type'}
@@ -495,6 +503,7 @@ function assistHTML(){const a=aset(),st=nst(),v=vset();
  row('cues','Listening sounds','A clear chime when I start listening and another when I stop',a.cues!==false)+
  row('quiet','Quiet listening','Mutes the speech recognizer’s start and stop beeps (and other notification sounds for that moment) so it doesn’t chime while it listens',a.quiet!==false)+
  (a.bg&&st.overlay===false?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>Let ${esc(aname())} pop up</b><small>So “${esc(wakeWord())}” can open Plotline over other apps. Without it you’ll get a notification to tap instead.</small></div><button class="btn sm" data-act="asOverlay">Allow</button></div>`:''):`<p class="small muted">The “${esc(wakeWord())}” wake word works in the Android app. Here, tap the orb at the top to talk.</p>`}
+${a.cues!==false?`<div class="as-cues">${[['cueStart','When I start listening','start'],['cueDone','When I stop listening','done']].map(([k,l,w])=>`<div class="field"><label>${l}</label><div class="as-cue"><select data-assist="${k}">${Object.entries(CUES).map(([id,q])=>`<option value="${id}" ${cueOf(w)===id?'selected':''}>${q.n}</option>`).join('')}</select><button class="ibtn" data-act="asCueTry" data-w="${w}" aria-label="Play this sound">${ic('play')}</button></div></div>`).join('')}</div>`:''}
  <div class="field"><label>Read replies out loud</label><select data-assist="speak">${[['voice','When I talk to it'],['always','Always'],['never','Never']].map(([k,n])=>`<option value="${k}" ${a.speak===k?'selected':''}>${n}</option>`).join('')}</select></div>
  ${NA&&NA.openAssistSettings?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>${st.assistRole?`${esc(aname())} is your phone’s assistant`:`Use ${esc(aname())} as your phone’s assistant`}</b><small>${st.assistRole?'Press and hold the side button to talk to it from anywhere.':'Pick Plotline as the digital assistant app, then press and hold the side button to talk from anywhere. On Samsung: Settings › Advanced features › Side button › Press and hold › Digital assistant. This replaces Gemini on that button.'} You can also share text from any app to Plotline, or select text and tap Send to Plotline.</small></div><button class="btn sm" data-act="asRole">${st.assistRole?'Change':'Set up'}</button></div>`:''}
  ${row('btn','Assistant button in the top bar','The orb next to search and settings',a.btn)}
@@ -503,8 +512,8 @@ function assistHTML(){const a=aset(),st=nst(),v=vset();
 document.addEventListener('change',async e=>{const t=e.target;if(!t.dataset||!t.dataset.assist)return;const k=t.dataset.assist;let v=t.type==='checkbox'?t.checked:t.value;
  if(k==='name'){v=String(v).replace(/[^\p{L}\p{N} '\-]/gu,'').trim().slice(0,24)||'Plot';v=cap(v)}
  if((k==='wake'||k==='bg')&&v){const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud){const ok=await voiceConsent();if(!ok){t.checked=false;return}}if(!(await permAsk('mic','android.permission.RECORD_AUDIO'))){t.checked=false;return toast('Allow the microphone to use the wake word')}if(k==='bg')askNotif()}
- S.settings.assist={...aset(),[k]:v};save();wakeSync();render(false);if((k==='wake'||k==='bg')&&v)toast(`Say “${wakeWord()}” to try it`)});
-Object.assign(ACT,{asWakeOn:async()=>{const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud&&!(await voiceConsent()))return;if(!(await permAsk('mic','android.permission.RECORD_AUDIO')))return toast('Allow the microphone to use the wake word');S.settings.assist={...aset(),wake:true};save();wakeSync();paint();toast(`Say “${wakeWord()}” while Plotline is open`)},asOverlay:()=>{try{NA.openOverlaySettings()}catch(e){}},asRole:()=>{try{NA.openAssistSettings()}catch(e){}}});
+ S.settings.assist={...aset(),[k]:v};save();wakeSync();render(false);if(k==='cueStart'||k==='cueDone')cuePlay(v);if((k==='wake'||k==='bg')&&v)toast(`Say “${wakeWord()}” to try it`)});
+Object.assign(ACT,{asCueTry:d=>cuePlay(cueOf(d.w)),asWakeOn:async()=>{const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud&&!(await voiceConsent()))return;if(!(await permAsk('mic','android.permission.RECORD_AUDIO')))return toast('Allow the microphone to use the wake word');S.settings.assist={...aset(),wake:true};save();wakeSync();paint();toast(`Say “${wakeWord()}” while Plotline is open`)},asOverlay:()=>{try{NA.openOverlaySettings()}catch(e){}},asRole:()=>{try{NA.openAssistSettings()}catch(e){}}});
 
 /* ---------------- start ---------------- */
 function rerender(){try{render(false)}catch(e){}}
@@ -518,6 +527,8 @@ window.PLOT_ASSIST={run,asCtx,parse,parseWhen,localAsk,aname,ctx:asCtx,
  addTurn:(q,a)=>{AS.turns.push({q,a,chips:[],t:Date.now(),id:uid(),live:1});AS.turns=AS.turns.slice(-30);pushWidget2()}};
 
 const css=document.createElement('style');css.textContent=`
+.as-cues{display:grid;gap:0}.as-cue{display:flex;gap:8px;align-items:center}.as-cue select{flex:1;min-width:0}.as-cue .ibtn{flex:none}
+
 .as-av{position:relative;width:30px;height:30px;border-radius:50%;flex:none;display:block;background:radial-gradient(circle at 35% 30%,#fff7 0,transparent 42%),conic-gradient(from 200deg,var(--accent),var(--c-learning),var(--c-career),var(--c-health),var(--accent));box-shadow:0 0 0 1px var(--line-2),0 6px 18px -6px var(--accent)}
 .as-av i{position:absolute;inset:7px;border-radius:50%;background:var(--bg-2);opacity:.86;transition:transform .3s var(--spring)}
 .as-btn .as-av{width:24px;height:24px}.as-btn .as-av i{inset:6px}
