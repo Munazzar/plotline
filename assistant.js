@@ -472,7 +472,7 @@ function asClose(){AS.open=false;if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true)
 function paintHead(){const el=$('#asv');if(!el)return;el.querySelector('.as-nm').textContent=aname();el.querySelector('.as-st').textContent=headSub();el.classList.toggle('lis',AS.listening);el.classList.toggle('spk',!!SPK);el.classList.toggle('busy',AS.busy)}
 function status(t){AS.prog=t||'';paintHead()}
 /* answers read like a chat: "* item" / "- item" lines become a list, **bold** stays bold, paragraphs stay apart */
-function ansHTML(a){const L=String(a||'').replace(/\r/g,'').split('\n');let o='',ul=false;const inl=x=>esc(x).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+function ansHTML(a){if(window.AIX&&AIX.md)return`<div class="ai-md">${AIX.md(a)}</div>`;const L=String(a||'').replace(/\r/g,'').split('\n');let o='',ul=false;const inl=x=>esc(x).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
  for(const raw of L){const l=raw.trim();const m=/^(?:[*\-•]|\d+[.)])\s+(.*)$/.exec(l);if(m){if(!ul){o+='<ul>';ul=true}o+=`<li>${inl(m[1])}</li>`;continue}if(ul){o+='</ul>';ul=false}if(l)o+=`<p>${inl(l)}</p>`}
  if(ul)o+='</ul>';return o||'<p></p>'}
 function chipHTML(t,c,i){return c.undo?`<button class="btn sm ghost" data-act="asUndo" data-id="${t.id}">Undo</button>`:`<button class="btn sm ghost" data-act="asChip" data-id="${t.id}" data-i="${i}">${esc(c.t)}</button>`}

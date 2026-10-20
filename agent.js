@@ -27,7 +27,7 @@ const notionKey=()=>{try{return localStorage.getItem(NOTK)||''}catch(e){return''
 
 /* ---------------- connections ---------------- */
 const SC={gcal:'https://www.googleapis.com/auth/calendar.events',gmail:'https://www.googleapis.com/auth/gmail.readonly',gdrive:'https://www.googleapis.com/auth/drive.metadata.readonly'};
-const CN={plot:['Plotline','Your goals, habits, journal, threads and lists'],gcal:['Google Calendar','Your events, and adding new ones'],gmail:['Gmail','Recent email: sender, subject and preview. Read only'],gdrive:['Google Drive','Names and dates of your recent files'],notion:['Notion','Pages you shared with your integration']};
+const CN={plot:['Plotline','Your goals, habits, journal, threads and lists'],gcal:['Google Calendar','Your events, and adding new ones'],gmail:['Gmail','Searches and reads your email when a task needs it. Read only'],gdrive:['Google Drive','Finds files by name'],notion:['Notion','Pages you shared with your integration']};
 window.connScopes=()=>{const c=cset();return Object.keys(SC).filter(k=>c[k]).map(k=>' '+SC[k]).join('')};
 const connOn=k=>k==='plot'||(k==='notion'?!!(cset().notion&&notionKey()):!!cset()[k]);
 async function googleConsent(){tokDrop();scopeSync();if(NATIVE&&NATIVE.googleToken){S.settings.sync.native=true;return nativeAuth(true)}return webAuth('consent')}
@@ -38,17 +38,38 @@ async function gapi(url,opt={}){let t=tokGet();
  if(r.status===403){let m='';try{m=(await r.json()).error.message}catch(e){}throw new Error(/not been used|disabled/i.test(m)?'This Google API isn’t turned on for Plotline’s Google project yet':'Plotline needs permission for this. Turn the connection off and on again')}
  if(!r.ok)throw new Error('Google said '+r.status);return r.json()}
 const iso=d=>new Date(d).toISOString();
-async function calEvents(days){const a=new Date();a.setHours(0,0,0,0);const j=await gapi(`https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=60&timeMin=${iso(a)}&timeMax=${iso(a.getTime()+days*864e5)}`);
- return(j.items||[]).filter(e=>e.status!=='cancelled').map(e=>({title:e.summary||'(no title)',start:e.start.dateTime||e.start.date,all:!e.start.dateTime,where:e.location||''}))}
 async function calAdd(x){let body;if(x.time){const st=new Date(x.date+'T'+x.time);body={summary:x.title,start:{dateTime:iso(st)},end:{dateTime:iso(st.getTime()+(x.dur||60)*6e4)}}}
  else{const e=new Date(x.date+'T12:00');e.setDate(e.getDate()+1);body={summary:x.title,start:{date:x.date},end:{date:ymd(e)}}}
  return gapi('https://www.googleapis.com/calendar/v3/calendars/primary/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}
-async function mailRecent(q,n){const j=await gapi(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${n}&q=${encodeURIComponent(q)}`);const out=[];
- /* the messages' headers are fetched side by side, so 25 emails take about as long as one */
+/* ---------------- lookups the AI asks for ----------------
+   The agent doesn't guess what to read from keywords: the AI is told which lookups exist, writes its own Gmail search,
+   date range or search words, reads what comes back, may look again (say, open the two emails that matter), then answers. */
+const b64=s=>{try{const b=atob(String(s||'').replace(/-/g,'+').replace(/_/g,'/'));return new TextDecoder().decode(Uint8Array.from(b,c=>c.charCodeAt(0)))}catch(e){return''}};
+const unhtml=h=>String(h||'').replace(/<(style|script)[\s\S]*?<\/\1>/gi,'').replace(/<br\s*\/?>|<\/(p|div|tr|li|h\d)>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/[ \t]+/g,' ').replace(/\n\s*\n+/g,'\n').trim();
+async function mailSearch(q,n){const j=await gapi(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${n}&q=${encodeURIComponent(q||'newer_than:2d')}`);const out=[];
  await Promise.all((j.messages||[]).map(async m0=>{try{const m=await gapi(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m0.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject`);const h=k=>(((m.payload||{}).headers||[]).find(x=>x.name===k)||{}).value||'';
-  out.push({from:h('From').replace(/\s*<[^>]*>/,'').replace(/"/g,'').trim(),subject:h('Subject'),t:+m.internalDate,snippet:(m.snippet||'').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&'),unread:(m.labelIds||[]).includes('UNREAD')})}catch(e){}}));return out.sort((a,b)=>b.t-a.t)}
-async function driveRecent(n){const j=await gapi(`https://www.googleapis.com/drive/v3/files?pageSize=${n}&orderBy=modifiedTime%20desc&q=${encodeURIComponent("trashed=false and mimeType!='application/vnd.google-apps.folder'")}&fields=files(name,mimeType,modifiedTime)`);
- return(j.files||[]).map(f=>({name:f.name,kind:(f.mimeType||'').split(/[./]/).pop().replace('vnd-google-apps-',''),t:Date.parse(f.modifiedTime)}))}
+  out.push({id:m0.id,from:h('From').replace(/\s*<[^>]*>/,'').replace(/"/g,'').trim(),subject:h('Subject'),t:+m.internalDate,unread:(m.labelIds||[]).includes('UNREAD'),snippet:unhtml(m.snippet||'')})}catch(e){}}));return out.sort((a,b)=>b.t-a.t)}
+async function mailRead(id){const m=await gapi(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(id)}?format=full`);const P=m.payload||{},h=k=>((P.headers||[]).find(x=>x.name===k)||{}).value||'';
+ let plain='',html='';const walk=p=>{if(!p)return;if(p.mimeType==='text/plain'&&p.body&&p.body.data&&!plain)plain=b64(p.body.data);else if(p.mimeType==='text/html'&&p.body&&p.body.data&&!html)html=b64(p.body.data);(p.parts||[]).forEach(walk)};walk(P);
+ return{id,from:h('From').replace(/\s*<[^>]*>/,'').replace(/"/g,'').trim(),to:h('To'),subject:h('Subject'),t:+m.internalDate,text:(plain||unhtml(html)||m.snippet||'').replace(/\n{3,}/g,'\n\n').trim()}}
+async function calRange(from,to,q){const a=/^\d{4}-\d{2}-\d{2}$/.test(from||'')?new Date(from+'T00:00'):new Date(new Date().setHours(0,0,0,0)),b=/^\d{4}-\d{2}-\d{2}$/.test(to||'')?new Date(to+'T23:59:59'):new Date(a.getTime()+7*864e5);
+ const j=await gapi(`https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=50&timeMin=${iso(a)}&timeMax=${iso(b)}${q?'&q='+encodeURIComponent(q):''}`);
+ return(j.items||[]).filter(e=>e.status!=='cancelled').map(e=>({title:e.summary||'(no title)',start:e.start.dateTime||e.start.date,all:!e.start.dateTime,where:e.location||'',who:(e.attendees||[]).slice(0,6).map(x=>x.displayName||x.email).join(', ')}))}
+async function driveSearch(q){const w=String(q||'').replace(/'/g,"\\'").trim();const f="trashed=false and mimeType!='application/vnd.google-apps.folder'"+(w?` and name contains '${w}'`:'');
+ const j=await gapi(`https://www.googleapis.com/drive/v3/files?pageSize=20&orderBy=modifiedTime%20desc&q=${encodeURIComponent(f)}&fields=files(name,mimeType,modifiedTime)`);return(j.files||[]).map(x=>({name:x.name,kind:(x.mimeType||'').split(/[./]/).pop().replace('vnd-google-apps-',''),t:Date.parse(x.modifiedTime)}))}
+async function notionSearch(q){const j=await nfetch('search',{query:q||'',page_size:8,sort:{direction:'descending',timestamp:'last_edited_time'},filter:{property:'object',value:'page'}});const out=[];
+ for(const p of(j.results||[]).slice(0,8)){const o={title:ntitle(p),t:Date.parse(p.last_edited_time),text:''};if(out.length<3){try{const b=await nfetch(`blocks/${p.id}/children?page_size=30`);o.text=(b.results||[]).map(x=>((x[x.type]||{}).rich_text||[]).map(r=>r.plain_text).join('')).filter(Boolean).join(' · ').slice(0,900)}catch(e){}}out.push(o)}return out}
+const TOOLS={gmail:[['gmail_search','{"tool":"gmail_search","query":"<Gmail search, e.g. is:unread newer_than:1d, from:amazon, subject:invoice>","max":20}','find emails; returns id, sender, subject, date, unread, preview'],['gmail_read','{"tool":"gmail_read","id":"<id from gmail_search>"}','the full text of one email']],
+ gcal:[['calendar','{"tool":"calendar","from":"YYYY-MM-DD","to":"YYYY-MM-DD","query":"<optional words>"}','events between two dates']],
+ gdrive:[['drive_search','{"tool":"drive_search","query":"<words in the file name, or empty for recent>"}','files by name, newest first']],
+ notion:[['notion_search','{"tool":"notion_search","query":"<words>"}','Notion pages and their text']]};
+async function lookup(x,raw,small){const k=x.tool,n=Math.max(1,Math.min(+x.max||15,small?15:30));
+ if(k==='gmail_search'){const M=await mailSearch(x.query,n);raw.mail.push(...M.filter(m=>!raw.mail.some(y=>y.id===m.id)));return`gmail_search "${x.query||''}": ${M.length} email${M.length===1?'':'s'}\n`+M.map(m=>`- id ${m.id} · ${dd(m.t)} ${tm(m.t)} · ${m.unread?'UNREAD · ':''}from ${tr(m.from,40)} · ${tr(m.subject,100)} · ${tr(m.snippet,small?90:160)}`).join('\n')}
+ if(k==='gmail_read'){const m=await mailRead(x.id);return`gmail_read ${x.id}: from ${m.from} · ${dd(m.t)} ${tm(m.t)} · ${m.subject}\n${tr(m.text,small?1200:3500)}`}
+ if(k==='calendar'){const E=await calRange(x.from,x.to,x.query);raw.cal.push(...E);return`calendar ${x.from||'today'} to ${x.to||'+7 days'}${x.query?' "'+x.query+'"':''}: ${E.length} event${E.length===1?'':'s'}\n`+E.map(e=>`- ${dd(e.start)}${e.all?' all day':' '+tm(e.start)} ${e.title}${e.where?' @ '+tr(e.where,50):''}${e.who?' with '+tr(e.who,80):''}`).join('\n')}
+ if(k==='drive_search'){const F=await driveSearch(x.query);return`drive_search "${x.query||''}": ${F.length} file${F.length===1?'':'s'}\n`+F.map(f=>`- ${dd(f.t)} ${f.name} (${f.kind})`).join('\n')}
+ if(k==='notion_search'){const P=await notionSearch(x.query);return`notion_search "${x.query||''}": ${P.length} page${P.length===1?'':'s'}\n`+P.map(p=>`- ${dd(p.t)} ${p.title}${p.text?': '+tr(p.text,small?300:700):''}`).join('\n')}
+ return`${k}: not available`}
 const HTTPCB={};window.__http=(id,st,b)=>{const f=HTTPCB[id];if(f)f(st,b)};
 function nfetch(path,body){return new Promise((res,rej)=>{const key=notionKey();if(!key)return rej(new Error('Add your Notion token in Agent › Connections'));
  const url='https://api.notion.com/v1/'+path,headers={Authorization:'Bearer '+key,'Notion-Version':'2022-06-28','Content-Type':'application/json'},done=(st,txt)=>{let j=null;try{j=JSON.parse(txt)}catch(e){}st>=200&&st<300&&j?res(j):rej(new Error('Notion said '+(st||'no answer')+((j&&j.message)?': '+j.message:'')))};
@@ -56,10 +77,6 @@ function nfetch(path,body){return new Promise((res,rej)=>{const key=notionKey();
  const px=cset().proxy.trim();if(!px)return rej(new Error('Notion works in the Android app. In a browser it needs a proxy address (Agent › Connections)'));
  fetch(px.replace(/\/+$/,'')+'/'+url,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined}).then(async r=>done(r.status,await r.text())).catch(e=>rej(new Error('Couldn’t reach your Notion proxy')))})}
 const ntitle=p=>{const pr=p.properties||{};for(const k in pr){const v=pr[k];if(v&&v.type==='title')return(v.title||[]).map(t=>t.plain_text).join('')||'Untitled'}return'Untitled'};
-async function notionRecent(n){const j=await nfetch('search',{page_size:n,sort:{direction:'descending',timestamp:'last_edited_time'},filter:{property:'object',value:'page'}});
- const out=[];for(const p of(j.results||[]).slice(0,n)){const o={title:ntitle(p),t:Date.parse(p.last_edited_time),text:''};
-  if(out.length<4){try{const b=await nfetch(`blocks/${p.id}/children?page_size=25`);o.text=(b.results||[]).map(x=>((x[x.type]||{}).rich_text||[]).map(r=>r.plain_text).join('')).filter(Boolean).join(' · ').slice(0,400)}catch(e){}}out.push(o)}return out}
-
 /* ---------------- what the agent reads ---------------- */
 const tm=t=>new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
 const dd=t=>{const d=new Date(t),k=dnum(ymd(d))-dnum(ymd());return k===0?'today':k===1?'tomorrow':k===-1?'yesterday':d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})};
@@ -72,22 +89,11 @@ function plotLines(big){const td=ymd(),L=[];const days=S.days.filter(x=>x.date>=
  const ls=(S.lists||[]).slice(0,big?10:5);if(ls.length)L.push('Lists: '+ls.map(l=>l.title).join('; '));
  const je=S.entries.filter(e=>e.type==='note'&&!e.private&&now()-e.t<3*864e5).sort((a,b)=>b.t-a.t).slice(0,3);if(je.length)L.push('Recent journal: '+je.map(e=>`${dd(e.t)}: ${tr(e.text||e.title,big?240:120)}`).join(' | '));
  return L}
-/* which email to read: the task's own words pick unread / today / this week, otherwise the last two days */
-function mailQuery(p){p=String(p||'').toLowerCase();const q=[];if(/\b(unread|unopened|new|haven.?t (read|opened))\b/.test(p))q.push('is:unread');
- q.push(/\btoday\b/.test(p)?'newer_than:1d':/\b(this week|7 days|week)\b/.test(p)?'newer_than:7d':/\byesterday\b/.test(p)?'newer_than:2d':'newer_than:2d');
- if(!/\b(promo|newsletter|all)\b/.test(p))q.push('-category:promotions -category:social');return q.join(' ')}
-async function gather(src,big,prompt){const out=[],errs=[],raw={};const sec=(t,L)=>{if(L&&L.length)out.push(t+'\n'+L.map(x=>'- '+x).join('\n'))};const n=big?20:10;
- const jobs={plot:async()=>sec('PLOTLINE',plotLines(big)),
-  gcal:async()=>{const E=await calEvents(big?14:7);raw.cal=E.slice(0,25);sec('CALENDAR (next '+(big?14:7)+' days)',E.length?E.map(e=>`${dd(e.start)}${e.all?' all day':' '+tm(e.start)} ${e.title}${e.where?' @ '+tr(e.where,40):''}`):['No events'])},
-  gmail:async()=>{const M=await mailRecent(mailQuery(prompt),big?25:15);raw.mail=M.map(m=>({from:m.from,subject:m.subject,t:m.t,unread:m.unread,snippet:tr(m.snippet,140)}));sec('EMAIL (last 2 days)',M.length?M.map(m=>`${m.unread?'[unread] ':''}${dd(m.t)} from ${tr(m.from,40)}: ${tr(m.subject,90)} · ${tr(m.snippet,big?200:110)}`):['No new email'])},
-  gdrive:async()=>{const F=await driveRecent(n);sec('DRIVE (recently changed files)',F.map(f=>`${dd(f.t)} ${f.name} (${f.kind})`))},
-  notion:async()=>{const P=await notionRecent(big?10:6);sec('NOTION (recently edited pages)',P.map(p=>`${dd(p.t)} ${p.title}${p.text?': '+tr(p.text,big?300:150):''}`))}};
- for(const k of src){if(!jobs[k]||!connOn(k))continue;step('Reading '+CN[k][0]+'…');try{await jobs[k]()}catch(e){errs.push(`${CN[k][0]}: ${e.message||e}`)}}
- return{text:out.join('\n\n'),errs,raw}}
 
 /* ---------------- one run ---------------- */
 const SUGT=['today','reminder','journal','list_add','thread_update','new_thread','calendar_event','goal','habit'];
 const SCHEMA={type:'object',properties:{summary:{type:'string'},suggestions:{type:'array',maxItems:6,items:{type:'object',properties:{type:{enum:SUGT},text:{type:'string'},target:{type:'string'},date:{type:'string'},time:{type:'string'}},required:['type','text'],additionalProperties:false}}},required:['summary','suggestions'],additionalProperties:false};
+const SCHEMA_STEP=names=>({type:'object',properties:{lookups:{type:'array',maxItems:4,items:{type:'object',properties:{tool:{enum:names},query:{type:'string'},max:{type:'integer'},id:{type:'string'},from:{type:'string'},to:{type:'string'}},required:['tool'],additionalProperties:false}},summary:{type:'string'},suggestions:SCHEMA.properties.suggestions},required:['lookups','summary','suggestions'],additionalProperties:false});
 async function llm1(msgs,opts){const e=planEngine();let out='';const on=x=>{out+=x};const onP=x=>{if(x)step(x)};
  if(e==='api')await apiChat(msgs,on,null,opts);else if(e==='native')await natChat(msgs,on,onP,()=>{out=''},opts);else if(e==='wasm')await localChat(msgs,on,onP,0,()=>{out=''},false,opts);else throw new Error('Pick an AI for the agent in Settings › AI & voice');
  return out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').trim()}
@@ -107,15 +113,36 @@ let BUSY=null,AGDL='',AGERR='',AGQ='';
 async function runTask(t,manual){if(BUSY)return manual&&toast('The agent is busy with “'+BUSY+'”');if(!aiPicked()){if(manual)toast('Pick an AI first: Settings › AI & voice');return}
  if(manual&&!aiOk()){if(window.AIX){toast('Setting up the AI first. This happens once.');await AIX.setup({quiet:true});if(!aiOk())return}else aiMark()}
  BUSY=t.title;AGERR='';STEP='Starting…';paintSoon();const A=ag(),e=planEngine(),big=e==='api'||!IS_PHONE;
- try{const g=await gather(t.src&&t.src.length?t.src:['plot'],big,t.prompt);const d=new Date();
-  const sys=`You are ${String((S.settings.assist||{}).name||'Plot').slice(0,24)}, the user's personal agent inside the Plotline app. It is ${d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})}, ${tm(d)}. Do the TASK using only the DATA. Reply with one JSON object: "summary" is your answer to the user. Answer the task directly and completely: if it asks to list, show or find things, list every matching item from the data on its own line starting with "- " (for email: sender, subject and a few words of what it says; for events: day, time and title); otherwise a few clear sentences on what matters and why. No headings, no tables; "suggestions" are 0 to 6 concrete things the app can do for them, grounded in the data: today (a goal for today; text is the goal), reminder (text, date YYYY-MM-DD, time HH:MM), journal (text to save), list_add (target is a list name, text the items), thread_update (target is a thread name, text the update), new_thread (text is its title), calendar_event (text is the title, date, time), goal (a new goal to work towards), habit (something to do regularly). Don't suggest things that are already in the plan. Never invent facts. ${window.AIX?AIX.safety():''}`;
-  const msgs=[{role:'system',content:sys},{role:'user',content:`TASK: ${t.prompt}\n\nDATA\n${g.text||'(nothing to read)'}${g.errs.length?'\n\nCouldn’t read: '+g.errs.join('; '):''}`}];
-  step('Thinking…');const raw=await llm(msgs,{schema:SCHEMA,max_tokens:big?1200:900,temperature:.2,reading:'Thinking…'});let j=parseJSON(raw);
-  /* not JSON: keep the words as the summary, and pick up any "ACTION: type | text" lines */
-  if(!j){const P=window.AIX?AIX.parseActs(raw):{clean:raw,acts:[]},map={goal:'goal',habit:'habit',routine:'habit',list:'list_add',journal:'journal',reminder:'reminder',today:'today',thread:'new_thread'};j={summary:P.clean.replace(/[{}"\[\]]/g,'').slice(0,700),suggestions:P.acts.map(a=>({type:map[a.k],text:a.k==='list'?a.x||a.t:a.t,target:a.k==='list'?a.t:''}))}}
+ try{const src=t.src&&t.src.length?t.src:['plot'],small=!big,d=new Date(),raw={mail:[],cal:[]},errs=[];
+  const T=src.filter(k=>TOOLS[k]&&connOn(k)).flatMap(k=>TOOLS[k]),names=T.map(x=>x[0]);
+  step('Reading your plan…');const plot=plotLines(big).map(x=>'- '+x).join('\n');
+  const who=String((S.settings.assist||{}).name||'Plot').slice(0,24),today=d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const SUGS=`"suggestions" are 0 to 6 things the app can do for them, grounded in what you found: today (a goal for today; text is the goal), reminder (text, date YYYY-MM-DD, time HH:MM), journal (text to save), list_add (target is a list name, text the items), thread_update (target is a thread name, text the update), new_thread (text is its title), calendar_event (text is the title, date, time), goal (a new goal), habit (something to do regularly). Don't suggest what's already in the plan.`;
+  const ANS=`"summary" is your answer, written freely in Markdown on an open canvas: build whatever layout fits the request best, using ## headings, - bullet lists, 1. numbered lists, **bold**, and tables (| col | col | with a |---| row) when comparing or listing things with several details. Answer the task fully and specifically, with the real names, subjects, dates and numbers from what you found. If you list things, list every one. Don't pad, and never invent anything that isn't in the data.
+How a great answer reads: open with one bold line that gives the takeaway (e.g. "**5 unread today, 2 need a reply.**"). Then the details, grouped so they're easy to scan (by what needs action, by person, by day: whatever fits), with what's urgent or important called out in bold. End with a short "## What I'd do" list of 1 to 3 concrete next steps, and offer those same steps as suggestions so they're one tap away. Sound like a sharp, friendly assistant, not a report.`;
+  const base=`You are ${who}, the user's personal agent inside the Plotline app. Today is ${today}, ${tm(d)}. ${window.AIX?AIX.safety():''}`;
+  let found='',j=null;
+  /* up to three rounds of lookups, each one chosen by the AI from what it has seen so far */
+  for(let round=0;T.length&&round<3;round++){
+   const left=3-round;
+   const sys=`${base}\nYou can look things up before you answer. Lookups available:\n${T.map(x=>`- ${x[0]}: ${x[2]}. Ask with ${x[1]}`).join('\n')}\nReply with one JSON object. To look things up, put up to 4 lookups in "lookups" and leave "summary" empty and "suggestions" empty; write the queries yourself from the task (Gmail search syntax works in gmail_search). You have ${left} lookup round${left===1?'':'s'} left. When you have what you need (or nothing more would help), put [] in "lookups" and answer: ${ANS} ${SUGS}`;
+   const user=`TASK: ${t.prompt}\n\nPLOTLINE (their plan)\n${plot||'(empty)'}\n\n${found?'WHAT YOU LOOKED UP SO FAR\n'+found:'You have not looked anything up yet.'}`;
+   step(round?'Looking further…':'Deciding what to look up…');
+   const r=parseJSON(await llm([{role:'system',content:sys},{role:'user',content:user}],{schema:SCHEMA_STEP(names),max_tokens:big?1400:900,temperature:.2,reading:'Thinking…'}))||{};
+   const L=(Array.isArray(r.lookups)?r.lookups:[]).filter(x=>x&&names.includes(x.tool)).slice(0,4);
+   if(!L.length){if(String(r.summary||'').trim())j=r;break}
+   for(const x of L){step(`Looking up: ${x.tool.replace('_',' ')}${x.query?' “'+tr(x.query,40)+'”':''}…`);try{found+=(await lookup(x,raw,small))+'\n\n'}catch(e){errs.push(`${x.tool}: ${e.message||e}`);found+=`${x.tool} failed: ${e.message||e}\n\n`}}
+   const cap=big?16000:6000;if(found.length>cap)found=found.slice(0,cap)+'\n(cut short)'}
+  if(!j){step('Writing the answer…');
+   const sys=`${base}\nDo the TASK using the data below. Reply with one JSON object. ${ANS} ${SUGS}`;
+   const msgs=[{role:'system',content:sys},{role:'user',content:`TASK: ${t.prompt}\n\nPLOTLINE (their plan)\n${plot||'(empty)'}${found?'\n\nWHAT YOU LOOKED UP\n'+found:''}${errs.length?'\n\nCouldn’t read: '+errs.join('; '):''}`}];
+   const raw2=await llm(msgs,{schema:SCHEMA,max_tokens:big?1400:900,temperature:.2,reading:'Thinking…'});j=parseJSON(raw2);
+   /* not JSON: keep the words as the answer, and pick up any "ACTION: type | text" lines */
+   if(!j){const P=window.AIX?AIX.parseActs(raw2,6):{clean:raw2,acts:[]},map={goal:'goal',habit:'habit',routine:'habit',list:'list_add',journal:'journal',reminder:'reminder',today:'today',thread:'new_thread'};j={summary:P.clean.replace(/^\s*\{?\s*"?summary"?\s*:\s*"?/,'').replace(/"?\s*\}?\s*$/,'').slice(0,4000),suggestions:P.acts.map(a=>({type:map[a.k],text:a.k==='list'?a.x||a.t:a.t,target:a.k==='list'?a.t:''}))}}}
+  const g={errs,raw};
   if(!String(j.summary||'').trim()&&!(j.suggestions||[]).length)throw new Error('The AI gave an empty answer. Try again, or pick another model in Settings › AI & voice.');
   const sugs=(Array.isArray(j.suggestions)?j.suggestions:[]).filter(x=>x&&SUGT.includes(x.type)&&String(x.text||'').trim()).slice(0,6).map(x=>({id:uid(),type:x.type,text:tr(x.text,200),target:tr(x.target||'',60),date:/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')?x.date:'',time:/^\d{2}:\d{2}$/.test(x.time||'')?x.time:'',st:''}));
-  const item={id:uid(),t:now(),task:t.id,title:t.title,summary:String(j.summary||'').trim().slice(0,3000),data:wantsList(t.prompt)?g.raw:{},sugs,errs:g.errs,seen:false};
+  const item={id:uid(),t:now(),task:t.id,title:t.title,summary:String(j.summary||'').trim().slice(0,4000),data:g.raw,sugs,errs:g.errs,seen:false};
   if(t.mode==='do')for(const s of sugs)if(s.type!=='calendar_event'){try{await apply(s,true)}catch(e){}}
   A.inbox.unshift(item);A.inbox=A.inbox.slice(0,40);t.last=now();t.err='';save();
   if(!manual&&document.hidden&&typeof notify==='function')notify('Plot · '+t.title,tr(item.summary,140));
@@ -168,7 +195,7 @@ window.agentFromVoice=x=>{const s=String(x||'');let when='daily',at='08:00',dow=
  const W=window.PlotDo&&PlotDo.parseWhen(s);if(W&&W.time&&/\d|noon|midnight/.test(l))at=W.time;
  if(/every\s+evening|each\s+evening|every\s+night/.test(l))at=W&&W.time&&/\d/.test(l)?at:'19:00';else if(/every\s+afternoon/.test(l))at=/\d/.test(l)?at:'14:00';else if(/every\s+morning|each\s+morning/.test(l))at=/\d/.test(l)?at:'08:00';
  if(/every\s+hour/.test(l))when='hourly';else if(/every\s+\d+\s+hours/.test(l))when='3h';else if(/every\s+weekday/.test(l))when='weekdays';else{const m=/every\s+(sun|mon|tues|wednes|thurs|fri|satur)day/.exec(l);if(m){when='weekly';dow=['sun','mon','tues','wednes','thurs','fri','satur'].indexOf(m[1])}else if(/every\s+week/.test(l)){when='weekly';dow=1}else if(/^(keep an eye on|watch|monitor)/.test(l))when='3h'}
- const src=['plot'];if(/calendar|meeting|event|schedule/.test(l))src.push('gcal');if(/e-?mail|inbox|gmail|message/.test(l))src.push('gmail');if(/drive|file|doc/.test(l))src.push('gdrive');if(/notion/.test(l))src.push('notion');
+ const src=['plot',...['gcal','gmail','gdrive','notion'].filter(connOn)];
  const title=tr(s.replace(/^(?:every|each)\s+\S+(?:\s+at\s+\S+(?:\s*[ap]m)?)?\s*,?\s*/i,'').replace(/^(?:keep an eye on|watch|monitor)\s+/i,'Watch ').replace(/^./,c=>c.toUpperCase()),50);
  const t=addTask({title,prompt:s,when,at,dow,src});const miss=src.filter(k=>k!=='plot'&&!connOn(k)).map(k=>CN[k][0]);
  return{say:`Okay, I'll do that ${whenTxt(t).replace(/^Every/,'every').replace(/^Weekdays/,'on weekdays')}.${miss.length?` Connect ${miss.join(' and ')} on the Agent page so I can read ${miss.length>1?'them':'it'}.`:''}`,undo:()=>{ag().tasks=ag().tasks.filter(x=>x.id!==t.id);save()},chips:[['Open agent','agent']]}};
@@ -177,14 +204,14 @@ window.agentFromVoice=x=>{const s=String(x||'');let when='daily',at='08:00',dow=
 const SUGN={today:'Goal for today',reminder:'Reminder',journal:'Journal',list_add:'Add to list',thread_update:'Thread update',new_thread:'New thread',calendar_event:'Calendar event',goal:'New goal',habit:'New habit'};
 const sugLine=s=>`${(s.type==='list_add'||s.type==='thread_update')&&s.target?`<b>${esc(s.target)}</b>: `:''}${esc(s.text)}${s.date||s.time?` <span class="muted">· ${esc(s.date?dd(s.date+'T12:00'):'')}${s.time?' '+esc(fmtTime(s.time)):''}</span>`:''}`;
 /* a task that asks to list or show email or events also gets the actual items under the answer, straight from the data */
-const wantsList=p=>/\b(list|show|which|what|unread|unopened|summari[sz]e|any)\b/i.test(String(p||''));
 function dataHTML(d,sum){if(!d)return'';let o='';const op=/^\s*[-*•]\s/m.test(sum||'')?'':' open';
- if(d.mail&&d.mail.length)o+=`<details class="ag-d"${op}><summary>${d.mail.length} email${d.mail.length===1?'':'s'}</summary><ul>${d.mail.map(m=>`<li${m.unread?' class="un"':''}><b>${esc(m.from||'(unknown)')}</b><span>${esc(m.subject||'(no subject)')}</span><small>${esc(dd(m.t))} · ${esc(tm(m.t))}${m.snippet?' · '+esc(m.snippet):''}</small></li>`).join('')}</ul></details>`;
- if(d.cal&&d.cal.length)o+=`<details class="ag-d"><summary>${d.cal.length} event${d.cal.length===1?'':'s'}</summary><ul>${d.cal.map(e=>`<li><b>${esc(e.title)}</b><small>${esc(dd(e.start))}${e.all?' · all day':' · '+esc(tm(e.start))}${e.where?' · '+esc(e.where):''}</small></li>`).join('')}</ul></details>`;
+ if(d.mail&&d.mail.length)o+=`<details class="ag-d"${op}><summary>Looked at ${d.mail.length} email${d.mail.length===1?'':'s'}</summary><ul>${d.mail.map(m=>`<li${m.unread?' class="un"':''}><b>${esc(m.from||'(unknown)')}</b><span>${esc(m.subject||'(no subject)')}</span><small>${esc(dd(m.t))} · ${esc(tm(m.t))}${m.snippet?' · '+esc(m.snippet):''}</small></li>`).join('')}</ul></details>`;
+ if(d.cal&&d.cal.length)o+=`<details class="ag-d"><summary>Looked at ${d.cal.length} event${d.cal.length===1?'':'s'}</summary><ul>${d.cal.map(e=>`<li><b>${esc(e.title)}</b><small>${esc(dd(e.start))}${e.all?' · all day':' · '+esc(tm(e.start))}${e.where?' · '+esc(e.where):''}</small></li>`).join('')}</ul></details>`;
  return o}
 const sumHTML=t=>{const L=String(t||'').split('\n');let o='',ul=false;for(const r of L){const l=r.trim(),m=/^(?:[-*•]|\d+[.)])\s+(.*)$/.exec(l);if(m){if(!ul){o+='<ul class="ag-ul">';ul=true}o+=`<li>${esc(m[1]).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</li>`;continue}if(ul){o+='</ul>';ul=false}if(l)o+=`<p>${esc(l).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</p>`}return o+(ul?'</ul>':'')};
+const sumHTML2=t=>window.AIX&&AIX.md?`<div class="ai-md">${AIX.md(t)}</div>`:sumHTML(t);
 function inboxHTML(){const I=ag().inbox;if(!I.length)return'';
- return`<section class="rv ag-inbox"><div class="st-h"><h3>Inbox</h3>${I.length?`<button class="link" data-act="agClear">Clear</button>`:''}</div>${I.slice(0,12).map(it=>`<article class="panel ag-it${it.seen?'':' new'}"><div class="ag-h"><b>${esc(it.title)}</b><small class="muted">${esc(dd(it.t))} · ${esc(tm(it.t))}</small></div>${it.summary?sumHTML(it.summary):''}${dataHTML(it.data,it.summary)}
+ return`<section class="rv ag-inbox"><div class="st-h"><h3>Inbox</h3>${I.length?`<button class="link" data-act="agClear">Clear</button>`:''}</div>${I.slice(0,12).map(it=>`<article class="panel ag-it${it.seen?'':' new'}"><div class="ag-h"><b>${esc(it.title)}</b><small class="muted">${esc(dd(it.t))} · ${esc(tm(it.t))}</small></div>${it.summary?sumHTML2(it.summary):''}${dataHTML(it.data,it.summary)}
   ${it.sugs.length?`<ul class="ag-s">${it.sugs.map(s=>`<li class="${s.st}"><span class="ag-k">${SUGN[s.type]}</span><span class="ag-x">${sugLine(s)}</span>${s.st==='done'?`<span class="ag-ok">${ic('check')}</span>`:s.st==='no'?'<span class="muted small">Skipped</span>':`<span class="ag-b"><button class="ibtn sm" data-act="agYes" data-i="${it.id}" data-s="${s.id}" aria-label="Do it" title="Do it">${ic('check')}</button><button class="ibtn sm" data-act="agNo" data-i="${it.id}" data-s="${s.id}" aria-label="Skip" title="Skip">${ic('plus')}</button></span>`}</li>`).join('')}</ul>${it.sugs.filter(s=>!s.st).length>1?`<div class="actions left"><button class="btn sm" data-act="agAll" data-i="${it.id}">Do all</button></div>`:''}`:''}
   ${it.errs&&it.errs.length?`<p class="small muted">Couldn’t read: ${esc(it.errs.join('; '))}</p>`:''}</article>`).join('')}</section>`}
 function tasksHTML(){const T=ag().tasks;
@@ -204,7 +231,7 @@ function vAgent(){const A=ag(),e=planEngine(),picked=aiPicked(),ready=picked;con
  ${dl&&window.AIX?`<div class="rv">${AIX.modelCard('agent')}<p class="small muted">Scheduled tasks wait until the model is set up. Tasks you run yourself set it up first.</p></div>`:dl?`<div class="panel rv"><p><b>${esc(String(m[1]).split(' · ')[0])}</b> downloads once (${m[3]} GB) the first time it runs, then works offline.</p><div class="actions left"><button class="btn pri" data-act="agDl" ${AGDL?'disabled':''}>${AGDL?esc(AGDL):'Download now'}</button></div></div>`:''}
  ${BUSY?`<div class="panel rv ag-run"><span class="ag-spin" aria-hidden="true"></span><span><b>Working on “${esc(BUSY)}”</b><small id="agStep">${esc(STEP||'Starting…')}</small></span></div>`:''}
  ${AGERR?`<div class="panel rv ag-err"><p>${esc(AGERR)}</p><div class="actions left"><button class="btn sm ghost" data-act="agErrX">Dismiss</button><a class="btn sm ghost" href="#/settings/voice">AI settings</a></div></div>`:''}
- <section class="panel rv ag-ask"><div class="field"><label for="agQ">Ask the agent to do something now</label><textarea id="agQ" rows="2" placeholder="Look at my email and calendar and tell me what I’m forgetting">${esc(AGQ)}</textarea></div><div class="ag-src">${Object.keys(CN).map(k=>`<label class="chip${connOn(k)?'':' dim'}"><input type="checkbox" data-agsrc="${k}" ${connOn(k)&&k!=='gdrive'?'checked':''} ${connOn(k)?'':'disabled'}>${CN[k][0]}</label>`).join('')}</div><div class="actions left"><button class="btn pri" data-act="agAsk" ${BUSY?'disabled':''}>${BUSY?'Working…':'Go'}</button></div></section>
+ <section class="panel rv ag-ask"><div class="field"><label for="agQ">Ask the agent to do something now</label><textarea id="agQ" rows="2" placeholder="Look at my email and calendar and tell me what I’m forgetting">${esc(AGQ)}</textarea></div><div class="ag-src">${Object.keys(CN).map(k=>`<label class="chip${connOn(k)?'':' dim'}"><input type="checkbox" data-agsrc="${k}" ${connOn(k)?'checked':''} ${connOn(k)?'':'disabled'}>${CN[k][0]}</label>`).join('')}</div><div class="actions left"><button class="btn pri" data-act="agAsk" ${BUSY?'disabled':''}>${BUSY?'Working…':'Go'}</button></div></section>
  ${inboxHTML()}${tasksHTML()}${connHTML()}
  <label class="sw rv" style="margin-top:14px"><span>Run tasks on their own<small>Off pauses every task. They still run when you tap Run now.</small></span><input type="checkbox" data-agon="all" ${A.on?'checked':''}><i></i></label>`}
 VIEWS.agent=vAgent;
