@@ -253,6 +253,7 @@ public class Assist {
                 if (v.getFeatures() != null && v.getFeatures().contains("notInstalled")) continue;
                 JSONObject o = new JSONObject();
                 o.put("n", v.getName()); o.put("l", v.getLocale().toLanguageTag()); o.put("q", v.getQuality()); o.put("net", v.isNetworkConnectionRequired());
+                if (v.getFeatures() != null) o.put("f", android.text.TextUtils.join(",", v.getFeatures())); /* some engines say male / female here */
                 a.put(o);
             }
             voiceList = a.toString();

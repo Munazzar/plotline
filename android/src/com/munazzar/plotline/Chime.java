@@ -10,31 +10,56 @@ import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 
-/* The "Hey Plot" listening cues. The old cue was one quiet 160 ms ToneGenerator beep at 70% on the media stream and
-   there was nothing when it stopped. Now: a bright rising two-note chime when it starts listening, a falling one
-   when it stops (heard you, or gave up), each with a short buzz. The notes are synthesised at full scale (sine plus a
-   soft overtone, quick attack, smooth decay) and played on the assistant's own audio usage, so they're clear even
-   while the recognizer's beeps are hushed. Turn them off with "Listening sounds" in the assistant settings. */
+/* The "Hey Plot" listening cues: one chime when it starts listening, another when it stops (heard you, or gave up),
+   each with a short buzz. The user picks both in Settings › AI & voice; the picks arrive in the wake config as cueStart
+   and cueDone, and this table matches CUES in assistant.js. Notes are synthesised at full scale (sine plus one overtone,
+   quick attack, exponential decay) and played on the assistant's own audio usage, so they're clear even while the
+   recognizer's beeps are hushed. "Listening sounds" off silences them. */
 public class Chime {
     static final int RATE = 44100;
     static final Handler H = new Handler(Looper.getMainLooper());
-    static short[] up, down;
+    static final java.util.HashMap<String, short[]> CACHE = new java.util.HashMap<>();
+
+    /* id -> {overtone ratio, overtone level, decay s, then pairs of (Hz, start s)} */
+    static double[] spec(String id) {
+        switch (id == null ? "" : id) {
+            case "fall": return new double[]{2, .18, .26, 1047, 0, 659, .12};
+            case "bell": return new double[]{2.76, .35, .7, 1319, 0};
+            case "glass": return new double[]{3, .15, .5, 2093, 0};
+            case "soft": return new double[]{2, .08, .4, 523, 0, 659, .14};
+            case "pop": return new double[]{2, .1, .09, 988, 0};
+            case "tap": return new double[]{2, .12, .08, 880, 0, 880, .11};
+            case "marimba": return new double[]{3.9, .3, .22, 523, 0, 659, .09, 784, .18};
+            case "marimbad": return new double[]{3.9, .3, .22, 784, 0, 659, .09, 523, .18};
+            case "low": return new double[]{2, .25, .35, 330, 0};
+            case "chirp": return new double[]{2, .05, .07, 1568, 0, 2093, .06};
+            case "none": return new double[]{2, 0, 0};
+            case "rise": return new double[]{2, .18, .26, 784, 0, 1175, .11};
+            default: return null;
+        }
+    }
 
     static boolean on(Context c) { return Assist.cfg(c).optBoolean("cues", true); }
 
-    static void start(Context c) { if (on(c)) { play(true); buzz(c, true); } }
+    static void start(Context c) { if (on(c)) { play(Assist.cfg(c).optString("cueStart", "rise"), "rise"); buzz(c, true); } }
 
-    static void stop(Context c) { if (on(c)) { play(false); buzz(c, false); } }
+    static void stop(Context c) { if (on(c)) { play(Assist.cfg(c).optString("cueDone", "fall"), "fall"); buzz(c, false); } }
 
-    static short[] tones(double[] f) {
-        int note = (int) (RATE * 0.12), tail = (int) (RATE * 0.16), n = note * (f.length - 1) + note + tail;
+    static short[] tones(double[] p) {
+        double h = p[0], hv = p[1], dec = Math.max(.05, p[2]);
+        int notes = (p.length - 3) / 2;
+        if (notes < 1) return null;
+        double last = 0;
+        for (int k = 0; k < notes; k++) last = Math.max(last, p[4 + k * 2]);
+        int n = (int) (RATE * (last + dec * 1.6 + .02));
         double[] mix = new double[n];
-        for (int k = 0; k < f.length; k++) {
-            int off = k * note, len = note + tail;
-            for (int i = 0; i < len && off + i < n; i++) {
-                double t = (double) i / RATE;
-                double env = Math.min(1.0, t / 0.008) * Math.exp(-t * 11.0);
-                mix[off + i] += env * (0.8 * Math.sin(2 * Math.PI * f[k] * t) + 0.2 * Math.sin(2 * Math.PI * f[k] * 2 * t));
+        for (int k = 0; k < notes; k++) {
+            double f = p[3 + k * 2];
+            int off = (int) (RATE * p[4 + k * 2]);
+            for (int i = 0; off + i < n; i++) {
+                double t = (double) i / RATE, att = Math.min(1.0, t / 0.008);
+                double main = Math.exp(-t * 4.6 / dec), over = Math.exp(-t * 4.6 / (dec * .6));
+                mix[off + i] += att * (.75 * main * Math.sin(2 * Math.PI * f * t) + hv * over * Math.sin(2 * Math.PI * f * h * t));
             }
         }
         double peak = 0;
@@ -44,10 +69,13 @@ public class Chime {
         return out;
     }
 
-    static void play(boolean rising) {
+    static void play(String id, String fallback) {
         try {
-            if (up == null) { up = tones(new double[]{784, 1175}); down = tones(new double[]{1047, 659}); }
-            final short[] pcm = rising ? up : down;
+            if (spec(id) == null) id = fallback;
+            short[] cached = CACHE.get(id);
+            if (cached == null && !CACHE.containsKey(id)) { cached = tones(spec(id)); CACHE.put(id, cached); }
+            final short[] pcm = cached;
+            if (pcm == null || pcm.length == 0) return;
             AudioAttributes aa = new AudioAttributes.Builder()
                 .setUsage(Build.VERSION.SDK_INT >= 26 ? AudioAttributes.USAGE_ASSISTANT : AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build();

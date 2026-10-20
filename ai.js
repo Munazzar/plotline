@@ -77,7 +77,11 @@ const counts=()=>{const n=S.entries.filter(e=>e.type==='note').length;return`${S
 function mmSteps(i){return[['dl',`Download ${i.name} (${i.gb} GB, once)`],['load','Load it into memory'],['read',`Read your plan: ${counts()}`],['prof','Write a short private profile of you'],['ok','Ready to talk']].map(([k,t])=>({k,t,st:''}))}
 function mmPaint(){document.querySelectorAll('.mm').forEach(el=>{const w=el.dataset.w||'';el.outerHTML=modelCard(w)})}
 const mbOf=s=>{const m=/(\d+)\s+of\s+(\d+)\s*MB/.exec(String(s||''));return m?[+m[1],+m[2]]:null};
-function mmProg(t){const mb=mbOf(t);MM.msg=String(t||'').replace(/\s*·\s*once, then offline/,'');if(mb&&mb[1])MM.pct=Math.min(100,Math.round(mb[0]/mb[1]*100));const b=document.querySelector('.mm .mm-bar i'),p=document.querySelector('.mm .mm-msg');if(b&&MM.pct>=0)b.style.width=MM.pct+'%';if(p)p.textContent=MM.msg;else mmPaint()}
+/* progress lands on every open card: the bar switches from the sliding "working" stripe to a real fill once sizes are known */
+function mmProg(t){const mb=mbOf(t);MM.msg=String(t||'').replace(/\s*·\s*once, then offline/,'');if(mb&&mb[1])MM.pct=Math.min(100,Math.round(mb[0]/mb[1]*100));
+ const cards=document.querySelectorAll('.mm');if(!cards.length)return;let miss=false;
+ cards.forEach(c=>{const b=c.querySelector('.mm-bar'),p=c.querySelector('.mm-msg'),pc=c.querySelector('.mm-pct');if(!b||!p){miss=true;return}
+  if(MM.pct>=0){b.classList.remove('ind');b.firstChild.style.width=MM.pct+'%'}else{b.classList.add('ind');b.firstChild.style.width='30%'}p.textContent=MM.msg||'Working…';if(pc)pc.textContent=MM.pct>=0?MM.pct+'%':''});if(miss)mmPaint()}
 async function mmDownload(i){const m=i.m;
  if(i.rt==='native'){const f=natFile(m);if(!natHave(m)){if(!(natSt().dl||{}).busy)NATIVE.llmDownload(m[4]||m[2],f);
    for(;;){await sleep(700);const st=natSt();if(st.have&&st.have[f])break;const d=st.dl||{};if(!d.busy&&d.err)throw new Error('The download stopped ('+d.err+'). Check your connection and try again.');
@@ -101,7 +105,7 @@ function modelCard(w){const i=mInfo();if(!i)return'';const have=mHave(i),busy=MM
  const where=i.rt==='native'?'runs on this phone':i.rt==='lrt'?'runs on this device’s GPU':'runs in this '+(NATIVE?'app':'browser');
  const tag=busy?'Setting up':MM.err&&MM.id===i.m[0]?'Needs attention':have?'Ready':'Not downloaded';
  let body='';
- if(busy||MM.err&&MM.id===i.m[0]&&MM.steps.length){body=`<ol class="mm-st">${MM.steps.map(x=>`<li class="${x.st}"><i>${x.st==='done'?ic('check','ico-s'):x.st==='err'?'!':x.st==='skip'?'–':''}</i><span>${esc(x.t)}</span></li>`).join('')}</ol>${busy?`<div class="mm-bar ${MM.pct<0?'ind':''}"><i style="width:${MM.pct<0?30:MM.pct}%"></i></div><p class="small muted mm-msg">${esc(MM.msg||'Working…')}</p>`:''}${MM.err&&!busy?`<p class="small err">${esc(MM.err)}</p>`:''}`}
+ if(busy||MM.err&&MM.id===i.m[0]&&MM.steps.length){body=`<ol class="mm-st">${MM.steps.map(x=>`<li class="${x.st}"><i>${x.st==='done'?ic('check','ico-s'):x.st==='err'?'!':x.st==='skip'?'–':''}</i><span>${esc(x.t)}</span></li>`).join('')}</ol>${busy?`<div class="mm-bar ${MM.pct<0?'ind':''}"><i style="width:${MM.pct<0?30:MM.pct}%"></i></div><div class="mm-m"><p class="small muted mm-msg">${esc(MM.msg||'Working…')}</p><b class="mm-pct">${MM.pct>=0?MM.pct+'%':''}</b></div><p class="small muted mm-keep">You can leave this page. Setup keeps going${NATIVE?' while the app is open':''}.</p>`:''}${MM.err&&!busy?`<p class="small err">${esc(MM.err)}</p>`:''}`}
  else if(!have)body=`<p class="small muted">Not on this ${NATIVE?'phone':'device'} yet. It’s a ${i.gb} GB download from Hugging Face, once, then it works offline and nothing you say leaves the ${NATIVE?'phone':'device'}. Use Wi-Fi.</p>`;
  else body=`<p class="small muted">Downloaded and ${where}. ${pr?'It has read your plan and keeps a short private profile of you.':'Set it up to let it read your plan and get to know you.'}</p>${pr&&w!=='live'?`<details class="mm-pr"><summary>What ${esc(nm())} knows about you</summary><p class="small">${esc(pr.text)}</p></details>`:''}`;
  const btns=busy?'':!have?`<button class="btn pri sm" data-act="mmGo">${ic('down')}Download and set up</button>`:MM.err&&MM.id===i.m[0]?`<button class="btn pri sm" data-act="mmGo">Try again</button>`:`${w==='live'?'':`<button class="btn sm ghost" data-act="mmGo">${pr?'Read my plan again':'Set it up'}</button><button class="btn sm ghost" data-act="insDelModel">Delete from this ${NATIVE?'phone':'device'}</button>`}`;
@@ -114,24 +118,39 @@ window.AIX={safety:aiSafety,block:aiBlock,care:aiCare,note:noteHTML,parseActs,hi
 const VSTY=[['natural','Natural',1,1],['calm','Calm',.9,.94],['bright','Bright',1.05,1.15],['deep','Deep',.95,.8],['quick','Quick',1.25,1.02]];
 const vpick=()=>{const a=S.settings.assist||{};return{voice:a.voice||'',rate:+a.rate||1,pitch:+a.pitch||1,all:!!a.vall}};
 let VL=null;
-function voiceList(){if(NA&&NA.voices){let j='';try{j=NA.voices()}catch(e){}if(!j)return null;try{return JSON.parse(j).map(v=>({n:v.n,l:v.l,q:v.q,net:v.net}))}catch(e){return[]}}
+function voiceList(){if(NA&&NA.voices){let j='';try{j=NA.voices()}catch(e){}if(!j)return null;try{return JSON.parse(j).map(v=>({n:v.n,l:v.l,q:v.q,net:v.net,f:v.f||''}))}catch(e){return[]}}
  if(window.speechSynthesis){const v=speechSynthesis.getVoices();if(!v.length)return null;return v.map(x=>({n:x.name,l:x.lang,q:x.localService?300:400,net:!x.localService}))}return[]}
 if(window.speechSynthesis&&!NA)try{speechSynthesis.onvoiceschanged=()=>{VL=null;if(document.getElementById('vpPanel'))render(false)}}catch(e){}
 window.addEventListener('plot-voices',()=>{VL=null;if(document.getElementById('vpPanel'))render(false)});
+/* male or female, where we can tell. Google's Android voices are named like en-us-x-iom-local, so a table of the known
+   ids does most of it; some engines say it in the name (#male_1, SMTm00) or in the voice's features; browsers name them. */
+const VG_M='iol iom tpd gbb gbd rjs aub aud end ene',VG_F='iob iog sfg tpc tpf gba gbc gbg aua auc ena ahp cxx';
+function vGender(v){const n=String(v.n||''),f=String(v.f||'').toLowerCase(),low=n.toLowerCase();
+ if(/(^|[^a-z])female/.test(f)||/#female|smtf\d|(^|[^a-z])female\b/.test(low))return'f';if(/(^|[^a-z])male/.test(f)||/#male|smtm\d|(^|[^a-z])male\b/.test(low))return'm';
+ const m=/^[a-z]{2,3}-[a-z]{2,3}-x-([a-z]{3})/i.exec(n);if(m&&String(v.l||'').toLowerCase().startsWith('en')){const id=m[1].toLowerCase();if(VG_M.split(' ').includes(id))return'm';if(VG_F.split(' ').includes(id))return'f'}
+ if(/\b(david|mark|daniel|alex|fred|george|james|guy|ryan|thomas|aaron|arthur|rishi|oliver|eddy|reed|rocko|grandpa|ravi|hemant|prabhat|liam|william|eric|christopher|andrew|brian|roger|steffan|tony|jacob|davis|jason)\b/i.test(n))return'm';
+ if(/\b(zira|samantha|victoria|karen|moira|tessa|fiona|susan|hazel|kate|serena|aria|jenny|michelle|emma|ava|sonia|libby|heera|kalpana|veena|flo|sandy|shelley|grandma|catherine|natasha|clara|ana|nancy|sara|amber|ashley|cora|elizabeth|monica|jane)\b/i.test(n))return'f';return''}
 const lname=l=>{try{return new Intl.DisplayNames([navigator.language||'en'],{type:'language'}).of(l)}catch(e){return l}};
-function vName(v,i){if(!NA)return v.n;const m=/^([a-z]{2,3})-([a-z]{2,3})-x-([a-z]{3})/i.exec(v.n);return`${lname(v.l)} · ${m?m[3].toUpperCase():'Voice '+(i+1)}`}
+function vName(v,i){if(!NA)return v.n;const m=/^([a-z]{2,3})-([a-z]{2,3})-x-([a-z]{3})/i.exec(v.n),g=/#(fe)?male_?(\d*)/i.exec(v.n);return`${lname(v.l)} · ${m?m[3].toUpperCase():'Voice '+(i+1)}${g?' '+(g[2]||''):''}`.trim()}
 function voicePickHTML(){const p=vpick(),lang=(vset().lang||navigator.language||'en').toLowerCase().split('-')[0];if(!VL)VL=voiceList();
- const L=(VL||[]).filter(v=>p.all||String(v.l).toLowerCase().startsWith(lang)).sort((a,b)=>(a.net-b.net)||(b.q-a.q)||a.n.localeCompare(b.n)).slice(0,80),sty=VSTY.find(x=>Math.abs(x[2]-p.rate)<.01&&Math.abs(x[3]-p.pitch)<.01);
+ const G=S.settings.assist&&S.settings.assist.vg||'',inL=(VL||[]).filter(v=>p.all||String(v.l).toLowerCase().startsWith(lang)),nM=inL.filter(v=>vGender(v)==='m').length,nF=inL.filter(v=>vGender(v)==='f').length;
+ const L=inL.filter(v=>!G||vGender(v)===G).sort((a,b)=>(a.net-b.net)||(b.q-a.q)||a.n.localeCompare(b.n)).slice(0,80),sty=VSTY.find(x=>Math.abs(x[2]-p.rate)<.01&&Math.abs(x[3]-p.pitch)<.01);
  return`<section class="panel rv" id="vpPanel"><h3>${esc(nm())}’s voice</h3><p class="small muted">How ${esc(nm())} sounds when it talks back. Tap ${ic('play','ico-s')} to hear one.</p>
  <div class="chips vp-sty">${VSTY.map(([k,n,r,pi])=>`<button class="chip ${sty&&sty[0]===k?'on':''}" data-act="vpStyle" data-r="${r}" data-p="${pi}">${n}</button>`).join('')}</div>
+ <div class="chips vp-g" role="group" aria-label="Show voices">${[['','All voices'],['m',`Male${nM?' · '+nM:''}`],['f',`Female${nF?' · '+nF:''}`]].map(([k,n])=>`<button class="chip ${G===k?'on':''}" data-act="vpG" data-g="${k}">${n}</button>`).join('')}</div>
+ ${G==='m'&&VL&&!nM?`<div class="vp-none"><p class="small">No male voice is installed for this language yet.${NA&&NA.openTtsSettings?' Tap Get more voices below: in Google’s speech engine, open Install voice data, pick your language and download the voices there (several are male; tap one to hear it). Then come back here.':' Try “Show voices in every language”, or add voices in your system’s speech settings.'} Meanwhile, “Deep” lowers the pitch of the voice you have.</p></div>`:''}
  <div class="two"><div class="field"><label>Speed · <output id="vpR">${p.rate.toFixed(2)}×</output></label><input type="range" min="0.6" max="1.6" step="0.05" value="${p.rate}" data-vp="rate"></div><div class="field"><label>Pitch · <output id="vpP">${p.pitch.toFixed(2)}</output></label><input type="range" min="0.6" max="1.5" step="0.05" value="${p.pitch}" data-vp="pitch"></div></div>
- ${VL===null?`<p class="small muted">Loading the voices on this ${NATIVE?'phone':'device'}…</p>`:L.length?`<div class="vp-l" role="radiogroup" aria-label="Voice"><label class="vp-r"><input type="radio" name="vpV" value="" ${p.voice?'':'checked'} data-vp="voice"><span><b>Default</b><small>The ${NATIVE?'phone':'browser'}’s usual voice for this language</small></span><button class="ibtn sm" data-act="vpHear" data-v="" aria-label="Hear the default voice">${ic('play')}</button></label>${L.map((v,i)=>`<label class="vp-r"><input type="radio" name="vpV" value="${esc(v.n)}" ${p.voice===v.n?'checked':''} data-vp="voice"><span><b>${esc(vName(v,i))}</b><small>${esc([NA?'':lname(v.l),v.net?'Needs internet':'Works offline',v.q>=400?'High quality':''].filter(Boolean).join(' · '))}</small></span><button class="ibtn sm" data-act="vpHear" data-v="${esc(v.n)}" aria-label="Hear this voice">${ic('play')}</button></label>`).join('')}</div>`:`<p class="small muted">No voices found for this language.</p>`}
+ ${VL===null?`<p class="small muted">Loading the voices on this ${NATIVE?'phone':'device'}…</p>`:L.length?`<div class="vp-l" role="radiogroup" aria-label="Voice"><label class="vp-r"><input type="radio" name="vpV" value="" ${p.voice?'':'checked'} data-vp="voice"><span><b>Default</b><small>The ${NATIVE?'phone':'browser'}’s usual voice for this language</small></span><button class="ibtn sm" data-act="vpHear" data-v="" aria-label="Hear the default voice">${ic('play')}</button></label>${L.map((v,i)=>`<label class="vp-r"><input type="radio" name="vpV" value="${esc(v.n)}" ${p.voice===v.n?'checked':''} data-vp="voice"><span><b>${esc(vName(v,i))}</b><small>${esc([vGender(v)==='m'?'Male':vGender(v)==='f'?'Female':'',NA?'':lname(v.l),v.net?'Needs internet':'Works offline',v.q>=400?'High quality':''].filter(Boolean).join(' · '))}</small></span><button class="ibtn sm" data-act="vpHear" data-v="${esc(v.n)}" aria-label="Hear this voice">${ic('play')}</button></label>`).join('')}</div>`:`<p class="small muted">${G?'None of the voices here are marked '+(G==='m'?'male':'female')+'.':'No voices found for this language.'}</p>`}
  <label class="sw"><span>Show voices in every language<small>${VL?VL.length+' voices on this '+(NATIVE?'phone':'device'):''}</small></span><input type="checkbox" data-vp="all" ${p.all?'checked':''}><i></i></label>
  ${NA&&NA.openTtsSettings?`<div class="actions left"><button class="btn sm ghost" data-act="vpMore">Get more voices</button></div><p class="small muted">Opens Android’s text-to-speech settings. In Google’s speech engine, Install voice data adds more voices and languages.</p>`:''}</section>`}
 {const _vh=voiceHTML;voiceHTML=function(){return _vh()+voicePickHTML()}}
 const vpSave=o=>{S.settings.assist={...(S.settings.assist||{}),...o};save()};
 function hear(v){const p=vpick();const t=`Hi, I’m ${nm()}. This is how I sound.`;if(window.PLOT_ASSIST&&PLOT_ASSIST.say)PLOT_ASSIST.say(t,null,{voice:v,rate:p.rate,pitch:p.pitch})}
-Object.assign(ACT,{vpHear:(d,el,ev)=>{ev&&ev.preventDefault();hear(d.v||'')},vpStyle:d=>{vpSave({rate:+d.r,pitch:+d.p});render(false);setTimeout(()=>hear(vpick().voice),150)},vpMore:()=>{try{NA.openTtsSettings()}catch(e){}}});
+Object.assign(ACT,{vpHear:(d,el,ev)=>{ev&&ev.preventDefault();hear(d.v||'')},vpStyle:d=>{vpSave({rate:+d.r,pitch:+d.p});render(false);setTimeout(()=>hear(vpick().voice),150)},vpMore:()=>{try{NA.openTtsSettings()}catch(e){}},vpG:d=>{const g=d.g||'';vpSave({vg:g});
+  /* picking Male or Female also switches to the best voice of that kind, unless the current one already is */
+  if(g){const p=vpick(),lang=(vset().lang||navigator.language||'en').toLowerCase().split('-')[0],cur=(VL||[]).find(v=>v.n===p.voice);
+   if(!cur||vGender(cur)!==g){const best=(VL||[]).filter(v=>vGender(v)===g&&(p.all||String(v.l).toLowerCase().startsWith(lang))).sort((a,b)=>(a.net-b.net)||(b.q-a.q))[0];if(best){vpSave({voice:best.n});setTimeout(()=>hear(best.n),150)}}}
+  render(false)}});
 document.addEventListener('input',e=>{const t=e.target;if(!t.dataset||!t.dataset.vp)return;if(t.dataset.vp==='rate'){const o=$('#vpR');if(o)o.textContent=(+t.value).toFixed(2)+'×'}if(t.dataset.vp==='pitch'){const o=$('#vpP');if(o)o.textContent=(+t.value).toFixed(2)}});
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.vp)return;const k=t.dataset.vp;
  if(k==='voice'){vpSave({voice:t.value});hear(t.value);return}if(k==='rate'||k==='pitch'){vpSave({[k]:+t.value});hear(vpick().voice);return}if(k==='all'){vpSave({vall:t.checked});render(false)}});
@@ -144,7 +163,7 @@ const YES=/^(?:yes|yeah|yep|yup|sure|ok(?:ay)?|please|please do|do it|go ahead|a
 const NO=/^(?:no|nope|nah|not now|no thanks|don'?t|skip it|never ?mind)\b/i;
 function lvEl(){let el=$('#live');if(el)return el;el=document.createElement('div');el.id='live';el.className='lv';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Talk with '+nm());
  el.innerHTML=`<div class="lv-glow" aria-hidden="true"></div><header class="lv-h"><span class="lv-nm"><b></b><small id="lvSt"></small></span><button class="ibtn" data-act="lvChat" aria-label="Open as chat" title="Open as chat">${ic('chat')}</button><button class="ibtn" data-act="lvEnd" aria-label="End conversation" title="End">✕</button></header>
- <div class="lv-mid"><button class="lv-orb" id="lvOrb" data-act="lvOrb" aria-label="Talk"><span class="lv-o1"></span><span class="lv-o2"></span><span class="lv-o3"></span></button><p class="lv-hint" id="lvHint"></p></div>
+ <div class="lv-mid"><button class="lv-orb" id="lvOrb" data-act="lvOrb" aria-label="Talk"><span class="lv-o2"></span><span class="lv-o1"><span class="lv-o3"></span></span></button><p class="lv-hint" id="lvHint"></p></div>
  <div class="lv-cap" id="lvCap" aria-live="polite"></div>
  <form class="lv-type" data-form="lvSend" autocomplete="off" hidden><input id="lvTxt" maxlength="600" placeholder="Type instead…" enterkeyhint="send"><button class="btn pri sm">Send</button></form>
  <div class="lv-ctl"><button class="lv-b" data-act="lvMute" id="lvMute" aria-label="Mute the mic">${ic('mic')}</button><button class="lv-b lv-end" data-act="lvEnd" aria-label="End">End</button><button class="lv-b" data-act="lvType" aria-label="Type instead">${ic('kb')}</button></div>
@@ -193,7 +212,7 @@ Object.assign(ACT,{
  lvOrb:()=>{if(LV.st==='listen'){if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(false,true);return}if(LV.st==='speak'){if(window.PLOT_ASSIST)PLOT_ASSIST.hush();lvListen();return}if(LV.st==='think'){LV.gen++;try{LV.ctl&&LV.ctl.abort()}catch(e){}lvState('idle','Stopped. Tap to talk.');return}if(LV.muted){LV.muted=false}lvListen()},
  lvMute:()=>{LV.muted=!LV.muted;if(LV.muted&&VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);lvState(LV.st==='listen'?'idle':LV.st);if(!LV.muted&&LV.st==='idle')lvListen()},
  lvType:()=>{const f=$('.lv-type');if(!f)return;f.hidden=!f.hidden;if(!f.hidden){LV.muted=true;if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);lvState('idle','');setTimeout(()=>$('#lvTxt').focus(),50)}},
- lvChat:()=>{liveClose();setTimeout(()=>{if(window.ACT.asOpen)ACT.asOpen()},380)},
+ lvChat:()=>{liveClose();setTimeout(()=>{if(ACT.asOpen)ACT.asOpen()},380)},
  lvAct:(d,el)=>{const a=LV.pend.find(x=>x.id===d.id);if(!a||a.st)return;try{const r=doAct(a);toast(esc((r&&r.say)||'Added'))}catch(e){toast('Couldn’t add that')}lvCap()}});
 Object.assign(FORM,{lvSend:f=>{const i=f.querySelector('input'),v=i.value.trim();if(!v)return;i.value='';lvHeard(v)}});
 window.liveOpen=liveOpen;
@@ -210,7 +229,7 @@ if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){return _ht(
 {const _r=window.__route;window.__route=r=>{if(r==='assistant-live'){liveOpen();return}return _r&&_r(r)}}
 
 const css=document.createElement('style');css.textContent=`
-.ai-note{display:flex;align-items:center;gap:6px;justify-content:center;margin:8px 0 0;font-size:11.5px;line-height:1.3;color:var(--muted);text-align:center}.ai-note svg{width:13px;height:13px;flex:none;opacity:.8}
+.ai-note{display:block;margin:8px 0 0;font-size:11.5px;line-height:1.3;color:var(--muted);text-align:center}.ai-note svg{width:13px;height:13px;opacity:.8;vertical-align:-2px;margin-right:5px}
 .ai-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .ai-act{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:18px;border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--text);font:600 13px var(--f-body);cursor:pointer;text-align:left}
 .ai-act svg{width:15px;height:15px;flex:none;color:var(--accent)}.ai-act.done{opacity:.7;cursor:default;border-style:dashed}
@@ -226,33 +245,35 @@ const css=document.createElement('style');css.textContent=`
 @keyframes mmSpin{to{transform:rotate(360deg)}}
 .mm-bar{height:6px;border-radius:3px;margin-top:12px;overflow:hidden;background:color-mix(in srgb,var(--text) 10%,transparent)}.mm-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--c-learning,var(--accent)));transition:width .4s}
 .mm-bar.ind i{animation:mmInd 1.3s ease-in-out infinite}@keyframes mmInd{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}
+.mm-m{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:8px}.mm-m .mm-msg{margin:0;min-width:0;overflow-wrap:anywhere}.mm-pct{flex:none;font:700 13px var(--f-mono,monospace);color:var(--accent)}.mm-keep{opacity:.8;margin-top:4px!important;font-size:12px}
+.mm-st li span{min-width:0;overflow-wrap:anywhere}.mm-t small{overflow-wrap:anywhere}
 .mm-pr{margin-top:10px}.mm-pr summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:600}
-.vp-sty{margin:10px 0 4px}.vp-l{display:flex;flex-direction:column;gap:2px;margin:10px 0;max-height:360px;overflow:auto;border-radius:14px;border:1px solid var(--line)}
+.vp-sty{margin:10px 0 4px}.vp-g{margin:14px 0 4px}.vp-none{margin:8px 0;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--accent) 9%,transparent)}.vp-none p{margin:0}.vp-l{display:flex;flex-direction:column;gap:2px;margin:10px 0;max-height:360px;overflow:auto;border-radius:14px;border:1px solid var(--line)}
 .vp-r{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer}.vp-r+.vp-r{border-top:1px solid color-mix(in srgb,var(--text) 7%,transparent)}
 .vp-r input{accent-color:var(--accent);width:18px;height:18px;flex:none}.vp-r span{flex:1;min-width:0;display:flex;flex-direction:column}.vp-r small{color:var(--muted);font-size:12px}.vp-r:has(input:checked){background:color-mix(in srgb,var(--accent) 10%,transparent)}
 input[data-vp=rate],input[data-vp=pitch]{width:100%;accent-color:var(--accent)}
 .lv-home{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 12px;padding:14px 16px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 16%,var(--surface)),var(--surface));color:var(--text);text-align:left;cursor:pointer;font:inherit}
 .lv-home>span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}.lv-home small{color:var(--muted);font-size:12.5px;margin-top:2px}.lv-home>svg{width:22px;height:22px;color:var(--accent);flex:none}
-.lv-hor{width:40px;height:40px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,#fff8 0,transparent 42%),conic-gradient(from 200deg,var(--accent),var(--c-learning),var(--c-career),var(--c-health),var(--accent));box-shadow:0 8px 22px -8px var(--accent);animation:lvBreathe 4s ease-in-out infinite}
+.lv-hor{width:40px;height:40px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,#fff8 0,transparent 42%),conic-gradient(from 200deg,var(--accent),var(--c-learning),var(--c-career),var(--c-health),var(--accent));box-shadow:0 8px 22px -8px var(--accent);will-change:transform;animation:lvBreathe 2.8s cubic-bezier(.37,0,.63,1) infinite alternate}
 .lv{position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;padding:max(14px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));background:var(--bg);color:var(--text);opacity:0;transform:scale(1.03);transition:opacity .3s,transform .35s var(--spring,ease)}
 .lv.on{opacity:1;transform:none}html.lv-on body{overflow:hidden}
 .lv-glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 45% at 50% 38%,color-mix(in srgb,var(--accent) 26%,transparent),transparent 70%),radial-gradient(50% 40% at 30% 80%,color-mix(in srgb,var(--c-learning,var(--accent)) 16%,transparent),transparent 70%);transition:opacity .5s}
 .lv[data-st=idle] .lv-glow{opacity:.55}
 .lv-h{position:relative;display:flex;align-items:center;gap:8px}.lv-nm{flex:1;display:flex;flex-direction:column}.lv-nm b{font:700 18px var(--f-body)}.lv-nm small{color:var(--muted);font-size:13px}
 .lv-mid{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px}
-.lv-orb{position:relative;width:min(56vw,230px);aspect-ratio:1;border:0;padding:0;border-radius:50%;background:none;cursor:pointer;--lv:0}
+.lv-orb{position:relative;width:min(56vw,230px);aspect-ratio:1;border:0;padding:0;border-radius:50%;background:none;cursor:pointer;--lv:0;will-change:transform;animation:lvBreathe 5.6s cubic-bezier(.37,0,.63,1) infinite alternate;-webkit-tap-highlight-color:transparent}
 .lv-orb span{position:absolute;inset:0;border-radius:50%}
-.lv-o1{background:radial-gradient(circle at 35% 30%,#fff9 0,transparent 40%),conic-gradient(from 200deg,var(--accent),var(--c-learning),var(--c-career),var(--c-health),var(--accent));box-shadow:0 30px 80px -24px var(--accent);transform:scale(calc(.86 + var(--lv) * .2));transition:transform .12s}
-.lv-o2{inset:-14px!important;border:2px solid color-mix(in srgb,var(--accent) 35%,transparent);opacity:0}
-.lv-o3{inset:18%!important;background:var(--bg);opacity:.18;filter:blur(8px)}
-.lv[data-st=idle] .lv-o1{animation:lvBreathe 4s ease-in-out infinite}
-@keyframes lvBreathe{0%,100%{transform:scale(.86)}50%{transform:scale(.8)}}
-.lv[data-st=listen] .lv-o2{opacity:1;animation:lvRing 1.6s ease-out infinite}
-.lv[data-st=think] .lv-o1{animation:lvSpin 1.6s linear infinite}
-.lv[data-st=speak] .lv-o1{animation:lvTalk .9s ease-in-out infinite}
-@keyframes lvRing{0%{transform:scale(.92);opacity:.9}100%{transform:scale(1.25);opacity:0}}
-@keyframes lvSpin{to{transform:rotate(360deg) scale(.9)}}
-@keyframes lvTalk{50%{transform:scale(.97)}0%,100%{transform:scale(.88)}}
+.lv-o1{background:radial-gradient(circle at 35% 30%,#fff9 0,transparent 40%),conic-gradient(from 200deg,var(--accent),var(--c-learning),var(--c-career),var(--c-health),var(--accent));box-shadow:0 30px 80px -24px var(--accent);transform:scale(calc(.9 + var(--lv) * .16));will-change:transform;overflow:hidden}
+.lv-o2{inset:-14px!important;border:2px solid color-mix(in srgb,var(--accent) 35%,transparent);opacity:0;transition:opacity .6s;animation:lvRing 2.2s cubic-bezier(.2,.6,.4,1) infinite;will-change:transform,opacity}
+.lv-o3{background:conic-gradient(from 0deg,transparent 0 55%,rgba(255,255,255,.55) 75%,transparent 92%);opacity:0;transition:opacity .6s;animation:lvSpin 1.8s linear infinite;will-change:transform}
+/* breathing lives on the button itself and never stops, so moving between idle, listening, thinking and speaking never jumps */
+@keyframes lvBreathe{from{transform:scale(.94)}to{transform:scale(1)}}
+.lv[data-st=listen] .lv-o2{opacity:1}
+.lv[data-st=think] .lv-o3{opacity:1}
+.lv[data-st=speak] .lv-o1{animation:lvTalk .8s cubic-bezier(.37,0,.63,1) infinite alternate}
+@keyframes lvRing{0%{transform:scale(.9);opacity:.9}100%{transform:scale(1.22);opacity:0}}
+@keyframes lvSpin{to{transform:rotate(360deg)}}
+@keyframes lvTalk{from{transform:scale(.9)}to{transform:scale(.97)}}
 .lv-hint{margin:22px 0 0;color:var(--muted);font-size:13.5px;min-height:1.3em;text-align:center}
 .lv-cap{position:relative;max-height:34vh;overflow:auto;padding:4px 2px;text-align:center}
 .lv-you{margin:0 0 10px;color:var(--muted);font-size:16px;line-height:1.45}
@@ -264,6 +285,6 @@ input[data-vp=rate],input[data-vp=pitch]{width:100%;accent-color:var(--accent)}
 .lv-b.off{background:color-mix(in srgb,var(--danger,#e66) 18%,var(--surface));color:var(--danger,#e66)}
 .lv-end{width:auto;padding:0 26px;border-radius:28px;background:var(--danger,#e5484d);border-color:transparent;color:#fff}
 .lv-note{position:relative;margin-top:12px}.lv-hid{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
-@media (prefers-reduced-motion:reduce){.lv-orb span,.lv-hor{animation:none!important}}`;
+@media (prefers-reduced-motion:reduce){.lv-orb,.lv-orb span,.lv-hor{animation:none!important}}`;
 document.head.appendChild(css);
 })();

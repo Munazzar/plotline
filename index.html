@@ -2312,7 +2312,7 @@ html.stu-on #vin>.ph>.ph-r{align-self:center}
 .hft-i{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);transition:transform .25s var(--spring)}.hft-i svg{width:22px;height:22px}
 .hft-b:active .hft-i{transform:scale(.9)}.hft-b b{font:600 11.5px/1.15 var(--f-body);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 header+.hft{margin-top:-14px}.hft+.hmq{margin-top:0}
-.hmq{display:flex;gap:8px;overflow-x:auto;margin:-12px -16px 16px;padding:2px 16px 4px;scrollbar-width:none}
+.hmq{display:flex;gap:8px;overflow-x:auto;margin:0 -16px 16px;padding:2px 16px 4px;scrollbar-width:none}
 .hmq-b{flex:none;display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 15px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);color:var(--text);font:600 13.5px var(--f-body);cursor:pointer;white-space:nowrap;transition:transform .2s}
 .hmq-b span{font-size:16px}.hmq-b:active{transform:scale(.96)}
 .hmq-b[data-act=aiStart]{background:color-mix(in srgb,var(--accent) 16%,var(--surface));border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
@@ -3029,7 +3029,7 @@ html.thr-focus #tabbar,html.thr-focus .tabbar{display:none}
 .thr-ul li.ck{list-style:none;margin-left:-20px}.thr-ul li.ck::before{content:'';display:inline-block;width:13px;height:13px;border:1.5px solid currentColor;border-radius:4px;margin-right:8px;vertical-align:-2px;opacity:.7}
 .thr-ul li.ck.on{text-decoration:line-through;opacity:.65}.thr-ul li.ck.on::before{background:currentColor}
 /* Ask: the composer floats on its own rounded box (no square panel behind it) on every theme */
-#view .ask-comp:not(.aov-comp){margin-left:-24px!important;margin-right:-24px!important;padding-left:24px!important;padding-right:24px!important;background:linear-gradient(to top,color-mix(in srgb,var(--bg) 94%,transparent) 55%,transparent)!important;box-shadow:none!important;border:0!important;border-radius:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+#view .ask-comp:not(.aov-comp){margin-left:-24px!important;margin-right:-24px!important;padding-left:24px!important;padding-right:24px!important;background:linear-gradient(to top,var(--bg) 70%,transparent)!important;box-shadow:none!important;border:0!important;border-radius:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 #view .ask-comp:not(.aov-comp) .ask-row{box-shadow:0 18px 44px -18px rgba(0,0,0,.45)}
 #view .ask-row textarea::placeholder{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
@@ -3370,6 +3370,9 @@ html .tg-add input,html .tg-add input:focus,html .tg-add input:focus-visible{out
 .ud-go:active{transform:scale(.97)}.ud-go em{font-style:normal;font:600 12px var(--f-mono);opacity:.85;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.2)}.ud-go svg{width:16px;height:16px}
 html:is([data-theme=halo],[data-theme=halolight]) .ud-go{color:#fff;background:linear-gradient(110deg,var(--halo-a,var(--accent)),var(--halo-b,#ff5fa2),var(--halo-a,var(--accent)));background-size:300% 100%}
 @keyframes udFlow{to{background-position:300% 0}}@keyframes udShine{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+/* 1.38.1: keep the button on one line on narrow phones (the label and the "+5 more" pill used to wrap) */
+.ud-go{white-space:nowrap}.ud-go>span{min-width:0;overflow:hidden;text-overflow:ellipsis}.ud-go em,.ud-go svg{flex:none}
+@media(max-width:380px){.ud-go{font-size:14px;padding:14px 12px;gap:6px}}
 @media(prefers-reduced-motion:reduce){.ud-go,.ud-go::after{animation:none}}:root[data-motion=reduced] .ud-go,:root[data-motion=reduced] .ud-go::after{animation:none}
 /* Goals: sub-goal toggle */
 .gsub-t{display:inline-flex;align-items:center;gap:6px}.gsub-t svg{width:15px;height:15px}
@@ -3524,7 +3527,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.38.0';
+const APP_VER='1.38.1';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'night',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -6140,7 +6143,7 @@ async function voiceStart(el,btn){const v=vset(),st=vstate();voiceStop(true);
   if((k==='end'||(k==='err'&&/^(6|7|no-speech|no-match|aborted)$/.test(String(t))))&&VC.acc){if(!VC.fin){again()}VC.fin=0;return}
   /* nothing final yet: keep what was half-heard and keep listening, so a slow start or a long think doesn't close the mic */
   if((k==='end'||(k==='err'&&/^(6|7|no-speech|no-match)$/.test(String(t))))&&Date.now()-VC.t0<grace){if(VC.txt)VC.acc=VC.txt;VC.fin=0;again();return}
-  else if(k==='level')btn.style.setProperty('--lv',Math.max(0,Math.min(1,(+t+2)/12)));
+  else if(k==='level')lvLevel(btn,Math.max(0,Math.min(1,(+t+2)/12)));
   if(k==='err'){clearTimeout(VC.qt);const m={perm:'Allow the microphone to use voice',no_on_device:'This phone can’t do on-device speech',7:'Didn’t catch that. Tap the mic and try again',6:'Didn’t hear anything',9:'Allow the microphone to use voice',13:'Speech isn’t available on this phone right now'}[t];voiceStop(false,!!VC.txt);if(m)toast(m)}
   else if(k==='end'){clearTimeout(VC.qt);voiceStop(false,true)}};
  if(NATIVE){window.__voice=(i,k,t)=>on(k,t);NATIVE.voiceStart(id,v.lang||'',!st.onDevice&&!!vset().cloud);return}
@@ -6148,7 +6151,9 @@ async function voiceStart(el,btn){const v=vset(),st=vstate();voiceStop(true);
  function mkR(){const r=new R();r.lang=v.lang||navigator.language||'en-US';r.interimResults=true;r.continuous=false;
   r.onresult=e=>{if(VC&&VC.r!==r)return;let t='';for(const x of e.results)t+=x[0].transcript;on(e.results[e.results.length-1].isFinal?'final':'partial',t)};r.onerror=e=>{if(VC&&VC.r!==r)return;on('err',e.error==='not-allowed'?'perm':e.error==='no-speech'?'6':String(e.error))};r.onend=()=>{if(VC&&VC.r!==r)return;on('end','')};return r}
  const r=VC.r=mkR();try{r.start()}catch(e){voiceStop()}}
-function voiceStop(silent,keep){if(!VC)return;const c=VC;VC=null;clearTimeout(c.qt);if(c.el.id==='asIn'&&!silent&&window.asCue)asCue('stop');c.btn.classList.remove('rec');c.el.classList.remove('listening');try{if(NATIVE)NATIVE.voiceStop();else c.r&&c.r.stop()}catch(e){}
+/* mic level → --lv, eased every frame instead of jumping on each (irregular) level event, so the orb and mic glow move smoothly */
+function lvLevel(btn,v){btn._lvT=v;if(btn._lvR)return;const tick=()=>{const c=btn._lvC||0,t=btn._lvT||0,n=c+(t-c)*(t>c?.35:.12);btn._lvC=Math.abs(n-t)<.004?t:n;btn.style.setProperty('--lv',btn._lvC.toFixed(3));btn._lvR=btn._lvC===t?0:requestAnimationFrame(tick)};btn._lvR=requestAnimationFrame(tick)}
+function voiceStop(silent,keep){if(!VC)return;const c=VC;VC=null;clearTimeout(c.qt);lvLevel(c.btn,0);if(c.el.id==='asIn'&&!silent&&window.asCue)asCue('stop');c.btn.classList.remove('rec');c.el.classList.remove('listening');try{if(NATIVE)NATIVE.voiceStop();else c.r&&c.r.stop()}catch(e){}
  if(c.mark){const t=c.mark.textContent;if(keep&&t){c.mark.replaceWith(document.createTextNode(t));c.el.dispatchEvent(new Event('input',{bubbles:true}))}else c.mark.remove()}else if(!keep&&!silent&&!c.txt)vInsert(c.el,c.base,'')}
 function permAsk(key,perms){if(!NATIVE||!NATIVE.askPerm)return Promise.resolve(true);if(perms.split(',').every(p=>NATIVE.hasPerm(p)))return Promise.resolve(true);return new Promise(res=>{const prev=window.__perm;window.__perm=(k,ok)=>{if(k!==key){prev&&prev(k,ok);return}window.__perm=prev;res(!!ok)};NATIVE.askPerm(key,perms)})}
 function voiceConsent(){return new Promise(res=>{VCONS=res;const d=document.createElement('div');d.className='vdlg';d.innerHTML=`<div class="vdlg-b" role="dialog" aria-modal="true"><h3>Use online speech?</h3><p class="small muted">${NATIVE?'This phone can’t turn speech into text on the device. Its speech service (usually Google’s) can, but it sends what you say online to do it.':'Your browser turns speech into text with an online service, so what you say is sent to it.'} Plotline itself never stores or sends your audio.</p><div class="actions"><button class="btn ghost" data-act="vcNo">Not now</button><button class="btn pri" data-act="vcYes">Allow</button></div></div>`;document.body.appendChild(d)})}
