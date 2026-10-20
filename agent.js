@@ -44,8 +44,9 @@ async function calAdd(x){let body;if(x.time){const st=new Date(x.date+'T'+x.time
  else{const e=new Date(x.date+'T12:00');e.setDate(e.getDate()+1);body={summary:x.title,start:{date:x.date},end:{date:ymd(e)}}}
  return gapi('https://www.googleapis.com/calendar/v3/calendars/primary/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}
 async function mailRecent(q,n){const j=await gapi(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${n}&q=${encodeURIComponent(q)}`);const out=[];
- for(const m0 of j.messages||[]){try{const m=await gapi(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m0.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject`);const h=k=>(((m.payload||{}).headers||[]).find(x=>x.name===k)||{}).value||'';
-  out.push({from:h('From').replace(/\s*<[^>]*>/,'').replace(/"/g,'').trim(),subject:h('Subject'),t:+m.internalDate,snippet:(m.snippet||'').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&'),unread:(m.labelIds||[]).includes('UNREAD')})}catch(e){}}return out}
+ /* the messages' headers are fetched side by side, so 25 emails take about as long as one */
+ await Promise.all((j.messages||[]).map(async m0=>{try{const m=await gapi(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m0.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject`);const h=k=>(((m.payload||{}).headers||[]).find(x=>x.name===k)||{}).value||'';
+  out.push({from:h('From').replace(/\s*<[^>]*>/,'').replace(/"/g,'').trim(),subject:h('Subject'),t:+m.internalDate,snippet:(m.snippet||'').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&'),unread:(m.labelIds||[]).includes('UNREAD')})}catch(e){}}));return out.sort((a,b)=>b.t-a.t)}
 async function driveRecent(n){const j=await gapi(`https://www.googleapis.com/drive/v3/files?pageSize=${n}&orderBy=modifiedTime%20desc&q=${encodeURIComponent("trashed=false and mimeType!='application/vnd.google-apps.folder'")}&fields=files(name,mimeType,modifiedTime)`);
  return(j.files||[]).map(f=>({name:f.name,kind:(f.mimeType||'').split(/[./]/).pop().replace('vnd-google-apps-',''),t:Date.parse(f.modifiedTime)}))}
 const HTTPCB={};window.__http=(id,st,b)=>{const f=HTTPCB[id];if(f)f(st,b)};
@@ -71,14 +72,18 @@ function plotLines(big){const td=ymd(),L=[];const days=S.days.filter(x=>x.date>=
  const ls=(S.lists||[]).slice(0,big?10:5);if(ls.length)L.push('Lists: '+ls.map(l=>l.title).join('; '));
  const je=S.entries.filter(e=>e.type==='note'&&!e.private&&now()-e.t<3*864e5).sort((a,b)=>b.t-a.t).slice(0,3);if(je.length)L.push('Recent journal: '+je.map(e=>`${dd(e.t)}: ${tr(e.text||e.title,big?240:120)}`).join(' | '));
  return L}
-async function gather(src,big){const out=[],errs=[];const sec=(t,L)=>{if(L&&L.length)out.push(t+'\n'+L.map(x=>'- '+x).join('\n'))};const n=big?20:10;
+/* which email to read: the task's own words pick unread / today / this week, otherwise the last two days */
+function mailQuery(p){p=String(p||'').toLowerCase();const q=[];if(/\b(unread|unopened|new|haven.?t (read|opened))\b/.test(p))q.push('is:unread');
+ q.push(/\btoday\b/.test(p)?'newer_than:1d':/\b(this week|7 days|week)\b/.test(p)?'newer_than:7d':/\byesterday\b/.test(p)?'newer_than:2d':'newer_than:2d');
+ if(!/\b(promo|newsletter|all)\b/.test(p))q.push('-category:promotions -category:social');return q.join(' ')}
+async function gather(src,big,prompt){const out=[],errs=[],raw={};const sec=(t,L)=>{if(L&&L.length)out.push(t+'\n'+L.map(x=>'- '+x).join('\n'))};const n=big?20:10;
  const jobs={plot:async()=>sec('PLOTLINE',plotLines(big)),
-  gcal:async()=>{const E=await calEvents(big?14:7);sec('CALENDAR (next '+(big?14:7)+' days)',E.length?E.map(e=>`${dd(e.start)}${e.all?' all day':' '+tm(e.start)} ${e.title}${e.where?' @ '+tr(e.where,40):''}`):['No events'])},
-  gmail:async()=>{const M=await mailRecent('newer_than:2d -category:promotions -category:social',big?15:8);sec('EMAIL (last 2 days)',M.length?M.map(m=>`${m.unread?'[unread] ':''}${dd(m.t)} from ${tr(m.from,40)}: ${tr(m.subject,90)} · ${tr(m.snippet,big?200:110)}`):['No new email'])},
+  gcal:async()=>{const E=await calEvents(big?14:7);raw.cal=E.slice(0,25);sec('CALENDAR (next '+(big?14:7)+' days)',E.length?E.map(e=>`${dd(e.start)}${e.all?' all day':' '+tm(e.start)} ${e.title}${e.where?' @ '+tr(e.where,40):''}`):['No events'])},
+  gmail:async()=>{const M=await mailRecent(mailQuery(prompt),big?25:15);raw.mail=M.map(m=>({from:m.from,subject:m.subject,t:m.t,unread:m.unread,snippet:tr(m.snippet,140)}));sec('EMAIL (last 2 days)',M.length?M.map(m=>`${m.unread?'[unread] ':''}${dd(m.t)} from ${tr(m.from,40)}: ${tr(m.subject,90)} · ${tr(m.snippet,big?200:110)}`):['No new email'])},
   gdrive:async()=>{const F=await driveRecent(n);sec('DRIVE (recently changed files)',F.map(f=>`${dd(f.t)} ${f.name} (${f.kind})`))},
   notion:async()=>{const P=await notionRecent(big?10:6);sec('NOTION (recently edited pages)',P.map(p=>`${dd(p.t)} ${p.title}${p.text?': '+tr(p.text,big?300:150):''}`))}};
  for(const k of src){if(!jobs[k]||!connOn(k))continue;step('Reading '+CN[k][0]+'…');try{await jobs[k]()}catch(e){errs.push(`${CN[k][0]}: ${e.message||e}`)}}
- return{text:out.join('\n\n'),errs}}
+ return{text:out.join('\n\n'),errs,raw}}
 
 /* ---------------- one run ---------------- */
 const SUGT=['today','reminder','journal','list_add','thread_update','new_thread','calendar_event','goal','habit'];
@@ -102,15 +107,15 @@ let BUSY=null,AGDL='',AGERR='',AGQ='';
 async function runTask(t,manual){if(BUSY)return manual&&toast('The agent is busy with “'+BUSY+'”');if(!aiPicked()){if(manual)toast('Pick an AI first: Settings › AI & voice');return}
  if(manual&&!aiOk()){if(window.AIX){toast('Setting up the AI first. This happens once.');await AIX.setup({quiet:true});if(!aiOk())return}else aiMark()}
  BUSY=t.title;AGERR='';STEP='Starting…';paintSoon();const A=ag(),e=planEngine(),big=e==='api'||!IS_PHONE;
- try{const g=await gather(t.src&&t.src.length?t.src:['plot'],big);const d=new Date();
-  const sys=`You are ${String((S.settings.assist||{}).name||'Plot').slice(0,24)}, the user's personal agent inside the Plotline app. It is ${d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})}, ${tm(d)}. Do the TASK using only the DATA. Reply with one JSON object: "summary" is 1 to 5 short sentences to the user about what matters (plain words, no lists, no markdown); "suggestions" are 0 to 6 concrete things the app can do for them, grounded in the data: today (a goal for today; text is the goal), reminder (text, date YYYY-MM-DD, time HH:MM), journal (text to save), list_add (target is a list name, text the items), thread_update (target is a thread name, text the update), new_thread (text is its title), calendar_event (text is the title, date, time), goal (a new goal to work towards), habit (something to do regularly). Don't suggest things that are already in the plan. Never invent facts. ${window.AIX?AIX.safety():''}`;
+ try{const g=await gather(t.src&&t.src.length?t.src:['plot'],big,t.prompt);const d=new Date();
+  const sys=`You are ${String((S.settings.assist||{}).name||'Plot').slice(0,24)}, the user's personal agent inside the Plotline app. It is ${d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})}, ${tm(d)}. Do the TASK using only the DATA. Reply with one JSON object: "summary" is your answer to the user. Answer the task directly and completely: if it asks to list, show or find things, list every matching item from the data on its own line starting with "- " (for email: sender, subject and a few words of what it says; for events: day, time and title); otherwise a few clear sentences on what matters and why. No headings, no tables; "suggestions" are 0 to 6 concrete things the app can do for them, grounded in the data: today (a goal for today; text is the goal), reminder (text, date YYYY-MM-DD, time HH:MM), journal (text to save), list_add (target is a list name, text the items), thread_update (target is a thread name, text the update), new_thread (text is its title), calendar_event (text is the title, date, time), goal (a new goal to work towards), habit (something to do regularly). Don't suggest things that are already in the plan. Never invent facts. ${window.AIX?AIX.safety():''}`;
   const msgs=[{role:'system',content:sys},{role:'user',content:`TASK: ${t.prompt}\n\nDATA\n${g.text||'(nothing to read)'}${g.errs.length?'\n\nCouldn’t read: '+g.errs.join('; '):''}`}];
-  step('Thinking…');const raw=await llm(msgs,{schema:SCHEMA,max_tokens:big?700:500,temperature:.2,reading:'Thinking…'});let j=parseJSON(raw);
+  step('Thinking…');const raw=await llm(msgs,{schema:SCHEMA,max_tokens:big?1200:900,temperature:.2,reading:'Thinking…'});let j=parseJSON(raw);
   /* not JSON: keep the words as the summary, and pick up any "ACTION: type | text" lines */
   if(!j){const P=window.AIX?AIX.parseActs(raw):{clean:raw,acts:[]},map={goal:'goal',habit:'habit',routine:'habit',list:'list_add',journal:'journal',reminder:'reminder',today:'today',thread:'new_thread'};j={summary:P.clean.replace(/[{}"\[\]]/g,'').slice(0,700),suggestions:P.acts.map(a=>({type:map[a.k],text:a.k==='list'?a.x||a.t:a.t,target:a.k==='list'?a.t:''}))}}
   if(!String(j.summary||'').trim()&&!(j.suggestions||[]).length)throw new Error('The AI gave an empty answer. Try again, or pick another model in Settings › AI & voice.');
   const sugs=(Array.isArray(j.suggestions)?j.suggestions:[]).filter(x=>x&&SUGT.includes(x.type)&&String(x.text||'').trim()).slice(0,6).map(x=>({id:uid(),type:x.type,text:tr(x.text,200),target:tr(x.target||'',60),date:/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')?x.date:'',time:/^\d{2}:\d{2}$/.test(x.time||'')?x.time:'',st:''}));
-  const item={id:uid(),t:now(),task:t.id,title:t.title,summary:tr(j.summary||'',900),sugs,errs:g.errs,seen:false};
+  const item={id:uid(),t:now(),task:t.id,title:t.title,summary:String(j.summary||'').trim().slice(0,3000),data:wantsList(t.prompt)?g.raw:{},sugs,errs:g.errs,seen:false};
   if(t.mode==='do')for(const s of sugs)if(s.type!=='calendar_event'){try{await apply(s,true)}catch(e){}}
   A.inbox.unshift(item);A.inbox=A.inbox.slice(0,40);t.last=now();t.err='';save();
   if(!manual&&document.hidden&&typeof notify==='function')notify('Plot · '+t.title,tr(item.summary,140));
@@ -170,9 +175,16 @@ window.agentFromVoice=x=>{const s=String(x||'');let when='daily',at='08:00',dow=
 
 /* ---------------- the Agent page ---------------- */
 const SUGN={today:'Goal for today',reminder:'Reminder',journal:'Journal',list_add:'Add to list',thread_update:'Thread update',new_thread:'New thread',calendar_event:'Calendar event',goal:'New goal',habit:'New habit'};
-const sugLine=s=>`${s.type==='list_add'||s.type==='thread_update'?esc(s.target)+': ':''}${esc(s.text)}${s.date||s.time?` <span class="muted">· ${esc(s.date?dd(s.date+'T12:00'):'')}${s.time?' '+esc(fmtTime(s.time)):''}</span>`:''}`;
+const sugLine=s=>`${(s.type==='list_add'||s.type==='thread_update')&&s.target?`<b>${esc(s.target)}</b>: `:''}${esc(s.text)}${s.date||s.time?` <span class="muted">· ${esc(s.date?dd(s.date+'T12:00'):'')}${s.time?' '+esc(fmtTime(s.time)):''}</span>`:''}`;
+/* a task that asks to list or show email or events also gets the actual items under the answer, straight from the data */
+const wantsList=p=>/\b(list|show|which|what|unread|unopened|summari[sz]e|any)\b/i.test(String(p||''));
+function dataHTML(d,sum){if(!d)return'';let o='';const op=/^\s*[-*•]\s/m.test(sum||'')?'':' open';
+ if(d.mail&&d.mail.length)o+=`<details class="ag-d"${op}><summary>${d.mail.length} email${d.mail.length===1?'':'s'}</summary><ul>${d.mail.map(m=>`<li${m.unread?' class="un"':''}><b>${esc(m.from||'(unknown)')}</b><span>${esc(m.subject||'(no subject)')}</span><small>${esc(dd(m.t))} · ${esc(tm(m.t))}${m.snippet?' · '+esc(m.snippet):''}</small></li>`).join('')}</ul></details>`;
+ if(d.cal&&d.cal.length)o+=`<details class="ag-d"><summary>${d.cal.length} event${d.cal.length===1?'':'s'}</summary><ul>${d.cal.map(e=>`<li><b>${esc(e.title)}</b><small>${esc(dd(e.start))}${e.all?' · all day':' · '+esc(tm(e.start))}${e.where?' · '+esc(e.where):''}</small></li>`).join('')}</ul></details>`;
+ return o}
+const sumHTML=t=>{const L=String(t||'').split('\n');let o='',ul=false;for(const r of L){const l=r.trim(),m=/^(?:[-*•]|\d+[.)])\s+(.*)$/.exec(l);if(m){if(!ul){o+='<ul class="ag-ul">';ul=true}o+=`<li>${esc(m[1]).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</li>`;continue}if(ul){o+='</ul>';ul=false}if(l)o+=`<p>${esc(l).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</p>`}return o+(ul?'</ul>':'')};
 function inboxHTML(){const I=ag().inbox;if(!I.length)return'';
- return`<section class="rv ag-inbox"><div class="st-h"><h3>Inbox</h3>${I.length?`<button class="link" data-act="agClear">Clear</button>`:''}</div>${I.slice(0,12).map(it=>`<article class="panel ag-it${it.seen?'':' new'}"><div class="ag-h"><b>${esc(it.title)}</b><small class="muted">${esc(dd(it.t))} · ${esc(tm(it.t))}</small></div>${it.summary?`<p>${esc(it.summary)}</p>`:''}
+ return`<section class="rv ag-inbox"><div class="st-h"><h3>Inbox</h3>${I.length?`<button class="link" data-act="agClear">Clear</button>`:''}</div>${I.slice(0,12).map(it=>`<article class="panel ag-it${it.seen?'':' new'}"><div class="ag-h"><b>${esc(it.title)}</b><small class="muted">${esc(dd(it.t))} · ${esc(tm(it.t))}</small></div>${it.summary?sumHTML(it.summary):''}${dataHTML(it.data,it.summary)}
   ${it.sugs.length?`<ul class="ag-s">${it.sugs.map(s=>`<li class="${s.st}"><span class="ag-k">${SUGN[s.type]}</span><span class="ag-x">${sugLine(s)}</span>${s.st==='done'?`<span class="ag-ok">${ic('check')}</span>`:s.st==='no'?'<span class="muted small">Skipped</span>':`<span class="ag-b"><button class="ibtn sm" data-act="agYes" data-i="${it.id}" data-s="${s.id}" aria-label="Do it" title="Do it">${ic('check')}</button><button class="ibtn sm" data-act="agNo" data-i="${it.id}" data-s="${s.id}" aria-label="Skip" title="Skip">${ic('plus')}</button></span>`}</li>`).join('')}</ul>${it.sugs.filter(s=>!s.st).length>1?`<div class="actions left"><button class="btn sm" data-act="agAll" data-i="${it.id}">Do all</button></div>`:''}`:''}
   ${it.errs&&it.errs.length?`<p class="small muted">Couldn’t read: ${esc(it.errs.join('; '))}</p>`:''}</article>`).join('')}</section>`}
 function tasksHTML(){const T=ag().tasks;
@@ -243,12 +255,14 @@ document.addEventListener('change',e=>{const x=e.target;if(!x.dataset)return;
 if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){const n=ag().inbox.filter(i=>!i.seen).length;return(n?`<a class="panel rv ag-home" href="#/agent"><span class="ag-hi">${ic('agent')}</span><span><b>Plot has ${n} new result${n===1?'':'s'}</b><small>${esc(tr(ag().inbox[0].summary||ag().inbox[0].title,90))}</small></span>${ic('next','ico-s')}</a>`:'')+_ht()}}
 
 const css=document.createElement('style');css.textContent=`
-.ag-h{display:flex;align-items:center;justify-content:space-between;gap:10px}.ag-h small{white-space:nowrap}
+.ag-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.ag-it .ag-h b{font:700 16px/1.3 var(--f-body);text-transform:none;letter-spacing:0;min-width:0}
+.ag-ul{margin:6px 0 10px;padding-left:20px}.ag-ul li{margin:3px 0;line-height:1.45}
+.ag-d{margin:10px 0;border:1px solid var(--line);border-radius:14px;padding:4px 12px}.ag-d summary{cursor:pointer;padding:8px 0;font:600 13px var(--f-body);color:var(--accent)}.ag-d ul{list-style:none;margin:0 0 6px;padding:0}.ag-d li{display:flex;flex-direction:column;padding:8px 0;border-top:1px solid var(--line);min-width:0}.ag-d li b{font-size:14px}.ag-d li span{font-size:14px;overflow-wrap:anywhere}.ag-d li small{color:var(--muted);font-size:12px;overflow-wrap:anywhere}.ag-d li.un b::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}.ag-h small{white-space:nowrap}
 .ag-it{margin-bottom:12px}.ag-it.new{box-shadow:inset 3px 0 0 var(--accent)}.ag-it p{margin:8px 0}
 .ag-s{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
-.ag-s li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--text) 5%,transparent)}
-.ag-s li.done,.ag-s li.no{opacity:.6}.ag-k{font:600 11px var(--f-mono,monospace);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);min-width:84px}
-.ag-x{flex:1;min-width:0;overflow-wrap:anywhere}.ag-b{display:flex;gap:4px}.ag-b .ibtn:last-child svg{transform:rotate(45deg)}.ag-ok{color:var(--accent)}
+.ag-s li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--text) 5%,transparent)}.ag-s li>:nth-child(n+3){grid-column:2;grid-row:1/span 2}
+.ag-s li.done,.ag-s li.no{opacity:.6}.ag-k{grid-column:1;font:700 10.5px var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
+.ag-x{grid-column:1;min-width:0;overflow-wrap:anywhere;font-size:14.5px;line-height:1.4}.ag-b{display:flex;gap:4px}.ag-b .ibtn:last-child svg{transform:rotate(45deg)}.ag-ok{color:var(--accent)}
 .ag-tl{display:flex;flex-direction:column;gap:10px}.ag-t.off{opacity:.55}.ag-t p{margin:6px 0}
 .ag-c{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent)}.ag-c span{display:flex;flex-direction:column}.ag-c small{color:var(--muted);font-size:12px}
 .ag-src{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}.ag-src .chip{position:relative;color:var(--muted)}.ag-src .chip input{position:absolute;opacity:0;pointer-events:none}.ag-src .chip::before{content:'';width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;box-sizing:border-box}.ag-src .chip:has(input:checked){color:var(--text);background:color-mix(in srgb,var(--accent) 14%,var(--surface));border-color:color-mix(in srgb,var(--accent) 55%,transparent)}.ag-src .chip:has(input:checked)::before{background:var(--accent);border-color:var(--accent)}.ag-src .chip:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}.ag-src .chip.dim{opacity:.45}
