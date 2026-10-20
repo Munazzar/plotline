@@ -223,7 +223,8 @@ async function lvHeard(text){const g=++LV.gen,t=String(text).trim();if(!t)return
  try{const r=PLOT_ASSIST.command(t);if(r&&r.say)return done(r.say,[])}catch(e){}
  if(!aiReady()){const L=PLOT_ASSIST.lookup(t);return done(L&&L.say?L.say:`I can add things to your plan right now. To talk about anything, set up ${nm()}’s AI first.`,[])}
  const ctl=LV.ctl=new AbortController();let out='';
- try{const q=t;let ctx='';try{const r=await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},null);ctx=PLOT_ASSIST.ctx(q,r,'',planEngine()==='api')}catch(e){ctx='QUESTION\n'+q}
+ if(window.AGENT&&AGENT.connected().length){const tk=await AGENT.route(t,LV.hist.reduce((a,m,i,A)=>(m.role==='user'&&A[i+1]?a.concat({q:m.content,a:A[i+1].content}):a),[]));if(g!==LV.gen)return;if(tk)out='AGENT: '+tk}
+ if(!out) try{const q=t;let ctx='';try{const r=await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},null);ctx=PLOT_ASSIST.ctx(q,r,'',planEngine()==='api')}catch(e){ctx='QUESTION\n'+q}
   const msgs=[{role:'system',content:LV_SYS()},...LV.hist.slice(-8),{role:'user',content:`DATA ABOUT ME (use only if it helps)\n${ctx.replace(/\nQUESTION\n[\s\S]*$/,'')}\n\nWHAT I JUST SAID\n${q}`}];
   await aiChat(msgs,x=>{if(g!==LV.gen)return;out+=x;let v=hideActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,''));if(/^\W*AG?E?N?T?$|AGENT\s*:/.test(v))v='';if(v){LV.ai=v;const c=$('#lvCap');const p=c&&c.querySelector('.lv-ai');if(p)p.textContent=v;else lvCap()}},{ctl,max_tokens:planEngine()==='api'?400:260,temperature:.7,reading:'Thinking…',onP:x=>{if(x&&g===LV.gen)lvState('think',x)},reset:()=>{out=''}})}
  catch(e){if(g!==LV.gen)return;if(e&&e.name==='AbortError')return;return done('Sorry, I couldn’t think that through: '+(e&&e.message||e),[])}

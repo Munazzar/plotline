@@ -3528,7 +3528,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.39.1';
+const APP_VER='1.39.2';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -5608,7 +5608,7 @@ function askTurn(R,t,i){const last=i===R.turns.length-1,n=R.srcs.length,done=R.t
  if(R.pending)a=`<p class="ask-prog" id="insProg">${esc(IN.prog||'Searching your notes…')}</p>`;
  else{if(i===0)a+=insTop(R);
   if(R.engine==='copy'&&!t.a)a+=`<div class="ask-copy"><b>${i?'Follow-up prompt ready':'Your prompt is ready'}</b><p class="small muted">${i?'Paste it into the same chat.':`It holds your question, an overview of your plan and ${n} matching note${n===1?'':'s'}. Nothing is sent by Plotline.`}</p><div class="actions left"><button class="btn pri sm" data-act="insCopy">${ic('copy')}Copy prompt</button>${i?'':`<a class="btn sm" href="https://claude.ai/new" target="_blank" rel="noopener">Claude ${ic('ext','ico-s')}</a><a class="btn sm" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ${ic('ext','ico-s')}</a><a class="btn sm" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ${ic('ext','ico-s')}</a>`}</div><textarea id="insPaste" rows="3" placeholder="Paste the reply here to keep it with its sources">${esc(IN.paste)}</textarea><div class="actions left"><button class="btn sm" data-act="insPasted">Show reply</button></div></div>`;
-  else{a+=`${t.err?`<p class="small err">${esc(t.err)}</p>`:''}<div class="ins-ans" ${last?'id="insAns"':''}>${t.a?mdLite(window.AIX?AIX.hideActs(t.a):t.a,n):t.done?'':'<p class="ask-dots"><i></i><i></i><i></i></p>'}</div>${t.done&&t.acts&&window.AIX?AIX.actChips(t.acts):''}`;
+  else{a+=`${t.err?`<p class="small err">${esc(t.err)}</p>`:''}<div class="ins-ans" ${last?'id="insAns"':''}>${t.a?(t.agent&&window.AIX&&AIX.md?`<div class="ai-md">${AIX.md(t.a)}</div>`:mdLite(window.AIX?AIX.hideActs(t.a):t.a,n)):t.done?'':'<p class="ask-dots"><i></i><i></i><i></i></p>'}</div>${t.done&&t.acts&&window.AIX?AIX.actChips(t.acts):''}`;
    if(last&&!t.done)a+=`<p class="ask-prog" id="insProg">${esc(IN.prog)}</p>`}
   if(last&&done&&R.turns.some(x=>x.a&&!x.off)&&!t.off)a+=`<div class="ask-acts"><button class="btn sm ghost" data-act="insSave">${ic('journal')}Save to journal</button><button class="btn sm ghost" data-act="insCopyAns">${ic('copy')}Copy</button>${n?`<button class="btn sm ghost" data-act="askSources">${n} source${n===1?'':'s'}</button>`:''}</div>`}
  return`<div class="ask-turn"><div class="ask-me">${esc(t.q)}</div><div class="ask-ai"><span class="ask-av">${ic('ai')}</span><div class="ask-body">${a}</div></div></div>`}
@@ -5651,11 +5651,18 @@ function insEngineHTML(){const s=insSet();return`<div class="ins-eng" id="askSet
 async function insRun(){const R=IN.res,t=R.turns[R.turns.length-1];if(R.engine==='copy'){IN.busy=false;insProg('');render(false);return}
  ASK_SHOWN=0;insProg(R.engine==='local'?(LLM&&LLM_ID.startsWith(llmOf(insSet().llm)[0]+':')?'Thinking on this device…':'Starting the on-device model…'):'Asking your AI server…');render(false);askScroll(true);
  const onTok=x=>{if(!t.a)insProg('');t.a+=x;insPaint()};
+ /* email, calendar, Drive or Notion: the AI decides, and the agent (agent.js) looks it up */
+ if(window.AGENT&&AGENT.connected().length&&!IN.ctl.signal.aborted){insProg('Thinking…');const tk=await AGENT.route(t.q,R.turns.slice(0,-1).filter(x=>x.done&&x.a));if(tk)return insAgent(R,t,tk)}
  try{if(R.engine==='api')await apiChat(insMsgs(R),onTok,IN.ctl.signal);else if(NAT_OK())await natChat(insMsgs(R),onTok,insProg,()=>{t.a='';insPaint()});else await localChat(insMsgs(R),onTok,insProg,0,()=>{t.a='';insPaint()});if(!t.a.trim()&&!IN.ctl.signal.aborted)t.err='The model returned an empty answer.'}
  catch(e){if(e.name!=='AbortError')t.err=(e&&e.message||'Something went wrong')+(R.engine==='api'&&/fetch|network|load/i.test(e.message||'')?' · Check the address, that the server is running, and that it allows this app (CORS).':R.engine==='local'&&/fetch|network|download/i.test(e.message||'')?' · The model couldn’t download. Check your connection and try again.':R.engine==='local'&&/memory|alloc|oom|abort|range/i.test(e.message||'')?' · This device may not have enough free memory for this model. Close other apps, or pick Llama 3.2 1B in the assistant settings.':'')}
  if(t.a&&!IN.ctl.signal.aborted)await askDrain();
+ {const tk=window.AGENT&&t.a&&AGENT.parse(t.a);if(tk)return insAgent(R,t,tk)}
  if(t.a&&window.AIX){const P=AIX.parseActs(t.a.replace(/<think>[\s\S]*?<\/think>/g,''));t.acts=AIX.keepActs(P.acts);t.a=P.clean;const c=AIX.care(t.q,t.a);if(c)t.a+='\n\n'+c}
  if(t.a)R.msgs.push({role:'assistant',content:t.a.replace(/<think>[\s\S]*?<\/think>/g,'').trim()});t.done=true;IN.busy=false;insProg('');if(insPage())render(false)}
+async function insAgent(R,t,task){t.a='';t.err='';insProg('Asking your agent…');insPaint();
+ try{const x=await AGENT.ask(task,{onStep:s=>insProg(s)});t.a=x.md||'Done.';t.agent=1;t.acts=window.AIX?AIX.keepActs(x.chips.map(c=>({id:uid(),k:'agent',t:c.t,x:'',st:'',fn:c.fn}))):[]}
+ catch(e){t.err='My agent couldn’t do that: '+(e&&e.message||e)}
+ if(t.a)R.msgs.push({role:'assistant',content:t.a});t.done=true;IN.busy=false;insProg('');if(insPage())render(false)}
 Object.assign(ACT,{
  askSend:()=>{const q=(IN.q||'').trim();if(!q||IN.busy)return;const follow=!!(IN.res&&!IN.res.pending&&!IN.res.offOnly);{const b=window.AIX&&AIX.block(q);if(b)return askBlocked(q,b)}if(follow){IN.q='';ACT.insFollow(null,null,null,q)}else ACT.insAsk(null,null,null,q)},
  askPre:d=>{const p=INS_PRE.find(x=>x.k===d.k);if(!p)return;IN.pre=p.k;ACT.insAsk(null,null,null,p.q)},
@@ -5674,7 +5681,7 @@ Object.assign(ACT,{
   if(!S.entries.length&&!S.goals.length&&!S.habits.length)return toast('Add a goal, habit or journal entry first');
   const s=insSet();IN.busy=true;IN.paste='';IN.q='';IN.pre='';IN.ctl=new AbortController();IN.res={srcs:[],turns:[{q,a:'',done:false,err:''}],engine:s.engine,msgs:[],pending:1};insProg('Searching your notes…');render(false);askScroll(true);
   try{const W=p?p.win:IN.win,r=await ragRetrieve(p?p.q+' '+(p.kw||''):q,{win:W,goal:IN.goal,all:p&&p.all,kinds:p&&p.kinds,broad:!!p||insFocus(q).broad},insProg);const stats=insStats(W,IN.goal),prompt=insPrompt(q,r,stats,W);
-   IN.res={srcs:r.srcs,mode:r.mode,err:r.err,total:r.total,engine:s.engine,prompt,msgs:[{role:'system',content:`You are ${aiName()}, a helpful, friendly assistant inside the Plotline app. You can talk about anything. Use the user’s own data when the question is about their life, and cite notes like [2]. ${window.AIX?AIX.safety():''}`},{role:'user',content:prompt}],turns:[{q,a:'',done:false,err:''}],opt:{win:W,goal:IN.goal}}}
+   IN.res={srcs:r.srcs,mode:r.mode,err:r.err,total:r.total,engine:s.engine,prompt,msgs:[{role:'system',content:`You are ${aiName()}, a helpful, friendly assistant inside the Plotline app. You can talk about anything. Use the user’s own data when the question is about their life, and cite notes like [2].${window.AGENT?' '+AGENT.sys():''} ${window.AIX?AIX.safety():''}`},{role:'user',content:prompt}],turns:[{q,a:'',done:false,err:''}],opt:{win:W,goal:IN.goal}}}
   catch(e){IN.busy=false;IN.res=null;insProg('');toast('Search failed: '+(e.message||e));render(false);return}
   await insRun()},
  insStop:()=>{IN.ctl&&IN.ctl.abort()},
