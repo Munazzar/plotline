@@ -170,6 +170,7 @@ function parse(raw){const t=strip(normCmd(raw)),l=lcs(t);let m;if(!t)return null
 
 window.PlotDo={addJournal,newThread,addToThread,addToday,addReminder,addTo,newList,parseWhen,pick,splitItems,body,aiReady:()=>aiReady()};
 function exec(p,raw){const A=aset();switch(p.k){
+ case'agentNow':return{agent:p.x};
  case'agent':return window.agentFromVoice?agentFromVoice(p.x):{say:'The agent isn’t available here.'};
  case'cancel':return{say:'Okay.'};
  case'live':setTimeout(()=>{if(window.liveOpen)liveOpen()},60);return{say:'Sure, let’s talk.',quiet:1};
@@ -364,22 +365,23 @@ function asCtx(q,r,hint,big){const now=new Date(),tn=dnum(ymd()),lq=lcs(q),N=nam
  return parts.join('\n')+`\nQUESTION\n${q}`}
 async function aiAnswer(q,onP,hint){if(!aiReady())return null;const e=planEngine(),loc=e!=='api'&&e!=='native',X=window.AIX,spoken=AS.spoken,pr=insSet().profile;
  const r=await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);const prompt=asCtx(q,r,hint,!loc&&e==='api');
- const sys=`You are ${aname()}, the assistant inside the Plotline app: a personal assistant that knows the user's own data and can talk about anything. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. ${spoken?'Your answer is read aloud: one to three short, natural sentences. No lists, no markdown, no note numbers like [2].':'Answer clearly and briefly: a few sentences, or a few short bullets when that really helps. No note numbers like [2].'} When the question is about their life, use the data given (dates, activity numbers, plans, threads, lists and notes); if the app looked something up, use that answer, and if the data doesn't have it, say what you do know. For anything else (the world, ideas, advice, writing, feelings), just answer it well.${pr&&pr.text?'\n\nWHAT YOU KNOW ABOUT THEM\n'+pr.text:''}${X?'\n\n'+X.ACT_SYS+'\n\n'+X.safety():''}`;
+ const sys=`You are ${aname()}, the assistant inside the Plotline app: a personal assistant that knows the user's own data and can talk about anything. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. ${spoken?'Your answer is read aloud: one to three short, natural sentences. No lists, no markdown, no note numbers like [2].':'Answer clearly and briefly: a few sentences, or a few short bullets when that really helps. No note numbers like [2].'} When the question is about their life, use the data given (dates, activity numbers, plans, threads, lists and notes); if the app looked something up, use that answer, and if the data doesn't have it, say what you do know. For anything else (the world, ideas, advice, writing, feelings), just answer it well.${window.AGENT?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nWHAT YOU KNOW ABOUT THEM\n'+pr.text:''}${X?'\n\n'+X.ACT_SYS+'\n\n'+X.safety():''}`;
  const hist=[];AS.turns.filter(t=>!t.wait&&t.a&&!t.sys).slice(-3).forEach(t=>hist.push({role:'user',content:t.q},{role:'assistant',content:t.a}));
  const msgs=[{role:'system',content:sys},...hist,{role:'user',content:prompt}];
  let out='';const on=x=>{out+=x;onP&&onP('')};const opts={max_tokens:spoken?260:(loc?450:700),reading:'Thinking…',temperature:.5};
  if(e==='api')await apiChat(msgs,on,AS.ctl.signal,opts);else if(e==='native')await natChat(msgs,on,onP,()=>{out=''},opts);else await localChat(msgs,on,onP,0,()=>{out=''},false,opts);
  out=out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'');
+ const ag=window.AGENT&&AGENT.parse(out);if(ag)return{agent:ag};
  if(X){const P=X.parseActs(out);out=P.clean;AS.acts=X.keepActs(P.acts)}
  out=(spoken?out.replace(/[*#_`]/g,''):out.replace(/\*\*|__|`|^#+\s*/gm,'')).trim();
  if(X){const c=X.care(q,out);if(c)out+=' '+c}
  return out||null}
 async function llmIntent(t){const e=typeof planEngine==='function'?planEngine():'',fast=e!=='api'&&isLrtM(llmOf(insSet().llm));if(e!=='api'&&e!=='native'&&!fast||!aiReady())return null;
- const schema={type:'object',properties:{action:{enum:['journal','new_thread','thread_update','reminder','new_list','list_add','today_goal','habit_done','agent_task','question']},text:{type:'string'},target:{type:'string'},when:{type:'string'}},required:['action','text'],additionalProperties:false};
- const msgs=[{role:'system',content:'You turn one spoken or typed request to a personal journal and habits app into JSON. Requests can be phrased any way, misspelled ("jounel", "liost", "thred") or misheard ("general entry" means journal entry). Reply with JSON only. The text field holds only what should be saved: never the command words ("make a journal entry", "add to my list", "that says"), never the target name.'},{role:'user',content:`Request: "${t}"\n\nactions: journal (save text to today's journal), new_thread (start a thread; text is its title), thread_update (target is the thread name; text is the update), reminder (when is the time words like "tomorrow at 5pm"), new_list (text is the list name; target is its items separated by commas, or empty), list_add (target is the list name; text is the items), today_goal, habit_done (text is the habit), agent_task (something to do on a schedule or keep an eye on, like "every morning summarise my emails"; text is the task), question (anything asked).`}];
+ const schema={type:'object',properties:{action:{enum:['journal','new_thread','thread_update','reminder','new_list','list_add','today_goal','habit_done','agent_task','agent_now','question']},text:{type:'string'},target:{type:'string'},when:{type:'string'}},required:['action','text'],additionalProperties:false};
+ const msgs=[{role:'system',content:'You turn one spoken or typed request to a personal journal and habits app into JSON. Requests can be phrased any way, misspelled ("jounel", "liost", "thred") or misheard ("general entry" means journal entry). Reply with JSON only. The text field holds only what should be saved: never the command words ("make a journal entry", "add to my list", "that says"), never the target name.'},{role:'user',content:`Request: "${t}"\n\nactions: journal (save text to today's journal), new_thread (start a thread; text is its title), thread_update (target is the thread name; text is the update), reminder (when is the time words like "tomorrow at 5pm"), new_list (text is the list name; target is its items separated by commas, or empty), list_add (target is the list name; text is the items), today_goal, habit_done (text is the habit), agent_task (only for something to repeat on a schedule or keep an eye on, like "every morning summarise my emails"; text is the task), agent_now (something to look up or do right now in their email, calendar, Google Drive or Notion, like "check if Sam replied" or "put lunch with Ana on my calendar Friday"; text is the whole request), question (anything asked).`}];
  let out='';try{if(e==='api')await apiChat(msgs,x=>{out+=x},AS.ctl.signal,{schema,max_tokens:160,temperature:0});else if(e==='wasm')await localChat(msgs,x=>{out+=x},null,0,null,false,{schema,max_tokens:160,temperature:0});else await natChat(msgs,x=>{out+=x},null,null,{schema,max_tokens:160,temperature:0});const j=JSON.parse(out.slice(out.indexOf('{'),out.lastIndexOf('}')+1));
   const x=String(j.text||''),tg=String(j.target||''),w=String(j.when||'');
-  return{journal:{k:'journal',x:body(x)},new_thread:{k:'thrnew',title:x},thread_update:{k:'add',x,to:tg+' thread'},reminder:{k:'remind',x:x+(w?' '+w:'')},list_add:{k:'add',x,to:tg+' list'},new_list:{k:'listnew',title:x,items:tg?splitItems(tg):[]},today_goal:{k:'today',x},habit_done:{k:'done',x},agent_task:{k:'agent',x}}[j.action]||null}catch(err){return null}}
+  return{journal:{k:'journal',x:body(x)},new_thread:{k:'thrnew',title:x},thread_update:{k:'add',x,to:tg+' thread'},reminder:{k:'remind',x:x+(w?' '+w:'')},list_add:{k:'add',x,to:tg+' list'},new_list:{k:'listnew',title:x,items:tg?splitItems(tg):[]},today_goal:{k:'today',x},habit_done:{k:'done',x},agent_task:{k:'agent',x},agent_now:window.AGENT&&AGENT.connected().length?{k:'agentNow',x:t}:null}[j.action]||null}catch(err){return null}}
 
 /* ---------------- one request, start to finish ---------------- */
 const QRX=/^(?:who|what|when|where|why|how|which|is|are|was|were|do|does|did|have|has|had|can i|should i|tell me|show me|list|summari[sz]e|give me)\b/i;
@@ -387,7 +389,7 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
  if(!text){listen();return}
  if(AS.busy){toast('Still working on the last one');return}
  if(AS.turns.length&&AS.last&&Date.now()-AS.last>CV_GAP)convFresh('chat');
- asOpen();wakePause(true);$('#asIn')?.setAttribute('placeholder','Ask or tell me something…');const turn={q:text,a:'',chips:[],t:Date.now(),id:uid(),wait:true};AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.spoken=!!o.spoken;AS.busy=true;AS.ctl=new AbortController();paint(true);
+ asOpen();wakePause(true);$('#asIn')?.setAttribute('placeholder','Ask or tell me something…');const turn={q:text,a:'',chips:[],t:Date.now(),id:uid(),wait:true};AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.spoken=!!o.spoken;AS.busy=true;AS.ctl=new AbortController();paint(true);if(AS.spoken)window.asHum(true);
  let r=null;AS.acts=null;
  try{const aw=AS.await;AS.await=null;const blk=window.AIX&&AIX.block(text);if(blk)r={say:blk};
   if(aw)r=answerAwait(aw,text);
@@ -402,13 +404,22 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
   if(r&&r.miss){const miss=r.miss;r=null;status('Thinking…');const a=await aiAnswer(text,status).catch(()=>null);r=a?{say:a}:{say:`I couldn't find anything about ${quote(miss)} in your journal, threads, lists or habits.`}}
   if(!r&&!QRX.test(strip(text))&&/^(?:add|put|write|log|create|start|make|set|remind|schedule|note|save|mark|record|jot|track|new)\b/i.test(strip(text))){status('Working it out…');const p=await llmIntent(strip(text));if(p&&p.k)r=exec(p,text)}
   if(!r){status('Thinking…');const a=await aiAnswer(text,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
-   r=a?{say:a,chips:[['Ask more','?'+text]]}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'I can add things and look up when you last did something. For other questions, open this in Ask once to set up the AI, and after that I’ll answer from your notes too.',chips:[['Open in Ask','?'+text]]}}}
+   r=a?{say:a,chips:[['Ask more','?'+text]]}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'I can add things and look up when you last did something. For other questions, open this in Ask once to set up the AI, and after that I’ll answer from your notes too.',chips:[['Open in Ask','?'+text]]}}
+  if(r&&r.say&&r.say.agent)r={agent:r.say.agent};
+  if(r&&r.agent)r=await agentRun(r.agent);}
  catch(e){r={say:e&&e.name==='AbortError'?'Stopped.':'Something went wrong: '+(e&&e.message||e)}}
- status('');turn.wait=false;turn.a=r.say||'';turn.chips=(r.chips||[]).map(c=>({t:c[0],r:c[1],fn:c[2]}));if(r.undo){AS.undo[turn.id]=r.undo;turn.chips.unshift({t:'Undo',undo:1})}
+ status('');window.asHum(false);turn.wait=false;turn.a=r.say||'';turn.chips=(r.chips||[]).map(c=>({t:c[0],r:c[1],fn:c[2]}));if(r.undo){AS.undo[turn.id]=r.undo;turn.chips.unshift({t:'Undo',undo:1})}
  if(AS.acts&&AS.acts.length&&window.AIX){const A=AS.acts;AS.acts=null;turn.chips.unshift(...A.map(a=>{const c={t:'+ '+AIX.actLabel(a),act:1};c.fn=()=>{let x;try{x=AIX.doAct(a)}catch(e){return toast('Couldn’t add that')}c.t='✓ '+AIX.actLabel(a);c.fn=()=>x&&x.go&&(asClose(),setTimeout(()=>go(x.go),380));paint();toast(esc((x&&x.say)||'Added'))};return c}))}
  AS.await=r.await||null;AS.busy=false;AS.ctl=null;paint(true);pushWidget2();
  const talk=!r.quiet&&(aset().speak==='always'||aset().speak==='voice'&&AS.spoken);AS.after=(r.listen||AS.await)&&AS.spoken?'listen':null;
- if(talk&&turn.a)speak(turn.a);else afterSpeak()}
+ if(talk&&turn.a)speak(r.speak||turn.a);else afterSpeak()}
+/* the assistant's AI asked for its agent (email, calendar, Drive, Notion): the agent's answer becomes this turn, its suggestions one-tap chips */
+async function agentRun(task){if(!window.AGENT)return{say:'The agent isn’t available here.'};
+ if(!AGENT.connected().length)return{say:'I can read your email, calendar, Google Drive and Notion once you connect them on the Agent page.',chips:[['Connect on the Agent page','agent']]};
+ status('Asking your agent…');
+ try{const x=await AGENT.ask(task,{onStep:status});return{say:x.md||'Done.',speak:x.say,chips:[...x.chips.map(c=>[c.t,'',agentChip(c.fn)]),['See it in the agent inbox','agent']]}}
+ catch(e){return{say:'My agent couldn’t do that: '+(e&&e.message||e),chips:[['Open the agent','agent']]}}}
+const agentChip=f=>async c=>{if(c.done)return;try{await f();c.done=1;c.t='✓ '+c.t;paint()}catch(e){}};
 
 /* ---------------- speaking ---------------- */
 let SPK=null,SPK_CB=null;
@@ -460,6 +471,13 @@ const cueOf=k=>{const a=aset(),id=k==='start'?(a.cueStart||'rise'):(a.cueDone||'
 let ACX=null;
 function cuePlay(id){const q=CUES[id];if(!q||!q.f.length)return;try{ACX=ACX||new(window.AudioContext||window.webkitAudioContext)();const c=ACX;if(c.state==='suspended')c.resume();const t0=c.currentTime+.02,g=c.createGain();g.connect(c.destination);g.gain.value=1;
  q.f.forEach(([f,d])=>{[1,q.h].forEach((h,j)=>{const o=c.createOscillator(),e=c.createGain();o.type=j?'triangle':'sine';o.frequency.value=f*h;o.connect(e);e.connect(g);const a=t0+d,v=j?q.hv:.75,dd=j?q.d*.6:q.d;e.gain.setValueAtTime(0,a);e.gain.linearRampToValueAtTime(v,a+.008);e.gain.exponentialRampToValueAtTime(.001,a+dd);o.start(a);o.stop(a+dd+.04)})})}catch(e){}}
+/* a soft hum while the AI thinks in a spoken conversation: two low notes, a slow swell, fading in and out */
+let HUM=null;
+window.asHum=on=>{if(on&&aset().hum===false)on=false;
+ if(!on){if(!HUM)return;const h=HUM;HUM=null;try{const t=h.c.currentTime;h.g.gain.cancelScheduledValues(t);h.g.gain.setValueAtTime(h.g.gain.value,t);h.g.gain.linearRampToValueAtTime(0,t+.35);setTimeout(()=>{try{h.o.forEach(o=>o.stop())}catch(e){}},450)}catch(e){}return}
+ if(HUM)return;try{ACX=ACX||new(window.AudioContext||window.webkitAudioContext)();const c=ACX;if(c.state==='suspended')c.resume();const t=c.currentTime,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+.8);lp.connect(g);g.connect(c.destination);
+  const o=[[174.6,0],[261.6,3],[349.2,-4]].map(([f,d],i)=>{const x=c.createOscillator(),v=c.createGain();x.type='sine';x.frequency.value=f;x.detune.value=d;v.gain.value=[.6,.35,.12][i];x.connect(v);v.connect(lp);x.start(t);return x});
+  const l=c.createOscillator(),lg=c.createGain();l.frequency.value=.45;lg.gain.value=.018;l.connect(lg);lg.connect(g.gain);l.start(t);o.push(l);HUM={c,g,o}}catch(e){}};
 window.asCue=k=>{if(aset().cues===false)return;cuePlay(cueOf(k));try{navigator.vibrate&&navigator.vibrate(k==='start'?[18]:[10,60,10])}catch(e){}};
 
 /* ---------------- the sheet ---------------- */
@@ -477,8 +495,8 @@ function ansHTML(a){if(window.AIX&&AIX.md)return`<div class="ai-md">${AIX.md(a)}
  if(ul)o+='</ul>';return o||'<p></p>'}
 function chipHTML(t,c,i){return c.undo?`<button class="btn sm ghost" data-act="asUndo" data-id="${t.id}">Undo</button>`:`<button class="btn sm ghost" data-act="asChip" data-id="${t.id}" data-i="${i}">${esc(c.t)}</button>`}
 function paint(scroll){const el=$('#asv');if(!el)return;paintHead();const b=el.querySelector('.as-b');
- b.innerHTML=AS.turns.length?AS.turns.map(t=>`<div class="as-t"><p class="as-q">${esc(t.q)}</p><div class="as-a${t.wait?' wait':''}"><span class="as-dot" aria-hidden="true"></span><div class="as-ab">${t.wait?'<p><i></i><i></i><i></i></p>':ansHTML(t.a)}${t.chips&&t.chips.length?`<div class="as-ch">${t.chips.map((c,i)=>chipHTML(t,c,i)).join('')}</div>`:''}</div></div></div>`).join(''):
- `<div class="as-empty"><button class="as-big" data-act="asMic" aria-label="Talk"><i></i></button><p><b>Hi, I’m ${esc(aname())}.</b> Tap and talk${NA&&(aset().wake||aset().bg)?`, or say “${esc(wakeWord())}”`:''}. Ask me anything.</p><button class="btn sm pri" data-act="liveOpen" style="margin:4px 0 6px">${ic('live')}Start a conversation</button>${NA&&!aset().wake&&!aset().bg?`<button class="btn sm" data-act="asWakeOn" style="margin:4px 0 6px">Turn on “${esc(wakeWord())}”</button>`:''}<div class="as-sugs">${['Add “had a great workout” to my journal','When did I last change my oil?','Remind me to call mom at 6pm','What do I have today?'].map(s=>`<button class="as-sug" data-act="asTry" data-q="${esc(s.replace(/[“”]/g,''))}">${esc(s)}</button>`).join('')}</div></div>`;
+ b.innerHTML=AS.turns.length?AS.turns.map(t=>`<div class="as-t"><div class="as-qr">${t.wait?'':`<button class="as-tx" data-act="asDel" data-id="${t.id}" aria-label="Remove this message and its answer" title="Remove">${ic('x')}</button>`}<p class="as-q">${esc(t.q)}</p></div><div class="as-a${t.wait?' wait':''}"><span class="as-dot" aria-hidden="true"></span><div class="as-ab">${t.wait?'<p><i></i><i></i><i></i></p>':ansHTML(t.a)}${t.chips&&t.chips.length?`<div class="as-ch">${t.chips.map((c,i)=>chipHTML(t,c,i)).join('')}</div>`:''}</div></div></div>`).join(''):
+ `<div class="as-empty"><button class="as-big" data-act="asMic" aria-label="Talk"><i></i></button><p><b>Hi, I’m ${esc(aname())}.</b> Tap and talk${NA&&(aset().wake||aset().bg)?`, or say “${esc(wakeWord())}”`:''}. Ask me anything.</p><div class="as-go"><button class="btn sm pri" data-act="liveOpen">${ic('live')}Talk out loud</button><a class="btn sm" href="#/agent">${ic('agent')}Agent</a></div>${NA&&!aset().wake&&!aset().bg?`<button class="btn sm" data-act="asWakeOn" style="margin:4px 0 6px">Turn on “${esc(wakeWord())}”</button>`:''}${window.AIX&&AIX.sugs?(setTimeout(()=>AIX.sugAuto('chat'),0),AIX.sugs('chat','asTry')):`<div class="as-sugs">${['Add “had a great workout” to my journal','When did I last change my oil?','Remind me to call mom at 6pm','What do I have today?'].map(s=>`<button class="as-sug" data-act="asTry" data-q="${esc(s.replace(/[“”]/g,''))}">${esc(s)}</button>`).join('')}</div>`}</div>`;
  if(scroll)b.scrollTop=b.scrollHeight;convSync()}
 Object.assign(ACT,{
  asOpen:()=>{asOpen();setTimeout(()=>{if(!AS.turns.length&&NA&&typeof voiceAvail==='function'&&voiceAvail())listen();else $('#asIn')?.focus()},300)},
@@ -486,9 +504,11 @@ Object.assign(ACT,{
  asMic:()=>{if(VC&&VC.el&&VC.el.id==='asIn'){voiceStop(false,true);return}if(AS.busy){AS.ctl&&AS.ctl.abort();return}AS.nlis=false;listen()},
  asStop:()=>{AS.after=null;if(AS.busy&&AS.ctl)AS.ctl.abort();if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);AS.listening=AS.nlis=false;hush();wakePause(false)},
  asTry:d=>run(d.q),
+ asDel:d=>{const i=AS.turns.findIndex(t=>t.id===d.id);if(i<0)return;const t=AS.turns[i],cid=AS.cid;AS.turns.splice(i,1);if(window.CONV&&CONV.removeTurn&&cid)CONV.removeTurn(cid,t.id);if(!AS.turns.length)AS.cid=null;paint();pushWidget2();
+  toast('Message removed',()=>{AS.turns.splice(Math.min(i,AS.turns.length),0,t);if(!AS.cid)AS.cid=cid;paint();convSync()})},
  asClear:()=>{convFresh('chat');hush();paint();pushWidget2()},
  asUndo:d=>{const f=AS.undo[d.id];if(!f)return;delete AS.undo[d.id];try{f()}catch(e){}const t=AS.turns.find(x=>x.id===d.id);if(t){t.chips=t.chips.filter(c=>!c.undo);t.a+=' (undone)'}paint();pushWidget2();toast('Undone')},
- asChip:d=>{const t=AS.turns.find(x=>x.id===d.id),c=t&&t.chips[+d.i];if(!c)return;if(c.fn)return c.fn();const r=c.r||'';if(r[0]==='?'){asClose();askWith(r.slice(1));return}asClose();setTimeout(()=>window.__route(r.replace(/^~/,'')),380)}});
+ asChip:d=>{const t=AS.turns.find(x=>x.id===d.id),c=t&&t.chips[+d.i];if(!c)return;if(c.fn)return c.fn(c);const r=c.r||'';if(r[0]==='?'){asClose();askWith(r.slice(1));return}asClose();setTimeout(()=>window.__route(r.replace(/^~/,'')),380)}});
 Object.assign(FORM,{asSend:f=>{const i=f.querySelector('input'),v=i.value.trim();if(!v)return listen();i.value='';sendState();run(v,{spoken:false})}});
 function sendState(){const i=$('#asIn'),r=$('#asv .as-row');if(i&&r)r.classList.toggle('typed',!!i.value.trim()&&!AS.listening)}
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='asIn')sendState()});
@@ -513,6 +533,7 @@ function assistHTML(){const a=aset(),st=nst(),v=vset();
  ${NA?row('wake',`Listen for “${esc(wakeWord())}” while Plotline is open`,'The phone’s speech recognizer listens in short rounds while the app is on screen',a.wake)+
  row('bg','Keep listening in the background',`Hands-free, even with the phone locked: say it and it answers out loud. Android needs a small silent notification while it listens, and it uses more battery.${st.onDevice===false&&!v.cloud?' This phone has no on-device speech, so it needs online speech allowed.':''}`,a.bg)+
  row('cues','Listening sounds','A clear chime when I start listening and another when I stop',a.cues!==false)+
+ row('hum','Thinking hum','A soft hum while I think during a spoken conversation',a.hum!==false)+
  row('quiet','Quiet listening','Mutes the speech recognizer’s start and stop beeps (and other notification sounds for that moment) so it doesn’t chime while it listens',a.quiet!==false)+
  (a.bg&&st.overlay===false?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>Let ${esc(aname())} pop up</b><small>So “${esc(wakeWord())}” can open Plotline over other apps. Without it you’ll get a notification to tap instead.</small></div><button class="btn sm" data-act="asOverlay">Allow</button></div>`:''):`<p class="small muted">The “${esc(wakeWord())}” wake word works in the Android app. Here, tap the orb at the top to talk.</p>`}
 ${a.cues!==false?`<div class="as-cues">${[['cueStart','When I start listening','start'],['cueDone','When I stop listening','done']].map(([k,l,w])=>`<div class="field"><label>${l}</label><div class="as-cue"><select data-assist="${k}">${Object.entries(CUES).map(([id,q])=>`<option value="${id}" ${cueOf(w)===id?'selected':''}>${q.n}</option>`).join('')}</select><button class="ibtn" data-act="asCueTry" data-w="${w}" aria-label="Play this sound">${ic('play')}</button></div></div>`).join('')}</div>`:''}
@@ -540,13 +561,20 @@ window.PLOT_ASSIST={run,asCtx,parse,parseWhen,localAsk,aname,ctx:asCtx,
  /* conversations: talk mode joins the one on screen if it was just used, else starts its own; resume loads a saved one */
  begin:kind=>{if(!(AS.turns.length&&AS.last&&Date.now()-AS.last<CV_GAP/2))convFresh(kind);return AS.turns.filter(t=>!t.wait&&t.a).map(t=>({q:t.q,a:t.a}))},
  resume:id=>{const c=window.CONV&&CONV.get(id);if(!c)return false;hush();AS.turns=c.turns.map(t=>({q:t.q,a:t.a,chips:[],t:t.t,id:t.id})).slice(-30);AS.cid=c.id;AS.kind=c.k==='ask'?'chat':c.k;AS.await=null;AS.undo={};AS.last=Date.now();if(AS.open)paint(true);return true},
- current:()=>AS.cid};
+ current:()=>AS.cid,
+ dropTurn:tid=>{AS.turns=AS.turns.filter(t=>t.id!==tid);delete AS.undo[tid];if(AS.open)paint()},
+ /* an agent result continued in chat (Agent page › Continue in chat) */
+ inject:(q,a,chips)=>{if(!(AS.turns.length&&AS.last&&Date.now()-AS.last<CV_GAP))convFresh('chat');AS.turns.push({q,a,chips:(chips||[]).map(c=>({t:c.t,fn:agentChip(c.fn)})),t:Date.now(),id:uid()});AS.turns=AS.turns.slice(-30);asOpen();paint(true);setTimeout(()=>$('#asIn')?.focus(),300)}};
 
 const css=document.createElement('style');css.textContent=`
 .as-cues{display:grid;gap:0}.as-cue{display:flex;gap:8px;align-items:center}.as-cue select{flex:1;min-width:0}.as-cue .ibtn{flex:none}
 
-.as-av{position:relative;width:30px;height:30px;border-radius:50%;flex:none;display:block;background:radial-gradient(circle at 35% 30%,#fff7 0,transparent 42%),conic-gradient(from 200deg,var(--accent),var(--c-learning),var(--c-career),var(--c-health),var(--accent));box-shadow:0 0 0 1px var(--line-2),0 6px 18px -6px var(--accent)}
-.as-av i{position:absolute;inset:7px;border-radius:50%;background:var(--bg-2);opacity:.86;transition:transform .3s var(--spring)}
+.as-av{position:relative;width:30px;height:30px;border-radius:50%;flex:none;display:block;isolation:isolate;box-shadow:0 0 0 1px var(--line-2),0 6px 18px -6px var(--accent)}
+/* the colours circle slowly round the orb; the shine stays put */
+.as-av::before{content:'';position:absolute;inset:0;border-radius:50%;z-index:-1;background:conic-gradient(from 200deg,var(--accent),var(--c-learning),var(--c-career),var(--c-health),var(--accent));animation:asOrb 12s linear infinite}
+.as-av::after{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff7 0,transparent 42%);pointer-events:none}
+@keyframes asOrb{to{transform:rotate(1turn)}}
+.as-av i{position:absolute;inset:7px;border-radius:50%;background:var(--bg-2);opacity:.86;z-index:1;transition:transform .3s var(--spring)}
 .as-btn .as-av{width:24px;height:24px}.as-btn .as-av i{inset:6px}
 .asv .aov-s{height:min(70vh,640px)}
 .as-tt{display:flex;flex-direction:column;min-width:0}.as-tt b{font:700 17px var(--f-body)}.as-tt small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -555,6 +583,8 @@ const css=document.createElement('style');css.textContent=`
 @keyframes asPulse{50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 22%,transparent),0 6px 18px -6px var(--accent)}}
 @keyframes asSpin{to{transform:rotate(360deg)}}
 .as-t{margin:4px 0 16px}
+.as-go{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:4px 0 6px}
+.as-qr{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin:0 0 10px}.as-qr .as-q{margin:0}.as-tx{flex:none;width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:var(--muted);opacity:.5;cursor:pointer;padding:0}.as-tx svg{width:15px;height:15px}.as-tx:hover,.as-tx:focus-visible{opacity:1;background:color-mix(in srgb,var(--text) 8%,transparent)}
 .as-q{margin:0 0 10px auto;max-width:82%;width:fit-content;padding:10px 14px;border-radius:18px 18px 6px 18px;background:var(--surface-2);font-size:15px;line-height:1.4}
 .as-a{display:flex;gap:10px;align-items:flex-start;min-width:0}.as-ab{flex:1;min-width:0;overflow-wrap:anywhere}.as-a p{margin:0 0 8px;font-size:16px;line-height:1.5}.as-a p:last-child{margin-bottom:0}
 .as-ab ul{margin:4px 0 10px;padding-left:20px}.as-ab li{font-size:16px;line-height:1.5;margin:2px 0}.as-ab li::marker{color:var(--accent)}
@@ -577,6 +607,6 @@ const css=document.createElement('style');css.textContent=`
 .asv.lis .as-row{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
 .as-stop{display:none;flex:none;height:34px;padding:0 14px;border-radius:17px;border:0;background:var(--accent);color:var(--on-accent);font:700 13px var(--f-body);cursor:pointer}
 .asv.spk .as-stop,.asv.busy .as-stop,.asv.lis .as-stop{display:block}
-@media (prefers-reduced-motion:reduce){.as-big,.asv .as-av{animation:none!important}}`;
+@media (prefers-reduced-motion:reduce){.as-big,.asv .as-av,.as-av::before{animation:none!important}}`;
 document.head.appendChild(css);
 })();

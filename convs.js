@@ -23,7 +23,9 @@ function sync(id,k,turns){turns=(turns||[]).filter(t=>t&&t.q&&String(t.a||'').tr
  c.turns=[...m.values()].sort((a,b)=>a.t-b.t).slice(-200);c.t1=Date.now();if(!c.named)c.title=tr(c.turns[0].q,70);
  CV=[c,...CV.filter(x=>x!==c)];persist();if(cur.p==='chats'&&!document.activeElement?.matches('input,textarea'))listPaint();return c.id}
 const get=id=>CV.find(c=>c.id===id)||null;
-window.CONV={sync,get,list:()=>CV.slice()};
+/* one exchange removed; a conversation with nothing left goes too */
+function removeTurn(id,tid){const c=get(id);if(!c)return;c.turns=c.turns.filter(t=>t.id!==tid);c.sig='';if(!c.turns.length)CV=CV.filter(x=>x!==c);else if(!c.named)c.title=tr(c.turns[0].q,70);persist()}
+window.CONV={sync,get,list:()=>CV.slice(),removeTurn};
 
 /* Ask threads are conversations too: save each one once an answer finishes */
 if(typeof insRun==='function'){const _r=insRun;insRun=async function(){const R=IN.res;try{return await _r.apply(this,arguments)}finally{try{
@@ -50,7 +52,7 @@ function vChat(id){const c=get(id);if(!c)return`<header class="ph"><div><a class
  const K=KIND[c.k]||KIND.chat;
  return`<div class="crumb"><a href="#/chats" class="ibtn" data-act="navBack" aria-label="Back">${ic('back')}</a><div class="ph-r"><button class="ibtn" data-act="convMore" data-id="${c.id}" aria-label="More">${ic('more')}</button></div></div>
  <h2 class="cv-t">${esc(c.title||'Conversation')}</h2><p class="cv-m">${K[0]} · ${when(c.t0)} · ${c.turns.length} message${c.turns.length===1?'':'s'}</p>
- <div class="cv-x rv">${c.turns.map(t=>`<div class="cv-q"><p>${esc(t.q).replace(/\n/g,'<br>')}</p></div><div class="cv-a"><span class="cv-av" aria-hidden="true"></span><div class="ai-md">${window.AIX&&AIX.md?AIX.md(t.a):'<p>'+esc(t.a).replace(/\n+/g,'<br>')+'</p>'}</div></div>`).join('')}</div>
+ <div class="cv-x rv">${c.turns.map(t=>`<div class="cv-q"><button class="cv-tx" data-act="convTurnX" data-id="${c.id}" data-t="${esc(t.id)}" aria-label="Remove this message and its answer" title="Remove">${ic('x')}</button><p>${esc(t.q).replace(/\n/g,'<br>')}</p></div><div class="cv-a"><span class="cv-av" aria-hidden="true"></span><div class="ai-md">${window.AIX&&AIX.md?AIX.md(t.a):'<p>'+esc(t.a).replace(/\n+/g,'<br>')+'</p>'}</div></div>`).join('')}</div>
  <div class="cv-bar"><button class="btn pri cv-mkb" data-act="convMake" data-id="${c.id}">${ic('ai')}Make something from this</button><button class="btn" data-act="convChat" data-id="${c.id}">${ic('chat')}Continue</button><button class="btn" data-act="convTalk" data-id="${c.id}" aria-label="Continue out loud">${ic('live')}Talk</button></div>`}
 VIEWS.chats=vChats;
 document.addEventListener('input',e=>{if(e.target.id!=='cvQ')return;CF.q=e.target.value;listPaint()});
@@ -97,6 +99,10 @@ Object.assign(ACT,{
   <button class="btn danger" data-act="convDel" data-id="${c.id}">${ic('trash')}Delete</button></div>`)},
  convRename:d=>{const c=get(d.id);if(!c)return;openSheet(`<h2>Rename</h2><form data-form="convName" data-id="${c.id}"><div class="field"><input name="t" maxlength="80" value="${esc(c.title)}" aria-label="Name"></div><div class="actions"><button type="button" class="btn ghost" data-act="close">Cancel</button><button class="btn pri">Save</button></div></form>`);setTimeout(()=>$('#sheet input[name=t]')?.select(),80)},
  convCopy:async d=>{const c=get(d.id);if(!c)return;toast(await copyText(transcript(c,1e6).trim())?'Copied':'Copy failed');closeSheet()},
+ convTurnX:d=>{const c=get(d.id);if(!c)return;const i=c.turns.findIndex(t=>t.id===d.t);if(i<0)return;const t=c.turns[i],last=c.turns.length===1;
+  removeTurn(c.id,d.t);try{if(window.PLOT_ASSIST&&PLOT_ASSIST.current&&PLOT_ASSIST.current()===c.id)PLOT_ASSIST.dropTurn(d.t)}catch(e){}
+  if(last)go('chats');else render(false);
+  toast('Message removed',()=>{let k=get(c.id);if(!k){k=c;CV.unshift(c)}k.turns.splice(Math.min(i,k.turns.length),0,t);k.sig='';persist();if(last)go('chats/'+c.id);else render(false)})},
  convDel:d=>{const c=get(d.id);if(!c)return;askConfirm('Delete this conversation?','It’s removed from this device. Anything you made from it stays in your plan.','Delete',()=>{CV=CV.filter(x=>x!==c);persist();closeSheet();if(cur.p==='chats'&&cur.id)go('chats');else render(false);toast('Conversation deleted')})}
 });
 Object.assign(FORM,{convName:(f,e)=>{const id=(f.dataset||{}).id||f.getAttribute('data-id'),c=get(id),t=tr(new FormData(f).get('t'),80);if(c&&t){c.title=t;c.named=1;persist()}closeSheet();render(false)}});
@@ -114,6 +120,7 @@ const css=document.createElement('style');css.textContent=`
 .cv-none{margin:20px 4px}
 .cv-t{font:800 clamp(24px,6.5vw,36px)/1.05 var(--f-display);text-transform:uppercase;margin:6px 0 6px;overflow-wrap:anywhere}.cv-m{margin:0 0 18px;font:600 11.5px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .cv-x{display:flex;flex-direction:column;gap:10px;padding-bottom:24px}
+.cv-q{position:relative}.cv-tx{position:absolute;left:-36px;top:50%;transform:translateY(-50%);width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:var(--muted);opacity:.55;cursor:pointer}.cv-tx svg{width:15px;height:15px}.cv-tx:hover,.cv-tx:focus-visible{opacity:1;background:color-mix(in srgb,var(--text) 8%,transparent)}
 .cv-q{align-self:flex-end;max-width:85%;padding:10px 14px;border-radius:18px 18px 6px 18px;background:color-mix(in srgb,var(--accent) 18%,var(--surface))}.cv-q p,.cv-a p{margin:0;font-size:15px;line-height:1.5;overflow-wrap:anywhere}
 .cv-a{display:flex;gap:10px;align-items:flex-start;max-width:92%}.cv-av{width:22px;height:22px;border-radius:50%;flex:none;margin-top:2px;background:conic-gradient(from 200deg,var(--accent),var(--c-learning,var(--accent)),var(--c-health,var(--accent)),var(--accent))}
 .cv-bar{position:sticky;bottom:calc(92px + env(safe-area-inset-bottom));z-index:15;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 -16px;padding:14px 16px 10px;background:linear-gradient(to top,var(--bg) 80%,transparent)}.cv-bar .btn{min-width:0;justify-content:center;white-space:nowrap}.cv-bar .cv-mkb{grid-column:1/-1}

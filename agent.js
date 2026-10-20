@@ -102,7 +102,7 @@ async function llm(msgs,opts){let raw='',err=null;try{raw=await llm1(msgs,opts)}
  if(parseJSON(raw))return raw;if(err&&/Pick an AI|download|memory|stopped/i.test(err.message||''))throw err;
  step('Trying again…');const o={...opts};delete o.schema;const m2=msgs.map((m,i)=>i===0?{...m,content:m.content+'\n\nReply with only the JSON object, starting with { and ending with }.'}:m);
  try{const r2=await llm1(m2,o);return r2||raw}catch(e){if(raw)return raw;throw err||e}}
-let STEP='';const step=t=>{STEP=t;const el=document.getElementById('agStep');if(el)el.textContent=t;else paintSoon()};
+let STEP='',STEPCB=null;const step=t=>{STEP=t;if(STEPCB)try{STEPCB(t)}catch(e){}const el=document.getElementById('agStep');if(el)el.textContent=t;else paintSoon()};
 /* an AI is picked as soon as Settings › AI & voice has an engine; an on-device model may still need its one-time
    download, which a manual run (or Download now) does. Scheduled runs wait for it, so nothing downloads gigabytes unasked. */
 const aiPicked=()=>!!planEngine();
@@ -110,7 +110,8 @@ const aiOk=()=>window.AIX?AIX.ready():window.PlotDo&&PlotDo.aiReady?PlotDo.aiRea
 const aiModel=()=>{try{return llmOf(insSet().llm)}catch(e){return null}};
 function parseJSON(s){try{return JSON.parse(s)}catch(e){}const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a){try{return JSON.parse(s.slice(a,b+1))}catch(e){}}return null}
 let BUSY=null,AGDL='',AGERR='',AGQ='';
-async function runTask(t,manual){if(BUSY)return manual&&toast('The agent is busy with “'+BUSY+'”');if(!aiPicked()){if(manual)toast('Pick an AI first: Settings › AI & voice');return}
+/* o.quiet: asked from the assistant, which shows the answer (or t.err) itself */
+async function runTask(t,manual,o={}){if(BUSY){t.err='I’m still busy with “'+BUSY+'”';return manual&&!o.quiet&&toast('The agent is busy with “'+BUSY+'”')}if(!aiPicked()){t.err='Pick an AI first: Settings › AI & voice';if(manual&&!o.quiet)toast(t.err);return}
  if(manual&&!aiOk()){if(window.AIX){toast('Setting up the AI first. This happens once.');await AIX.setup({quiet:true});if(!aiOk())return}else aiMark()}
  BUSY=t.title;AGERR='';STEP='Starting…';paintSoon();const A=ag(),e=planEngine(),big=e==='api'||!IS_PHONE;
  try{const src=t.src&&t.src.length?t.src:['plot'],small=!big,d=new Date(),raw={mail:[],cal:[]},errs=[];
@@ -142,12 +143,12 @@ How a great answer reads: open with one bold line that gives the takeaway (e.g. 
   const g={errs,raw};
   if(!String(j.summary||'').trim()&&!(j.suggestions||[]).length)throw new Error('The AI gave an empty answer. Try again, or pick another model in Settings › AI & voice.');
   const sugs=(Array.isArray(j.suggestions)?j.suggestions:[]).filter(x=>x&&SUGT.includes(x.type)&&String(x.text||'').trim()).slice(0,6).map(x=>({id:uid(),type:x.type,text:tr(x.text,200),target:tr(x.target||'',60),date:/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')?x.date:'',time:/^\d{2}:\d{2}$/.test(x.time||'')?x.time:'',st:''}));
-  const item={id:uid(),t:now(),task:t.id,title:t.title,summary:String(j.summary||'').trim().slice(0,4000),data:g.raw,sugs,errs:g.errs,seen:false};
+  const item={id:uid(),t:now(),task:t.id,title:t.title,from:o.quiet?'chat':'',summary:String(j.summary||'').trim().slice(0,4000),data:g.raw,sugs,errs:g.errs,seen:false};
   if(t.mode==='do')for(const s of sugs)if(s.type!=='calendar_event'){try{await apply(s,true)}catch(e){}}
   A.inbox.unshift(item);A.inbox=A.inbox.slice(0,40);t.last=now();t.err='';save();
   if(!manual&&document.hidden&&typeof notify==='function')notify('Plot · '+t.title,tr(item.summary,140));
   return item}
- catch(e){t.err=String(e&&e.message||e);t.last=now();save();if(manual){AGERR=`“${t.title}” couldn’t finish: ${t.err}`;toast('The agent couldn’t finish')}}
+ catch(e){t.err=String(e&&e.message||e);t.last=now();save();if(manual&&!o.quiet){AGERR=`“${t.title}” couldn’t finish: ${t.err}`;toast('The agent couldn’t finish')}}
  finally{BUSY=null;STEP='';t.next=nextAt(t,now());save();paintSoon();try{syncNative()}catch(e){}}}
 
 /* a suggestion becomes the real thing */
@@ -210,10 +211,19 @@ function dataHTML(d,sum){if(!d)return'';let o='';const op=/^\s*[-*•]\s/m.test(
  return o}
 const sumHTML=t=>{const L=String(t||'').split('\n');let o='',ul=false;for(const r of L){const l=r.trim(),m=/^(?:[-*•]|\d+[.)])\s+(.*)$/.exec(l);if(m){if(!ul){o+='<ul class="ag-ul">';ul=true}o+=`<li>${esc(m[1]).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</li>`;continue}if(ul){o+='</ul>';ul=false}if(l)o+=`<p>${esc(l).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</p>`}return o+(ul?'</ul>':'')};
 const sumHTML2=t=>window.AIX&&AIX.md?`<div class="ai-md">${AIX.md(t)}</div>`:sumHTML(t);
-function inboxHTML(){const I=ag().inbox;if(!I.length)return'';
- return`<section class="rv ag-inbox"><div class="st-h"><h3>Inbox</h3>${I.length?`<button class="link" data-act="agClear">Clear</button>`:''}</div>${I.slice(0,12).map(it=>`<article class="panel ag-it${it.seen?'':' new'}"><div class="ag-h"><b>${esc(it.title)}</b><small class="muted">${esc(dd(it.t))} · ${esc(tm(it.t))}</small></div>${it.summary?sumHTML2(it.summary):''}${dataHTML(it.data,it.summary)}
-  ${it.sugs.length?`<ul class="ag-s">${it.sugs.map(s=>`<li class="${s.st}"><span class="ag-k">${SUGN[s.type]}</span><span class="ag-x">${sugLine(s)}</span>${s.st==='done'?`<span class="ag-ok">${ic('check')}</span>`:s.st==='no'?'<span class="muted small">Skipped</span>':`<span class="ag-b"><button class="ibtn sm" data-act="agYes" data-i="${it.id}" data-s="${s.id}" aria-label="Do it" title="Do it">${ic('check')}</button><button class="ibtn sm" data-act="agNo" data-i="${it.id}" data-s="${s.id}" aria-label="Skip" title="Skip">${ic('plus')}</button></span>`}</li>`).join('')}</ul>${it.sugs.filter(s=>!s.st).length>1?`<div class="actions left"><button class="btn sm" data-act="agAll" data-i="${it.id}">Do all</button></div>`:''}`:''}
-  ${it.errs&&it.errs.length?`<p class="small muted">Couldn’t read: ${esc(it.errs.join('; '))}</p>`:''}</article>`).join('')}</section>`}
+/* the inbox stays out of the way: newest result open, older ones folded to a line, three at a time, and the whole
+   section can be minimized so Tasks don't drift down the page as results pile up */
+let INB_N=3;const INB_OPEN=new Map();
+const firstLine=t=>String(t||'').split('\n').map(x=>x.replace(/^#+\s*|\*\*|__|`/g,'').replace(/^[-*•]\s+|^\d+[.)]\s+/,'').trim()).find(Boolean)||'';
+function itemHTML(it,i){const open=INB_OPEN.has(it.id)?INB_OPEN.get(it.id):i===0,left=it.sugs.filter(s=>!s.st).length;
+ return`<article class="panel ag-it${it.seen?'':' new'}${open?'':' shut'}"><div class="ag-h"><button class="ag-ht" data-act="agFold" data-i="${it.id}" data-o="${open?1:0}" aria-expanded="${open}"><b>${esc(it.title)}</b><small class="muted">${esc(dd(it.t))} · ${esc(tm(it.t))}${it.from==='chat'?' · from chat':''}${!open&&left?` · ${left} suggestion${left===1?'':'s'}`:''}</small>${open?'':`<span class="ag-1">${esc(tr(firstLine(it.summary),120))}</span>`}</button><span class="ag-hb"><button class="ibtn sm" data-act="agChat" data-i="${it.id}" aria-label="Continue in chat" title="Continue in chat">${ic('chat')}</button><button class="ibtn sm" data-act="agItX" data-i="${it.id}" aria-label="Remove this result" title="Remove">${ic('x')}</button></span></div>
+ ${open?`${it.summary?sumHTML2(it.summary):''}${dataHTML(it.data,it.summary)}
+  ${it.sugs.length?`<ul class="ag-s">${it.sugs.map(s=>`<li class="${s.st}"><span class="ag-k">${SUGN[s.type]}</span><span class="ag-x">${sugLine(s)}</span>${s.st==='done'?`<span class="ag-ok">${ic('check')}</span>`:s.st==='no'?'<span class="muted small">Skipped</span>':`<span class="ag-b"><button class="ibtn sm" data-act="agYes" data-i="${it.id}" data-s="${s.id}" aria-label="Do it" title="Do it">${ic('check')}</button><button class="ibtn sm" data-act="agNo" data-i="${it.id}" data-s="${s.id}" aria-label="Skip" title="Skip">${ic('plus')}</button></span>`}</li>`).join('')}</ul>${left>1?`<div class="actions left"><button class="btn sm" data-act="agAll" data-i="${it.id}">Do all</button></div>`:''}`:''}
+  ${it.errs&&it.errs.length?`<p class="small muted">Couldn’t read: ${esc(it.errs.join('; '))}</p>`:''}`:''}</article>`}
+function inboxHTML(){const A=ag(),I=A.inbox;if(!I.length)return'';const min=!!A.min,n=I.filter(i=>!i.seen).length;
+ return`<section class="rv ag-inbox${min?' min':''}"><div class="st-h"><h3>Inbox <span class="ag-n">${I.length}</span></h3><span class="ag-hb">${min?'':`<button class="link" data-act="agClear">Clear</button>`}<button class="ibtn sm" data-act="agMin" aria-label="${min?'Show the inbox':'Minimize the inbox'}" title="${min?'Show':'Minimize'}" aria-expanded="${!min}">${ic(min?'down':'up')}</button></span></div>
+ ${min?`<button class="panel ag-mini" data-act="agMin"><span class="ag-hi">${ic('agent')}</span><span><b>${n?`${n} new · `:''}${esc(I[0].title)}</b><small>${esc(tr(firstLine(I[0].summary),90))}</small></span></button>`:
+ I.slice(0,INB_N).map(itemHTML).join('')+(I.length>INB_N?`<button class="btn sm ghost ag-more" data-act="agMore">Show ${Math.min(10,I.length-INB_N)} more</button>`:INB_N>3?`<button class="btn sm ghost ag-more" data-act="agLess">Show fewer</button>`:'')}</section>`}
 function tasksHTML(){const T=ag().tasks;
  return`<section class="rv"><div class="st-h"><h3>Tasks</h3><button class="link" data-act="agNew">New task</button></div>${T.length?`<div class="ag-tl">${T.map(t=>`<div class="panel ag-t${t.on?'':' off'}"><div class="ag-h"><b>${esc(t.title)}</b><label class="sw ag-sw"><input type="checkbox" data-agon="${t.id}" ${t.on?'checked':''} aria-label="Run this task"><i></i></label></div>
   <p class="small">${esc(tr(t.prompt,160))}</p><p class="small muted">${esc(whenTxt(t))} · ${t.src.map(k=>CN[k]?CN[k][0]+(k!=='plot'&&!connOn(k)?' (not connected)':''):'').join(', ')}${t.mode==='do'?' · adds things itself':''}${t.last?' · last ran '+esc(dd(t.last))+' '+esc(tm(t.last)):''}</p>${t.err?`<p class="small" style="color:var(--danger,#e66)">${esc(t.err)}</p>`:''}
@@ -231,7 +241,7 @@ function vAgent(){const A=ag(),e=planEngine(),picked=aiPicked(),ready=picked;con
  ${dl&&window.AIX?`<div class="rv">${AIX.modelCard('agent')}<p class="small muted">Scheduled tasks wait until the model is set up. Tasks you run yourself set it up first.</p></div>`:dl?`<div class="panel rv"><p><b>${esc(String(m[1]).split(' · ')[0])}</b> downloads once (${m[3]} GB) the first time it runs, then works offline.</p><div class="actions left"><button class="btn pri" data-act="agDl" ${AGDL?'disabled':''}>${AGDL?esc(AGDL):'Download now'}</button></div></div>`:''}
  ${BUSY?`<div class="panel rv ag-run"><span class="ag-spin" aria-hidden="true"></span><span><b>Working on “${esc(BUSY)}”</b><small id="agStep">${esc(STEP||'Starting…')}</small></span></div>`:''}
  ${AGERR?`<div class="panel rv ag-err"><p>${esc(AGERR)}</p><div class="actions left"><button class="btn sm ghost" data-act="agErrX">Dismiss</button><a class="btn sm ghost" href="#/settings/voice">AI settings</a></div></div>`:''}
- <section class="panel rv ag-ask"><div class="field"><label for="agQ">Ask the agent to do something now</label><textarea id="agQ" rows="2" placeholder="Look at my email and calendar and tell me what I’m forgetting">${esc(AGQ)}</textarea></div><div class="ag-src">${Object.keys(CN).map(k=>`<label class="chip${connOn(k)?'':' dim'}"><input type="checkbox" data-agsrc="${k}" ${connOn(k)?'checked':''} ${connOn(k)?'':'disabled'}>${CN[k][0]}</label>`).join('')}</div><div class="actions left"><button class="btn pri" data-act="agAsk" ${BUSY?'disabled':''}>${BUSY?'Working…':'Go'}</button></div></section>
+ <section class="panel rv ag-ask"><div class="field"><label for="agQ">Ask the agent to do something now</label><textarea id="agQ" rows="2" placeholder="Look at my email and calendar and tell me what I’m forgetting">${esc(AGQ)}</textarea></div><div class="ag-src">${Object.keys(CN).map(k=>`<label class="chip${connOn(k)?'':' dim'}"><input type="checkbox" data-agsrc="${k}" ${connOn(k)?'checked':''} ${connOn(k)?'':'disabled'}>${CN[k][0]}</label>`).join('')}</div><div class="actions left"><button class="btn pri" data-act="agAsk" ${BUSY?'disabled':''}>${BUSY?'Working…':'Go'}</button></div>${window.AIX&&AIX.sugs?(setTimeout(()=>AIX.sugAuto('agent'),0),AIX.sugs('agent','agIdea','Ideas')):''}</section>
  ${inboxHTML()}${tasksHTML()}${connHTML()}
  <label class="sw rv" style="margin-top:14px"><span>Run tasks on their own<small>Off pauses every task. They still run when you tap Run now.</small></span><input type="checkbox" data-agon="all" ${A.on?'checked':''}><i></i></label>`}
 VIEWS.agent=vAgent;
@@ -263,9 +273,16 @@ Object.assign(ACT,{
  agAsk:async()=>{const q=($('#agQ')||{}).value||'';if(!q.trim())return toast('Say what you’d like done');AGQ=q;const src=[...document.querySelectorAll('[data-agsrc]:checked')].map(x=>x.dataset.agsrc);
   const t={id:'ask',title:tr(q,50),prompt:q,src:src.length?src:['plot'],mode:'suggest',when:'manual'};const it=await runTask(t,true);if(it){AGQ='';toast('Done. See the inbox');render(false)}},
  agYes:async d=>{const[it,s]=findIt(d);if(!s||s.st)return;try{await apply(s)}catch(e){toast('Couldn’t do that: '+esc(e.message||e))}render(false)},
+ agIdea:d=>{const q=$('#agQ');if(!q)return;q.value=d.q;AGQ=d.q;q.focus();q.setSelectionRange(q.value.length,q.value.length)},
  agErrX:()=>{AGERR='';render(false)},
  agNo:d=>{const[it,s]=findIt(d);if(!s)return;s.st='no';save();render(false)},
  agAll:async d=>{const it=ag().inbox.find(x=>x.id===d.i);if(!it)return;let n=0;for(const s of it.sugs)if(!s.st){try{await apply(s,true);n++}catch(e){}}toast(`Done ${n} of them`);render(false)},
+ agFold:d=>{INB_OPEN.set(d.i,d.o!=='1');render(false)},
+ agMin:()=>{const A=ag();A.min=!A.min;save();render(false)},
+ agMore:()=>{INB_N+=10;render(false)},agLess:()=>{INB_N=3;render(false)},
+ agItX:d=>{const A=ag(),it=A.inbox.find(x=>x.id===d.i);if(!it)return;const at=A.inbox.indexOf(it);A.inbox.splice(at,1);save();render(false);
+  toast('Result removed',()=>{A.inbox.splice(at,0,it);save();render(false)})},
+ agChat:d=>{const it=ag().inbox.find(x=>x.id===d.i);if(!it||!window.PLOT_ASSIST||!PLOT_ASSIST.inject)return;it.seen=true;save();PLOT_ASSIST.inject(it.title,it.summary||'',chipsOf(it))},
  agClear:()=>askConfirm('Clear the inbox?','Suggestions you haven’t acted on are dropped.','Clear',()=>{ag().inbox=[];save();render(false)}),
  agConn:async d=>{const k=d.k,c=cset();
   if(k==='notion'){c.notion=true;save();render(false);setTimeout(()=>{const i=document.querySelector('[data-agk=notion]');if(i)i.focus()},120);return}
@@ -281,10 +298,28 @@ document.addEventListener('change',e=>{const x=e.target;if(!x.dataset)return;
 {const _ss=setSecs;setSecs=function(){const L=_ss(),i=L.findIndex(x=>x.k==='voice');L.splice(i<0?L.length:i+1,0,{k:'agent',t:'Agent & connections',ic:'agent',sub:()=>{const n=ag().tasks.filter(t=>t.on).length,c=['gcal','gmail','gdrive','notion'].filter(connOn).length;return`${n} task${n===1?'':'s'} · ${c} connection${c===1?'':'s'}`},html:()=>connHTML()+`<div class="actions left rv" style="margin-top:12px"><a class="btn" href="#/agent">${ic('agent')}Open the Agent</a></div>`});return L}}
 if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){const n=ag().inbox.filter(i=>!i.seen).length;return(n?`<a class="panel rv ag-home" href="#/agent"><span class="ag-hi">${ic('agent')}</span><span><b>Plot has ${n} new result${n===1?'':'s'}</b><small>${esc(tr(ag().inbox[0].summary||ag().inbox[0].title,90))}</small></span>${ic('next','ico-s')}</a>`:'')+_ht()}}
 
+/* ---------------- the assistant and Live hand their questions here ----------------
+   The assistant's AI decides when a request needs email, calendar, Drive or Notion (it answers "AGENT: <task>"), and the
+   agent does the task with every connection that's on. The answer comes back into the chat and also lands in the inbox. */
+const CONNS=()=>['gcal','gmail','gdrive','notion'].filter(connOn);
+function chipsOf(it){return it.sugs.filter(s=>!s.st).map(s=>({id:s.id,t:SUGN[s.type]+': '+tr((s.target?s.target+': ':'')+s.text,60),fn:async()=>{try{const r=await apply(s,true);toast(esc((r&&r.say)||'Done'));return r}catch(e){toast('Couldn’t do that: '+esc(e.message||e));throw e}}}))}
+function sayOf(it){const t=firstLine(it.summary).replace(/\[([^\]]+)\]\([^)]*\)/g,'$1');const n=it.sugs.filter(s=>!s.st).length;
+ return tr(t,240)+(n?` I’ve put ${n===1?'a suggestion':n+' suggestions'} on screen.`:'')}
+window.AGENT={plot:()=>plotLines(false),connected:()=>CONNS(),names:()=>CONNS().map(k=>CN[k][0]),busy:()=>BUSY,
+ /* the lines added to the assistant's and Live's instructions */
+ sys:()=>{const c=CONNS();if(!c.length)return`If they ask about their email, calendar, Google Drive or Notion, tell them you can read those once they connect them on the Agent page (More › Agent).`;
+  return`YOUR AGENT: you have an agent that can look things up in the user's ${c.map(k=>CN[k][0]).join(', ')}${c.includes('gcal')?' (and add calendar events)':''}. You can't see any of that yourself. Whenever answering or doing what they ask needs anything from there (their email or inbox, messages from someone, their meetings, schedule or events, their files or documents, their Notion pages), don't guess and don't say you can't: reply with only this one line and nothing else:
+AGENT: <the task for the agent, written clearly and completely, with every detail they gave>
+Questions about their goals, habits, journal, lists and threads in Plotline you answer yourself from the data you have.`},
+ parse:t=>{const m=/(?:^|\n)\s*[*_`>-]*\s*AGENT\s*:\s*(.+)/i.exec(String(t||''));return m?m[1].replace(/[*_`]+$/,'').trim():''},
+ async ask(q,o={}){const t={id:'ask',title:tr(q.replace(/^./,c=>c.toUpperCase()),50),prompt:q,src:['plot',...CONNS()],mode:'suggest',when:'manual'};STEPCB=o.onStep||null;
+  try{const it=await runTask(t,true,{quiet:true});if(!it)throw new Error(t.err||'The agent couldn’t finish');it.seen=true;save();return{item:it,md:it.summary,say:sayOf(it),chips:chipsOf(it)}}
+  finally{STEPCB=null}}};
+
 const css=document.createElement('style');css.textContent=`
 .ag-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.ag-it .ag-h b{font:700 16px/1.3 var(--f-body);text-transform:none;letter-spacing:0;min-width:0}
 .ag-ul{margin:6px 0 10px;padding-left:20px}.ag-ul li{margin:3px 0;line-height:1.45}
-.ag-d{margin:10px 0;border:1px solid var(--line);border-radius:14px;padding:4px 12px}.ag-d summary{cursor:pointer;padding:8px 0;font:600 13px var(--f-body);color:var(--accent)}.ag-d ul{list-style:none;margin:0 0 6px;padding:0}.ag-d li{display:flex;flex-direction:column;padding:8px 0;border-top:1px solid var(--line);min-width:0}.ag-d li b{font-size:14px}.ag-d li span{font-size:14px;overflow-wrap:anywhere}.ag-d li small{color:var(--muted);font-size:12px;overflow-wrap:anywhere}.ag-d li.un b::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}.ag-h small{white-space:nowrap}
+.ag-d{margin:10px 0;border:1px solid var(--line);border-radius:14px;padding:4px 12px}.ag-d summary{cursor:pointer;padding:8px 0;font:600 13px var(--f-body);color:var(--accent)}.ag-d ul{list-style:none;margin:0 0 6px;padding:0}.ag-d li{display:flex;flex-direction:column;padding:8px 0;border-top:1px solid var(--line);min-width:0}.ag-d li b{font-size:14px}.ag-d li span{font-size:14px;overflow-wrap:anywhere}.ag-d li small{color:var(--muted);font-size:12px;overflow-wrap:anywhere}.ag-d li.un b::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}.ag-t .ag-h small{white-space:nowrap}
 .ag-it{margin-bottom:12px}.ag-it.new{box-shadow:inset 3px 0 0 var(--accent)}.ag-it p{margin:8px 0}
 .ag-s{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
 .ag-s li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--text) 5%,transparent)}.ag-s li>:nth-child(n+3){grid-column:2;grid-row:1/span 2}
@@ -298,6 +333,12 @@ const css=document.createElement('style');css.textContent=`
 .sw.ag-sw{margin:0;padding:0;border:0}
 .ag-run{display:flex;align-items:center;gap:12px;margin-bottom:12px}.ag-run>span:last-child{display:flex;flex-direction:column;min-width:0}.ag-run small{color:var(--muted);font-size:12.5px}
 .ag-spin{width:22px;height:22px;border-radius:50%;flex:none;border:2.5px solid color-mix(in srgb,var(--accent) 25%,transparent);border-top-color:var(--accent);animation:mmSpin .8s linear infinite}
+.ag-ht{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.ag-ht b{font:700 16px/1.3 var(--f-body);overflow-wrap:anywhere}.ag-ht small{font-size:12px}.ag-1{font-size:13.5px;color:var(--muted);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px}
+.ag-ht:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+.ag-hb{display:flex;align-items:center;gap:2px;flex:none}.ag-it .ag-h{align-items:flex-start}.ag-it.shut{padding-top:12px;padding-bottom:12px}
+.ag-n{display:inline-grid;place-items:center;min-width:22px;height:20px;padding:0 6px;border-radius:10px;font:700 11.5px var(--f-body);background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);vertical-align:2px;margin-left:4px}
+.ag-inbox .st-h{align-items:center}.ag-more{display:block;margin:0 auto 12px}
+.ag-mini{display:flex;align-items:center;gap:12px;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer;margin-bottom:12px}.ag-mini>span:last-child{display:flex;flex-direction:column;min-width:0}.ag-mini b{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ag-mini small{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ag-err{margin-bottom:12px;border-color:color-mix(in srgb,var(--danger,#e66) 45%,transparent)}.ag-err p{margin:0 0 4px}`;
 document.head.appendChild(css);
 if(typeof booted!=='undefined'&&booted&&/^#\/agent(\/|$)/.test(location.hash)&&cur.p!=='agent')route();

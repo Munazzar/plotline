@@ -43,8 +43,9 @@ const ACT_RX=/^[ \t>*-]*ACTION\s*:\s*([a-z_ ]+?)\s*\|\s*([^|\n]+?)(?:\s*\|\s*([^
 function parseActs(text,max=3){const acts=[];const clean=String(text||'').replace(ACT_RX,(m,k,a,b)=>{k=k.toLowerCase().replace(/\s+/g,'');if(k==='todo'||k==='todaygoal')k='today';if(AK[k]&&a.trim()&&acts.length<max)acts.push({id:uid(),k,t:tr(a,120),x:tr(b||'',300),st:''});return''}).replace(/\n{3,}/g,'\n\n').trim();return{clean,acts}}
 /* the half-written "ACTI…" line at the end of a streaming answer stays hidden */
 const hideActs=s=>String(s||'').replace(ACT_RX,'').replace(/(^|\n)[ \t>*-]*A(?:C(?:T(?:I(?:O(?:N(?:\s*:[^\n]*)?)?)?)?)?)?$/,'$1').replace(/\s+$/,'');
-const actLabel=a=>`${AK[a.k]}: ${a.t}`;
-function doAct(a){const D=window.PlotDo;let r=null;const t=a.t,x=a.x;
+const actLabel=a=>a.fn?a.t:`${AK[a.k]}: ${a.t}`;
+/* a.fn: a suggestion from the agent, which knows how to do itself */
+function doAct(a){const D=window.PlotDo;let r=null;const t=a.t,x=a.x;if(a.fn){a.st='done';Promise.resolve(a.fn()).catch(()=>{a.st=''});return{say:'Done: '+t}}
  switch(a.k){
   case'goal':{const g=newGoal({title:t});S.goals.push(g);log('goal-new',g.id,g.title);save();r={say:`Added the goal “${t}”.`,go:'goal/'+g.id,undo:()=>{S.goals=S.goals.filter(y=>y.id!==g.id);save()}};break}
   case'habit':case'routine':{const steps=a.k==='routine'?parseSteps(String(x||'').split(/\s*,\s*|\n/).join('\n'),[]):[];
@@ -128,7 +129,7 @@ function mdCanvas(src){const L=String(src||'').replace(/\r/g,'').replace(/<think
   else if(/^>\s?/.test(l)){close();o+=`<blockquote>${inl(l.replace(/^>\s?/,''))}</blockquote>`}
   else if(l){close();o+=`<p>${inl(l)}</p>`}else close();i++}
  close();return o}
-window.AIX={md:mdCanvas,safety:aiSafety,block:aiBlock,care:aiCare,note:noteHTML,parseActs,hideActs,actChips,keepActs,doAct,actLabel,chat:aiChat,modelCard,setup:mmRun,ready:()=>aiReady()&&!MM.busy,ACT_SYS};
+window.AIX={sugs:(k,act,title)=>sugHTML(k,act,title),sugAuto:k=>sugAuto(k),md:mdCanvas,safety:aiSafety,block:aiBlock,care:aiCare,note:noteHTML,parseActs,hideActs,actChips,keepActs,doAct,actLabel,chat:aiChat,modelCard,setup:mmRun,ready:()=>aiReady()&&!MM.busy,ACT_SYS};
 
 /* ---------------- voices ---------------- */
 const VSTY=[['natural','Natural',1,1],['calm','Calm',.9,.94],['bright','Bright',1.05,1.15],['deep','Deep',.95,.8],['quick','Quick',1.25,1.02]];
@@ -173,7 +174,7 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.datase
 
 /* ---------------- Live: a voice conversation ---------------- */
 const LV={open:false,st:'idle',hist:[],pend:[],muted:false,gen:0,ctl:null,you:'',ai:'',typing:false};
-const LV_SYS=()=>{const s=insSet(),pr=s.profile&&s.profile.text,name=S.settings.name;return`You are ${nm()}, ${name?name+'’s':'the user’s'} friendly, curious companion inside Plotline, their app for goals, habits, routines, a journal, lists and threads. You are in a live voice conversation, so talk like a real person: warm, natural, one to three short sentences, no lists, no markdown, no emojis. Ask a short follow-up question when it keeps the conversation going, and give people room to think. Talk about anything they bring up: their day, feelings, ideas, plans, questions about the world, advice. Use the DATA about them when it helps, and never invent facts about them.${pr?`\n\nWHAT YOU KNOW ABOUT THEM\n${pr}`:''}\n\n${ACT_SYS} In your spoken sentence, ask before adding, like "Want me to make that a habit?".\n\n${aiSafety()}`};
+const LV_SYS=()=>{const s=insSet(),pr=s.profile&&s.profile.text,name=S.settings.name;return`You are ${nm()}, ${name?name+'’s':'the user’s'} friendly, curious companion inside Plotline, their app for goals, habits, routines, a journal, lists and threads. You are in a live voice conversation, so talk like a real person: warm, natural, one to three short sentences, no lists, no markdown, no emojis. Ask a short follow-up question when it keeps the conversation going, and give people room to think. Talk about anything they bring up: their day, feelings, ideas, plans, questions about the world, advice. Use the DATA about them when it helps, and never invent facts about them.${pr?`\n\nWHAT YOU KNOW ABOUT THEM\n${pr}`:''}\n\n${ACT_SYS} In your spoken sentence, ask before adding, like "Want me to make that a habit?".${window.AGENT?'\n\n'+AGENT.sys():''}\n\n${aiSafety()}`};
 const BYE=/^(?:ok(?:ay)?\s*,?\s*)?(?:bye|goodbye|good bye|see you|see ya|talk (?:to you )?later|that'?s all|that'?s it|i'?m done|we'?re done|end (?:the )?(?:conversation|chat|call)|stop (?:talking|listening|the conversation)|goodnight|good night)\b/i;
 const YES=/^(?:yes|yeah|yep|yup|sure|ok(?:ay)?|please|please do|do it|go ahead|add (?:it|them|that|those|both)|sounds good|let'?s do it|absolutely|of course|definitely)\b/i;
 const NO=/^(?:no|nope|nah|not now|no thanks|don'?t|skip it|never ?mind)\b/i;
@@ -185,7 +186,7 @@ function lvEl(){let el=$('#live');if(el)return el;el=document.createElement('div
  <div class="lv-ctl"><button class="lv-b" data-act="lvMute" id="lvMute" aria-label="Mute the mic">${ic('mic')}</button><button class="lv-b lv-end" data-act="lvEnd" aria-label="End">End</button><button class="lv-b" data-act="lvType" aria-label="Type instead">${ic('kb')}</button></div>
  ${noteHTML('lv-note')}<input id="lvIn" type="text" tabindex="-1" aria-hidden="true" class="lv-hid">`;
  document.body.appendChild(el);return el}
-function lvState(st,hint){LV.st=st;const el=$('#live');if(!el)return;el.dataset.st=st;el.querySelector('.lv-nm b').textContent=nm();
+function lvState(st,hint){LV.st=st;if(window.asHum)asHum(st==='think'&&LV.open);const el=$('#live');if(!el)return;el.dataset.st=st;el.querySelector('.lv-nm b').textContent=nm();
  $('#lvSt').textContent={listen:'Listening… take your time',think:'Thinking…',speak:'Speaking',idle:LV.muted?'Mic is off':'Tap the orb to talk',setup:'Getting ready'}[st]||'';
  $('#lvHint').textContent=hint!=null?hint:st==='listen'?'Tap the orb when you’re done':st==='speak'?'Tap the orb to interrupt':st==='think'?'':LV.muted?'Turn the mic on to talk':'';
  const m=$('#lvMute');if(m){m.innerHTML=ic(LV.muted?'micoff':'mic');m.classList.toggle('off',LV.muted)}}
@@ -199,7 +200,7 @@ function liveOpen(first,o){if(window.PLOT_ASSIST&&PLOT_ASSIST.close)PLOT_ASSIST.
  document.documentElement.classList.add('lv-on');requestAnimationFrame(()=>el.classList.add('on'));try{NA&&NA.wakePause&&NA.wakePause(true)}catch(e){}lvState('idle');lvCap();
  if(first)setTimeout(()=>lvHeard(first),350);else if(!aiReady()&&!MM.busy)lvState('idle','');else setTimeout(()=>lvGreet(),350)}
 function lvGreet(){const h=new Date().getHours(),n=S.settings.name;const g=LV.resumed?'Let’s pick up where we left off. Go ahead.':LV.hist.length?'I’m listening.':`${h<12?'Good morning':h<17?'Hey':'Good evening'}${n?', '+n:''}. What’s on your mind?`;LV.ai=g;lvCap();lvSay(g)}
-function liveClose(){if(!LV.open)return;LV.open=false;LV.gen++;const vno=()=>{if(!LV.open&&document.querySelector('.vdlg')&&ACT.vcNo)ACT.vcNo()};vno();setTimeout(vno,500);setTimeout(vno,1500);try{LV.ctl&&LV.ctl.abort()}catch(e){}if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);if(window.PLOT_ASSIST)PLOT_ASSIST.hush();
+function liveClose(){if(!LV.open)return;LV.open=false;if(window.asHum)asHum(false);LV.gen++;const vno=()=>{if(!LV.open&&document.querySelector('.vdlg')&&ACT.vcNo)ACT.vcNo()};vno();setTimeout(vno,500);setTimeout(vno,1500);try{LV.ctl&&LV.ctl.abort()}catch(e){}if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);if(window.PLOT_ASSIST)PLOT_ASSIST.hush();
  const el=$('#live');document.documentElement.classList.remove('lv-on');if(el){el.classList.remove('on');setTimeout(()=>{if(!LV.open)el.remove()},380)}try{NA&&NA.wakePause&&NA.wakePause(false)}catch(e){}}
 function lvListen(){if(!LV.open||LV.muted)return lvState('idle');if(typeof voiceAvail==='function'&&!voiceAvail()){LV.typing=true;$('.lv-type').hidden=false;lvState('idle','Voice isn’t available here. Type instead.');return}
  if(window.PLOT_ASSIST)PLOT_ASSIST.hush();const i=$('#lvIn');i.value='';LV.you='';lvCap();lvState('listen');if(window.asCue)asCue('start');voiceStart(i,$('#lvOrb'))}
@@ -211,8 +212,8 @@ document.addEventListener('input',e=>{if(e.target&&e.target.id==='lvIn'&&LV.open
 function lvSay(text,then){const t=String(text||'').trim();if(!t||!LV.open)return then?then():lvListen();lvState('speak');
  if(window.PLOT_ASSIST&&PLOT_ASSIST.say)PLOT_ASSIST.say(t,()=>{if(!LV.open)return;if(LV.st==='speak')(then||lvListen)()});else(then||lvListen)()}
 async function lvHeard(text){const g=++LV.gen,t=String(text).trim();if(!t)return lvListen();LV.you=t;LV.ai='';lvCap();lvState('think');
- const done=(say,acts,extra)=>{if(g!==LV.gen||!LV.open)return;LV.ai=say;if(acts)LV.pend=keepActs(acts);lvCap();LV.hist.push({role:'user',content:t},{role:'assistant',content:say});LV.hist=LV.hist.slice(-12);
-  try{PLOT_ASSIST.addTurn(t,say)}catch(e){}if(extra==='bye'){lvSay(say,()=>liveClose());return}lvSay(say)};
+ const done=(say,acts,extra,full)=>{if(g!==LV.gen||!LV.open)return;LV.ai=say;if(acts)LV.pend=keepActs(acts);lvCap();LV.hist.push({role:'user',content:t},{role:'assistant',content:full||say});LV.hist=LV.hist.slice(-12);
+  try{PLOT_ASSIST.addTurn(t,full||say)}catch(e){}if(extra==='bye'){lvSay(say,()=>liveClose());return}lvSay(say)};
  if(BYE.test(t))return done(['Bye for now.','Talk soon.','Okay, bye!'][Math.floor(Math.random()*3)],[],'bye');
  const blocked=aiBlock(t);if(blocked)return done(blocked,[]);
  /* "yes" to what was offered */
@@ -224,9 +225,14 @@ async function lvHeard(text){const g=++LV.gen,t=String(text).trim();if(!t)return
  const ctl=LV.ctl=new AbortController();let out='';
  try{const q=t;let ctx='';try{const r=await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},null);ctx=PLOT_ASSIST.ctx(q,r,'',planEngine()==='api')}catch(e){ctx='QUESTION\n'+q}
   const msgs=[{role:'system',content:LV_SYS()},...LV.hist.slice(-8),{role:'user',content:`DATA ABOUT ME (use only if it helps)\n${ctx.replace(/\nQUESTION\n[\s\S]*$/,'')}\n\nWHAT I JUST SAID\n${q}`}];
-  await aiChat(msgs,x=>{if(g!==LV.gen)return;out+=x;const v=hideActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,''));if(v){LV.ai=v;const c=$('#lvCap');const p=c&&c.querySelector('.lv-ai');if(p)p.textContent=v;else lvCap()}},{ctl,max_tokens:planEngine()==='api'?400:260,temperature:.7,reading:'Thinking…',onP:x=>{if(x&&g===LV.gen)lvState('think',x)},reset:()=>{out=''}})}
+  await aiChat(msgs,x=>{if(g!==LV.gen)return;out+=x;let v=hideActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,''));if(/^\W*AG?E?N?T?$|AGENT\s*:/.test(v))v='';if(v){LV.ai=v;const c=$('#lvCap');const p=c&&c.querySelector('.lv-ai');if(p)p.textContent=v;else lvCap()}},{ctl,max_tokens:planEngine()==='api'?400:260,temperature:.7,reading:'Thinking…',onP:x=>{if(x&&g===LV.gen)lvState('think',x)},reset:()=>{out=''}})}
  catch(e){if(g!==LV.gen)return;if(e&&e.name==='AbortError')return;return done('Sorry, I couldn’t think that through: '+(e&&e.message||e),[])}
- if(g!==LV.gen)return;const P=parseActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/[*#_`]/g,''));let say=P.clean.replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'').trim()||'Hmm, I’m not sure. Can you say that another way?';const care=aiCare(t,say);if(care)say+=' '+care;done(say,P.acts)}
+ if(g!==LV.gen)return;
+ /* the AI asked for the agent: it reads email, calendar, Drive or Notion, and the takeaway is said out loud */
+ const ag=window.AGENT&&AGENT.parse(out);if(ag){if(!AGENT.connected().length)return done('I can read your email, calendar, Drive and Notion once you connect them on the Agent page.',[]);
+  lvState('think','Asking your agent…');try{const x=await AGENT.ask(ag,{onStep:s=>{if(g===LV.gen)lvState('think',s)}});if(g!==LV.gen)return;return done(x.say,x.chips.slice(0,3).map(c=>({id:uid(),k:'agent',t:c.t,x:'',st:'',fn:c.fn})),'',x.md)}
+  catch(e){if(g!==LV.gen)return;return done('My agent couldn’t do that: '+(e&&e.message||e),[])}}
+ const P=parseActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/[*#_`]/g,''));let say=P.clean.replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'').trim()||'Hmm, I’m not sure. Can you say that another way?';const care=aiCare(t,say);if(care)say+=' '+care;done(say,P.acts)}
 Object.assign(ACT,{
  liveOpen:()=>liveOpen(),lvEnd:()=>liveClose(),
  lvOrb:()=>{if(LV.st==='listen'){if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(false,true);return}if(LV.st==='speak'){if(window.PLOT_ASSIST)PLOT_ASSIST.hush();lvListen();return}if(LV.st==='think'){LV.gen++;try{LV.ctl&&LV.ctl.abort()}catch(e){}lvState('idle','Stopped. Tap to talk.');return}if(LV.muted){LV.muted=false}lvListen()},
@@ -248,6 +254,34 @@ if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){return _ht(
 /* routes from the widget or a shortcut: assistant-live */
 {const _r=window.__route;window.__route=r=>{if(r==='assistant-live'){liveOpen();return}return _r&&_r(r)}}
 
+/* ---------------- ideas: what to ask the assistant or the agent, written by the AI from their plan ----------------
+   Kept in settings (aiSugs) so they show at once; Refresh asks for fresh ones, and they renew on their own twice a day
+   when the AI is quick (your own server). Until then, sensible defaults. */
+Object.assign(IC,{renew:'<path d="M20 11a8 8 0 0 0-14.9-3.9L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14.9 3.9L20 15"/><path d="M20 20v-5h-5"/>'});
+const SUGD={chat:['What do I have today?','Remind me to call mom at 6pm','Add “had a great workout” to my journal','Give me a 10-minute plan to get unstuck'],
+ agent:['Look at my email and calendar and tell me what I’m forgetting','What in my inbox needs a reply?','Plan my week around my calendar','Find deadlines in my email for the next two weeks']};
+const SUGB={};
+const sugAll=()=>S.settings.aiSugs||(S.settings.aiSugs={});
+const sugGet=k=>{const c=sugAll()[k];return c&&c.l&&c.l.length?c.l:SUGD[k]};
+const sugOld=k=>{const c=sugAll()[k];return!c||Date.now()-(c.t||0)>12*36e5};
+async function sugMake(k){if(SUGB[k])return SUGB[k];if(!aiReady()||MM.busy)throw new Error('Set up the AI first');
+ return SUGB[k]=(async()=>{const d=new Date(),part=d.getHours()<12?'morning':d.getHours()<17?'afternoon':'evening',
+  plot=(window.AGENT&&AGENT.plot?AGENT.plot():[]).map(x=>'- '+x).join('\n')||'(their plan is still empty)',conn=window.AGENT?AGENT.names():[],prev=sugGet(k);
+  const what=k==='agent'?`things the user could ask their agent to do right now. The agent can read ${conn.length?conn.join(', ')+' and ':''}their Plotline plan, then answer and suggest goals, reminders and notes.${conn.length?'':' Nothing else is connected yet, so keep to their plan.'} Each one is a clear task, like "Find emails from this week I haven’t replied to".`
+   :`things the user could say to ${nm()}, their assistant in the Plotline app (goals, habits, journal, lists, threads, reminders${conn.length?', and '+conn.join(', ')+' through its agent':''}). Mix it up: one that adds or logs something, one question about their own plan or data, one that asks for an idea, advice or a plan, and one wildcard.`;
+  const msgs=[{role:'system',content:`You write short suggestions for buttons in an app. Reply with exactly 4 lines and nothing else: each line one suggestion, under 60 characters, written as the user would say it (first person), no numbering, no quotes, no emojis.`},
+   {role:'user',content:`It’s ${d.toLocaleDateString(undefined,{weekday:'long'})} ${part}. Suggest ${what} Make them specific to this plan and the time of day, and different from these: ${prev.join(' / ')}.\n\nTHEIR PLAN\n${plot}`}];
+  let out='';await aiChat(msgs,x=>{out+=x},{max_tokens:200,temperature:.9});
+  const L=[...new Set(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').split('\n').map(x=>x.replace(/^\s*(?:[-*•]|\d+[.)])\s*/,'').replace(/^["“'”]+|["“”']+$/g,'').replace(/\*\*/g,'').trim()).filter(x=>x.length>=6&&x.length<=90&&!/^(here|sure|suggestions?)\b/i.test(x)))].slice(0,4);
+  if(L.length<2)throw new Error('The AI didn’t come up with any. Try again.');
+  sugAll()[k]={l:L,t:Date.now()};save();return L})().finally(()=>{delete SUGB[k]})}
+/* the row of ideas with its refresh button; act is the data-act each idea runs with data-q */
+function sugHTML(k,act,title){const b=!!SUGB[k];return`<div class="ai-sg${k==='agent'?' cmp':''}" data-sg="${k}"><div class="ai-sgh"><span>${esc(title||'Try asking')}</span><button class="ibtn sm ai-sgr${b?' spin':''}" data-act="aiSugNew" data-k="${k}" aria-label="New ideas" title="New ideas" ${b?'disabled':''}>${ic('renew')}</button></div><div class="ai-sgl">${sugGet(k).map(s=>`<button class="ai-sgi" data-act="${act}" data-q="${esc(s.replace(/[“”]/g,''))}">${ic('ai','ico-s')}<span>${esc(s)}</span></button>`).join('')}</div></div>`}
+function sugPaint(k){document.querySelectorAll(`.ai-sg[data-sg="${k}"]`).forEach(el=>{const p=el.parentNode,act=el.querySelector('.ai-sgi')?.dataset.act||'asTry',t=el.querySelector('.ai-sgh span')?.textContent;const w=document.createElement('div');w.innerHTML=sugHTML(k,act,t);p.replaceChild(w.firstChild,el)})}
+async function sugNew(k,quiet){const p=sugMake(k);sugPaint(k);try{await p;if(!quiet)toast('Fresh ideas')}catch(e){if(!quiet)toast(esc(e.message||e))}sugPaint(k)}
+/* shown: renew stale ideas quietly when the AI answers fast */
+const sugAuto=k=>{if(sugOld(k)&&!SUGB[k]&&aiReady()&&!MM.busy&&planEngine()==='api')setTimeout(()=>sugNew(k,true),600)};
+Object.assign(ACT,{aiSugNew:d=>sugNew(d.k)});
 const css=document.createElement('style');css.textContent=`
 .ai-md{min-width:0;overflow-wrap:anywhere}.ai-md p{margin:0 0 8px;line-height:1.5}.ai-md p:last-child{margin-bottom:0}.ai-md .md-h{margin:14px 0 6px;font:700 15px/1.3 var(--f-body);text-transform:none;letter-spacing:0}.ai-md h3.md-h{font-size:16.5px}.ai-md .md-h:first-child{margin-top:0}
 .ai-md ul,.ai-md ol{margin:4px 0 10px;padding-left:22px}.ai-md li{margin:3px 0;line-height:1.45}.ai-md li::marker{color:var(--accent)}.ai-md code{font:500 .9em var(--f-mono,monospace);padding:1px 5px;border-radius:6px;background:color-mix(in srgb,var(--text) 8%,transparent)}
@@ -259,7 +293,7 @@ const css=document.createElement('style');css.textContent=`
 .ai-act svg{width:15px;height:15px;flex:none;color:var(--accent)}.ai-act.done{opacity:.7;cursor:default;border-style:dashed}
 .mm{border:1px solid var(--line);border-radius:18px;padding:14px;margin:12px 0;background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
 .mm-h{display:flex;align-items:center;gap:10px}.mm-ic{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;flex:none;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}.mm-ic svg{width:20px;height:20px}
-.mm-t{flex:1;min-width:0;display:flex;flex-direction:column}.mm-t b{font-size:15px}.mm-t small{color:var(--muted);font-size:12px}
+.mm-t{flex:1;min-width:0;display:flex;flex-direction:column}@media(max-width:420px){.mm-h{display:grid;grid-template-columns:auto minmax(0,1fr);row-gap:4px}.mm-h .mm-ic{grid-row:span 2}.mm-tag{grid-column:2;justify-self:start}}.mm-t b{font-size:15px}.mm-t small{color:var(--muted);font-size:12px}
 .mm-tag{flex:none;font:700 11px var(--f-body);padding:4px 9px;border-radius:10px;background:color-mix(in srgb,var(--text) 8%,transparent);color:var(--muted)}.mm-tag.ok{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent)}
 .mm p{margin:10px 0 0}.mm .actions{margin-top:12px}
 .mm-st{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}.mm-st li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
@@ -309,6 +343,11 @@ input[data-vp=rate],input[data-vp=pitch]{width:100%;accent-color:var(--accent)}
 .lv-b.off{background:color-mix(in srgb,var(--danger,#e66) 18%,var(--surface));color:var(--danger,#e66)}
 .lv-end{width:auto;padding:0 26px;border-radius:28px;background:var(--danger,#e5484d);border-color:transparent;color:#fff}
 .lv-note{position:relative;margin-top:12px}.lv-hid{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.ai-sg{margin-top:10px;width:100%}.ai-sgh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.ai-sgh span{font:700 11px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ai-sg.cmp .ai-sgl{display:flex;flex-wrap:wrap;gap:6px}.ai-sg.cmp .ai-sgi{padding:7px 12px;border-radius:999px;font-size:13px}.ai-sg.cmp .ai-sgi svg{display:none}
+.ai-sgr.spin svg{animation:mmSpin 1s linear infinite}
+.ai-sgl{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:6px}
+.ai-sgi{display:flex;align-items:flex-start;gap:8px;min-width:0;text-align:left;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:500 14px/1.35 var(--f-body);cursor:pointer}.ai-sgi svg{flex:none;color:var(--accent);margin-top:2px}.ai-sgi span{min-width:0;overflow-wrap:anywhere}.ai-sgi:active{transform:scale(.98)}
 @media (prefers-reduced-motion:reduce){.lv-orb,.lv-orb span,.lv-hor{animation:none!important}}`;
 document.head.appendChild(css);
 })();
