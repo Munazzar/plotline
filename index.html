@@ -3346,6 +3346,8 @@ html.ink-open{overflow:hidden}
 .hweek .hd.t i{background:none;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c) 70%,transparent)}
 .hweek .hd.n i{background:none}.hweek .hd.n i::after{display:block;content:'';width:4px;height:4px;border-radius:50%;background:var(--dim)}
 .hrow>.hweek .hd i{border-radius:50%;padding:8px}.hrow>.hweek .hd.x i,.hrow>.hweek .hd.s i{padding:9px}.hrow>.hweek .hd.p i{padding:0;-webkit-mask:radial-gradient(circle,transparent 58%,#000 60%);mask:radial-gradient(circle,transparent 58%,#000 60%)}
+/* Home: no focus ring on the today's-goal field (1.37.2) */
+html .tg-add input,html .tg-add input:focus,html .tg-add input:focus-visible{outline:none!important;box-shadow:none!important;border:0!important}
 /* Goals: sub-goal toggle */
 .gsub-t{display:inline-flex;align-items:center;gap:6px}.gsub-t svg{width:15px;height:15px}
 /* Journal: whole journal */
