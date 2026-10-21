@@ -8,9 +8,9 @@
    Replies show as text and are read out (Android's text-to-speech, or the browser's).
    The name is yours to pick (Settings › AI & voice): "Hey Nova", "Hey Jarvis"…
    Wake word on Android (PlotlineAssist, Assist.java): the phone's speech recognizer runs in a loop and listens
-   for "hey <name>" while Plotline is open, or, if you turn it on, in the background with a "Listening"
+   for "hey <name>" while Plotlines is open, or, if you turn it on, in the background with a "Listening"
    notification (Android only lets the system's own assistant listen for free, without one).
-   The last exchange is sent to the "Plotline · Assistant" home-screen widget. */
+   The last exchange is sent to the "Plotlines · Assistant" home-screen widget. */
 (()=>{
 'use strict';
 const NA=window.PlotlineAssist||null;
@@ -86,7 +86,7 @@ function addToList(L,items){const its=items.map(x=>cap(clean(x))).filter(Boolean
 function addToday(title){title=cap(clean(title)).slice(0,90);const x={id:uid(),title,date:today(),time:'',goalId:null,done:false,doneAt:null,createdAt:Date.now()};S.days.push(x);save();rerender();
  return{say:`Added ${quote(title)} to today's goals.`,undo:()=>{S.days=S.days.filter(y=>y.id!==x.id);save();rerender()},chips:[['Open today','today']]}}
 function addReminder(title,w){title=cap(clean(title).replace(/^(?:(?:me|to|that|about|for)\s+)+/i,'')).slice(0,90);const x={id:uid(),title,date:w.date,time:w.time,dur:15,goalId:null,done:false,doneAt:null,createdAt:Date.now(),remind:'0'};S.days.push(x);save();try{syncNative()}catch(e){}rerender();
- return{say:`Okay, I'll remind you ${atTxt(w.date,w.time)}: ${quote(title)}.${NATIVE?'':' Keep Plotline open in this browser for the reminder to show.'}`,undo:()=>{S.days=S.days.filter(y=>y.id!==x.id);save();try{syncNative()}catch(e){}rerender()},chips:[['Open calendar','cal-'+w.date]]}}
+ return{say:`Okay, I'll remind you ${atTxt(w.date,w.time)}: ${quote(title)}.${NATIVE?'':' Keep Plotlines open in this browser for the reminder to show.'}`,undo:()=>{S.days=S.days.filter(y=>y.id!==x.id);save();try{syncNative()}catch(e){}rerender()},chips:[['Open calendar','cal-'+w.date]]}}
 function markDone(name){const h=pick(S.habits.filter(x=>!x.archived),name,x=>x.title);
  if(h){const d=today(),prev=hVal(h,d);hSetVal(h,d,hTarget(h));h.u=Date.now();save();try{checkMilestones()}catch(e){}rerender();return{say:`Nice. Marked ${quote(h.title)} done for today.`,undo:()=>{hSetVal(h,d,prev);save();rerender()},chips:[['Open habit','habit/'+h.id]]}}
  const x=pick(S.days.filter(y=>y.date===today()&&!y.done),name,y=>y.title);
@@ -193,7 +193,7 @@ function exec(p,raw){const A=aset();switch(p.k){
  case'live':setTimeout(()=>{if(window.liveOpen)liveOpen()},60);return{say:'Sure, let’s talk.',quiet:1};
  case'hello':return{say:`Hi! What can I do for you?`,listen:true};
  case'thanks':return{say:pickOne(['Anytime.','You got it.','Happy to help.'])};
- case'whoami':return{say:`I'm ${aname()}, your assistant in Plotline. You can rename me in Settings or by saying “call yourself” and a new name.`};
+ case'whoami':return{say:`I'm ${aname()}, your assistant in Plotlines. You can rename me in Settings or by saying “call yourself” and a new name.`};
  case'time':return{say:`It's ${new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}.`};
  case'date':return{say:`It's ${longDate(Date.now())}.`};
  case'help':return{say:`Try “add went for a long walk to my journal”, “start a thread called car maintenance”, “remind me to call mom at 6pm”, “add milk and eggs to my groceries list”, “mark reading done”, or ask “when did I last change my oil?”`};
@@ -295,7 +295,7 @@ const ACTM=[
 function spMin(m){m=Math.round(m||0);const h=Math.floor(m/60),r=m%60;return h?`${h} hour${h>1?'s':''}${r?` ${r} minute${r>1?'s':''}`:''}`:`${r} minute${r===1?'':'s'}`}
 function spDay(n){const tn=dnum(ymd());if(n===tn)return'today';if(n===tn-1)return'yesterday';const[y,mo,d]=fromN(n).split('-').map(Number);return'on '+new Date(y,mo-1,d).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}
 function actAsk(t){const l=lcs(t);if(!/^(?:how|what|did|when|which|was|were|tell|show|give)\b/.test(l))return null;const M=ACTM.find(x=>x.rx.test(l));if(!M)return null;
- const L=(S.settings&&S.settings.actLog)||{},keys=Object.keys(L);if(!keys.length)return{say:'I don’t have any activity from your phone yet. Turn on activity in Plotline’s settings and I can tell you your steps, sleep and screen time.',chips:[['Open activity','activity']]};
+ const L=(S.settings&&S.settings.actLog)||{},keys=Object.keys(L);if(!keys.length)return{say:'I don’t have any activity from your phone yet. Turn on activity in Plotlines’ settings and I can tell you your steps, sleep and screen time.',chips:[['Open activity','activity']]};
  let sp=pastSpan(l);const best=/\b(?:most|best|highest|max(?:imum)?)\b/.test(l),avg=/\baverage|\bper day\b|\ba day\b/.test(l);
  if(!sp)sp=best||avg?{a:dnum(ymd())-6,b:dnum(ymd()),lab:'the last 7 days'}:{a:dnum(ymd()),b:dnum(ymd()),one:1};
  if(sp.one){const ds=fromN(sp.a),o=L[ds],v=o?M.get(o):null,when=spDay(sp.a);
@@ -382,7 +382,7 @@ function asCtx(q,r,hint,big){const now=new Date(),tn=dnum(ymd()),lq=lcs(q),N=nam
  return parts.join('\n')+`\nQUESTION\n${q}`}
 async function aiAnswer(q,onP,hint){if(!aiReady())return null;const e=planEngine(),loc=e!=='api'&&e!=='native',X=window.AIX,spoken=AS.spoken,pr=insSet().profile;
  const r=(AS.rag&&AS.rag.q===q&&await AS.rag.p)||await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);const prompt=asCtx(q,r,hint,!loc&&e==='api');
- const sys=`You are ${aname()}, the assistant inside the Plotline app: a personal assistant that knows the user's own data and can talk about anything. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. ${spoken?'Your answer is read aloud: one to three short, natural sentences. No lists, no markdown, no note numbers like [2].':'Answer clearly and briefly: a few sentences, or a few short bullets when that really helps. No note numbers like [2].'} When the question is about their life, use the data given (dates, activity numbers, plans, threads, lists and notes); if the app looked something up, use that answer, and if the data doesn't have it, say what you do know. For anything else (the world, ideas, advice, writing, feelings), just answer it well.${window.AGENT?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nWHAT YOU KNOW ABOUT THEM\n'+pr.text:''}${X?'\n\n'+X.ACT_SYS+'\n\n'+X.safety():''}`;
+ const sys=`You are ${aname()}, the assistant inside the Plotlines app: a personal assistant that knows the user's own data and can talk about anything. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. ${spoken?'Your answer is read aloud: one to three short, natural sentences. No lists, no markdown, no note numbers like [2].':'Answer clearly and briefly: a few sentences, or a few short bullets when that really helps. No note numbers like [2].'} When the question is about their life, use the data given (dates, activity numbers, plans, threads, lists and notes); if the app looked something up, use that answer, and if the data doesn't have it, say what you do know. For anything else (the world, ideas, advice, writing, feelings), just answer it well.${window.AGENT?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nWHAT YOU KNOW ABOUT THEM\n'+pr.text:''}${X?'\n\n'+X.ACT_SYS+'\n\n'+X.safety():''}`;
  const hist=[];AS.turns.filter(t=>!t.wait&&t.a&&!t.sys).slice(-3).forEach(t=>hist.push({role:'user',content:t.q},{role:'assistant',content:t.a}));
  const msgs=[{role:'system',content:sys},...hist,{role:'user',content:prompt}];
  let out='';const on=x=>{out+=x;onP&&onP('')};const opts={max_tokens:spoken?260:(loc?450:700),reading:'Thinking…',temperature:.5};
@@ -452,7 +452,7 @@ function speak(text,done,ov){const t=String(text).replace(/[“”]/g,'"').repla
 function spoke(){const f=SPK_CB;SPK_CB=null;if(f){paintHead();f();return}afterSpeak()}
 function hush(){SPK=null;SPK_CB=null;try{if(NA&&NA.stopSpeaking)NA.stopSpeaking();else if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}paintHead()}
 function afterSpeak(){paintHead();const a=AS.after;AS.after=null;if(a==='listen'&&AS.open)setTimeout(()=>listen(),250);else{wakePause(false);handsOff()}}
-/* woken by "Hey Plot" while Plotline was closed or the phone locked: once the answer is spoken and nothing follows, step aside again */
+/* woken by "Hey Plot" while Plotlines was closed or the phone locked: once the answer is spoken and nothing follows, step aside again */
 function handsOff(){if(!AS.bg||!NA||!NA.background)return;clearTimeout(AS.bgT);AS.bgT=setTimeout(()=>{if(!AS.bg||AS.busy||AS.listening||AS.await||SPK)return;AS.bg=false;asClose();try{NA.background()}catch(e){}},2500)}
 ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{if(AS.bg){AS.bg=false;clearTimeout(AS.bgT)}},true));
 
@@ -578,16 +578,16 @@ function assistHTML(){const a=aset(),st=nst(),v=vset();
  const row=(k,t,sub,on,dis)=>`<label class="sw"><span>${t}<small>${sub}</small></span><input type="checkbox" data-assist="${k}" ${on?'checked':''} ${dis?'disabled':''}><i></i></label>`;
  return`<section class="panel rv" id="assistPanel"><h3>Hey ${esc(aname())}</h3><p class="small muted">Your voice assistant. Ask it to add to today’s journal, start or update a thread, set a reminder, add to a list or mark a habit done, or ask things like “when did I last change my oil?”.</p>
  <div class="field"><label>Assistant’s name</label><input data-assist="name" maxlength="24" value="${esc(aname())}" placeholder="Plot"><small class="muted">You’ll say “Hey ${esc(aname())}”.</small></div>
- ${NA?row('wake',`Listen for “${esc(wakeWord())}” while Plotline is open`,'The phone’s speech recognizer listens in short rounds while the app is on screen',a.wake)+
+ ${NA?row('wake',`Listen for “${esc(wakeWord())}” while Plotlines is open`,'The phone’s speech recognizer listens in short rounds while the app is on screen',a.wake)+
  row('bg','Keep listening in the background',`Hands-free, even with the phone locked: say it and it answers out loud. Android needs a small silent notification while it listens, and it uses more battery.${st.onDevice===false&&!v.cloud?' This phone has no on-device speech, so it needs online speech allowed.':''}`,a.bg)+
  row('cues','Listening sounds','A clear chime when I start listening and another when I stop',a.cues!==false)+
 
  row('quiet','Quiet listening','Mutes the speech recognizer’s start and stop beeps (and other notification sounds for that moment) so it doesn’t chime while it listens',a.quiet!==false)+
- (a.bg&&st.overlay===false?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>Let ${esc(aname())} pop up</b><small>So “${esc(wakeWord())}” can open Plotline over other apps. Without it you’ll get a notification to tap instead.</small></div><button class="btn sm" data-act="asOverlay">Allow</button></div>`:''):`<p class="small muted">The “${esc(wakeWord())}” wake word works in the Android app. Here, tap the orb at the top to talk.</p>`}
+ (a.bg&&st.overlay===false?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>Let ${esc(aname())} pop up</b><small>So “${esc(wakeWord())}” can open Plotlines over other apps. Without it you’ll get a notification to tap instead.</small></div><button class="btn sm" data-act="asOverlay">Allow</button></div>`:''):`<p class="small muted">The “${esc(wakeWord())}” wake word works in the Android app. Here, tap the orb at the top to talk.</p>`}
 <div class="field"><label>While I think in a conversation</label><div class="as-cue"><select data-assist="think">${Object.entries(THINK).map(([id,q])=>`<option value="${id}" ${thinkOf()===id?'selected':''}>${q.n}</option>`).join('')}</select><button class="ibtn" data-act="asThinkTry" aria-label="Play this sound">${ic('play')}</button></div><small class="muted">A quiet sound so you know I’m working on an answer.</small></div>
 ${a.cues!==false?`<div class="as-cues">${[['cueStart','When I start listening','start'],['cueDone','When I stop listening','done']].map(([k,l,w])=>`<div class="field"><label>${l}</label><div class="as-cue"><select data-assist="${k}">${Object.entries(CUES).map(([id,q])=>`<option value="${id}" ${cueOf(w)===id?'selected':''}>${q.n}</option>`).join('')}</select><button class="ibtn" data-act="asCueTry" data-w="${w}" aria-label="Play this sound">${ic('play')}</button></div></div>`).join('')}</div>`:''}
  <div class="field"><label>Read replies out loud</label><select data-assist="speak">${[['voice','When I talk to it'],['always','Always'],['never','Never']].map(([k,n])=>`<option value="${k}" ${a.speak===k?'selected':''}>${n}</option>`).join('')}</select></div>
- ${NA&&NA.openAssistSettings?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>${st.assistRole?`${esc(aname())} is your phone’s assistant`:`Use ${esc(aname())} as your phone’s assistant`}</b><small>${st.assistRole?'Press and hold the side button to talk to it from anywhere.':'Pick Plotline as the digital assistant app, then press and hold the side button to talk from anywhere. On Samsung: Settings › Advanced features › Side button › Press and hold › Digital assistant. This replaces Gemini on that button.'} You can also share text from any app to Plotline, or select text and tap Send to Plotline.</small></div><button class="btn sm" data-act="asRole">${st.assistRole?'Change':'Set up'}</button></div>`:''}
+ ${NA&&NA.openAssistSettings?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>${st.assistRole?`${esc(aname())} is your phone’s assistant`:`Use ${esc(aname())} as your phone’s assistant`}</b><small>${st.assistRole?'Press and hold the side button to talk to it from anywhere.':'Pick Plotlines as the digital assistant app, then press and hold the side button to talk from anywhere. On Samsung: Settings › Advanced features › Side button › Press and hold › Digital assistant. This replaces Gemini on that button.'} You can also share text from any app to Plotlines, or select text and tap Send to Plotlines.</small></div><button class="btn sm" data-act="asRole">${st.assistRole?'Change':'Set up'}</button></div>`:''}
  ${row('btn','Assistant button in the top bar','The orb next to search and settings',a.btn)}
  <div class="actions left"><button class="btn sm pri" data-act="asOpen">Try it</button></div></section>`}
 {const _vh=voiceHTML;voiceHTML=function(){return _vh()+assistHTML()}}
@@ -599,7 +599,7 @@ document.addEventListener('change',async e=>{const t=e.target;if(!t.dataset||!t.
  if(k==='name'){v=String(v).replace(/[^\p{L}\p{N} '\-]/gu,'').trim().slice(0,24)||'Plot';v=cap(v)}
  if((k==='wake'||k==='bg')&&v){const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud){const ok=await voiceConsent();if(!ok){t.checked=false;return}}if(!(await permAsk('mic','android.permission.RECORD_AUDIO'))){t.checked=false;return toast('Allow the microphone to use the wake word')}if(k==='bg')askNotif()}
  S.settings.assist={...aset(),[k]:v};save();wakeSync();render(false);if(k==='cueStart'||k==='cueDone')cuePlay(v);if(k==='think')thinkTry();if((k==='wake'||k==='bg')&&v)toast(`Say “${wakeWord()}” to try it`)});
-Object.assign(ACT,{asThinkTry:()=>thinkTry(),asCueTry:d=>cuePlay(cueOf(d.w)),asWakeOn:async()=>{const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud&&!(await voiceConsent()))return;if(!(await permAsk('mic','android.permission.RECORD_AUDIO')))return toast('Allow the microphone to use the wake word');S.settings.assist={...aset(),wake:true};save();wakeSync();paint();toast(`Say “${wakeWord()}” while Plotline is open`)},asOverlay:()=>{try{NA.openOverlaySettings()}catch(e){}},asRole:()=>{try{NA.openAssistSettings()}catch(e){}}});
+Object.assign(ACT,{asThinkTry:()=>thinkTry(),asCueTry:d=>cuePlay(cueOf(d.w)),asWakeOn:async()=>{const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud&&!(await voiceConsent()))return;if(!(await permAsk('mic','android.permission.RECORD_AUDIO')))return toast('Allow the microphone to use the wake word');S.settings.assist={...aset(),wake:true};save();wakeSync();paint();toast(`Say “${wakeWord()}” while Plotlines is open`)},asOverlay:()=>{try{NA.openOverlaySettings()}catch(e){}},asRole:()=>{try{NA.openAssistSettings()}catch(e){}}});
 
 /* ---------------- start ---------------- */
 function rerender(){try{render(false)}catch(e){}}

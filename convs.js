@@ -71,7 +71,7 @@ function makeHTML(){const c=get(MKR.id);if(!c)return'';const ready=window.AIX&&A
 const mkPaint=()=>{const s=$('#sheet .cv-mkw');if(s)s.innerHTML=makeHTML()};
 async function mkRun(k){const c=get(MKR.id);if(!c||MKR.busy)return;if(!(window.AIX&&AIX.ready()))return toast('Set up the AI first');
  MKR={...MKR,k,busy:true,acts:[],err:'',ctl:new AbortController()};mkPaint();let out='';
- try{await AIX.chat([{role:'system',content:`You turn a conversation into things for the user's plan in the Plotline app. Read it and suggest ${MKD[k]||MKD.any}, based only on what was actually said. Reply with ACTION lines only, one per line, at most 6, nothing else.\n${AIX.ACT_SYS.replace(/At most two ACTION lines[^\n]*$/,'')}${k!=='any'?`\nUse only the type "${k==='journal'?'journal':k}".`:''}`},{role:'user',content:`CONVERSATION\n${transcript(c,6000)}`}],x=>{out+=x},{max_tokens:420,temperature:.3,ctl:MKR.ctl});
+ try{await AIX.chat([{role:'system',content:`You turn a conversation into things for the user's plan in the Plotlines app. Read it and suggest ${MKD[k]||MKD.any}, based only on what was actually said. Reply with ACTION lines only, one per line, at most 6, nothing else.\n${AIX.ACT_SYS.replace(/At most two ACTION lines[^\n]*$/,'')}${k!=='any'?`\nUse only the type "${k==='journal'?'journal':k}".`:''}`},{role:'user',content:`CONVERSATION\n${transcript(c,6000)}`}],x=>{out+=x},{max_tokens:420,temperature:.3,ctl:MKR.ctl});
   const P=AIX.parseActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,''),6);MKR.acts=AIX.keepActs(P.acts)}
  catch(e){MKR.err=String(e&&e.message||e)}
  MKR.busy=false;mkPaint()}

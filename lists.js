@@ -66,13 +66,13 @@ async function ensureCloud(L){if(L.cloud)return L.cloud;if(!C()||!C().signedIn()
 async function share(L){if(L.cloud)return showLink(L);
  if(!C()||!C().signedIn()){if(typeof shReady==='function'&&await shReady()&&C().signedIn())return share(L);return toast('Sign in (Settings → Sync) to share a list')}
  try{toast('Creating a private link…');await ensureCloud(L);render(false);showLink(L)}catch(e){toast(esc(e.message||String(e)))}}
-/* Share: invite people (it shows up in their Plotline, like shared habits) or copy a link */
+/* Share: invite people (it shows up in their Plotlines, like shared habits) or copy a link */
 function shareMenu(L){const sh=typeof shareChip==='function'&&shareChip('list',L.id);
  openSheet(`<div class="data">Share</div><h2 style="margin-top:6px">${esc(L.emoji||'')} ${esc(L.title)}</h2><div class="acct-opts">
- <button class="acct-o" data-act="lsInvite" data-id="${L.id}"><b>${ic('user','ico-s')} Invite people</b><small>Add their Google email. The list shows up in their Plotline by itself, with a notification on Android.</small></button>
+ <button class="acct-o" data-act="lsInvite" data-id="${L.id}"><b>${ic('user','ico-s')} Invite people</b><small>Add their Google email. The list shows up in their Plotlines by itself, with a notification on Android.</small></button>
  <button class="acct-o" data-act="lsLink" data-id="${L.id}"><b>${ic('link','ico-s')} Copy a link</b><small>Anyone you send it to can open it after signing in.</small></button>
  ${sh?`<button class="acct-o" data-act="lsGroup" data-id="${L.id}"><b>${ic('share','ico-s')} Who’s in it</b><small>See everyone’s progress and react.</small></button>`:''}</div>`)}
-function showLink(L){const url=linkOf(L);openSheet(`<div class="data">Share</div><h2 style="margin-top:6px">${esc(L.emoji||'')} ${esc(L.title)}</h2><p class="small muted">Anyone with this link who signs in to Plotline can tick and add items. It’s end-to-end encrypted; the key is only in the link.</p>
+function showLink(L){const url=linkOf(L);openSheet(`<div class="data">Share</div><h2 style="margin-top:6px">${esc(L.emoji||'')} ${esc(L.title)}</h2><p class="small muted">Anyone with this link who signs in to Plotlines can tick and add items. It’s end-to-end encrypted; the key is only in the link.</p>
  <div class="wb-row"><input id="lslink" readonly value="${esc(url)}" aria-label="Link"><button class="btn sm" data-act="lsCopy">${ic('copy')}Copy</button></div>
  <div class="actions"><button class="btn pri" data-act="lsSend">${ic('send')}Send…</button></div>`)}
 async function joinData(doc,k){const have=lists().find(l=>l.cloud&&l.cloud.doc===doc);if(have)return have.id;
@@ -157,7 +157,7 @@ Object.assign(ACT,{
  lsInvite:d=>{const L=LBY(d.id);if(L&&typeof shareStart==='function')shareStart('list',{id:L.id})},
  lsGroup:d=>{const x=(S.shares||[]).find(x=>x.status==='joined'&&x.local&&x.local.kind==='list'&&x.local.id===d.id);if(x&&ACT.shOpen)ACT.shOpen({id:x.id})},
  lsCopy:async()=>{const i=$('#lslink');if(i&&await copyText(i.value))toast('Link copied')},
- lsSend:()=>{const i=$('#lslink');if(!i)return;const msg='Join my list on Plotline: '+i.value;if(NATIVE){try{NATIVE.share('Plotline list',msg);return}catch(e){}}if(navigator.share)navigator.share({title:'Plotline list',url:i.value}).catch(()=>{});else ACT.lsCopy()},
+ lsSend:()=>{const i=$('#lslink');if(!i)return;const msg='Join my list on Plotlines: '+i.value;if(NATIVE){try{NATIVE.share('Plotlines list',msg);return}catch(e){}}if(navigator.share)navigator.share({title:'Plotlines list',url:i.value}).catch(()=>{});else ACT.lsCopy()},
  lsLogin:async()=>{if(typeof shReady==='function'&&await shReady()&&C().signedIn()){toast('Signed in. You can edit now');render(false)}},
  lsJoin:()=>openSheet(`<h2>Open a shared list</h2><form data-form="lsJoin"><div class="field"><label>Paste the link</label><input name="u" placeholder="https://…#/list/j~…" required></div><div class="actions"><button class="btn pri">Open</button></div></form>`),
  lsMenu:d=>{const L=LBY(d.id);if(!L)return;const own=L.cloud&&C()&&(()=>{try{return L.cloud.owner===(fbGet()||{}).uid}catch(e){return false}})();
@@ -177,7 +177,7 @@ Object.assign(FORM,{
   touch(L);render(false);setTimeout(()=>{const i=document.querySelector('.ls-add input');if(i)i.focus()},30)},
  lsDue:f=>{const L=LBY(f.dataset.id);if(!L)return;L.due=new FormData(f).get('d')||'';L.mu=now();closeSheet();touch(L);render(false)},
  lsItemDue:f=>{const L=LBY(f.dataset.id),i=L&&L.items[f.dataset.i];if(!i)return;i.due=new FormData(f).get('d')||'';i.u=now();closeSheet();touch(L);render(false)},
- lsJoin:f=>{const m=/#\/list\/(j~[^~\s]+~[^\s#]+)/.exec(new FormData(f).get('u')||'');if(!m)return toast('That isn’t a Plotline list link');closeSheet();go('list/'+m[1])}});
+ lsJoin:f=>{const m=/#\/list\/(j~[^~\s]+~[^\s#]+)/.exec(new FormData(f).get('u')||'');if(!m)return toast('That isn’t a Plotlines list link');closeSheet();go('list/'+m[1])}});
 /* typing in an item or the title saves as you go (and syncs a moment later) */
 document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset)return;
  if(t.dataset.lsedit){const L=LBY(cur.id),i=L&&L.items[t.dataset.lsedit];if(!i||ro(L))return;i.t=t.value.slice(0,200);i.u=now();L.u=now();clearTimeout(st(L).sv);st(L).sv=setTimeout(()=>{save();if(L.cloud)pushSoon(L)},500)}
