@@ -344,12 +344,12 @@ input[data-vp=rate],input[data-vp=pitch]{width:100%;accent-color:var(--accent)}
 .lv-home{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 12px;padding:14px 16px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 16%,var(--surface)),var(--surface));color:var(--text);text-align:left;cursor:pointer;font:inherit}
 .lv-home>span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}.lv-home small{color:var(--muted);font-size:12.5px;margin-top:2px}.lv-home>svg{width:22px;height:22px;color:var(--accent);flex:none}
 .lv-hor{width:40px;height:40px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,#fff8 0,transparent 42%),conic-gradient(from 200deg,var(--accent),var(--c-learning),var(--c-career),var(--c-health),var(--accent));box-shadow:0 8px 22px -8px var(--accent);will-change:transform;animation:lvBreathe 2.8s cubic-bezier(.37,0,.63,1) infinite alternate}
-.lv{position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;padding:max(14px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));background:var(--bg);color:var(--text);opacity:0;transform:scale(1.03);transition:opacity .3s,transform .35s var(--spring,ease)}
-.lv.on{opacity:1;transform:none}.lv.min{visibility:hidden;pointer-events:none;transition:opacity .3s,transform .35s,visibility 0s .35s}
+#live{position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;padding:max(14px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));background:var(--bg);color:var(--text);opacity:0;transform:scale(1.03);transition:opacity .3s,transform .35s var(--spring,ease)}
+#live.on{opacity:1;transform:none}#live.min{visibility:hidden;pointer-events:none;transition:opacity .3s,transform .35s,visibility 0s .35s}
 html.qs-on #scrim{z-index:130}html.qs-on #sheet{z-index:131}
 .qs-s{margin:6px 0 16px}.qs-s>h3{font:700 15px var(--f-body);margin:0 0 8px}.qs-s .as-cue select{min-width:0}.qs-s .chips{margin:6px 0 10px}html.lv-on body{overflow:hidden}
 .lv-glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 45% at 50% 38%,color-mix(in srgb,var(--accent) 26%,transparent),transparent 70%),radial-gradient(50% 40% at 30% 80%,color-mix(in srgb,var(--c-learning,var(--accent)) 16%,transparent),transparent 70%);transition:opacity .5s}
-.lv[data-st=idle] .lv-glow{opacity:.55}
+#live[data-st=idle] .lv-glow{opacity:.55}
 .lv-h{position:relative;display:flex;align-items:center;gap:8px}.lv-nm{flex:1;display:flex;flex-direction:column}.lv-nm b{font:700 18px var(--f-body)}.lv-nm small{color:var(--muted);font-size:13px}
 .lv-mid{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px}
 .lv-orb{position:relative;width:min(56vw,230px);aspect-ratio:1;border:0;padding:0;border-radius:50%;background:none;cursor:pointer;--lv:0;will-change:transform;animation:lvBreathe 5.6s cubic-bezier(.37,0,.63,1) infinite alternate;-webkit-tap-highlight-color:transparent}
@@ -359,9 +359,9 @@ html.qs-on #scrim{z-index:130}html.qs-on #sheet{z-index:131}
 .lv-o3{background:conic-gradient(from 0deg,transparent 0 55%,rgba(255,255,255,.55) 75%,transparent 92%);opacity:0;transition:opacity .6s;animation:lvSpin 1.8s linear infinite;will-change:transform}
 /* breathing lives on the button itself and never stops, so moving between idle, listening, thinking and speaking never jumps */
 @keyframes lvBreathe{from{transform:scale(.94)}to{transform:scale(1)}}
-.lv[data-st=listen] .lv-o2{opacity:1}
-.lv[data-st=think] .lv-o3{opacity:1}
-.lv[data-st=speak] .lv-o1{animation:lvTalk .8s cubic-bezier(.37,0,.63,1) infinite alternate}
+#live[data-st=listen] .lv-o2{opacity:1}
+#live[data-st=think] .lv-o3{opacity:1}
+#live[data-st=speak] .lv-o1{animation:lvTalk .8s cubic-bezier(.37,0,.63,1) infinite alternate}
 @keyframes lvRing{0%{transform:scale(.9);opacity:.9}100%{transform:scale(1.22);opacity:0}}
 @keyframes lvSpin{to{transform:rotate(360deg)}}
 @keyframes lvTalk{from{transform:scale(.9)}to{transform:scale(.97)}}

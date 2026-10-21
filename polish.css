@@ -44,7 +44,7 @@ html{--e0:0 0 0 .5px rgba(20,18,50,.07),0 1px 2px rgba(20,18,50,.06);
 html:not(.lt){--e0:inset 0 .5px 0 rgba(255,255,255,.07),0 0 0 .5px rgba(255,255,255,.06);
  --e1:inset 0 .5px 0 rgba(255,255,255,.07),0 0 0 .5px rgba(255,255,255,.05),0 12px 28px -20px rgba(0,0,0,.8);
  --e2:inset 0 .5px 0 rgba(255,255,255,.08),0 0 0 .5px rgba(255,255,255,.06),0 24px 48px -24px rgba(0,0,0,.85)}
-html :is(.panel,.tg-box,.list,.hday,.hin,.aip,.hsn-card,.hft,.demob,.hc-r,.li.rv,.hsum,.cal-lv,.csum,.cpeek,.hrow-g,.lv-home,.ud-card,.hday.ud){box-shadow:var(--e1)!important}
+html :is(.panel,.tg-box,.list,.hday,.hin,.aip,.hsn-card,.demob,.hc-r,.li.rv,.hsum,.cal-lv,.csum,.cpeek,.hrow-g,.lv-home,.ud-card,.hday.ud){box-shadow:var(--e1)!important}
 html :is(.ibtn,.chip,.seg-c,.btn:not(.pri):not(.ink):not(.inkline)){box-shadow:var(--e0)!important}
 html .tabbar{box-shadow:var(--e2)!important}
 html .sheet{box-shadow:var(--e2)}
@@ -134,3 +134,12 @@ html[data-bgp=image] body::after{background:var(--bgimg) center/cover no-repeat}
 :root[data-focus=on][data-canvas] #view{animation:cvIn .5s cubic-bezier(.2,.8,.2,1)}
 @keyframes cvIn{from{opacity:.4;transform:scale(.985)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){:root[data-focus=on][data-canvas] #view{animation:none}}
+
+/* ---------- Home on wide screens ---------- */
+@media(min-width:1180px){
+ html[data-pg=today]:not([data-focus=on]) main{max-width:1360px}
+ #view .hgrid .hsn-r{grid-template-columns:minmax(150px,2.4fr) repeat(var(--n),var(--cw)) 24px}
+ #view .hgrid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(340px,1fr);gap:28px;align-items:start}
+ #view .hcol{display:flex;flex-direction:column;min-width:0}
+ #view .hcol>*{margin-top:0}
+}

@@ -1194,7 +1194,13 @@ html,body{overscroll-behavior-y:contain}
 @media(max-width:400px){.ph-r{gap:6px}.ph-r .ibtn{width:40px;height:40px;border-radius:13px}.ph-r .ibtn svg{width:18px;height:18px}.ph-r .btn{height:40px;padding:0 12px}}
 /* ================= writing ================= */
 @media(min-width:821px){.sheet.wsheet{width:min(720px,calc(100vw - 32px));max-height:92vh}}
-@media(max-width:820px){.sheet.wsheet{max-height:96vh}}
+@media(max-width:820px){.sheet.wsheet{max-height:96vh}.wr-fs{display:none!important}}
+/* journal writing as a full-screen canvas on bigger screens: edge to edge, the text stays a comfortable width */
+@media(min-width:821px){.sheet.wsheet.wfull{inset:0;width:100vw;max-width:none;height:100dvh;max-height:none;border-radius:0;border:0;transform:none!important;display:flex;flex-direction:column;padding:18px clamp(20px,6vw,120px) 24px}
+ .sheet.wsheet.wfull>.grab{display:none}.sheet.wsheet.wfull>.wr{flex:1 0 auto;display:flex;flex-direction:column;gap:14px;width:100%;max-width:880px;margin:0 auto}
+ .sheet.wsheet.wfull .wr-ed{flex:1 0 auto;min-height:calc(100dvh - 300px);font-size:18px;line-height:1.7}}
+.wr-fs svg{width:17px;height:17px}
+@media(min-width:821px){.sheet.wfull .wr-done{display:inline-flex!important}}
 .wr{display:grid;gap:12px}
 .wr-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
 .wr-pills{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;max-width:100%}
@@ -3529,7 +3535,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.41.2';
+const APP_VER='1.41.3';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -4357,7 +4363,7 @@ function syncPanel(){const sy=S.settings.sync,c=cfg();const conn=syncOn();
 /* ================= overlays ================= */
 let SHEET_LOCK=false,CONF=null,UNDO=null,TT,PHOTO=null;
 function openSheet(html,lock=false){SHEET_LOCK=lock;const sh=$('#sheet');sh.classList.remove('wide');sh.innerHTML=`<div class="grab"></div>`+html;setTimeout(()=>{if(typeof micDecorate==='function')micDecorate(sh)},0);sh.scrollTop=0;sh.style.transform='';sh.classList.add('on');$('#scrim').classList.add('on');document.documentElement.style.overflow='hidden';if(matchMedia('(min-width:821px)').matches)setTimeout(()=>sh.querySelector('input:not([type=hidden]):not([type=file]):not([type=checkbox]):not([type=radio]),textarea')?.focus({preventScroll:true}),350)}
-function closeSheet(){if(WR){wrSave();WR=null;$('#sheet').classList.remove('wsheet');setTimeout(()=>{if(cur.p==='journal'||cur.p==='goal')render(false)},380)}$('#sheet').classList.remove('on');$('#scrim').classList.remove('on');SHEET_LOCK=false;PHOTO=null;document.documentElement.style.overflow=''}
+function closeSheet(){if(WR){wrSave();WR=null;$('#sheet').classList.remove('wsheet','wfull');setTimeout(()=>{if(cur.p==='journal'||cur.p==='goal')render(false)},380)}$('#sheet').classList.remove('on');$('#scrim').classList.remove('on');SHEET_LOCK=false;PHOTO=null;document.documentElement.style.overflow=''}
 $('#scrim').addEventListener('click',()=>{if(!SHEET_LOCK)closeSheet()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!SHEET_LOCK)closeSheet();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){e.preventDefault();e.target.click()}});
 /* Swipe a drawer down to close it. Works from anywhere on the drawer while its content is scrolled to the top
@@ -5136,7 +5142,7 @@ let WR=null,WRT=0;
 function writeSheet(e,gid,date){const ed=!!e;PHOTO=ed?(e.img||null):null;SKC={...(ed&&e.sk||{})};WR={id:ed?e.id:null,gid:ed?e.goalId:(gid||null),date:date||(ed?ymd(new Date(e.t)):ymd())};
  const day=WR.date,sib=S.entries.filter(x=>x.type==='note'&&ymd(new Date(x.t))===day).sort((a,b)=>a.t-b.t);
  openSheet(`<div class="wr">
- <div class="wr-top"><span class="data" id="wrStat">${ed?'Saved':'New entry · starts saving as you write'}</span><div class="wr-pills">${sib.map((x,k)=>`<button class="wr-pill${e&&x.id===e.id?' on':''}" data-act="wrOpen" data-id="${x.id}">${x.mood?x.mood+' ':''}${esc(trunc(x.title||'Entry '+(k+1),18))}</button>`).join('')}<button class="wr-pill add" data-act="wrNew" data-d="${day}">${ic('plus')}New</button></div><button type="button" class="btn sm pri wr-done" data-act="wrDone">Done</button></div>
+ <div class="wr-top"><span class="data" id="wrStat">${ed?'Saved':'New entry · starts saving as you write'}</span><div class="wr-pills">${sib.map((x,k)=>`<button class="wr-pill${e&&x.id===e.id?' on':''}" data-act="wrOpen" data-id="${x.id}">${x.mood?x.mood+' ':''}${esc(trunc(x.title||'Entry '+(k+1),18))}</button>`).join('')}<button class="wr-pill add" data-act="wrNew" data-d="${day}">${ic('plus')}New</button></div><button type="button" class="ibtn sm wr-fs" data-act="wrFull" aria-label="Full screen" title="Full screen">${ic(S.settings.wrFull?'unfull':'full')}</button><button type="button" class="btn sm pri wr-done" data-act="wrDone">Done</button></div>
  <input class="wr-title" id="wrTitle" maxlength="90" placeholder="Title · e.g. Morning gratitude, Late-night vent" value="${esc(ed?e.title||'':'')}">
  <div class="wr-mood" role="radiogroup" aria-label="Mood">${MOODS.map(([m,n])=>`<button type="button" class="wr-m${ed&&e.mood===m?' on':''}" data-act="wrMood" data-m="${m}" aria-pressed="${ed&&e.mood===m}" title="${n}"><span>${m}</span><small>${n}</small></button>`).join('')}</div>
  <div class="wr-tb" role="toolbar" aria-label="Formatting"><button type="button" data-cmd="bold" aria-label="Bold"><b>B</b></button><button type="button" data-cmd="italic" aria-label="Italic"><i>I</i></button><button type="button" data-cmd="underline" aria-label="Underline"><u>U</u></button><button type="button" data-cmd="hilite" aria-label="Highlight"><mark>H</mark></button><button type="button" data-cmd="insertUnorderedList" aria-label="Bullet list">${ic('menu')}</button><button type="button" data-cmd="removeFormat" aria-label="Clear formatting">Tx</button><span class="wr-tb-sep"></span><button type="button" data-act="inkDraw" aria-label="Draw or sketch" title="Draw or sketch">${ic('pen')}</button><button type="button" data-act="inkHand" aria-label="Write by hand" title="Write by hand">${ic('sign')}</button><button type="button" data-act="inkScan" aria-label="Text from a photo" title="Text from a photo">${ic('scan')}</button><span style="flex:1"></span><button type="button" class="wr-pr" data-act="wrPrompt">${ic('ai')}Prompt</button></div>
@@ -5144,7 +5150,7 @@ function writeSheet(e,gid,date){const ed=!!e;PHOTO=ed?(e.img||null):null;SKC={..
  <div class="wr-meta"><div class="field"><label>Date</label><input type="date" id="wrDate" value="${day}" max="${ymd()}"></div><div class="field"><label>Goal · optional</label><select id="wrGoal"><option value="">None</option>${treeOrder(S.goals).map(({g,d})=>`<option value="${g.id}" ${g.id===WR.gid?'selected':''}>${' '.repeat(d)}${esc(trunc(g.title,40))}</option>`).join('')}</select></div></div>
  <div class="cover-row"><label class="btn sm">${ic('camera')}<span id="phLbl">${PHOTO?'Change photo':'Add a photo'}</span><input type="file" accept="image/*" data-file="photo" hidden></label>${PHOTO?`<button type="button" class="btn ghost danger sm" data-act="rmPhoto">Remove</button>`:''}<label class="sw wr-priv"><span>${ic('lock','ico-s')} Private</span><input type="checkbox" id="wrPriv" ${ed&&e.private?'checked':''}><i></i></label></div><img id="phPrev" class="ph-prev" alt="" ${PHOTO?`src="${PHOTO}"`:'hidden'}>
  <div class="actions">${ed?`<button type="button" class="btn ghost danger" data-act="wrDel">${ic('trash')}Delete</button>`:''}<span style="flex:1"></span><button type="button" class="btn pri" data-act="wrDone">Done</button></div></div>`);
- $('#sheet').classList.add('wsheet');if(!ed)setTimeout(()=>$('#wrEd')?.focus(),380)}
+ $('#sheet').classList.add('wsheet');$('#sheet').classList.toggle('wfull',!!S.settings.wrFull);if(!ed)setTimeout(()=>$('#wrEd')?.focus(),380)}
 function wrSoon(){clearTimeout(WRT);const s=$('#wrStat');if(s)s.textContent='Saving…';WRT=setTimeout(wrSave,650)}
 function wrSave(){clearTimeout(WRT);if(!WR)return;const ed=$('#wrEd');if(!ed)return;const html=cleanHTML(ed.innerHTML),text=htmlText(html),title=($('#wrTitle')?.value||'').trim(),mood=$('.wr-m.on')?.dataset.m||'',gid=$('#wrGoal')?.value||null,priv=!!$('#wrPriv')?.checked,dv=validDate($('#wrDate')?.value)||ymd();
  const sk=skKeep(html);let e=WR.id&&S.entries.find(x=>x.id===WR.id);if(!e&&!text&&!title&&!PHOTO&&!sk){const s=$('#wrStat');if(s)s.textContent='New entry · starts saving as you write';return}
@@ -5152,7 +5158,7 @@ function wrSave(){clearTimeout(WRT);if(!WR)return;const ed=$('#wrEd');if(!ed)ret
  if(!e){e={id:uid(),t:when(),type:'note',goalId:gid,title,text,html,mood,private:priv,sid:null,img:PHOTO||null};if(sk)e.sk=sk;S.entries.push(e);WR.id=e.id}
  else{Object.assign(e,{title,text,html,mood,private:priv,goalId:gid,img:PHOTO||null,t:ymd(new Date(e.t))===dv?e.t:when(e.t)});if(sk)e.sk=sk;else delete e.sk}
  save();const s=$('#wrStat');if(s)s.textContent='Saved '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}
-function wrClose(){wrSave();WR=null;$('#sheet').classList.remove('wsheet');closeSheet();render(false)}
+function wrClose(){wrSave();WR=null;$('#sheet').classList.remove('wsheet','wfull');closeSheet();render(false)}
 Object.assign(ACT,{
  addEntry:d=>writeSheet(null,d&&d.g),editEntry:d=>{const e=S.entries.find(x=>x.id===d.id);if(e)writeSheet(e)},
  wrDone:()=>wrClose(),
@@ -5160,7 +5166,8 @@ Object.assign(ACT,{
  wrNew:d=>{wrSave();writeSheet(null,null,d.d)},
  wrMood:(d,el)=>{const on=!el.classList.contains('on');document.querySelectorAll('.wr-m').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-pressed','false')});if(on){el.classList.add('on');el.setAttribute('aria-pressed','true')}vib();wrSoon()},
  wrPrompt:()=>{const ed=$('#wrEd');if(!ed)return;const P=[...planPrompts(),...WPROMPTS],p=P[Math.floor(Math.random()*P.length)];const html=`<p><b>${esc(p)}</b></p><p><br></p>`;if(!ed.innerText.trim())ed.innerHTML=html;else ed.insertAdjacentHTML('beforeend',html);ed.focus();const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);const sl=getSelection();sl.removeAllRanges();sl.addRange(r);wrSoon()},
- wrDel:()=>{const id=WR&&WR.id;if(!id){wrClose();return}askConfirm('Delete this entry?','It will be removed from your journal.','Delete',()=>{const u=undoPoint();S.entries=S.entries.filter(x=>x.id!==id);WR=null;$('#sheet').classList.remove('wsheet');save();render(false);toast('Entry deleted',u)})},
+ wrFull:(d,el)=>{S.settings.wrFull=!S.settings.wrFull;save();$('#sheet').classList.toggle('wfull',S.settings.wrFull);if(el)el.innerHTML=ic(S.settings.wrFull?'unfull':'full');setTimeout(()=>$('#wrEd')?.focus({preventScroll:true}),50)},
+ wrDel:()=>{const id=WR&&WR.id;if(!id){wrClose();return}askConfirm('Delete this entry?','It will be removed from your journal.','Delete',()=>{const u=undoPoint();S.entries=S.entries.filter(x=>x.id!==id);WR=null;$('#sheet').classList.remove('wsheet','wfull');save();render(false);toast('Entry deleted',u)})},
 });
 /* toolbar keeps the text selection (pointerdown is cancelled so the editor never loses focus) */
 document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('.wr-tb [data-cmd]');if(!b)return;e.preventDefault();const c=b.dataset.cmd;$('#wrEd')?.focus();
@@ -8172,7 +8179,9 @@ function cutSec(o,m){const i=o.indexOf(m);if(i<0)return o;const j=o.indexOf('</s
    close button, the scrim or Back to close it. */
 const PG=[['today','Home','home','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['activity','Activity','flame','Steps, sleep, screen time, workouts'],['journal','Journal','journal','Moments and history'],['vista','Timeline','map','Goal paths and life map'],['ask','Ask','ai','Insights and AI planning'],['threads','Thread','thread','Running logs for ideas and projects'],['agent','Agent','agent','Tasks it runs for you, with your calendar, email and more'],['lists','Lists','checklist','Checklists, packing and shopping lists you can share'],['chats','Conversations','hist','Your chats and talks with the assistant'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||p[0]==='bench'||p[0]==='lists'||p[0]==='agent'||p[0]==='chats'||VIEWS[p[0]]);
 /* phone home: every page in one row you swipe (pages not in the bar first); the next tile peeks in, so it reads as scrollable. Desktop has the rail, so it's hidden there. */
-function homeFeat(){const t=tabs6(),A=PG.filter(p=>p[0]!=='today'&&p[0]!=='settings'),L=[...A.filter(p=>!t.includes(p[0])),...A.filter(p=>t.includes(p[0]))];
+/* most used first: writing and lists, then asking, then the rest */
+const FEAT_RANK=['journal','lists','ask','threads','agent','activity','cal','goals','habits','chats','vista','bench'],featR=k=>{const i=FEAT_RANK.indexOf(k);return i<0?99:i};
+function homeFeat(){const t=tabs6(),A=PG.filter(p=>p[0]!=='today'&&p[0]!=='settings').sort((x,y)=>featR(x[0])-featR(y[0])),L=[...A.filter(p=>!t.includes(p[0])),...A.filter(p=>t.includes(p[0]))];
  return`<nav class="hft mob rv" aria-label="Pages"><div class="hft-s">${L.map(([k,l,i])=>`<a class="hft-b" href="#/${k}"><span class="hft-i">${ic(i)}</span><b>${l}</b></a>`).join('')}</div></nav>`}
 {const _ht=homeTop;homeTop=function(){return homeFeat()+_ht()}}
 const TMAX=5,TMIN=2;
@@ -8251,7 +8260,7 @@ habitsStrip=function(){return hSnap(7,'home')};
    the choice lives in S.settings, so it stays on this device. The header, sample-data banner and sharing invites always show. */
 const HOME_ORDER=['head','demo','share','feat','day','talk','weekly','goals','snap','next','coming','insights','act','quick','pinned','threads','aip','other'];
 const HOME_FIXED=['head','demo','share','other'],HOME_OFF0=['quick','pinned','threads','aip'];
-const HOME_NAME={feat:['Page shortcuts','Activity, Timeline, Ask, Thread, Agent'],talk:['Talk with your assistant','Start a voice conversation'],day:['Your day','Progress ring and what’s next'],weekly:['Weekly review nudge','At the end of the week'],goals:['Today’s goals','Your checklist for today'],snap:['Habits','This week at a glance'],next:['Up next','The next step on your top goal'],coming:['Coming up','Next steps on other goals'],insights:['Insights','Streaks and patterns worth knowing'],act:['Activity','Steps and sleep'],quick:['Quick add','Buttons to add a goal, habit, entry…'],pinned:['Pinned goals','Goals you pinned'],threads:['Threads','Your running logs'],aip:['Plan with AI','Turn a wish into a plan']};
+const HOME_NAME={feat:['Page shortcuts','Journal, Lists, Ask, Agent and more'],talk:['Talk with your assistant','Start a voice conversation'],day:['Your day','Progress ring and what’s next'],weekly:['Weekly review nudge','At the end of the week'],goals:['Today’s goals','Your checklist for today'],snap:['Habits','This week at a glance'],next:['Up next','The next step on your top goal'],coming:['Coming up','Next steps on other goals'],insights:['Insights','Streaks and patterns worth knowing'],act:['Activity','Steps and sleep'],quick:['Quick add','Buttons to add a goal, habit, entry…'],pinned:['Pinned goals','Goals you pinned'],threads:['Threads','Your running logs'],aip:['Plan with AI','Turn a wish into a plan']};
 const homeCfg=()=>{const c=S.settings.homeSecs||{};const o=(c.order||[]).filter(k=>HOME_ORDER.includes(k));HOME_ORDER.forEach(k=>{if(!o.includes(k))o.splice(Math.max(0,HOME_ORDER.indexOf(k)),0,k)});return{order:o,off:c.off||HOME_OFF0}};
 function homeKey(n){const c=n.classList,h=((n.querySelector(':scope>.st-h h3')||{}).textContent||'').trim().toLowerCase();
  if(n.tagName==='HEADER')return'head';if(c.contains('demob'))return'demo';if(c.contains('sh-today'))return'share';if(c.contains('hft'))return'feat';if(c.contains('hmq'))return'quick';if(c.contains('hday'))return'day';if(c.contains('lv-home'))return'talk';if(c.contains('hsnap'))return'snap';if(n.id==='actCard')return'act';if(c.contains('aip'))return'aip';if(n.dataset&&n.dataset.act==='weekly')return'weekly';if(n.querySelector(':scope>.now'))return'next';
