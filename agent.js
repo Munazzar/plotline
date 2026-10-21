@@ -157,7 +157,7 @@ How a great answer reads: open with one bold line that gives the takeaway (e.g. 
   /* up to three rounds of lookups, each one chosen by the AI from what it has seen so far */
   for(let round=0;T.length&&round<3;round++){
    const left=3-round;
-   const sys=`${base}\nYou can look things up before you answer. Lookups available:\n${T.map(x=>`- ${x[0]}: ${x[2]}. Ask with ${x[1]}`).join('\n')}\nReply with one JSON object. To look things up, put up to 4 lookups in "lookups" and leave "summary" empty and "suggestions" empty; write the queries yourself from the task (Gmail search syntax works in gmail_search). You have ${left} lookup round${left===1?'':'s'} left. When you have what you need (or nothing more would help), put [] in "lookups" and answer: ${ANS} ${SUGS}`;
+   const sys=`${base}\nYou can look things up before you answer. Their own data comes first: look in their plan (PLOTLINE below) and their connected apps before anything else, and use the web lookups (weather, places, web_search) only for live information or when their data doesn't have the answer. Lookups available:\n${T.map(x=>`- ${x[0]}: ${x[2]}. Ask with ${x[1]}`).join('\n')}\nReply with one JSON object. To look things up, put up to 4 lookups in "lookups" and leave "summary" empty and "suggestions" empty; write the queries yourself from the task (Gmail search syntax works in gmail_search). You have ${left} lookup round${left===1?'':'s'} left. When you have what you need (or nothing more would help), put [] in "lookups" and answer: ${ANS} ${SUGS}`;
    const user=`TASK: ${t.prompt}\n\nPLOTLINE (their plan)\n${plot||'(empty)'}\n\n${found?'WHAT YOU LOOKED UP SO FAR\n'+found:'You have not looked anything up yet.'}`;
    step(round?'Looking further…':'Deciding what to look up…');
    const r=parseJSON(await llm([{role:'system',content:sys},{role:'user',content:user}],{schema:SCHEMA_STEP(names),max_tokens:big?1400:900,temperature:.2,reading:'Thinking…'}))||{};
@@ -342,28 +342,28 @@ function sayOf(it){const t=firstLine(it.summary).replace(/\[([^\]]+)\]\([^)]*\)/
 window.AGENT={plot:()=>plotLines(false),connected:()=>CONNS(),names:()=>CONNS().map(k=>CN[k][0]),busy:()=>BUSY,
  /* the lines added to the assistant's and Live's instructions */
  sys:()=>{const c=CONNS();if(!c.length)return`If they ask about their email, calendar, Google Drive, Notion or anything online (weather, places), tell them you can do that once they connect it on the Agent page (More › Agent).`;
-  return`YOUR AGENT: you have an agent that can look things up ${reach(c)}. You can't see any of that yourself. Whenever answering or doing what they ask needs any of it, don't guess and don't say you can't: reply with only this one line and nothing else:
-AGENT: <the task for the agent, written clearly and completely, with every detail they gave>
-Questions about their goals, habits, journal, lists and threads in Plotline you answer yourself from the data you have.`},
+  return`YOUR AGENT: you have an agent that can look things up ${reach(c)}. Always answer from their own data first (their goals, habits, journal, lists, threads and notes given to you), then from what you know. Only when the answer needs something that isn't in their data and that you can't answer yourself${c.some(k=>k!=='web')?' (like their email, calendar, files or Notion pages)':''}${c.includes('web')?', or live information that changes (the weather now, what’s open now)':''}, don't guess and don't say you can't: reply with only this one line and nothing else:
+AGENT: <the task for the agent, written clearly and completely, with every detail they gave>`},
  /* one quick AI decision before answering, so even a small on-device model acts instead of chatting about it:
     "do" (make things in the app now), "agent" (needs the connected apps or the web) or "talk". hist: earlier {q,a} turns */
- decide:async(q,hist)=>{if(!aiOk()||!window.AIX)return null;const c=CONNS();
+ decide:async(q,hist)=>{if(!aiOk()||!window.AIX)return null;const c=CONNS(),apps=c.filter(k=>k!=='web');
   const h=(hist||[]).filter(t=>t&&t.q&&t.a).slice(-2).map(t=>`User: ${tr(t.q,200)}\nAssistant: ${tr(String(t.a).replace(/\s+/g,' '),220)}`).join('\n');
   const msgs=[{role:'system',content:`You decide what to do with the user's latest message in Plotline, their app for goals, habits, routines, lists, threads, reminders and a journal. Reply with JSON only.
-"do": they ask you to create, add, save, log, start or set something in the app (or say yes to something you offered). Put each thing in "items": type is goal, habit, routine, list (title is the list name; detail is its items separated by commas), list_add (title is an existing list; detail is the items), journal (detail is the text to save), reminder (title is what; detail is when, like "tomorrow at 9am"), today (a goal for today), thread (something to track over time; detail is a first update), or thread_update (title is the thread; detail is the update). Use their exact words for names and items.${c.length?`\n"agent": answering needs something ${reach(c)}, or they ask whether that was checked. Put the full task in "task".`:''}
+"do": they ask you to create, add, save, log, start or set something in the app (or say yes to something you offered). Put each thing in "items": type is goal, habit, routine, list (title is the list name; detail is its items separated by commas), list_add (title is an existing list; detail is the items), journal (detail is the text to save), reminder (title is what; detail is when, like "tomorrow at 9am"), today (a goal for today), thread (something to track over time; detail is a first update), or thread_update (title is the thread; detail is the update). Use their exact words for names and items.${apps.length?`\n"apps": answering needs something from their ${apps.map(k=>CN[k][0]).join(', ')} (their emails, messages, meetings, schedule, files, pages), or they ask whether that was checked. Put the full task in "task".`:''}${c.includes('web')?`\n"live": ONLY when the answer must be live information from the world that changes and that nobody could know from memory: the weather now or a forecast, whether a place is open now or its hours, places near them, today's prices or news. Put the full task in "task".`:''}
 "schedule": they want something done again and again or on a schedule ("every morning tell me…", "keep an eye on…"). Put it in "task".
-"talk": anything else: questions about their own plan, advice, ideas, chat.`},
+"talk": everything else, and this is the usual choice: questions about their own goals, habits, journal, lists, threads and notes (answered from their data), general knowledge, advice, ideas, chat. When in doubt, choose talk.`},
    {role:'user',content:`${h?'Conversation so far:\n'+h+'\n\n':''}Latest message: ${q}`}];
-  const schema={type:'object',properties:{kind:{enum:c.length?['do','agent','schedule','talk']:['do','schedule','talk']},task:{type:'string'},items:{type:'array',maxItems:8,items:{type:'object',properties:{type:{enum:['goal','habit','routine','list','list_add','journal','reminder','today','thread','thread_update']},title:{type:'string'},detail:{type:'string'}},required:['type','title'],additionalProperties:false}}},required:['kind'],additionalProperties:false};
+  const schema={type:'object',properties:{kind:{enum:['do',...(apps.length?['apps']:[]),...(c.includes('web')?['live']:[]),'schedule','talk']},task:{type:'string'},items:{type:'array',maxItems:8,items:{type:'object',properties:{type:{enum:['goal','habit','routine','list','list_add','journal','reminder','today','thread','thread_update']},title:{type:'string'},detail:{type:'string'}},required:['type','title'],additionalProperties:false}}},required:['kind'],additionalProperties:false};
   let out='';try{await AIX.chat(msgs,x=>{out+=x},{max_tokens:260,temperature:0,schema})}catch(e){return null}
   const j=parseJSON(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,''));if(!j)return null;
-  if(j.kind==='agent'&&c.length)return{agent:String(j.task||'').trim()||q};
+  if(j.kind==='apps'&&apps.length)return{agent:String(j.task||'').trim()||q,web:false};
+  if(j.kind==='live'&&c.includes('web'))return{agent:String(j.task||'').trim()||q,web:true};
   if(j.kind==='schedule')return{schedule:q};
   if(j.kind==='do'&&Array.isArray(j.items)&&j.items.length)return{items:j.items.filter(x=>x&&x.type&&String(x.title||x.detail||'').trim())};
   return{talk:1}},
  route:async(q,hist)=>{const d=await AGENT.decide(q,hist);return d&&d.agent||''},
  parse:t=>{const m=/(?:^|\n)\s*[*_`>-]*\s*AGENT\s*:\s*(.+)/i.exec(String(t||''));return m?m[1].replace(/[*_`]+$/,'').trim():''},
- async ask(q,o={}){const t={id:'ask',title:tr(q.replace(/^./,c=>c.toUpperCase()),50),prompt:q,src:['plot',...CONNS()],mode:'suggest',when:'manual'};STEPCB=o.onStep||null;
+ async ask(q,o={}){const t={id:'ask',title:tr(q.replace(/^./,c=>c.toUpperCase()),50),prompt:q,src:['plot',...CONNS().filter(k=>o.web==null||(k==='web')===!!o.web)],mode:'suggest',when:'manual'};STEPCB=o.onStep||null;
   try{const it=await runTask(t,true,{quiet:true});if(!it)throw new Error(t.err||'The agent couldn’t finish');it.seen=true;save();return{item:it,md:it.summary,say:sayOf(it),chips:chipsOf(it)}}
   finally{STEPCB=null}}};
 
