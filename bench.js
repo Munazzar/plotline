@@ -254,7 +254,7 @@ async function anon(force){let s=null;try{s=JSON.parse(localStorage.getItem(AK)|
  if(!r.ok||!j.idToken){const m=(j.error&&j.error.message)||r.status;throw new Error(/OPERATION_NOT_ALLOWED|ADMIN_ONLY/.test(m)?'Shared boards need Anonymous sign-in turned on in Firebase (Authentication → Sign-in method).':'Couldn’t start a cloud session ('+m+')')}
  return keep({id:j.idToken,rt:j.refreshToken,uid:j.localId,exp:now()+(+j.expiresIn||3600)*1e3})}
 const myUid=()=>{try{return(JSON.parse(localStorage.getItem(AK)||'null')||{}).uid||''}catch(e){return''}};
-/* editing a shared board needs a signed-in Plotline (Google) account; boards only on this device don't */
+/* editing a shared board needs a signed-in Plotlines (Google) account; boards only on this device don't */
 const gSess=()=>{try{return typeof fbGet==='function'?fbGet():null}catch(e){return null}};
 const signedIn=()=>{const g=gSess();return!!(g&&g.email&&g.rt)};
 const mine=o=>!!o&&(o===myUid()||o===(gSess()||{}).uid);
@@ -337,7 +337,7 @@ const PROV={
  xai:['xAI Grok','oai','https://api.x.ai/v1','grok-4',[],'https://console.x.ai/'],
  ollama:['Ollama on this computer','oai','http://localhost:11434/v1','llama3.2',[],''],
  custom:['Custom (OpenAI-compatible)','oai','','',[],''],
- plotline:['Plotline’s AI server (Ask page)','plotline','','',[],'']};
+ plotline:['Plotlines’ AI server (Ask page)','plotline','','',[],'']};
 const TARGETS={claude:['Claude','https://claude.ai/new','xml'],chatgpt:['ChatGPT','https://chatgpt.com/','md'],gemini:['Gemini','https://gemini.google.com/app','md'],copilot:['Copilot','https://copilot.microsoft.com/','md'],grok:['Grok','https://grok.com/','md'],deepseek:['DeepSeek','https://chat.deepseek.com/','md'],perplexity:['Perplexity','https://www.perplexity.ai/','md'],mistral:['Le Chat','https://chat.mistral.ai/chat','md'],meta:['Meta AI','https://www.meta.ai/','md'],local:['Small / local model','','lite']};
 const wbs=()=>S.settings.wb=Object.assign({mode:'copy',prov:'anthropic',models:{},urls:{},target:'claude',ptarget:'claude',pgoal:'research'},S.settings.wb||{});
 const keyOf=p=>{try{return localStorage.getItem('plotline.wbkey.'+p)||''}catch(e){return''}};
@@ -349,7 +349,7 @@ async function aiCall(system,user,{json=true,signal}={}){const p=wbs().prov,P=PR
  let r;try{
   if(P[1]==='anthropic')r=await fetch(url+'/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model,max_tokens:8000,system,messages:[{role:'user',content:user}]})});
   else if(P[1]==='gemini')r=await fetch(`${url}/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',signal,headers:{'content-type':'application/json','x-goog-api-key':key},body:JSON.stringify({...(system?{systemInstruction:{parts:[{text:system}]}}:{}),contents:[{role:'user',parts:[{text:user}]}],...(json?{generationConfig:{responseMimeType:'application/json'}}:{})})});
-  else r=await fetch(url+'/chat/completions',{method:'POST',signal,headers:{'content-type':'application/json',...(key?{Authorization:'Bearer '+key}:{}),...(p==='openrouter'?{'HTTP-Referer':webBase(),'X-Title':'Plotline Workbench'}:{})},body:JSON.stringify({model,messages:[...(system?[{role:'system',content:system}]:[]),{role:'user',content:user}]})})}
+  else r=await fetch(url+'/chat/completions',{method:'POST',signal,headers:{'content-type':'application/json',...(key?{Authorization:'Bearer '+key}:{}),...(p==='openrouter'?{'HTTP-Referer':webBase(),'X-Title':'Plotlines Workbench'}:{})},body:JSON.stringify({model,messages:[...(system?[{role:'system',content:system}]:[]),{role:'user',content:user}]})})}
  catch(e){if(e.name==='AbortError')throw e;throw new Error(`Couldn’t reach ${P[0]}. The browser may be blocking it; try OpenRouter, or use Copy & paste.`)}
  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(`${P[0]} said ${r.status}: ${String((j.error&&(j.error.message||j.error))||'').slice(0,180)}`);
  if(P[1]==='anthropic')return(j.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('');
@@ -362,12 +362,12 @@ window.aiVision=async(prompt,dataUrl,{signal}={})=>{const p=wbs().prov,P=PROV[p]
  if(!window.aiVisionName())throw new Error('Pick an AI with a key in Workbench › AI first');let r;
  try{if(P[1]==='anthropic')r=await fetch(url+'/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model,max_tokens:8000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:prompt}]}]})});
   else if(P[1]==='gemini')r=await fetch(`${url}/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',signal,headers:{'content-type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{role:'user',parts:[{inline_data:{mime_type:mt,data:b64}},{text:prompt}]}]})});
-  else r=await fetch(url+'/chat/completions',{method:'POST',signal,headers:{'content-type':'application/json',...(key?{Authorization:'Bearer '+key}:{}),...(p==='openrouter'?{'HTTP-Referer':webBase(),'X-Title':'Plotline'}:{})},body:JSON.stringify({model,messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:dataUrl}}]}]})})}
+  else r=await fetch(url+'/chat/completions',{method:'POST',signal,headers:{'content-type':'application/json',...(key?{Authorization:'Bearer '+key}:{}),...(p==='openrouter'?{'HTTP-Referer':webBase(),'X-Title':'Plotlines'}:{})},body:JSON.stringify({model,messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:dataUrl}}]}]})})}
  catch(e){if(e.name==='AbortError')throw e;throw new Error(`Couldn’t reach ${P[0]}. Check your connection.`)}
  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(`${P[0]} said ${r.status}: ${String((j.error&&(j.error.message||j.error))||'').slice(0,180)}`);
  if(P[1]==='anthropic')return(j.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('');if(P[1]==='gemini')return((j.candidates||[])[0]?.content?.parts||[]).map(x=>x.text||'').join('');return j.choices?.[0]?.message?.content||''};
 
-const ROLE='You are a senior product strategist and systems architect working with me on a visual board in Plotline Workbench. You think in short, concrete items (one idea per item) and connect them so the structure is obvious at a glance.';
+const ROLE='You are a senior product strategist and systems architect working with me on a visual board in Plotlines Workbench. You think in short, concrete items (one idea per item) and connect them so the structure is obvious at a glance.';
 const SPEC=`Reply with exactly one JSON object inside a \`\`\`json code block, and nothing outside it:
 
 {"format":"plotline-bench","version":1,"say":"one or two sentences to me","ops":[ ... ]}
@@ -624,7 +624,7 @@ function commentsHTML(){const b=WB.B,one=WB.sel.size===1?[...WB.sel][0]:null,L=O
  ${L.length?L.map(c=>`<div class="wb-cm"><b>${esc(c.by)}</b> <small class="muted">${rel(c.t)}${one?'':` · on <button class="link" data-act="wbGo" data-id="${c.on}">${short(c.on)}</button>`}</small>${c.me===ME&&!b.ro?` <button class="link" data-act="wbCDel" data-id="${c.id}" style="float:right">Delete</button>`:''}<p>${esc(c.text)}</p></div>`).join(''):'<p class="muted small">No comments yet.</p>'}
  ${one&&!b.ro?`<form data-form="wbCom" class="wb-sec">${myName()?'':'<div class="field"><label>Your name</label><input name="name" maxlength="40" required autocomplete="nickname"></div>'}<textarea name="text" placeholder="Write a comment" required maxlength="1000" style="min-height:70px"></textarea><div class="actions left"><button class="btn pri sm">Post</button></div></form>`:''}`}
 function shareHTML(){const b=WB.B;
- if(needLogin(b))return`<p class="small">Anyone can look at this board with the link, but changing it needs a Plotline account, so every edit has a name on it.</p><div class="actions left"><button class="btn pri" data-act="wbLogin">${ic('lock')}Sign in to edit</button></div>`;
+ if(needLogin(b))return`<p class="small">Anyone can look at this board with the link, but changing it needs a Plotlines account, so every edit has a name on it.</p><div class="actions left"><button class="btn pri" data-act="wbLogin">${ic('lock')}Sign in to edit</button></div>`;
  if(b.ro)return`<p class="small">You’re viewing a read-only link. It updates live as the owner works.</p><div class="sh-what">${ic('lock')}<div><b>Private by design</b><small>This board is encrypted. The key is only in your link, after the #, which is never sent to any server. Search engines and bots can’t find or read it.</small></div></div>`;
  if(!b.cloud)return`<p class="small muted">This board lives only on this device right now.</p>
  <div class="sh-what">${ic('lock')}<div><b>Unlisted, encrypted links</b><small>Sharing puts an end-to-end encrypted copy in the cloud and gives you a long, unguessable link. The key lives only in the link, after the #, which browsers never send to any server, so Google, link previews and bots can’t find or read the board.</small></div></div>
@@ -756,7 +756,7 @@ Object.assign(ACT,{
   if(!b.cloud){try{toast('Creating a private link…');await shareOn(b);render(false)}catch(e){toast(esc(e.message||String(e)));return}}
   const url=linkOf('e',b.cloud.doc,b.cloud.key);
   openSheet(`<div class="data">Share</div><h2 style="margin-top:6px">${esc(b.title)}</h2><p class="small muted">Anyone with this link can view, edit and comment. It’s end-to-end encrypted; the key is only in the link.</p><div class="wb-row"><input id="wbcl" readonly value="${esc(url)}" aria-label="Link"><button class="btn sm" data-act="wbCopyLink" data-k="wbcl">${ic('copy')}Copy</button></div>${navigator.share?`<div class="actions left"><button class="btn" data-act="wbSendLink" data-k="wbcl">${ic('wbshare')}Send…</button></div>`:''}`)},
- wbSendLink:d=>{const i=$('#'+d.k);if(i)navigator.share({title:'Plotline board',url:i.value}).catch(()=>{})},
+ wbSendLink:d=>{const i=$('#'+d.k);if(i)navigator.share({title:'Plotlines board',url:i.value}).catch(()=>{})},
  wbDupB:d=>{const b=LIST.find(x=>x.id===d.id);if(!b)return;closeSheet();dupBoard(b);render(false);toast('Duplicated')},
  wbExp:d=>{const b=LIST.find(x=>x.id===d.id);if(b)exportJSON(b)},
  wbDelB:d=>{const b=LIST.find(x=>x.id===d.id);if(!b)return;closeSheet();delBoard(b,!!d.cloud);if(cur.p==='bench'&&cur.id===b.id)go('bench');else render(false)},
@@ -827,7 +827,7 @@ Object.assign(FORM,{
 FILE.wbImport=inp=>{const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(o.format!=='plotline-board'||typeof o.nodes!=='object')throw 0;
  const b=blank(String(o.title||'Imported board').slice(0,80));['nodes','edges','comments'].forEach(k=>{for(const[id,v]of Object.entries(o[k]||{}))if(v&&typeof v==='object'&&v.id===id)b[k][id]={...v,u:now()}});
  for(const id in b.nodes){const n=b.nodes[id];if(!TYPES[n.type]||!isFinite(n.x)||!isFinite(n.y))delete b.nodes[id];else{n.text=String(n.text||'').slice(0,4000);n.w=+n.w||TYPES[n.type][1];n.h=+n.h||TYPES[n.type][2];if(!COLORS[n.color])n.color='none'}}
- LIST.unshift(b);persist();toast('Imported');go('bench/'+b.id)}catch(e){toast('That isn’t a Plotline board file')}};r.readAsText(f);inp.value=''};
+ LIST.unshift(b);persist();toast('Imported');go('bench/'+b.id)}catch(e){toast('That isn’t a Plotlines board file')}};r.readAsText(f);inp.value=''};
 
 /* ---------------- wiring into the app ---------------- */
 VIEWS.bench=vBench;

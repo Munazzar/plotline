@@ -4,14 +4,14 @@
    (Gemma 4 on this device, or your own server). Each run reads the sources the task allows, then writes a short
    summary and up to six suggestions: add a goal for today, set a reminder, add to the journal, a list or a thread,
    or put an event on your Google Calendar. Suggestions wait in the agent's inbox for a tap, unless the task is set to
-   "Do it", which adds the Plotline ones straight away (calendar events always wait for you).
+   "Do it", which adds the Plotlines ones straight away (calendar events always wait for you).
    Connections:
    - Google Calendar (read and add events), Gmail (read only), Google Drive (file names and dates): the same Google
      sign-in as Drive sync, with the extra permission asked for when you turn one on.
    - Notion: an internal integration token you paste in. Notion's API doesn't answer web pages, so the Android app sends
      those requests itself (PlotlineAssist.http); in a browser it needs a small proxy address of your own.
-   When it runs: tasks run while Plotline is open (checked every minute and when you come back to the app). A task
-   that comes due while the app is closed shows a notification at its time; opening Plotline runs it.
+   When it runs: tasks run while Plotlines is open (checked every minute and when you come back to the app). A task
+   that comes due while the app is closed shows a notification at its time; opening Plotlines runs it.
    Everything here (tasks, inbox, connections) is a setting of this device: it isn't synced, so each device's agent
    has its own. */
 (()=>{
@@ -27,7 +27,7 @@ const notionKey=()=>{try{return localStorage.getItem(NOTK)||''}catch(e){return''
 
 /* ---------------- connections ---------------- */
 const SC={gcal:'https://www.googleapis.com/auth/calendar.events',gmail:'https://www.googleapis.com/auth/gmail.readonly',gdrive:'https://www.googleapis.com/auth/drive.metadata.readonly'};
-const CN={plot:['Plotline','Your goals, habits, journal, threads and lists'],gcal:['Google Calendar','Your events, and adding new ones'],gmail:['Gmail','Searches and reads your email when a task needs it. Read only'],gdrive:['Google Drive','Finds files by name'],notion:['Notion','Pages you shared with your integration'],web:['The web','Weather now and ahead, places and their opening hours, quick facts. Free public services, no account']};
+const CN={plot:['Plotlines','Your goals, habits, journal, threads and lists'],gcal:['Google Calendar','Your events, and adding new ones'],gmail:['Gmail','Searches and reads your email when a task needs it. Read only'],gdrive:['Google Drive','Finds files by name'],notion:['Notion','Pages you shared with your integration'],web:['The web','Weather now and ahead, places and their opening hours, quick facts. Free public services, no account']};
 window.connScopes=()=>{const c=cset();return Object.keys(SC).filter(k=>c[k]).map(k=>' '+SC[k]).join('')};
 const connOn=k=>k==='plot'||(k==='notion'?!!(cset().notion&&notionKey()):k==='web'?cset().web!==false:!!cset()[k]);
 async function googleConsent(){tokDrop();scopeSync();if(NATIVE&&NATIVE.googleToken){S.settings.sync.native=true;return nativeAuth(true)}return webAuth('consent')}
@@ -35,7 +35,7 @@ async function gapi(url,opt={}){let t=tokGet();
  if(!t){if(NATIVE&&S.settings.sync.native)t=await token(false);else throw new Error('Sign in to Google again in Agent › Connections')}
  const r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+t}});
  if(r.status===401){tokDrop();try{NATIVE&&NATIVE.invalidateToken&&NATIVE.invalidateToken(t)}catch(e){}throw new Error('Sign in to Google again in Agent › Connections')}
- if(r.status===403){let m='';try{m=(await r.json()).error.message}catch(e){}throw new Error(/not been used|disabled/i.test(m)?'This Google API isn’t turned on for Plotline’s Google project yet':'Plotline needs permission for this. Turn the connection off and on again')}
+ if(r.status===403){let m='';try{m=(await r.json()).error.message}catch(e){}throw new Error(/not been used|disabled/i.test(m)?'This Google API isn’t turned on for Plotlines’ Google project yet':'Plotlines needs permission for this. Turn the connection off and on again')}
  if(!r.ok)throw new Error('Google said '+r.status);return r.json()}
 const iso=d=>new Date(d).toISOString();
 async function calAdd(x){let body;if(x.time){const st=new Date(x.date+'T'+x.time);body={summary:x.title,start:{dateTime:iso(st)},end:{dateTime:iso(st.getTime()+(x.dur||60)*6e4)}}}
@@ -152,7 +152,7 @@ async function runTask(t,manual,o={}){if(BUSY){t.err='I’m still busy with “'
   const SUGS=`"suggestions" are 0 to 6 things the app can do for them, grounded in what you found: today (a goal for today; text is the goal), reminder (text, date YYYY-MM-DD, time HH:MM), journal (text to save), list_add (target is a list name, text the items), thread_update (target is a thread name, text the update), new_thread (text is its title), calendar_event (text is the title, date, time), goal (a new goal), habit (something to do regularly). Don't suggest what's already in the plan.`;
   const ANS=`"summary" is your answer, written freely in Markdown on an open canvas: build whatever layout fits the request best, using ## headings, - bullet lists, 1. numbered lists, **bold**, and tables (| col | col | with a |---| row) when comparing or listing things with several details. Answer the task fully and specifically, with the real names, subjects, dates and numbers from what you found. If you list things, list every one. Don't pad, and never invent anything that isn't in the data.
 How a great answer reads: open with one bold line that gives the takeaway (e.g. "**5 unread today, 2 need a reply.**"). Then the details, grouped so they're easy to scan (by what needs action, by person, by day: whatever fits), with what's urgent or important called out in bold. End with a short "## What I'd do" list of 1 to 3 concrete next steps, and offer those same steps as suggestions so they're one tap away. Sound like a sharp, friendly assistant, not a report.`;
-  const base=`You are ${who}, the user's personal agent inside the Plotline app. Today is ${today}, ${tm(d)}. ${window.AIX?AIX.safety():''}`;
+  const base=`You are ${who}, the user's personal agent inside the Plotlines app. Today is ${today}, ${tm(d)}. ${window.AIX?AIX.safety():''}`;
   let found='',j=null;
   /* up to three rounds of lookups, each one chosen by the AI from what it has seen so far */
   for(let round=0;T.length&&round<3;round++){
@@ -197,7 +197,7 @@ async function apply(s,quiet){const D=window.PlotDo;if(!D)throw new Error('not r
  s.st='done';save();if(!quiet&&r&&r.say)toast(esc(r.say));return r}
 
 /* ---------------- when tasks run ---------------- */
-const WHEN=[['open','Each time I open Plotline'],['hourly','Every hour'],['3h','Every 3 hours'],['daily','Every day at…'],['weekdays','Weekdays at…'],['weekly','Every week on…'],['manual','Only when I tap Run']];
+const WHEN=[['open','Each time I open Plotlines'],['hourly','Every hour'],['3h','Every 3 hours'],['daily','Every day at…'],['weekdays','Weekdays at…'],['weekly','Every week on…'],['manual','Only when I tap Run']];
 const DOW=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 function nextAt(t,from){const k=t.when||'daily';if(k==='manual')return 0;if(k==='open')return(t.last||0)+4*36e5;if(k==='hourly')return from+36e5;if(k==='3h')return from+3*36e5;
  const[h,m]=(t.at||'08:00').split(':').map(Number);const d=new Date(from);d.setSeconds(0,0);d.setHours(h,m);
@@ -206,7 +206,7 @@ const whenTxt=t=>{const k=t.when||'daily',at=fmtTime(t.at||'08:00');return k==='
 async function due(){if(BUSY||!ag().on||typeof S==='undefined')return;const A=ag(),t0=now();
  for(const t of A.tasks){if(!t.on||(t.when||'daily')==='manual')continue;if(!t.next)t.next=t.when==='open'?t0:nextAt(t,t.created||t0);
   if(t.next<=t0){if(!aiOk())return;if((typeof IN!=='undefined'&&IN.busy)||(window.AS_BUSY))return;await runTask(t,false);return}}}
-window.agentAlarms=(n,L)=>{if(!ag().on)return;ag().tasks.forEach(t=>{if(!t.on||!['daily','weekdays','weekly'].includes(t.when))return;const at=t.next&&t.next>n?t.next:nextAt(t,n);L.push({at,title:'Plot · '+t.title,body:'Open Plotline and I’ll run it',k:'agent',id:t.id})})};
+window.agentAlarms=(n,L)=>{if(!ag().on)return;ag().tasks.forEach(t=>{if(!t.on||!['daily','weekdays','weekly'].includes(t.when))return;const at=t.next&&t.next>n?t.next:nextAt(t,n);L.push({at,title:'Plot · '+t.title,body:'Open Plotlines and I’ll run it',k:'agent',id:t.id})})};
 setInterval(()=>{if(!document.hidden)due()},60e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(due,2500)});
 window.addEventListener('app-resume',()=>setTimeout(due,2500));
@@ -348,7 +348,7 @@ AGENT: <the task for the agent, written clearly and completely, with every detai
     "do" (make things in the app now), "agent" (needs the connected apps or the web) or "talk". hist: earlier {q,a} turns */
  decide:async(q,hist)=>{if(!aiOk()||!window.AIX)return null;const c=CONNS(),apps=c.filter(k=>k!=='web');
   const h=(hist||[]).filter(t=>t&&t.q&&t.a).slice(-2).map(t=>`User: ${tr(t.q,200)}\nAssistant: ${tr(String(t.a).replace(/\s+/g,' '),220)}`).join('\n');
-  const msgs=[{role:'system',content:`You decide what to do with the user's latest message in Plotline, their app for goals, habits, routines, lists, threads, reminders and a journal. Reply with JSON only.
+  const msgs=[{role:'system',content:`You decide what to do with the user's latest message in Plotlines, their app for goals, habits, routines, lists, threads, reminders and a journal. Reply with JSON only.
 "do": they ask you to create, add, save, log, start or set something in the app (or say yes to something you offered). Put each thing in "items": type is goal, habit, routine, list (title is the list name; detail is its items separated by commas), list_add (title is an existing list; detail is the items), journal (detail is the text to save), reminder (title is what; detail is when, like "tomorrow at 9am"), today (a goal for today), thread (something to track over time; detail is a first update), or thread_update (title is the thread; detail is the update). Use their exact words for names and items.${apps.length?`\n"apps": answering needs something from their ${apps.map(k=>CN[k][0]).join(', ')} (their emails, messages, meetings, schedule, files, pages), or they ask whether that was checked. Put the full task in "task".`:''}${c.includes('web')?`\n"live": ONLY when the answer must be live information from the world that changes and that nobody could know from memory: the weather now or a forecast, whether a place is open now or its hours, places near them, today's prices or news. Put the full task in "task".`:''}
 "schedule": they want something done again and again or on a schedule ("every morning tell me…", "keep an eye on…"). Put it in "task".
 "talk": everything else, and this is the usual choice: questions about their own goals, habits, journal, lists, threads and notes (answered from their data), general knowledge, advice, ideas, chat. When in doubt, choose talk.`},

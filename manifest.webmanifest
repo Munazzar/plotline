@@ -1,6 +1,6 @@
 {
-  "name": "Plotline",
-  "short_name": "Plotline",
+  "name": "Plotlines",
+  "short_name": "Plotlines",
   "description": "Plan short and long-term life goals, step by step.",
   "start_url": "./#/today",
   "scope": "./",
