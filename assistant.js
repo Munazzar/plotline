@@ -413,7 +413,7 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
   if(!r){const p=parse(text);if(p)r=exec(p,text)}
   if(!r&&!aiReady())r=localAsk(text);
   /* the AI decides: make it now, ask the agent, schedule it, or just talk */
-  let dec=null;if(!r&&aiReady()&&window.AGENT){status('Thinking…');/* the note search runs while the AI decides */AS.rag={q:text,p:ragRetrieve(text,{win:0,goal:'',broad:insFocus(text).broad},null).catch(()=>null)};dec=await AGENT.decide(text,AS.turns.filter(t=>!t.wait&&t.a));if(dec&&dec.agent)r={agent:dec.agent};else if(dec&&dec.items)r=doItems(dec.items);else if(dec&&dec.schedule)r=exec({k:'agent',x:dec.schedule},text)}
+  let dec=null;if(!r&&aiReady()&&window.AGENT){status('Thinking…');/* the note search runs while the AI decides */AS.rag={q:text,p:ragRetrieve(text,{win:0,goal:'',broad:insFocus(text).broad},null).catch(()=>null)};dec=await AGENT.decide(text,AS.turns.filter(t=>!t.wait&&t.a));if(dec&&dec.agent)r={agent:dec.agent,web:dec.web};else if(dec&&dec.items)r=doItems(dec.items);else if(dec&&dec.schedule)r=exec({k:'agent',x:dec.schedule},text)}
   if(!r&&aiReady()){const st=strip(text),cmd=!dec&&(!QRX.test(st)||/^(?:can|could|would|will) you\b|\b(?:please|i want to|i need to|i'd like to)\b/i.test(st));
    if(cmd&&!/^(?:can|could|would|will) you (?:tell|show|explain|remind me (?:what|when|how))/i.test(st)){status('Working it out…');const p=await llmIntent(st);if(p&&p.k)r=exec(p,text)}
    if(!r){const L=localAsk(text);if(L&&(L.ask||L.await))r=L;
@@ -425,7 +425,7 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
   if(!r){status('Thinking…');const a=await aiAnswer(text,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
    r=a?{say:a,chips:[['Ask more','?'+text]]}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'I can add things and look up when you last did something. For other questions, open this in Ask once to set up the AI, and after that I’ll answer from your notes too.',chips:[['Open in Ask','?'+text]]}}
   if(r&&r.say&&r.say.agent)r={agent:r.say.agent};
-  if(r&&r.agent)r=await agentRun(r.agent);}
+  if(r&&r.agent)r=await agentRun(r.agent,r.web);}
  catch(e){r={say:e&&e.name==='AbortError'?'Stopped.':'Something went wrong: '+(e&&e.message||e)}}
  status('');window.asHum(false);turn.wait=false;turn.a=r.say||'';turn.chips=(r.chips||[]).map(c=>({t:c[0],r:c[1],fn:c[2]}));if(r.undo){AS.undo[turn.id]=r.undo;turn.chips.unshift({t:'Undo',undo:1})}
  if(AS.acts&&AS.acts.length&&window.AIX){const A=AS.acts;AS.acts=null;turn.chips.unshift(...A.map(a=>{const c={t:'+ '+AIX.actLabel(a),act:1};c.fn=()=>{let x;try{x=AIX.doAct(a)}catch(e){return toast('Couldn’t add that')}c.t='✓ '+AIX.actLabel(a);c.fn=()=>x&&x.go&&(asClose(),setTimeout(()=>go(x.go),380));paint();toast(esc((x&&x.say)||'Added'))};return c}))}
@@ -433,10 +433,10 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
  const talk=!r.quiet&&(aset().speak==='always'||aset().speak==='voice'&&AS.spoken);AS.after=(r.listen||AS.await)&&AS.spoken?'listen':null;
  if(talk&&turn.a)speak(r.speak||turn.a);else afterSpeak()}
 /* the assistant's AI asked for its agent (email, calendar, Drive, Notion): the agent's answer becomes this turn, its suggestions one-tap chips */
-async function agentRun(task){if(!window.AGENT)return{say:'The agent isn’t available here.'};
+async function agentRun(task,web){if(!window.AGENT)return{say:'The agent isn’t available here.'};
  if(!AGENT.connected().length)return{say:'I can read your email, calendar, Google Drive and Notion once you connect them on the Agent page.',chips:[['Connect on the Agent page','agent']]};
  status('Asking your agent…');
- try{const x=await AGENT.ask(task,{onStep:status});return{say:x.md||'Done.',speak:x.say,chips:[...x.chips.map(c=>[c.t,'',agentChip(c.fn)]),['See it in the agent inbox','agent']]}}
+ try{const x=await AGENT.ask(task,{onStep:status,web});return{say:x.md||'Done.',speak:x.say,chips:[...x.chips.map(c=>[c.t,'',agentChip(c.fn)]),['See it in the agent inbox','agent']]}}
  catch(e){return{say:'My agent couldn’t do that: '+(e&&e.message||e),chips:[['Open the agent','agent']]}}}
 const agentChip=f=>async c=>{if(c.done)return;try{await f();c.done=1;c.t='✓ '+c.t;paint()}catch(e){}};
 

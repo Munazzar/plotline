@@ -226,6 +226,7 @@ async function lvHeard(text){const g=++LV.gen,t=String(text).trim();if(!t)return
  /* the AI decides first (while the note search runs): make it now, ask the agent, schedule it, or talk */
  const rp=ragRetrieve(t,{win:0,goal:'',broad:insFocus(t).broad},null).catch(()=>null);
  if(window.AGENT){const d=await AGENT.decide(t,LV.hist.reduce((a,m,i,A)=>(m.role==='user'&&A[i+1]?a.concat({q:m.content,a:A[i+1].content}):a),[]));if(g!==LV.gen)return;
+  LV.web=d&&d.agent?d.web:undefined;
   if(d&&d.agent)out='AGENT: '+d.agent;
   else if(d&&d.items){const r=PLOT_ASSIST.doItems(d.items);if(r)return done(r.say.replace(/[“”]/g,''),[])}
   else if(d&&d.schedule&&window.agentFromVoice){const r=agentFromVoice(d.schedule);return done(r.say,[])}}
@@ -236,7 +237,7 @@ async function lvHeard(text){const g=++LV.gen,t=String(text).trim();if(!t)return
  if(g!==LV.gen)return;
  /* the AI asked for the agent: it reads email, calendar, Drive or Notion, and the takeaway is said out loud */
  const ag=window.AGENT&&AGENT.parse(out);if(ag){if(!AGENT.connected().length)return done('I can read your email, calendar, Drive and Notion once you connect them on the Agent page.',[]);
-  lvState('think','Asking your agent…');try{const x=await AGENT.ask(ag,{onStep:s=>{if(g===LV.gen)lvState('think',s)}});if(g!==LV.gen)return;return done(x.say,x.chips.slice(0,3).map(c=>({id:uid(),k:'agent',t:c.t,x:'',st:'',fn:c.fn})),'',x.md)}
+  lvState('think','Asking your agent…');try{const x=await AGENT.ask(ag,{web:LV.web,onStep:s=>{if(g===LV.gen)lvState('think',s)}});if(g!==LV.gen)return;return done(x.say,x.chips.slice(0,3).map(c=>({id:uid(),k:'agent',t:c.t,x:'',st:'',fn:c.fn})),'',x.md)}
   catch(e){if(g!==LV.gen)return;return done('My agent couldn’t do that: '+(e&&e.message||e),[])}}
  const P=parseActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/[*#_`]/g,''));let say=P.clean.replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'').trim()||'Hmm, I’m not sure. Can you say that another way?';const care=aiCare(t,say);if(care)say+=' '+care;done(say,P.acts)}
 Object.assign(ACT,{
