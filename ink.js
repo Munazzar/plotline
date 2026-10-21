@@ -335,6 +335,8 @@ function linesToHTML(L){L=L.filter(l=>String(l.text||'').trim());if(!L.length)re
  L.forEach(l=>{const raw=l.text.trim();let m;l.raw=raw;if((m=CHK.exec(raw))&&raw.length>m[0].length){l.kind='chk';l.mk=m[0];l.on=/[xX✓✔v☑☒]/.test(m[1])}else if((m=BUL.exec(raw))){l.kind='ul';l.mk=m[0]}else if((m=NUM.exec(raw))){l.kind='ol';l.mk=m[0]}
   if(l.kind&&l.words&&l.words.length>1)l.tx=l.words[1].bbox?l.words[1].bbox.x0:l.x0});
  L.forEach((l,i)=>{if(l.kind)return;for(const n of[L[i-1],L[i+1]]){if(!n||!n.kind||n.kind==='ol')continue;const gap=Math.abs(n===L[i-1]?l.y0-n.y1:n.y0-l.y1);if(gap>mh*1.2)continue;
+  /* «-bread»: a dash run into the word, next to other items */
+  if(n.kind==='ul'&&/^[-–—•*]\p{L}/u.test(l.raw)){l.kind='ul';l.mk=l.raw[0];break}
   if(Math.abs(l.x0-n.x0)<cw*1.2&&l.x0>left+cw){l.kind=n.kind;l.mk='';break}if(n.kind==='chk'&&n.tx&&Math.abs(l.x0-n.tx)<cw*1.2&&n===L[i-1]&&l.raw.length<60){l.kind='chk';l.mk='';break}
   /* a box read as a stray letter («J», «1») right under or over another checkbox line */
   if(n.kind==='chk'&&l.words&&l.words.length>1&&Math.abs(l.x0-n.x0)<cw*1.2&&String(l.words[0].text).length<=2&&l.words[0].confidence<70&&/^\p{Lu}/u.test(String(l.words[1].text))){l.kind='chk';l.mk=String(l.words[0].text);l.on=false;break}}});
@@ -342,7 +344,7 @@ function linesToHTML(L){L=L.filter(l=>String(l.text||'').trim());if(!L.length)re
  const flushP=()=>{if(para){out.push(`<p>${para.h}</p>`);para=null}};
  const flushL=()=>{if(!list)return;if(list.t==='chk')out.push(`<p>${list.items.map(i=>i.h).join('<br>')}</p>`);else{const r=items=>{let s='',i=0;while(i<items.length){const it=items[i],kids=[];i++;while(i<items.length&&items[i].lv>it.lv)kids.push(items[i++]);s+=`<li>${it.h}${kids.length?`<${list.t}>${r(kids.map(k=>({...k,lv:k.lv-1})))}</${list.t}>`:''}</li>`}return s};out.push(`<${list.t}>${r(list.items)}</${list.t}>`)}list=null};
  const strip=(l,mk)=>{if(!mk)return l.words&&l.words.length?wordsHTML(l.words):escH(l.raw);const ws=l.words;if(!ws||!ws.length)return escH(l.raw.slice(mk.length).trim());let n=mk.replace(/\s+/g,'').length,k=0;while(k<ws.length&&n>0){n-=String(ws[k].text).replace(/\s+/g,'').length;k++}let h=wordsHTML(ws.slice(k));if(n<0)h=escH(String(ws[k-1].text).slice(String(ws[k-1].text).length+n))+(h?' '+h:'');return h};
- for(const l of L){const raw=l.raw,html=l.words&&l.words.length?wordsHTML(l.words):escH(raw),gap=prev?l.y0-prev.y1:0,brk=!prev||gap>mh*.85||l.y0<prev.y0-mh*.5,nx=L[L.indexOf(l)+1],alone=brk&&(!nx||nx.y0-l.y1>mh*.85),big=(l.fs||l.y1-l.y0)/fs,head=!l.kind&&raw.length<70&&!/[.,;:]$/.test(raw)&&(big>1.25||alone&&big>1.08&&raw.split(/\s+/).length<=5);
+ for(const l of L){const raw=l.raw,html=l.words&&l.words.length?wordsHTML(l.words):escH(raw),gap=prev?l.y0-prev.y1:0,brk=!prev||gap>mh*.85||l.y0<prev.y0-mh*.5,nx=L[L.indexOf(l)+1],alone=brk&&(!nx||nx.y0-l.y1>mh*.85),big=(l.fs||l.y1-l.y0)/fs,nw=raw.split(/\s+/).length,head=!l.kind&&raw.length<70&&nw<=8&&!/[.,;:]$/.test(raw)&&(big>1.25||alone&&big>1.08&&nw<=5);
   if(l.kind==='chk'){flushP();if(!list||list.t!=='chk'||gap>mh*1.6){flushL();list={t:'chk',items:[],x:l.x0}}list.items.push({h:(l.on?'☑ ':'☐ ')+strip(l,l.mk),lv:0})}
   else if(l.kind){flushP();const t=l.kind;if(!list||list.t==='chk'||(list.t!==t&&l.x0<=list.x+cw*1.5)||gap>mh*1.8){flushL();list={t,items:[],x:l.x0}}list.items.push({h:strip(l,l.mk),lv:l.x0>list.x+cw*2?1:0})}
   else if(list&&!brk&&list.t!=='chk'&&l.x0>list.x+cw*1.2){const it=list.items[list.items.length-1];it.h+=' '+html}
@@ -379,10 +381,111 @@ const AIP=`You turn a picture into editable notes. Reply with HTML only, using j
 - A table becomes one line per row with cells separated by " · ".`;
 function aiClean(s){s=String(s||'').trim().replace(/^```(?:html)?\s*/i,'').replace(/```\s*$/,'').trim();if(!/<(p|ul|ol|br|b|li)\b/i.test(s))s=s.split(/\n{2,}/).map(p=>`<p>${escH(p).replace(/\n/g,'<br>')}</p>`).join('');return s}
 async function aiRead(dataUrl,ink,signal){if(!window.aiVision)throw new Error('AI isn’t set up');return aiClean(await window.aiVision(AIP+(ink?'\nThe picture is handwriting written on a tablet.':''),dataUrl,{signal}))}
+/* ---- the main photo reader: PaddleOCR (PP-OCRv6 small, trimmed to Latin, Greek and Cyrillic letters) on ONNX Runtime
+   Web. It finds each line of writing, then reads the whole line at once, which copes with handwriting, ruled paper and
+   camera photos far better than Tesseract. The models (about 22 MB) download once and are kept for offline use. ---- */
+const ORTV='1.30.0',ORTJS=`https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORTV}/dist/ort.wasm.min.js`,ORTW=`https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORTV}/dist/`;
+const PBASE=['ocr/','https://munazzar.github.io/plotline/ocr/'],PCACHE='plotline-ocr-v1',PLAT=new Set(['eng','spa','fra','deu','ita','por','nld','tur','rus']);
+let PO=null;
+async function pfetch(f,prog,part){let c=null;try{c=await caches.open(PCACHE)}catch(e){}let err;
+ for(const b of PBASE){const u=new URL(b+f,location.href).href;try{let r=c&&await c.match(u);if(!r){r=await fetch(u);if(!r.ok)throw new Error(r.status);
+   const n=+r.headers.get('content-length')||0,rd=r.body&&r.body.getReader();if(rd&&n){const parts=[];let got=0;for(;;){const{done,value}=await rd.read();if(done)break;parts.push(value);got+=value.length;prog&&prog(`Getting the text reader ready (first time only)… ${Math.round(part[0]+(part[1]-part[0])*got/n)}%`)}r=new Response(new Blob(parts),{headers:{'content-type':r.headers.get('content-type')||'application/octet-stream'}})}
+   if(c)try{await c.put(u,r.clone())}catch(e){}}return r}catch(e){err=e}}throw err||new Error('Couldn’t get the text reader')}
+function preader(prog){if(PO)return PO;PO=(async()=>{prog&&prog('Getting the text reader ready (first time only)…');if(!window.ort)await loadJS(ORTJS);
+ ort.env.wasm.wasmPaths=ORTW;ort.env.wasm.numThreads=self.crossOriginIsolated?Math.min(4,navigator.hardwareConcurrency||1):1;ort.env.wasm.proxy=true;
+ const opt={executionProviders:['wasm'],graphOptimizationLevel:'all'};
+ const det=await ort.InferenceSession.create(new Uint8Array(await(await pfetch('det.onnx',prog,[0,45])).arrayBuffer()),opt);
+ const rec=await ort.InferenceSession.create(new Uint8Array(await(await pfetch('rec.onnx',prog,[45,98])).arrayBuffer()),opt);
+ const chars=await(await pfetch('rec_chars.json',prog,[98,100])).json();return{det,rec,chars}})().catch(e=>{PO=null;throw e});return PO}
+/* BGR, scaled to -1…1, as the Paddle models were trained */
+function ptensor(x,w,h,n,dst,off){const d=x.getImageData(0,0,w,h).data,pl=w*h;for(let i=0,j=0;i<pl;i++,j+=4){dst[off+i]=d[j+2]/127.5-1;dst[off+pl+i]=d[j+1]/127.5-1;dst[off+2*pl+i]=d[j]/127.5-1}}
+/* the smallest rotated rectangle around a set of points (convex hull + rotating calipers) */
+function minRect(P){P.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]),lo=[],up=[];
+ for(const p of P){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p)}for(let i=P.length-1;i>=0;i--){const p=P[i];while(up.length>1&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p)}
+ const H=lo.slice(0,-1).concat(up.slice(0,-1));let best=null;
+ for(let i=0;i<H.length;i++){const a=H[i],b=H[(i+1)%H.length],L=Math.hypot(b[0]-a[0],b[1]-a[1]);if(!L)continue;const ux=(b[0]-a[0])/L,uy=(b[1]-a[1])/L;let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9;
+  for(const p of H){const u=p[0]*ux+p[1]*uy,v=-p[0]*uy+p[1]*ux;if(u<u0)u0=u;if(u>u1)u1=u;if(v<v0)v0=v;if(v>v1)v1=v}const ar=(u1-u0)*(v1-v0);if(!best||ar<best.ar)best={ar,ux,uy,u0,u1,v0,v1}}
+ if(!best)return null;let{ux,uy,u0,u1,v0,v1}=best;
+ /* keep the long side running left to right */
+ if(v1-v0>u1-u0){[ux,uy]=[-uy,ux];[u0,u1,v0,v1]=[v0,v1,-u1,-u0]}if(ux<0){ux=-ux;uy=-uy;[u0,u1,v0,v1]=[-u1,-u0,-v1,-v0]}
+ return{cx:((u0+u1)/2)*ux-((v0+v1)/2)*uy,cy:((u0+u1)/2)*uy+((v0+v1)/2)*ux,w:u1-u0,h:v1-v0,ux,uy}}
+async function pdetect(R,src){const mx=Math.max(src.width,src.height),k=Math.min(1,1024/mx),W=Math.max(32,Math.round(src.width*k/32)*32),H=Math.max(32,Math.round(src.height*k/32)*32);
+ const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.imageSmoothingQuality='high';x.drawImage(src,0,0,W,H);
+ const t=new Float32Array(3*W*H);ptensor(x,W,H,1,t,0);const out=await R.det.run({[R.det.inputNames[0]]:new ort.Tensor('float32',t,[1,3,H,W])});const pr=out[R.det.outputNames[0]].data;
+ const m=new Uint8Array(W*H);for(let i=0;i<m.length;i++)if(pr[i]>.3){m[i]=1}
+ /* 2×2 dilation, as Paddle does, so broken strokes join into one line */
+ for(let y=H-1;y>0;y--)for(let xx=W-1;xx>0;xx--){const i=y*W+xx;if(!m[i]&&(m[i-1]===1||m[i-W]===1||m[i-W-1]===1))m[i]=2}
+ const lab=new Int32Array(W*H),st=new Int32Array(W*H),B=[];let n=0;const sx=src.width/W,sy=src.height/H;
+ for(let i=0;i<m.length;i++){if(!m[i]||lab[i])continue;n++;let sp=0,sum=0,cnt=0;const pts=[];st[sp++]=i;lab[i]=n;
+  while(sp){const q=st[--sp],y=(q/W)|0,xx=q-y*W;sum+=pr[q];cnt++;if(!(xx>0&&m[q-1]&&xx<W-1&&m[q+1]&&y>0&&m[q-W]&&y<H-1&&m[q+W]))pts.push([xx,y],[xx+1,y],[xx,y+1],[xx+1,y+1]);
+   if(xx>0&&m[q-1]&&!lab[q-1]){lab[q-1]=n;st[sp++]=q-1}if(xx<W-1&&m[q+1]&&!lab[q+1]){lab[q+1]=n;st[sp++]=q+1}if(y>0&&m[q-W]&&!lab[q-W]){lab[q-W]=n;st[sp++]=q-W}if(y<H-1&&m[q+W]&&!lab[q+W]){lab[q+W]=n;st[sp++]=q+W}}
+  if(cnt<10||sum/cnt<.5)continue;const r=minRect(pts);if(!r||r.h<3)continue;
+  const d=r.w*r.h*1.6/(2*(r.w+r.h));r.w+=2*d;r.h+=2*d;if(r.h<5)continue;
+  r.cx*=sx;r.cy*=sy;r.w*=Math.hypot(r.ux*sx,r.uy*sy);r.h*=Math.hypot(r.uy*sx,r.ux*sy);B.push(r)}
+ return B}
+/* each box cut out straight, 48 px high; greedy CTC decoding */
+async function precog(R,src,B,prog){const out=[];const items=B.map(b=>{const w=Math.max(8,Math.min(48*40,Math.round(48*b.w/b.h)));return{b,w}}).sort((a,b)=>a.w-b.w);
+ for(let s=0;s<items.length;s+=6){prog&&s&&prog(`Reading… ${Math.round(s/items.length*100)}%`);const grp=items.slice(s,s+6),Wm=Math.max(320,grp[grp.length-1].w),pl=48*Wm,t=new Float32Array(grp.length*3*pl);
+  grp.forEach((it,k)=>{const{b,w}=it,c=document.createElement('canvas');c.width=Wm;c.height=48;const x=c.getContext('2d',{willReadFrequently:true});
+   /* map the box (top-left corner o, long side along u) onto the strip */
+   const kx=w/b.w,ky=48/b.h,ox=b.cx-b.ux*b.w/2+b.uy*b.h/2,oy=b.cy-b.uy*b.w/2-b.ux*b.h/2;
+   x.imageSmoothingQuality='high';x.setTransform(kx*b.ux,-ky*b.uy,kx*b.uy,ky*b.ux,-kx*(ox*b.ux+oy*b.uy),-ky*(oy*b.ux-ox*b.uy));x.drawImage(src,0,0);
+   const id=x.getImageData(0,0,Wm,48).data;for(let i=0,j=0;i<pl;i++,j+=4){const inb=(i%Wm)<w;t[k*3*pl+i]=inb?id[j+2]/127.5-1:0;t[k*3*pl+pl+i]=inb?id[j+1]/127.5-1:0;t[k*3*pl+2*pl+i]=inb?id[j]/127.5-1:0}});
+  const r=await R.rec.run({[R.rec.inputNames[0]]:new ort.Tensor('float32',t,[grp.length,3,48,Wm])}),o=r[R.rec.outputNames[0]],[,T,C]=o.dims,d=o.data;
+  grp.forEach((it,k)=>{let txt='',last=0,cs=0,cn=0;const lim=Math.ceil(T*it.w/Wm)+1;for(let ti=0;ti<Math.min(T,lim);ti++){let bi=0,bv=-1;const base=(k*T+ti)*C;for(let ci=0;ci<C;ci++){const v=d[base+ci];if(v>bv){bv=v;bi=ci}}
+    if(bi&&bi!==last){txt+=R.chars[bi-1]||'';cs+=bv;cn++}last=bi}
+   txt=txt.replace(/\s+/g,' ').trim();if(txt)out.push({b:it.b,text:txt,conf:cn?cs/cn:0})})}
+ return out}
+/* boxes → reading-order lines; pieces of one line side by side are joined */
+function plines(rs){const L=rs.map(r=>{const{b}=r,hw=b.w/2,hh=b.h/2,xs=[],ys=[];for(const[a,c]of[[-1,-1],[1,-1],[1,1],[-1,1]]){xs.push(b.cx+a*hw*b.ux-c*hh*b.uy);ys.push(b.cy+a*hw*b.uy+c*hh*b.ux)}
+  return{text:r.text,conf:r.conf,x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),cy:b.cy,h:b.h}}).sort((a,b)=>a.cy-b.cy);
+ const rows=[];for(const l of L){const r=rows.find(r=>Math.abs(r.cy-l.cy)<Math.min(r.h,l.h)*.5);if(r){r.items.push(l);r.cy=(r.cy*(r.items.length-1)+l.cy)/r.items.length}else rows.push({cy:l.cy,h:l.h,items:[l]})}
+ const out=[];for(const r of rows.sort((a,b)=>a.cy-b.cy)){r.items.sort((a,b)=>a.x0-b.x0);let cur=null;
+  for(const it of r.items){if(cur&&it.x0-cur.x1<r.h*2.2){cur.text+=' '+it.text;cur.x1=Math.max(cur.x1,it.x1);cur.y0=Math.min(cur.y0,it.y0);cur.y1=Math.max(cur.y1,it.y1);cur.cs+=it.conf*it.text.length;cur.n+=it.text.length}
+   else{cur={...it,cs:it.conf*it.text.length,n:it.text.length};out.push(cur)}}}
+ /* trim the dilation and unclip padding back off so line heights match the writing */
+ out.forEach(l=>{l.conf=l.n?l.cs/l.n*100:0;const pad=(l.y1-l.y0)*.18;l.y0+=pad;l.y1-=pad});return out}
+/* what the line reader leaves out: a bullet, dash or checkbox in front of a line, and highlighter behind words. Looked
+   for on a black-and-white copy, in the strip each line occupies */
+function pmarks(src,L){if(!L.length)return L;const f=Math.min(1,1600/Math.max(src.width,src.height)),c=document.createElement('canvas');c.width=Math.round(src.width*f);c.height=Math.round(src.height*f);
+ const cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(src,0,0,c.width,c.height);const B=binarize(c),{bin,w,h,rgb}=B;
+ let bgR=0,bgG=0,bgB=0,bn=0;for(let k=0;k<4000;k++){const i=Math.floor(Math.random()*bin.length);if(!bin[i]){const j=i*4;bgR+=rgb[j];bgG+=rgb[j+1];bgB+=rgb[j+2];bn++}}bgR/=bn||1;bgG/=bn||1;bgB/=bn||1;
+ for(const l of L){const y0=Math.max(0,Math.round(l.y0*f)),y1=Math.min(h-1,Math.round(l.y1*f)),lh=Math.max(4,y1-y0+1),x1=Math.min(w-1,Math.round(l.x1*f));let tx=l.x0*f;
+  /* columns with ink in the line's strip, grouped into runs */
+  const a=Math.max(0,Math.round(l.x0*f-2.5*lh)),b=Math.min(w-1,Math.round(l.x0*f+2*lh)),runs=[];let cur=null;
+  for(let x=a;x<=b;x++){let ink=0;for(let y=y0;y<=y1;y++)ink+=bin[y*w+x];if(ink){if(cur&&x-cur.b<=Math.max(1,lh*.12))cur.b=x;else{cur={a:x,b:x};runs.push(cur)}}}
+  const r0=runs[0],r1=runs[1];let mk='';
+  if(r0&&r1&&r1.a-r0.b>=lh*.22){let ry0=1e9,ry1=-1,ink=0;for(let y=y0;y<=y1;y++)for(let x=r0.a;x<=r0.b;x++)if(bin[y*w+x]){ink++;if(y<ry0)ry0=y;if(y>ry1)ry1=y}
+   const mw=r0.b-r0.a+1,mh=ry1-ry0+1,fill=ink/(mw*mh),asp=mw/mh;
+   const at=(fx,fy,s)=>{let n=0,t=0;const X0=r0.a+Math.floor(mw*fx),Y0=ry0+Math.floor(mh*fy),S=Math.max(1,Math.round(Math.min(mw,mh)*s));for(let y=Y0;y<Math.min(ry1+1,Y0+S);y++)for(let x=X0;x<Math.min(r0.b+1,X0+S);x++){n+=bin[y*w+x];t++}return t?n/t:0};
+   if(mw<=lh*.45&&mh<=lh*.45&&asp>.5&&asp<2&&fill>.55)mk='•';
+   else if(mh<=lh*.2&&mw>=lh*.25&&mw<=lh*.9&&asp>2.2)mk='–';
+   else if(mw>=lh*.35&&mw<=lh*1.2&&mh>=lh*.35&&mh<=lh*1.2&&asp>.7&&asp<1.4&&Math.min(at(0,0,.15),at(.85,0,.15),at(0,.85,.15),at(.85,.85,.15))>.2){const inner=at(.3,.3,.4);mk=inner>.08?'☑':'☐'}
+   if(mk){tx=r1.a;const t=l.text;if(!BUL.test(t)&&!CHK.test(t)){l.text=(mk==='☐'||mk==='☑'?mk:'•')+' '+t.replace(/^[^\p{L}\p{N}\s]{1,2}\s*/u,'').replace(/^[^AaI\d\s]\s(?=\S)/u,'')}}}
+  /* highlighter: the paper between the letters is coloured over part of the line */
+  const col=new Uint8Array(Math.max(0,x1-Math.round(tx)+1));for(let x=Math.round(tx),k=0;x<=x1;x++,k++){let r=0,g=0,bb=0,n=0;for(let y=y0;y<=y1;y+=2){const i=y*w+x;if(!bin[i]){const j=i*4;r+=rgb[j];g+=rgb[j+1];bb+=rgb[j+2];n++}}
+   if(n>2){r/=n;g/=n;bb/=n;const mx=Math.max(r,g,bb),mn=Math.min(r,g,bb);col[k]=mx&&(mx-mn)/mx>.2&&Math.hypot(r-bgR,g-bgG,bb-bgB)>38&&mx>110?1:0}}
+  if(col.some(v=>v)){const body=l.text.replace(/^([•☐☑]\s)/,''),pre=l.text.length-body.length,ws=body.split(' '),span=Math.max(1,x1-tx),tot=body.length;let pos=0;
+   l.words=[];if(pre)l.words.push({text:l.text.slice(0,pre).trim()});
+   ws.forEach(t=>{const m=(pos+t.length/2)/tot,k=Math.min(col.length-1,Math.round(m*span));let on=0,cnt=0;for(let d=-2;d<=2;d++){const q=k+d;if(q>=0&&q<col.length){on+=col[q];cnt++}}l.words.push({text:t,_mark:on/cnt>.5});pos+=t.length+1})}}
+ return L}
+async function paddleRead(src,prog){const R=await preader(prog);prog&&prog('Finding the lines…');await new Promise(r=>setTimeout(r,20));let cv=src;
+ if(Math.max(src.width,src.height)>3000)cv=scaleTo(src,3000);let B=await pdetect(R,cv);
+ /* a photo taken sideways: most lines stand upright, so turn it and look again */
+ const tall=B.filter(b=>Math.abs(b.uy)>.7&&b.w>b.h*2).length;if(B.length>2&&tall>B.length/2){const r=document.createElement('canvas');r.width=cv.height;r.height=cv.width;const x=r.getContext('2d');x.translate(r.width,0);x.rotate(Math.PI/2);x.drawImage(cv,0,0);cv=r;B=await pdetect(R,cv)}
+ prog&&prog('Reading…');let rs=await precog(R,cv,B,prog);
+ /* upside down: Paddle reads the lines as junk; turn it half round and keep whichever reads better */
+ const mc=a=>a.length?a.reduce((s,r)=>s+r.conf,0)/a.length:0;if(rs.length&&mc(rs)<.75){const r=document.createElement('canvas');r.width=cv.width;r.height=cv.height;const x=r.getContext('2d');x.translate(r.width,r.height);x.rotate(Math.PI);x.drawImage(cv,0,0);
+  const B2=await pdetect(R,r),r2=await precog(R,r,B2);if(mc(r2)>mc(rs)+.1){rs=r2}}
+ return pmarks(cv,plines(rs))}
 /* how sure the reader was of the last photo, 0-100 (the review panel warns when it's low) */
 let OCRCONF=100;
 const confOf=L=>{let c=0,n=0;for(const l of L)for(const w of l.words||[]){const k=String(w.text).length;c+=w.confidence*k;n+=k}return n?c/n:0};
-async function ocrCanvas(src,prog){const L=lang();let sc=1,cv=src;const mx=Math.max(src.width,src.height);
+async function ocrCanvas(src,prog){const L=lang();
+ if(PLAT.has(L[0])&&window.WebAssembly){try{const ls=await paddleRead(src,prog);OCRCONF=ls.length?confOf2(ls):100;return linesToHTML(ls)}catch(e){console.warn('Paddle reader',e);PO=null}}
+ return tessRead(src,prog)}
+const confOf2=L=>{let c=0,n=0;for(const l of L){c+=l.conf*l.text.length;n+=l.text.length}return n?c/n:0};
+async function tessRead(src,prog){const L=lang();let sc=1,cv=src;const mx=Math.max(src.width,src.height);
  if(mx<1400){sc=Math.min(2.5,1800/mx);cv=document.createElement('canvas');cv.width=Math.round(src.width*sc);cv.height=Math.round(src.height*sc);const x=cv.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(src,0,0,cv.width,cv.height)}
  else if(mx>2600)cv=scaleTo(src,2600);
  prog&&prog('Cleaning up the picture…');await new Promise(r=>setTimeout(r,30));const B=binarize(cv);const w=await tess(L[0],prog);
@@ -493,5 +596,5 @@ document.addEventListener('dragover',e=>{if(e.target.closest&&e.target.closest('
 document.addEventListener('drop',e=>{const t=e.target.closest&&e.target.closest('#wrEd,textarea[data-fmt]');if(!t)return;const f=imgFile(e.dataTransfer);if(!f)return;e.preventDefault();scan(targetOf(t),f)},true);
 /* editing a thread update: its sketches come along in the form's tray */
 {const _u=ACT.thrUpEdit;ACT.thrUpEdit=function(d){const r=_u.apply(this,arguments);const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u),f=document.querySelector('#sheet form[data-form=thrUpEdit]');if(f&&u){f._sk=(u.sk||[]).slice();tray(f)}return r}}
-window.inkPad=pad;window.inkScan=scan;window.inkTest={pack,unpack,snapShape,linesToHTML,marks,binarize,ocrCanvas,inkCanvas,conf:()=>OCRCONF};
+window.inkPad=pad;window.inkScan=scan;window.inkTest={pack,unpack,snapShape,linesToHTML,marks,binarize,ocrCanvas,tessRead,paddleRead,inkCanvas,conf:()=>OCRCONF};
 })();
