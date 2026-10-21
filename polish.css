@@ -212,3 +212,32 @@ html[data-bgp=image] body::after{background:var(--bgimg) center/cover no-repeat}
 #fnav .fn-i.fn-s{grid-column:1/-1;border-top:1px solid var(--line);border-radius:0 0 15px 15px;margin-top:4px}
 #fnav .fn-t .fn-m{transform:rotate(90deg);width:15px;height:15px}#fnav.open .fn-t .fn-m{transform:rotate(-90deg)}
 .gear-hl{animation:gearHl 1.8s ease}@keyframes gearHl{0%,40%{box-shadow:0 0 0 2px var(--accent),var(--e1)}100%{box-shadow:var(--e1)}}
+/* ---------- 1.42.1: phone month cells, one tidy row each: date, plan dots, habit icons, steps ---------- */
+@media(max-width:820px){
+ .cal-m .cd{display:grid!important;grid-template-rows:auto 9px 13px 12px;align-content:start;justify-items:center;gap:3px!important;min-height:78px!important;padding:5px 2px 6px!important;overflow:hidden}
+ .cal-m .cd .cd-top{justify-self:stretch;display:flex;justify-content:center;align-items:center;gap:2px;min-width:0}
+ .cal-m .cd .cd-top>:not(.cd-n){font-size:10px;line-height:1}
+ .cal-m .cd .cd-chips{grid-row:2;display:flex!important;flex-direction:row;flex-wrap:nowrap;justify-content:center;align-items:center;gap:3px;height:9px;overflow:hidden;max-width:100%}
+ .cal-m .cd .cd-chips em{flex:none;width:7px;height:7px;padding:0!important;border-radius:50%;font-size:0!important;box-shadow:none!important;background:var(--c)!important;text-decoration:none!important}
+ .cal-m .cd .cd-chips em.d{opacity:.35}
+ .cal-m .cd .cd-chips em.more{width:auto;height:auto;border-radius:0;background:none!important;font:600 8px/1 var(--f-mono)!important;color:var(--muted);padding:0!important}
+ .cal-m .cd .cd-chips em.more{max-width:2.6ch;overflow:hidden;white-space:nowrap}
+ .cal-m .cd .cd-hb{display:none!important}
+ .cal-m .cd .cd-hi{grid-row:3;margin:0!important;height:13px;display:flex;justify-content:center;gap:0!important;overflow:hidden;max-width:100%}
+ .cal-m .cd .cd-act{grid-row:4;margin:0!important;justify-content:center;gap:2px;height:12px;font-size:8.5px!important;max-width:100%;overflow:hidden}
+ .cal-m .cd .cd-act i.st,.cal-m .cd .cd-act b.zz{display:none!important}
+ .cal-m .cd .cd-dots{display:none!important}
+ .cal-m{grid-template-rows:none!important;grid-auto-rows:auto!important;height:auto!important;max-height:none!important;aspect-ratio:auto!important}
+}
+/* carousels: a pinch resizes the cards (--hsz), not the scroller */
+.hs .hs-item{width:calc(var(--hs-w) * var(--hsz,1))}
+/* carousels: a pinch resizes the cards (--hsz), not the scroller */
+.hs .hs-item{width:calc(var(--hs-w) * var(--hsz,1))}
+/* every card in a carousel keeps the same shape: long text or a tall photo no longer stretches it (aspect-ratio alone lets content grow the box) */
+.hs .hs-card{contain:size;min-height:0;overflow:visible}
+.hs .hs-card>:is(.jf,.fc,.sc),.hs .hs-card :is(.jf-in,.fc-in,.sc-in){height:100%}
+.hs .hs-card :is(.jf-face,.fc-face,.sc-face){overflow:hidden}
+.tk-auto{display:inline-block;font:600 9.5px var(--f-mono);text-transform:uppercase;letter-spacing:.06em;padding:1px 5px;border-radius:5px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.tk-srcb{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:6px}
+#tkSrc{width:100%}
+#sheet form[data-form=tkSave]>.two:first-child{display:grid!important;grid-template-columns:72px minmax(0,1fr)!important;gap:10px}

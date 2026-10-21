@@ -86,3 +86,12 @@ word, a voice and a widget, through a second JavaScript interface, `window.Plotl
 3. Add the lines in `AndroidManifest-assist.xml` where its comments say.
 4. One line in `MainActivity.onCreate`, after `PlotlineNative` is added:
    `web.addJavascriptInterface(new Assist(this), "PlotlineAssist");`
+
+# Orb widget (Android, 1.42.1)
+
+`OrbWidget` (Plotlines · Orb): only Plot's orb, one cell or bigger. Tapping it opens Plotline on the assistant,
+listening (`AssistWidget.tap(..., "assistant-listen", ...)`). Files: `src/.../OrbWidget.java`, `res/layout/widget_orb.xml`,
+`res/xml/widget_orb_info.xml`, `res/drawable-nodpi/widget_orb_img.png`, `res/values/orb_strings.xml`, and the receiver at
+the end of `AndroidManifest-assist.xml`. There is no Java compiler on the release machine, so 1.42.1 shipped it as
+hand-written smali in `smali_classes4/com/munazzar/plotline/OrbWidget.smali` (the Java file is the same code), built
+from a full apktool decode of 1.42.0.
