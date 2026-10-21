@@ -1,6 +1,6 @@
 // Plotlines offline cache: serve the app shell from cache, refresh it in the background.
-const CACHE = 'plotline-v1.41.4';
-const SHELL = ['./', './index.html', './bench.js', './lists.js', './assistant.js', './agent.js', './ai.js', './convs.js', './ink.js', './polish.js', './polish.css', './fonts/inter-latin-wght-normal.woff2', './manifest.webmanifest', './icon-192.png', './icon-512.png',
+const CACHE = 'plotline-v1.42.0';
+const SHELL = ['./', './index.html', './bench.js', './lists.js', './assistant.js', './agent.js', './ai.js', './convs.js', './ink.js', './polish.js', './polish.css', './trackers.js', './fonts/inter-latin-wght-normal.woff2', './manifest.webmanifest', './icon-192.png', './icon-512.png',
   './fonts/big-shoulders-display-latin-600-normal.woff2', './fonts/big-shoulders-display-latin-700-normal.woff2', './fonts/big-shoulders-display-latin-800-normal.woff2',
   './fonts/figtree-latin-400-normal.woff2', './fonts/figtree-latin-500-normal.woff2', './fonts/figtree-latin-600-normal.woff2', './fonts/figtree-latin-700-normal.woff2',
   './fonts/martian-mono-latin-400-normal.woff2', './fonts/martian-mono-latin-500-normal.woff2'];

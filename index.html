@@ -3059,6 +3059,7 @@ html.thr-focus #tabbar,html.thr-focus .tabbar{display:none}
 .axdh{text-align:center;font:500 10.5px var(--f-mono);color:var(--muted)}
 .axdc{display:grid;justify-items:center;gap:4px;padding:6px 0;border:0;border-radius:14px;background:none;color:var(--text);cursor:pointer;font:inherit;transition:background .2s,transform .3s var(--spring)}
 .axdc:hover{background:var(--surface-2)}.axdc:active{transform:scale(.92)}.axdc small{font:600 11.5px var(--f-mono);color:var(--muted)}
+.axdc .axrings{width:min(100%,44px);height:auto;aspect-ratio:1}.axdays.month .axdc .axrings{width:min(100%,34px)}.axdays.week .axdc{padding:6px 3px}
 .axdc.td small{color:var(--text)}.axdc.td{background:color-mix(in srgb,var(--accent) 12%,transparent)}.axdc.fut{opacity:.35;cursor:default}
 .axgrid{align-items:start}
 
@@ -3535,7 +3536,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.41.4';
+const APP_VER='1.42.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -4996,9 +4997,12 @@ const TOUR_STEPS=[
  {r:'today',c:1,t:'Welcome to Plotlines',x:'A two-minute walk through everything the app does. The tour runs on example data, so your own plan stays exactly as it is.'},
  {r:'today',s:'.tg-box',t:'Today’s goals',x:'Type what you want to finish today and press +. Tap a circle to check it off. Anything unfinished from earlier waits below, one tap from moving to today.',d:'type'},
  {r:'today',s:'.now',t:'Up next',x:'The most urgent step across all your goals. Mark it done, or start a focus timer that chimes when the time is up.',d:'tap',tap:'.now .btn.ink'},
+ {r:'today',wide:1,s:'.hw-stats',t:'Your week at a glance',x:'On a big screen Home spreads out: this week’s numbers, every day of the week ahead, your goals in motion, and recent journal, lists and threads.'},
+ {r:'today',s:'.hins',t:'Insights from Plot',x:'With on-device AI turned on, Plot reads your last two weeks (habits, goals, activity, trackers and journal) and points out what you’d miss. Tap “Ask about this” to dig in. It stays on your phone.'},
  {r:'today',s:'.hstrip',t:'Habits at a glance',x:'Today’s habits sit right on the Today page. Tap a ring to log one, and swipe for the rest.',d:'swipe',sc:'.hstrip'},
  {r:'habits',nav:1,s:'.hsum',t:'Habits',x:'Build good habits, break bad ones and run routines. The ring is today, the bars are the last seven days.'},
  {r:'habits',s:'.hrow',t:'Log a habit',x:'Tap the ring to log it. Counted habits, like 8 glasses of water, fill one tap at a time. The dots are the last seven days: tap one to fix a day you forgot. The 🔔 sets when it reminds you, and every step, day goal and goal has one too.',d:'tap',tap:'.hrow .hchk',click:1},
+ {r:'habits',s:'.hrow .hnote',t:'A note on every habit',x:'Tap “Add a note” to say how it went, skip a day with a reason, or check it off. Once a habit is done it asks “How did it go?”. No long press needed.'},
  {r:'habits',s:'.hrow .bell',t:'Reminders, your way',x:'Every habit, step, day goal and goal has a 🔔. It starts from when you planned it, and you choose the time, a nudge if it’s still not done, a second reminder, or a custom date. The bell shows what’s set, including a “remind me again” you asked for from a notification.',d:'tap'},
  {r:'habits',s:'.hq',t:'Break a habit',x:'A live clock counts your time free, with milestones along the way. When a craving hits, tap “I have an urge” for a guided breathing timer. Slips are logged honestly and the clock starts again.',d:'tap',tap:'.hq .btn.ink'},
  {r:'habits',prep:()=>{HV='vista'},s:'.hvista',t:'Habit vista',x:'Every habit as a lane through time, with its live streak on top. Bold glowing stretches are streaks, faint dots are misses, × marks a slip, and today pulses until you log it. Switch Week, Month, 3 months or Year, pinch to zoom, drag to look back, and tap a stop to fix that day.'},
@@ -5008,6 +5012,7 @@ const TOUR_STEPS=[
  {r:'goals',s:'.bar',t:'Filter and switch views',x:'Show active, short-term, long-term or achieved goals, filter by life area, or switch to a swipeable carousel.'},
  {r:'goal',id:()=>(S.goals.find(g=>kids(g).length)||S.goals[0]).id,prep:()=>{S.settings.layout.goal='cards'},s:'.hero',t:'A goal up close',x:'Why it matters, the dates, and progress that includes every sub-goal beneath it. Pin it to Today with the pin, edit it with the pencil.'},
  {r:'goal',s:'.crumb .bell',t:'Goal reminders',x:'Set a daily or weekly check-in, a reminder before the target date, and a reminder for every step, all from one place.',d:'tap'},
+ {r:'goal',s:'.fsb',t:'Full screen',x:'Goals, journal and threads open edge to edge. In full screen a slim bar at the top takes you to any page, grouped like the sidebar, with search and a clear way out.'},
  {r:'goal',s:'.bar .seg-c',t:'Three ways to see the path',x:'Cards, a path, or a flowing timeline. Steps and sub-goals, at any depth, appear in all three.',d:'cycle'},
  {r:'goal',prep:()=>{S.settings.layout.goal='cards'},s:'.hs-shell',t:'Swipe through steps',x:'Swipe the cards. Tap a card to flip it for notes and actions, and tap its dot to mark the step done. Sub-goal cards open that sub-goal.',d:'swipe',sc:'.hs-shell .hs'},
  {r:'cal',nav:1,prep:()=>{S.settings.layout.cal='month'},s:'.cal-card',t:'Calendar',x:'Day goals, steps and goal targets together. Each day in Month shows what’s planned, a bar for habits kept, your mood and ⚑ for goal targets. Tap a day to see and tick off everything on it. Swipe to move through dates.',d:'swipe'},
@@ -5017,12 +5022,14 @@ const TOUR_STEPS=[
  {r:'map',s:'#map',t:'Timeline · Map',x:'Switch to Map for the big picture: goals grouped by life area, with lines where goals support each other. Drag anything, pinch to zoom, tap to focus.',d:'drag'},
  {r:'road',s:'[data-act=chapList]',t:'Chapters and your year',x:'Name seasons of your life, like “New job” or “Marathon training”. They show as bands behind the timeline. The sparkle opens your year in review: goals reached, habits kept, your best month and your own words, ready to share as one image.'},
  {r:'journal',nav:1,s:'.hs-shell,.spine',t:'Journal',x:'Moments, photos, milestones and achieved goals collect here as the story of your year.'},
+ {r:'threads',nav:1,s:'#view .ph',t:'Threads',x:'Quick notes and chains of thought, like a stack of sticky notes. Add to a thread whenever an idea moves on, and Plot can summarise where it has got to.'},
+ {r:'activity',nav:1,s:'#act-trk',t:'Your own trackers',x:'Track what your phone doesn’t count: yoga, reading, cycling, practice. Tap + to log, or “Fill in today” and your AI reads today’s journal and threads for the amounts. You confirm every value.'},
  {r:'ask',nav:1,prep:()=>{IN.res=null},s:'.ask-comp',t:'Ask',x:'Your private assistant. Tap the mic to talk instead of typing. Ask anything about your goals, habits and journal, then keep asking follow-ups. It searches your own notes, answers with links back to them, and can save an answer to your journal.',d:'tap'},
  {r:'ask',s:'.ask-sugs',t:'Start with a suggestion',x:'A weekly reflection, mood patterns, stalled goals, habit patterns, wins. The dashed ones are questions written from your own plan.',d:'tap'},
  {r:'ask',s:'.ask-h .ph-r',t:'Choose how it answers',x:'The sliders open the assistant settings: run an open-source model on this phone (private and offline after one download), use your own AI server, or copy a ready prompt into any AI.'},
  {r:'ai',prep:()=>{AI.tab='new'},s:'.fstep',t:'Plan with AI',x:'From Ask, “Plan something new” opens this. Describe what you want in your own words, then tap Create my plan to have the on-device model write it, or copy the prompt into any AI. You review one main goal, with everything nested under it, before anything is created.',d:'tap'},
  {r:'today',c:1,t:'Reply to reminders',x:NATIVE?'Answer a reminder right from the notification bar in your own words: “done”, “remind me again at 5”, “mute for 2 days”, “in meetings till 4:30”, “push it to Friday”. The on-device AI does it on your phone, tells you exactly what changed, and gives you Undo. Each item keeps a quiet notification history of what was sent, what you replied and what was done.':'On the Android app you can answer reminders right from the notification bar in your own words, like “done”, “remind me again at 5” or “mute for 2 days”, and the on-device AI does it.'},
- {r:'settings',nav:1,s:'.shub',t:'Settings, one area at a time',x:'Everything you can change lives here, grouped so nothing piles up. Each row shows what’s set right now, so you can check without opening it.'},
+ {r:'settings',nav:1,s:'.shub',t:'Settings, one area at a time',x:'The gear on any page opens the settings for that page. Everything you can change lives here, grouped so nothing piles up. Each row shows what’s set right now, so you can check without opening it.'},
  {r:'settings/account',s:'#syncPanel',t:'Sync and settings',x:'Connect your own Google Drive to keep phone and web in step. If Google ever needs you to sign in again, a banner appears on every page with one button, and sync picks up where it left off. Themes, card styles, a PIN and backups are here too.'},
  {r:'settings/notif',s:'#notifSet',t:'Notifications',x:'Choose which reminders you get, the evening wrap-up, quiet hours and how long Mute lasts. Focus mode pauses everything for an hour or more, and missed reminders arrive as one summary afterwards.'},
  {r:'settings/privacy',s:'#lockPanel',t:'App lock',x:'Off until you turn it on. Open Plotlines with your fingerprint or face (or your phone’s screen lock), lock it again after a few minutes away, and hide it from the recent-apps screen.'},
@@ -5031,7 +5038,7 @@ const TOUR_STEPS=[
  {r:'today',c:1,t:'Pull down to sync',x:'On a phone, pull down at the top of any page to sync or refresh.',d:'pull'},
  {r:'today',c:1,native:1,t:'Home-screen widgets',x:'Long-press your home screen, choose Widgets, then Plotlines. Habit vista draws your habit lines right on the home screen. Check off goals and habits, see your week, or watch a live clean-time clock without opening the app.',d:'widget'},
  {r:'today',c:1,t:'You’re all set',x:'Your own plan is back, exactly as you left it. Replay this tour any time from Settings.'},
-].filter(s=>!s.native||NATIVE);
+].filter(s=>(!s.native||NATIVE)&&(!s.wide||innerWidth>=1180));
 function tourPrompt(){if(TOURING||$('.tprompt')||S.settings.tourOffered)return;if(!S.settings.setupDone&&typeof setupFlow==='function'){setupFlow(tourPrompt);return}S.settings.tourOffered=true;save();const d=document.createElement('div');d.className='tprompt';d.setAttribute('role','dialog');d.innerHTML=`${LOGO}<div><b>Take a quick tour?</b><span>Two minutes, with examples, through goals, habits, the calendar, timeline and more.</span></div><div class="tp-a"><button class="btn ghost sm" data-act="tourNo">Not now</button><button class="btn pri sm" data-act="tourGo">Start tour</button></div>`;document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'))}
 function startTour(){document.querySelector('.tprompt')?.remove();if(TOURING)return;closeSheet();RP=null;URGE=null;const st=S.settings;
  document.documentElement.dataset.touring='1';TR={prev:JSON.stringify(S),back:location.hash,hv:HV,i:-1,timers:[],pos:0};TOURING=true;
@@ -7646,6 +7653,7 @@ window.__act=j=>{ACTV.busy=false;let d;try{d=JSON.parse(j)}catch(e){return}if(!d
  /* 1.27: what the phone reports now replaces the day (no "keep the higher": that kept doubled totals forever).
     hagg = Health Connect's de-duplicated total; without it the phone's own counter wins over the raw sum. */
  Object.entries(d.days||{}).forEach(([k,v])=>{const o=L[k]||{};const st=v.hagg?+v.hsteps||0:(+v.steps||0)||(+v.hsteps||0);if(st||o.s==null)o.s=st;o.u=Date.now();if(v.hr)o.hr=v.hr;if(v.kcal!=null)o.c=+v.kcal;if(v.akcal!=null)o.ac=+v.akcal;if(v.dist!=null)o.dm=+v.dist;if(v.sleep!=null)o.z=v.sleep;if(v.ex!=null)o.x=v.ex;if(v.scr!=null)o.m=v.scr;if(v.pl)o.p=v.pl;if(v.ap)o.a=v.ap;if(v.ss)o.ss=v.ss;if(v.w)o.w=v.w;L[k]=o});
+ {const o=L[ymd()];if(o&&+o.s>0){o.sp=o.sp||{};const h=new Date().getHours();o.sp[h]=Math.max(+o.sp[h]||0,+o.s)}}/* running totals by hour: steps by hour when Health Connect hasn't caught up */
  const keys=Object.keys(L).sort();while(keys.length>180)delete L[keys.shift()];save();
  if((cur.p==='activity'||cur.p==='day')&&!$('#sheet').classList.contains('on'))render(false);else actCardPaint()};
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&['activity','today','day'].includes(cur.p))actLoad(false)});
@@ -8364,11 +8372,17 @@ function axBars(id,D,key,o){const n=D.length,x0=0,bw=(AW-x0)/n,ch=AH-APT-APB,val
  const B=bars.replace(/class="axr( ok)?( over)?"/g,(m,ok,ov)=>`class="axr${ok||''}${ov||''}" fill="url(#axg-${ov?'ov':ok?'ok':'lo'}-${id})"`);
  const kk=o.line?`<div class="axkey2">${o.bad?`Coral bars went over your limit of ${esc(String(o.lineLab).replace(/^limit /,''))}`:`Bright bars reached your goal of ${esc(String(o.lineLab).replace(/^goal /,''))}`}. Tap a bar to open that day.</div>`:`<div class="axkey2">Tap a bar to open that day.</div>`;
  return`<div class="axc-w"><svg class="axc" viewBox="0 0 ${AW} ${AH}" role="group" aria-label="${esc(o.aria)}">${defs}<line class="axbase" x1="0" x2="${AW}" y1="${APT+ch+.5}" y2="${APT+ch+.5}"/><rect class="axsel" x="0" y="${APT-8}" width="${bw.toFixed(2)}" height="${ch+12}" rx="${Math.min(9,bw/2).toFixed(1)}"/>${B}${vl}${axLabels(D,x0,bw,AH-6)}</svg>${kk}</div>`}
+/* steps by hour: Health Connect's hourly counts, or (when they're missing or well short of the day's total) the
+   phone counter's running totals saved each time Plotlines read it, spread over the hours between readings */
+function hrOf(o){const hr=Array.isArray(o.hr)?o.hr.map(Number):null,hs=hr?hr.reduce((a,b)=>a+(b||0),0):0;if(hr&&hs>0&&hs>=(+o.s||0)*.8)return o.hr;
+ const sp=o.sp,ks=sp?Object.keys(sp).map(Number).sort((a,b)=>a-b):[];if(!ks.length)return hs>0?o.hr:null;const out=Array(24).fill(0);let ph=Math.min(7,ks[0]),pv=0;
+ ks.forEach(h=>{const v=+sp[h],d=Math.max(0,v-pv),from=Math.min(ph,h),n=h-from+1;for(let i=from;i<=h;i++)out[i]+=d/n;ph=h+1;pv=Math.max(pv,v)});
+ return out.some(v=>v>0)?out.map(Math.round):null}
 /* steps by hour for one day (Health Connect, last 7 days) */
-function axHours(hr){if(!Array.isArray(hr)||!hr.some(v=>+v>0))return'';const W=340,H=120,T=8,Bm=20,ch=H-T-Bm,mx=Math.max(...hr.map(Number),1),bw=W/24,w=bw*.62;let top=0;hr.forEach((v,i)=>{if(+v>+hr[top])top=i});
+function axHours(hr,est){if(!Array.isArray(hr)||!hr.some(v=>+v>0))return'';const W=340,H=120,T=8,Bm=20,ch=H-T-Bm,mx=Math.max(...hr.map(Number),1),bw=W/24,w=bw*.62;let top=0;hr.forEach((v,i)=>{if(+v>+hr[top])top=i});
  const bars=hr.map((v,i)=>{const h=+v?Math.max(2.5,+v/mx*ch):0;return h?`<rect class="axhr${i===top?' top':''}" x="${(i*bw+(bw-w)/2).toFixed(1)}" y="${(T+ch-h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="${(w/2).toFixed(1)}"><title>${i}:00 · ${(+v).toLocaleString()} steps</title></rect>`:''}).join('');
  const lab=[0,6,12,18].map(h=>`<text class="axl" x="${(h*bw+2).toFixed(1)}" y="${H-4}">${h}</text>`).join('')+`<text class="axl" x="${W-2}" y="${H-4}" text-anchor="end">24h</text>`,P=n=>String(n).padStart(2,'0');
- return`<div class="axhrs"><div class="axhrs-h"><b>Steps by hour</b><span>Most active ${P(top)}:00 – ${P(top+1)}:00 · ${(+hr[top]).toLocaleString()}</span></div><svg class="axc" viewBox="0 0 ${W} ${H}"><line class="axbase" x1="0" x2="${W}" y1="${T+ch+.5}" y2="${T+ch+.5}"/>${bars}${lab}</svg></div>`}
+ return`<div class="axhrs"><div class="axhrs-h"><b>Steps by hour${est?' <small class="axest">estimated</small>':''}</b><span>Most active ${P(top)}:00 – ${P(top+1)}:00 · ${(+hr[top]).toLocaleString()}</span></div><svg class="axc" viewBox="0 0 ${W} ${H}"><line class="axbase" x1="0" x2="${W}" y1="${T+ch+.5}" y2="${T+ch+.5}"/>${bars}${lab}</svg></div>`}
 /* sleep: when you fell asleep and woke up, night by night */
 const rel18=t=>{const d=new Date(t);return(d.getHours()*60+d.getMinutes()-1080+1440)%1440};
 const clockOf=m=>{const c=((Math.round(m)+1080)%1440+1440)%1440;return fmtTime(pad2(Math.floor(c/60))+':'+pad2(c%60))};
@@ -8413,7 +8427,7 @@ function axHist(N){const A=actSet(),L=axL(),keys=Object.keys(L).filter(k=>k<=tod
 let AXV={p:'week',d:today()};
 const axWeekStart=ds=>{const k=dnum(ds);return k-((dUTC(k).getUTCDay()+6)%7)};
 function axPeriod(){if(AXV.p==='month'){const dd=dUTC(dnum(AXV.d)),y=dd.getUTCFullYear(),m=dd.getUTCMonth();return[Math.round(Date.UTC(y,m,1)/864e5),Math.round(Date.UTC(y,m+1,0)/864e5)]}const s=axWeekStart(AXV.d);return[s,s+6]}
-function axSpan(k0,k1){const L=axL(),out=[];for(let k=k0;k<=k1;k++){const ds=fromN(k),o=L[ds]||{};out.push({d:ds,k,s:o.s!=null&&+o.s>0?+o.s:null,z:+o.z>0?+o.z:null,x:wkMin(o)||null,m:o.m!=null?+o.m:null,ss:o.ss||[],a:o.a||[],w:o.w||[],hr:o.hr||null,c:o.c!=null?+o.c:null,ac:o.ac!=null?+o.ac:null,dm:o.dm!=null?+o.dm:null})}return out}
+function axSpan(k0,k1){const L=axL(),out=[];for(let k=k0;k<=k1;k++){const ds=fromN(k),o=L[ds]||{};out.push({d:ds,k,s:o.s!=null&&+o.s>0?+o.s:null,z:+o.z>0?+o.z:null,x:wkMin(o)||null,m:o.m!=null?+o.m:null,ss:o.ss||[],a:o.a||[],w:o.w||[],hr:o.hr||null,sp:o.sp||null,c:o.c!=null?+o.c:null,ac:o.ac!=null?+o.ac:null,dm:o.dm!=null?+o.dm:null})}return out}
 const axActGoal=()=>+(S.settings.act||{}).active||30;
 function axLabel(k0,k1){const p=AXV.p,tn=dnum(today()),f=(k,o)=>dUTC(k).toLocaleDateString(undefined,{...o,timeZone:'UTC'});
  if(p==='day')return AXV.d===today()?'Today':AXV.d===fromN(tn-1)?'Yesterday':f(dnum(AXV.d),{weekday:'short',month:'short',day:'numeric'});
@@ -8429,7 +8443,7 @@ function axRings(o,A,sz){const R=[[o.s||0,A.goal,'r1'],[o.x||0,axActGoal(),'r2']
 const axTile=(cl,lab,v,unit,goal)=>`<div class="axt ${cl}"><span>${lab}</span><b>${v}<small>${unit}</small></b><em>${goal}</em></div>`;
 function axDayHero(ds,A){const o=axSpan(dnum(ds),dnum(ds))[0],km=o.dm!=null?(o.dm/1000).toFixed(2):((o.s||0)*.000762).toFixed(1);
  return`<section class="axhero rv"><div class="axhero-r">${axRings(o,A,190)}</div><div class="axhero-t">${axTile('r1','Steps',(o.s||0).toLocaleString(),'','/ '+A.goal.toLocaleString())}${axTile('r2','Active',o.x||0,' min','/ '+axActGoal())}${axTile('r3','Sleep',o.z?fmtMin(o.z):'—','','/ '+fmtMin(A.sleep*60))}</div>
- <div class="axhero-f"><span>Distance${o.dm!=null?'':', about'} <b>${km} km</b></span>${o.c!=null?`<span>Calories burned <b>${o.c.toLocaleString()}</b>${o.ac!=null?` <small>· ${o.ac.toLocaleString()} active</small>`:''}</span>`:''}<span>Screen time <b>${o.m!=null?fmtMin(o.m):'—'}</b>${A.scr?` <small>/ ${fmtMin(A.scr)}</small>`:''}</span></div>${axHours(o.hr)}</section>`}
+ <div class="axhero-f"><span>Distance${o.dm!=null?'':', about'} <b>${km} km</b></span>${o.c!=null?`<span>Calories burned <b>${o.c.toLocaleString()}</b>${o.ac!=null?` <small>· ${o.ac.toLocaleString()} active</small>`:''}</span>`:''}<span>Screen time <b>${o.m!=null?fmtMin(o.m):'—'}</b>${A.scr?` <small>/ ${fmtMin(A.scr)}</small>`:''}</span></div>${axHours(hrOf(o),hrOf(o)!==o.hr)}${!hrOf(o)&&o.s?'<p class="small muted axhrs-n">Steps by hour shows up once Health Connect has today’s steps, or after you open Plotlines a few times today.</p>':''}</section>`}
 /* week and month: a ring per day (tap to open it), then the totals for exactly this span */
 function axSum(D,A){const tn=today(),sum=k=>D.reduce((a,x)=>a+(+x[k]||0),0),n=k=>D.filter(x=>x[k]).length,avg=k=>n(k)?sum(k)/n(k):0,hit=D.filter(x=>x.s>=A.goal).length;
  const cell=x=>{const fut=x.d>tn;return`<button class="axdc${x.d===tn?' td':''}${fut?' fut':''}" ${fut?'disabled':`data-act="axSel" data-d="${x.d}"`} aria-label="${esc(dayName(x.d))}">${axRings(x,A,AXV.p==='month'?34:44)}<small>${AXV.p==='month'?+x.d.slice(8):DAYS[dUTC(x.k).getUTCDay()].slice(0,1)}</small></button>`};
@@ -8764,5 +8778,6 @@ window.smStop=stop;
 <script src="convs.js"></script>
 <script src="ink.js"></script>
 <script src="polish.js"></script>
+<script src="trackers.js"></script>
 </body>
 </html>
