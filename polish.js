@@ -159,11 +159,36 @@ const WIDE=matchMedia('(min-width:1180px)');
 const hSide=n=>{const c=n.classList,h=((n.querySelector(':scope>.st-h h3')||{}).textContent||'').trim().toLowerCase();
  if(n.tagName==='HEADER'||c.contains('demob')||c.contains('sh-today')||c.contains('hft')||c.contains('hcust'))return'full';
  if(c.contains('lv-home')||n.querySelector(':scope>.now')||n.id==='actCard'||c.contains('aip')||(n.dataset&&n.dataset.act==='weekly')||/^(today|insight|coming|pinned|thread)/.test(h))return'r';return'l'};
+/* more to see on a big screen: a stat strip, the week ahead, goals in motion, and recent journal, lists and threads */
+const W7=864e5*7,hwLink=(href,t)=>`<a class="link" href="${href}">${t}</a>`;
+function hwStats(){const now=Date.now(),wk=S.entries.filter(e=>e.type==='step'&&e.t>now-W7).length,late=active().flatMap(g=>g.steps).filter(s=>!s.done&&s.due&&daysUntil(s.due)<0).length;
+ let due=0,dn=0;for(let k=0;k<7;k++){const ds=addDays(-k);S.habits.forEach(h=>{if(hDue(h,ds)){due++;if(hDone(h,ds))dn++}})}
+ const ag=active(),avg=ag.length?Math.round(ag.reduce((a,g)=>a+pct(g),0)/ag.length):0,jn=S.entries.filter(e=>e.type==='note'&&e.t>now-W7).length;
+ const T=[['goals',wk,'steps done this week',late?late+' late':'nothing late','#/goals'],['habit',due?Math.round(dn/due*100)+'<small>%</small>':'—','habits kept · 7 days',dn+' of '+due+' check-ins','#/habits'],['target',avg+'<small>%</small>','average goal progress',ag.length+' active goal'+(ag.length===1?'':'s'),'#/goals'],['journal',jn,'journal entries this week',jn?'keep it going':'write one today','#/journal']];
+ return`<section class="hw-stats rv">${T.map(([i,v,l,x,h])=>`<a class="hw-st" href="${h}"><span class="hw-i">${ic(i)}</span><b>${v}</b><span class="hw-l">${l}</span><small>${x}</small></a>`).join('')}</section>`}
+function hwWeek(){const n=dnum(td()),M=calItems(n,n+6);let any=0;
+ const cols=[...Array(7)].map((_,k)=>{const ds=fromN(n+k),L=(M[n+k]||[]).filter(x=>x.k!=='target'),D=new Date(ds+'T12:00');any+=L.length;
+  return`<a class="hw-d${k?'':' now'}" href="#/day/${ds}"><span class="hw-dh"><small>${esc(D.toLocaleDateString(undefined,{weekday:'short'}))}</small><b>${D.getDate()}</b></span>${L.slice(0,3).map(x=>`<span class="hw-it${x.done?' done':''}" style="--c:${colOf(x.g&&x.g.id?x.g:null)}">${x.time?`<i>${esc(fmtTime(x.time))}</i>`:''}${esc(x.t)}</span>`).join('')}${L.length>3?`<span class="hw-mo">+${L.length-3} more</span>`:L.length?'':'<span class="hw-free">Free</span>'}</a>`}).join('');
+ return`<section class="rv"><div class="st-h"><h3>This week</h3>${hwLink('#/cal','Calendar')}</div><div class="hw-week">${cols}</div></section>`}
+function hwGoals(){const gs=active().filter(g=>!g.parent).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||urgency({g:a,s:nextStep(a)||{}},{g:b,s:nextStep(b)||{}})).slice(0,6);if(!gs.length)return'';
+ return`<section class="rv"><div class="st-h"><h3>Goals in motion</h3>${hwLink('#/goals','All goals')}</div><div class="hw-goals">${gs.map(g=>{const p=pct(g),nx=nextStep(g);
+  return`<button class="hw-g" style="${cvar(g)}" data-act="open" data-id="${g.id}" data-vt="${g.id}"><span class="hw-gt"><i></i>${esc(g.title)}</span><span class="hw-bar"><i style="width:${p}%"></i></span><span class="hw-gn"><b>${p}%</b>${nx?`<span class="ell">Next: ${esc(nx.title)}</span>`:'<span>No open steps</span>'}</span></button>`}).join('')}</div></section>`}
+function hwJournal(){const es=S.entries.filter(e=>e.type==='note').sort((a,b)=>b.t-a.t).slice(0,3);
+ return`<section class="rv"><div class="st-h"><h3>Journal</h3><span style="display:flex;gap:14px"><button class="link" data-act="addEntry">${ic('edit')}Write</button>${hwLink('#/journal','All')}</span></div><div class="hw-box">${es.length?es.map(e=>{const tx=e.private?'Private entry':(e.title||e.text||'').replace(/<[^>]+>/g,' ');
+  return`<button class="hw-r" data-act="wrOpen" data-id="${e.id}"><span class="hw-rt">${e.mood?esc(e.mood)+' ':''}${esc(trunc(tx.trim()||'Moment',90))}</span><small>${esc(fmtAt(e.t))}</small></button>`}).join(''):'<p class="small muted hw-empty">Nothing written yet this week. A line or two is enough.</p>'}</div></section>`}
+function hwLists(){const L=(typeof lists==='function'?lists():S.lists||[]).filter(l=>l&&l.items).sort((a,b)=>(b.mu||b.u||0)-(a.mu||a.u||0)).slice(0,4);if(!L.length)return'';
+ return`<section class="rv"><div class="st-h"><h3>Lists</h3>${hwLink('#/lists','All lists')}</div><div class="hw-box">${L.map(l=>{const it=Object.values(l.items).filter(x=>x&&!x.del),d=it.filter(x=>x.done).length;
+  return`<a class="hw-r" href="#/list/${l.id}"><span class="hw-rt">${esc(l.emoji||'📝')} ${esc(l.title)}</span><small>${d} of ${it.length}</small></a>`}).join('')}</div></section>`}
+function hwThreads(){const T=(S.threads||[]).filter(t=>t.status!=='done').sort((a,b)=>(b.u||0)-(a.u||0)).slice(0,3);if(!T.length)return'';
+ return`<section class="rv"><div class="st-h"><h3>Threads</h3>${hwLink('#/threads','All threads')}</div><div class="hw-box">${T.map(t=>{const u=(t.ups||[]).slice().sort((a,b)=>b.t-a.t)[0];
+  return`<a class="hw-r" href="#/thread/${t.id}"><span class="hw-rt"><b>${esc(t.title)}</b>${u?`<span class="ell">${esc(trunc(String(u.x||'').replace(/<[^>]+>/g,' '),80))}</span>`:''}</span><small>${(t.ups||[]).length}</small></a>`}).join('')}</div></section>`}
 {const _vt=vToday;vToday=function(){const o=_vt.apply(this,arguments);if(!WIDE.matches)return o;
  const t=document.createElement('template');t.innerHTML=o;const N=[...t.content.children],top=[],L=[],Rt=[],end=[];
  N.forEach(n=>{const k=hSide(n);if(k==='full')(L.length||Rt.length?end:top).push(n);else(k==='r'?Rt:L).push(n)});
  if(!L.length||!Rt.length)return o;const col=(c,a)=>`<div class="hcol ${c}">${a.map(n=>n.outerHTML).join('')}</div>`;
- return top.map(n=>n.outerHTML).join('')+`<div class="hgrid">${col('hcol-a',L)}${col('hcol-b',Rt)}</div>`+end.map(n=>n.outerHTML).join('')};VIEWS.today=vToday}
+ const ex=(fn,dst)=>{try{const h=fn();if(h){const x=document.createElement('template');x.innerHTML=h;dst.push(...x.content.children)}}catch(e){console.error(e)}};
+ ex(hwGoals,L);ex(hwJournal,Rt);ex(hwLists,Rt);ex(hwThreads,Rt);const st=[];ex(hwStats,st);ex(hwWeek,st);
+ return top.map(n=>n.outerHTML).join('')+st.map(n=>n.outerHTML).join('')+`<div class="hgrid">${col('hcol-a',L)}${col('hcol-b',Rt)}</div>`+end.map(n=>n.outerHTML).join('')};VIEWS.today=vToday}
 WIDE.addEventListener('change',()=>{if(cur.p==='today')render(false)});
 
 /* ---------- canvas: goals, journal and threads edge to edge ---------- */
