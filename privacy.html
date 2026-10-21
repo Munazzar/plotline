@@ -60,14 +60,16 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <a class="brand" href="./"><img src="icon-192.png" alt="">Plotlines</a>
 <header>
 <h1>Privacy Policy</h1>
-<div class="meta">Effective September 30, 2026 · Applies to the Plotlines Android app and the Plotlines web app</div>
+<div class="meta">Effective October 21, 2026 · Applies to the Plotlines Android app and the Plotlines web app</div>
 </header>
 
 <section class="summary" aria-labelledby="sum">
 <h2 id="sum">The short version</h2>
 <ul>
 <li>Everything you write in Plotlines (goals, steps, habits, journal moments, photos) is stored on your own device.</li>
-<li>Plotlines has no servers and no database. We never receive, see or store your data.</li>
+<li>Plotlines has no servers of its own and we never receive, see or store your data. The one exception you control: if you share a single goal, habit, step or list with someone, an end-to-end encrypted copy of just that item goes to Plotlines’ sharing space on Google Firebase (<a href="#device">section 6</a>).</li>
+<li>Activity from your phone (steps, sleep, workouts, screen time) is read on the phone only when you allow it, and kept with the rest of your data.</li>
+<li>AI features run on your device by default. Nothing goes to an AI service unless you set up your own AI server (<a href="#ai">section 5</a>).</li>
 <li>If you turn on sync, your data is copied to a private, hidden folder in <b>your own</b> Google Drive. Only Plotlines on your devices can read it, and only you can delete it.</li>
 <li>No accounts with us, no analytics, no advertising, no tracking, no cookies, and we never sell or share your data.</li>
 <li>You can export or erase everything at any time.</li>
@@ -79,8 +81,8 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <li><a href="#collect">What Plotlines handles</a></li>
 <li><a href="#storage">How and where data is stored</a></li>
 <li><a href="#sync">Google sign-in and Drive sync</a></li>
-<li><a href="#ai">AI planning</a></li>
-<li><a href="#device">Notifications, widgets and files</a></li>
+<li><a href="#ai">AI and voice</a></li>
+<li><a href="#device">Notifications, widgets, sharing and files</a></li>
 <li><a href="#perms">Android permissions</a></li>
 <li><a href="#third">Third-party services</a></li>
 <li><a href="#dont">What we never do</a></li>
@@ -105,13 +107,17 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <li>Habits and routines: names, schedules, amounts, reminders, routine steps, daily check-offs, rest days, pauses, and for habits you are breaking: start time, slips (time, trigger and optional note), urges resisted, daily counts and any cost or time figures you enter.</li>
 <li>Journal moments: titles, text and photos, plus automatic entries such as completed steps and milestones.</li>
 <li>Weekly reviews you write.</li>
+<li>Threads (quick notes and chains of thought) and lists, with their items, due dates and check-offs.</li>
+<li>Your own activity trackers (for example yoga minutes or pages read) and the amounts you log each day.</li>
+<li>Activity read on your Android phone, only for the kinds you allow: steps (including steps by hour), distance, calories, sleep and workouts from Health Connect, your phone’s step counter, minutes spent in each app (screen time), and time spent at places you saved. It is kept for up to 180 days.</li>
+<li>Insights Plot writes for you, and conversations with the assistant, if you use them.</li>
 </ul>
 <h3>Settings and preferences</h3>
 <p>Your first name (optional), theme and display choices, card styles, layout choices, reminder preferences, and a PIN if you set one (stored only as a one-way hash).</p>
 <h3>Google account details (only if you turn on sync)</h3>
 <p>The email address of the Google account you connect, and a short-lived access token that lets Plotlines read and write its own sync file. See <a href="#sync">section 4</a>.</p>
 <h3>What Plotlines does not collect</h3>
-<p>Plotlines does not collect your location (places you save for automatic check-offs stay in your own data; see <a href="#third">section 8</a> for address search), contacts, device identifiers, advertising IDs, usage analytics, crash reports, health-sensor data, or any information from other apps. Some of the content you write may be personal or sensitive (for example, a habit you are trying to break or a note about your health). That content stays in your storage, as described below, and is never sent to us.</p>
+<p>Plotlines does not send us anything. It does not collect contacts, device identifiers, advertising IDs, usage analytics or crash reports. Activity, screen time and places (above) are read on your phone only after you allow them in Android, stay in your own data, and are never sent to us. See <a href="#third">section 8</a> for address search.</p>
 
 <h2 id="storage">3. How and where your data is stored</h2>
 <p>This is every place Plotlines keeps information.</p>
@@ -139,30 +145,38 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 </ul>
 <p class="note">Plotlines’ use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements. Data from Google is used only to provide sync to you. It is never used for advertising, never sold, never transferred to others, and never read by a person.</p>
 
-<h2 id="ai">5. AI planning</h2>
-<p>Plotlines does not connect to any AI service. The AI Plan feature builds a text prompt on your device. You copy it and paste it into an assistant of your choice (for example Claude, ChatGPT or Gemini), then paste the reply back into Plotlines, which checks and imports it on your device.</p>
+<h2 id="ai">5. AI and voice</h2>
+<p>Plotlines’ assistant (Plot), Insights, Plan with AI, the Agent and “Fill in today” for your trackers all use the AI you pick in Settings › AI &amp; voice:</p>
 <ul>
-<li>A <b>New plan</b> prompt contains what you type into the box.</li>
-<li>A <b>Change of plans</b> prompt also contains your current plan: goal titles, reasons, areas, dates and steps.</li>
+<li><b>On-device AI</b> (the default). An open-source model is downloaded once (from Hugging Face, with the code that runs it from jsDelivr) and then runs on your phone or in your browser. Your questions and data stay on your device.</li>
+<li><b>Your own AI server</b>, only if you enter one. The question you ask and the data needed to answer it are sent to the address you entered, and are handled under that server’s own terms. We never see them.</li>
+<li><b>Copy and paste.</b> Plan with AI can also build a prompt that you copy into an assistant of your choice (for example Claude, ChatGPT or Gemini) and paste the reply back. Read the prompt before you paste it, and leave out anything you don’t want to share.</li>
 </ul>
-<p>What you paste into an AI assistant is handled under that provider’s own privacy policy and account settings, not ours. Read the prompt before you paste it, and leave out anything you don’t want to share.</p>
+<p>What the AI is given: <b>Insights</b> get a short summary of your last two weeks (habit check-ins, goal progress and next steps, step, sleep and screen-time averages, tracker totals, and up to five recent journal entries). <b>Fill in today</b> gets today’s journal entries, thread notes, finished day goals and workouts. Entries you mark private are never included.</p>
+<p><b>Voice.</b> Talking to Plot and “Hey Plot” use speech recognition on your device (Android’s recognizer, or your browser’s on the web; some browsers send audio to their maker’s speech service, under that maker’s policy). Spoken replies use your device’s text-to-speech. Plotlines does not record or keep audio.</p>
+<p><b>Agent connections.</b> If you connect Google Calendar or Gmail in Settings › Agent &amp; connections, the agent reads events or messages straight from Google when a task needs them, and the AI you picked works with what it reads. You can disconnect at any time.</p>
 
 <h2 id="device">6. Notifications, widgets, sharing and files</h2>
 <ul>
 <li><b>Reminders and notifications</b> (step reminders, goal check-ins, habit reminders, focus timers, milestones) are scheduled on your device using Android’s alarm service, or by your browser while the web app is open. No push server is involved. Notification text can appear on your lock screen, depending on your device’s notification settings.</li>
 <li><b>Home-screen widgets</b> show titles, progress and habit status on your home screen. Anyone who can see your home screen can see them. Taps on widgets and on the “Mark done” button in notifications are stored on your device until the app next opens.</li>
-<li><b>Sharing a goal</b> opens your device’s share sheet with the goal as text. Where it goes is up to you.</li>
+<li><b>Sending a goal as text</b> opens your device’s share sheet. Where it goes is up to you.</li>
+<li><b>Doing it together.</b> When you share one goal, habit, step or list with people you invite, an end-to-end encrypted copy of just that item (its title, steps and mode, and each person’s name, check-ins and reactions) is kept in Plotlines’ sharing space on Google Firebase so everyone in it stays in step. Only the people in it can read it. When the owner stops sharing, the shared copy is deleted; anyone who leaves has their progress removed from it.</li>
 <li><b>Calendar export</b> creates a standard calendar file that you open in your calendar app. That app then handles the events.</li>
 <li><b>Links</b> to AI assistants and to Google sign-in open in your browser or the relevant app.</li>
 </ul>
 
 <h2 id="perms">7. Android permissions</h2>
+<p>Each one is asked for only when you use the feature that needs it, and you can turn any of them off in Android settings.</p>
 <ul>
-<li><b>Internet</b>: only for Google sign-in and Drive sync when you turn sync on.</li>
-<li><b>Notifications</b>: to show the reminders you set.</li>
-<li><b>Schedule exact alarms</b>: so reminders arrive on time.</li>
-<li><b>Run at startup</b> (receive boot completed): to restore scheduled reminders after your phone restarts.</li>
-<li><b>Vibrate</b>: short feedback when you check something off.</li>
+<li><b>Internet</b>: for sync, sharing, address search, downloading an on-device AI model, and your own AI server if you set one.</li>
+<li><b>Notifications, exact alarms, full-screen alerts, run at startup, vibrate and wake lock</b>: to deliver the reminders you set on time, restore them after a restart, and give feedback when you check something off.</li>
+<li><b>Physical activity</b> (activity recognition) and <b>Health Connect</b> read access to steps, distance, calories, sleep and exercise: for the Activity page and automatic habit check-offs. Plotlines never writes to Health Connect.</li>
+<li><b>Usage access</b>: to show minutes spent in each app (screen time). Only minutes per app are read, never what you do inside them.</li>
+<li><b>Location</b>, including in the background: only if you save a place for an automatic check-off (see below).</li>
+<li><b>Microphone</b> and a foreground service: for talking to Plot and “Hey Plot”, only while listening is on.</li>
+<li><b>Biometrics</b>: to unlock Plotlines with your fingerprint or face if you turn on App lock.</li>
+<li><b>Display over other apps</b> and <b>ignore battery optimisation</b>: so the assistant and reminders can appear when you call them, and are not stopped by battery saving.</li>
 </ul>
 <p>Location is asked for only if you save a place for an automatic check-off, and is used on the phone to notice when you are there. Plotlines does not request camera, storage or contacts permissions. When you add a photo, Android’s own camera or file picker opens, and Plotlines receives only the image you choose.</p>
 
@@ -171,7 +185,10 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <li><b>Google</b> (sign-in and Drive), only if you turn on sync. Google’s <a href="https://policies.google.com/privacy" rel="noopener">Privacy Policy</a> applies to data stored in your Google account.</li>
 <li><b>GitHub Pages</b> hosts the web app. Like any web host, GitHub may record technical information such as your IP address when your browser loads the site. See <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub’s Privacy Statement</a>. The Android app loads its pages from inside the app. It contacts GitHub Pages only if you choose browser sign-in for sync, because Google returns you to the web app’s address to finish signing in.</li>
 <li><b>Photon / OpenStreetMap</b> (photon.komoot.io), only when you add a place: the words you type to search an address, and a rounded position (about 1 km) to rank results and suggest spots nearby. When you tap “use my location”, a position rounded to about 10 m is sent once to look up the address; moving the pin on the map does the same. The small map loads its images from OpenStreetMap’s tile server (tile.openstreetmap.org), which sees which area is shown. Nothing else is sent, and no account is involved.</li>
-<li><b>AI assistants and share targets</b> you choose to use, as described in sections 5 and 6.</li>
+<li><b>Google Firebase</b>, only when you share an item with others (section 6).</li>
+<li><b>Hugging Face and jsDelivr</b>, only to download an on-device AI model and the code that runs it. Like any download, they see your IP address.</li>
+<li><b>Google Calendar and Gmail</b>, only if you connect them to the agent (section 5).</li>
+<li><b>AI assistants, AI servers and share targets</b> you choose to use, as described in sections 5 and 6.</li>
 </ul>
 <p>Plotlines includes no third-party SDKs, analytics libraries, advertising networks or crash reporters. Fonts are bundled with the app and are not loaded from outside services.</p>
 
@@ -218,7 +235,7 @@ footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:v
 <h2 id="contact">15. Contact</h2>
 <p>Questions or requests about this policy or your privacy: <b>[add your contact email]</b>.</p>
 
-<footer>Plotlines · Privacy Policy · Effective September 30, 2026 · <a href="./">Open Plotlines</a></footer>
+<footer>Plotlines · Privacy Policy · Effective October 21, 2026 · <a href="./">Open Plotlines</a></footer>
 </div>
 </body>
 </html>

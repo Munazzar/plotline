@@ -42,7 +42,7 @@ Object.assign(IC,{
  unfull:'<path d="M9 4v3.4A1.6 1.6 0 0 1 7.4 9H4M20 9h-3.4A1.6 1.6 0 0 1 15 7.4V4M15 20v-3.4a1.6 1.6 0 0 1 1.6-1.6H20M4 15h3.4A1.6 1.6 0 0 1 9 16.6V20"/>',
  print:'<path d="M7 8.4V4.2a.8.8 0 0 1 .8-.8h8.4a.8.8 0 0 1 .8.8v4.2"/><path d="M7 17.2H5.4a2 2 0 0 1-2-2v-4.8a2 2 0 0 1 2-2h13.2a2 2 0 0 1 2 2v4.8a2 2 0 0 1-2 2H17"/><rect x="7" y="13.6" width="10" height="7" rx=".8"/>',
  share:'<path d="M12 14.6V3.6M8.2 7.2 12 3.4l3.8 3.8"/><path d="M8.4 10.2H7a2 2 0 0 0-2 2v6.4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.4a2 2 0 0 0-2-2h-1.4"/>',
- thread:'<circle cx="6" cy="5.6" r="1.9"/><circle cx="6" cy="12" r="1.9"/><circle cx="6" cy="18.4" r="1.9"/><path d="M6 7.5v2.6M6 13.9v2.6M10.6 5.6h9M10.6 12h6.6M10.6 18.4h7.8"/>',
+ thread:'<path d="M8.2 3.6h10.2a2 2 0 0 1 2 2v10.2"/><path d="M4 8.2a2 2 0 0 1 2-2h9.6a2 2 0 0 1 2 2v7.4l-4.8 4.8H6a2 2 0 0 1-2-2z"/><path d="M17.6 15.6h-3a1.8 1.8 0 0 0-1.8 1.8v3"/><path d="M7.4 10.6h6.8M7.4 13.8h4"/>',/* a stack of sticky notes: quick notes and chains of thought */
  pin:'<path d="M9.4 3.6h5.2M10.2 3.6v5.2l-3.3 3.6v1.8h10.2v-1.8l-3.3-3.6V3.6M12 14.2v6.2"/>',
  link:'<path d="M10.2 13.8a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.1 1.1"/><path d="M13.8 10.2a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.1-1.1"/>',
  lock:'<rect x="5" y="10.6" width="14" height="10" rx="2.4"/><path d="M8.2 10.6V7.4a3.8 3.8 0 0 1 7.6 0v3.2"/>',
@@ -199,9 +199,36 @@ function canvasMark(){R.toggleAttribute('data-canvas',canvasPg());R.dataset.pgx=
  try{if(!was&&canvasPg()&&!document.fullscreenElement&&R.requestFullscreen)R.requestFullscreen({navigationUI:'hide'}).catch(()=>{});else if(was&&document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}}}
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&S.settings.focus&&canvasPg()){S.settings.focus=false;save();applyFocus(true)}});
 
+/* ---------- navigation: pages grouped by what they're for, the same on the rail and the full-screen bar ---------- */
+const NAVG=[['Today',['today','cal']],['Plan',['goals','habits','lists','activity']],['Capture',['journal','threads','vista','bench']],['AI',['ask','agent','chats']]];
+const NAV_ORD=NAVG.flatMap(g=>g[1]);
+/* the page list (key, name, icon) is index.html's own; read it off the rail it builds */
+let PAGES=[];
+const navGroups=()=>{const rest=PAGES.filter(p=>p[0]!=='settings'&&!NAV_ORD.includes(p[0]));return[...NAVG.map(([n,ks])=>[n,ks.map(k=>PAGES.find(p=>p[0]===k)).filter(Boolean)]),['More',rest]].filter(g=>g[1].length)};
+{const _bc=buildChrome;buildChrome=function(){_bc.apply(this,arguments);const n=document.querySelector('#rail .navs');if(!n)return;
+ PAGES=[...n.querySelectorAll('a.nav[data-nav]')].map(a=>[a.dataset.nav,(a.querySelector('span')||{}).textContent||a.dataset.nav,a.querySelector('svg')?a.querySelector('svg').outerHTML:'']);
+ n.innerHTML='<span class="nav-ind"></span>'+navGroups().map(([gn,L],i)=>(i?'<i class="nav-sep" aria-hidden="true"></i>':'')+L.map(([k,l,svg])=>`<a class="nav" href="#/${k}" data-nav="${k}">${svg}<span>${esc(l)}</span></a>`).join('')).join('');
+ if(typeof navMark==='function')navMark();if(S.settings.focus&&typeof buildFloater==='function')buildFloater()}}
+/* full screen: a slim bar with the page you're on (tap for every page, grouped), search, and a clear way out */
+buildFloater=function(){let f=$('#fnav');if(!S.settings.focus){f&&f.remove();return}if(!f){f=document.createElement('div');f.id='fnav';document.body.appendChild(f)}
+ const on=(({goal:'goals',habit:'habits',ai:'ask',road:'vista',map:'vista',thread:'threads',list:'lists',day:'cal'})[cur.p]||cur.p),cp=PAGES.find(p=>p[0]===on)||(on==='settings'?['settings','Settings',ic('settings')]:PAGES[0]||['today','Home',ic('home')]);let n=0;
+ f.innerHTML=`<div class="fn-bar"><button class="fn-t" data-act="fnavToggle" aria-expanded="false" aria-label="Pages">${cp[2]}<span>${esc(cp[1])}</span>${ic('next','fn-m')}</button><button class="fn-b" data-act="findOpen" aria-label="Find anything" title="Find anything">${ic('search')}</button><button class="fn-b" data-act="focusMode" aria-label="Exit full screen" title="Exit full screen (F)">${ic('unfull')}</button></div>
+ <div class="fn-p" role="menu">${navGroups().map(([gn,L])=>`<div class="fn-g" style="--n:${n++}">${esc(gn)}</div>`+L.map(([k,l,svg])=>`<a href="#/${k}" class="fn-i${k===on?' on':''}" role="menuitem" style="--n:${n++}" data-act="fnavGo">${svg}<span>${esc(l)}</span></a>`).join('')).join('')}<a href="#/settings" class="fn-i fn-s${on==='settings'?' on':''}" role="menuitem" style="--n:${n++}" data-act="fnavGo">${ic('settings')}<span>Settings</span></a></div>`};
+buildFloater();addEventListener('hashchange',()=>setTimeout(()=>{if(S.settings.focus)buildFloater()},0));
+
+/* ---------- the gear on each page opens the settings for that page, scrolled to the right panel ---------- */
+const GEARS={today:['look','Home page'],habits:['notif','Reminders'],habit:['notif','Reminders'],day:['notif','Reminders'],cal:['notif','Reminders'],goals:['notif','Reminders'],goal:['notif','Reminders'],
+ journal:['privacy','Privacy'],threads:['data','Your data'],thread:['data','Your data'],activity:['auto','Automations'],lists:['share','Sharing'],list:['share','Sharing'],
+ ask:['voice','Assistant'],ai:['voice','Assistant'],chats:['voice','Assistant'],agent:['agent','Connections'],bench:['look','Theme'],road:['look','Theme'],map:['look','Theme']};
+let GEAR_H='';
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('#view a.gearb,#view a[href="#/settings"]'),m=a&&GEARS[cur.p];if(!m)return;e.preventDefault();e.stopPropagation();GEAR_H=m[1];go('settings/'+m[0])},true);
+function gearScroll(){if(!GEAR_H||cur.p!=='settings')return;const h=[...document.querySelectorAll('#view h3')].find(x=>x.textContent.trim()===GEAR_H);GEAR_H='';if(!h)return;const p=h.closest('section,.panel')||h;
+ /* after the router has put the page back at the top */
+ setTimeout(()=>{window.scrollTo({top:Math.max(0,p.getBoundingClientRect().top+scrollY-90),behavior:reduced()?'auto':'smooth'});p.classList.add('gear-hl');setTimeout(()=>p.classList.remove('gear-hl'),2000)},450)}
+
 /* ---------- after each page paint ---------- */
 let MO=null;
-function afterPaint(){canvasMark();udkInit()}
+function afterPaint(){canvasMark();udkInit();gearScroll()}
 function boot(){const v=$('#view');if(v&&!MO){MO=new MutationObserver(()=>afterPaint());MO.observe(v,{childList:true})}afterPaint();
  try{applyTheme()}catch(e){}
  if(document.querySelector('#rail .nav')){buildChrome();if(typeof navMark==='function')navMark()}}
