@@ -172,6 +172,26 @@ document.addEventListener('input',e=>{const t=e.target;if(!t.dataset||!t.dataset
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.vp)return;const k=t.dataset.vp;
  if(k==='voice'){vpSave({voice:t.value});hear(t.value);return}if(k==='rate'||k==='pitch'){vpSave({[k]:+t.value});hear(vpick().voice);return}if(k==='all'){vpSave({vall:t.checked});render(false)}});
 
+/* quick settings from inside a conversation: voice, sounds and the model, without leaving it */
+function vpQuick(){const p=vpick(),lang=(vset().lang||navigator.language||'en').toLowerCase().split('-')[0];if(!VL)VL=voiceList();
+ const G=S.settings.assist&&S.settings.assist.vg||'',L=(VL||[]).filter(v=>p.all||String(v.l).toLowerCase().startsWith(lang)).filter(v=>!G||vGender(v)===G).sort((a,b)=>(a.net-b.net)||(b.q-a.q)||a.n.localeCompare(b.n)).slice(0,80),sty=VSTY.find(x=>Math.abs(x[2]-p.rate)<.01&&Math.abs(x[3]-p.pitch)<.01);
+ return`<div class="field"><label>Voice</label><div class="as-cue"><select data-vp="voice" aria-label="Voice"><option value="">Default voice</option>${L.map((v,i)=>`<option value="${esc(v.n)}" ${p.voice===v.n?'selected':''}>${esc(vName(v,i))}</option>`).join('')}</select><button class="ibtn" data-act="qsHear" aria-label="Hear this voice">${ic('play')}</button></div></div>
+ <div class="chips vp-g" role="group" aria-label="Show voices">${[['','All'],['m','Male'],['f','Female']].map(([k,n])=>`<button class="chip ${G===k?'on':''}" data-act="vpG" data-g="${k}">${n}</button>`).join('')}</div>
+ <div class="chips vp-sty" role="group" aria-label="Voice style">${VSTY.map(([k,n,r,pi])=>`<button class="chip ${sty&&sty[0]===k?'on':''}" data-act="vpStyle" data-r="${r}" data-p="${pi}">${n}</button>`).join('')}</div>`}
+function qsHTML(){return`<div id="asQs"><h2>${esc(nm())} settings</h2><p class="small muted">Changes apply right away. Your conversation stays where it is.</p>
+ <section class="qs-s"><h3>Voice and sounds</h3>${vpQuick()}${window.PLOT_ASSIST&&PLOT_ASSIST.quickHTML?PLOT_ASSIST.quickHTML():''}</section>
+ <section class="qs-s"><h3>AI model</h3>${insEngineHTML()}${modelCard('qs')||''}</section>
+ <div class="actions"><button class="btn ghost" data-act="qsAll">All AI & voice settings</button><button class="btn pri" data-act="close">Done</button></div></div>`}
+function aiQuick(keep){const sh=$('#sheet'),y=keep&&sh?sh.scrollTop:0;openSheet(qsHTML());document.documentElement.classList.add('qs-on');if(keep&&sh)sh.scrollTop=y}
+window.aiQuick=aiQuick;
+{const _c=closeSheet;closeSheet=function(){document.documentElement.classList.remove('qs-on');return _c.apply(this,arguments)}}
+{const _o=openSheet;openSheet=function(){document.documentElement.classList.remove('qs-on');return _o.apply(this,arguments)}}
+/* settings changed while the sheet is open: draw it again (not while typing in it) */
+{const _r=render;render=function(){const x=_r.apply(this,arguments);const ae=document.activeElement;if($('#asQs')&&$('#sheet').classList.contains('on')&&!(ae&&ae.matches&&ae.matches('#sheet input:not([type=radio]):not([type=checkbox]):not([type=range]),#sheet textarea')))aiQuick(true);return x}}
+{const _a=ACT.askSettings;ACT.askSettings=(...a)=>$('#asQs')?aiQuick(true):_a&&_a(...a)}
+Object.assign(ACT,{qsHear:()=>hear(vpick().voice),qsAll:()=>{if(LV.open)lvMin();else if(window.PLOT_ASSIST&&document.querySelector('#asv:not(.min)'))ACT.asMin();closeSheet();setTimeout(()=>go('settings/voice'),60)}});
+{const _b=window.__back;window.__back=()=>{if(document.documentElement.classList.contains('qs-on')&&$('#sheet').classList.contains('on')){closeSheet();return true}return _b?_b():false}}
+
 /* ---------------- Live: a voice conversation ---------------- */
 const LV={open:false,st:'idle',hist:[],pend:[],muted:false,gen:0,ctl:null,you:'',ai:'',typing:false};
 const LV_SYS=()=>{const s=insSet(),pr=s.profile&&s.profile.text,name=S.settings.name;return`You are ${nm()}, ${name?name+'’s':'the user’s'} friendly, curious companion inside Plotline, their app for goals, habits, routines, a journal, lists and threads. You are in a live voice conversation, so talk like a real person: warm, natural, one to three short sentences, no lists, no markdown, no emojis. Ask a short follow-up question when it keeps the conversation going, and give people room to think. Talk about anything they bring up: their day, feelings, ideas, plans, questions about the world, advice. Use the DATA about them when it helps, and never invent facts about them.${pr?`\n\nWHAT YOU KNOW ABOUT THEM\n${pr}`:''}\n\n${ACT_SYS} When you offer something on your own, ask in your spoken sentence, like "Want me to make that a habit?". When they ask you to make something, it's already been done for them.${window.AGENT?'\n\n'+AGENT.sys():''}\n\n${aiSafety()}`};
@@ -179,7 +199,7 @@ const BYE=/^(?:ok(?:ay)?\s*,?\s*)?(?:bye|goodbye|good bye|see you|see ya|talk (?
 const YES=/^(?:yes|yeah|yep|yup|sure|ok(?:ay)?|please|please do|do it|go ahead|add (?:it|them|that|those|both)|sounds good|let'?s do it|absolutely|of course|definitely)\b/i;
 const NO=/^(?:no|nope|nah|not now|no thanks|don'?t|skip it|never ?mind)\b/i;
 function lvEl(){let el=$('#live');if(el)return el;el=document.createElement('div');el.id='live';el.className='lv';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Talk with '+nm());
- el.innerHTML=`<div class="lv-glow" aria-hidden="true"></div><header class="lv-h"><span class="lv-nm"><b></b><small id="lvSt"></small></span><button class="ibtn" data-act="lvChat" aria-label="Open as chat" title="Open as chat">${ic('chat')}</button><button class="ibtn" data-act="lvEnd" aria-label="End conversation" title="End">✕</button></header>
+ el.innerHTML=`<div class="lv-glow" aria-hidden="true"></div><header class="lv-h"><span class="lv-nm"><b></b><small id="lvSt"></small></span><button class="ibtn" data-act="lvChat" aria-label="Open as chat" title="Open as chat">${ic('chat')}</button><button class="ibtn" data-act="asSet" aria-label="Settings" title="Settings">${ic('settings')}</button><button class="ibtn" data-act="lvMin" aria-label="Minimize" title="Minimize">${ic('minz')}</button><button class="ibtn" data-act="lvEnd" aria-label="End conversation" title="End">✕</button></header>
  <div class="lv-mid"><button class="lv-orb" id="lvOrb" data-act="lvOrb" aria-label="Talk"><span class="lv-o2"></span><span class="lv-o1"><span class="lv-o3"></span></span></button><p class="lv-hint" id="lvHint"></p></div>
  <div class="lv-cap" id="lvCap" aria-live="polite"></div>
  <form class="lv-type" data-form="lvSend" autocomplete="off" hidden><input id="lvTxt" maxlength="600" placeholder="Type instead…" enterkeyhint="send"><button class="btn pri sm">Send</button></form>
@@ -189,10 +209,14 @@ function lvEl(){let el=$('#live');if(el)return el;el=document.createElement('div
 function lvState(st,hint){LV.st=st;if(window.asHum)asHum(st==='think'&&LV.open);const el=$('#live');if(!el)return;el.dataset.st=st;el.querySelector('.lv-nm b').textContent=nm();
  $('#lvSt').textContent={listen:'Listening… take your time',think:'Thinking…',speak:'Speaking',idle:LV.muted?'Mic is off':'Tap the orb to talk',setup:'Getting ready'}[st]||'';
  $('#lvHint').textContent=hint!=null?hint:st==='listen'?'Tap the orb when you’re done':st==='speak'?'Tap the orb to interrupt':st==='think'?'':LV.muted?'Turn the mic on to talk':'';
- const m=$('#lvMute');if(m){m.innerHTML=ic(LV.muted?'micoff':'mic');m.classList.toggle('off',LV.muted)}}
+ const m=$('#lvMute');if(m){m.innerHTML=ic(LV.muted?'micoff':'mic');m.classList.toggle('off',LV.muted)}lvMiniPaint()}
+/* minimized: the talk carries on behind a small bubble */
+function lvMiniPaint(){if(window.aiMini)aiMini('lvMini',LV.open&&LV.min?{open:'lvBack',end:'lvEnd',name:nm(),st:$('#lvSt')?.textContent||'',state:{listen:'lis',speak:'spk',think:'busy'}[LV.st]||''}:null)}
+function lvMin(){const el=$('#live');if(!el||!LV.open)return;LV.min=true;document.activeElement?.blur?.();el.classList.remove('on');el.classList.add('min');document.documentElement.classList.remove('lv-on');lvMiniPaint()}
+function lvBack(){const el=$('#live');if(!el||!LV.open)return;LV.min=false;el.classList.remove('min');document.documentElement.classList.add('lv-on');requestAnimationFrame(()=>el.classList.add('on'));lvMiniPaint()}
 function lvCap(){const c=$('#lvCap');if(!c)return;const ready=aiReady()&&!MM.busy;
  c.innerHTML=`${LV.you?`<p class="lv-you">${esc(LV.you)}</p>`:''}${LV.ai?`<p class="lv-ai">${esc(LV.ai)}</p>`:''}${actChips(LV.pend,'lvAct')}${ready||LV.you||LV.ai?'':modelCard('live')||''}`;c.scrollTop=c.scrollHeight}
-function liveOpen(first,o){if(window.PLOT_ASSIST&&PLOT_ASSIST.close)PLOT_ASSIST.close();
+function liveOpen(first,o){if(LV.open&&LV.min&&!(o&&o.resume)){lvBack();if(first)setTimeout(()=>lvHeard(first),350);return}if(window.PLOT_ASSIST&&PLOT_ASSIST.close)PLOT_ASSIST.close();
  /* talk mode is one conversation in Conversations: it carries on the one just used (or a resumed one), else starts fresh */
  if(o&&o.resume&&window.PLOT_ASSIST&&PLOT_ASSIST.resume)PLOT_ASSIST.resume(o.resume);LV.resumed=!!(o&&o.resume);
  const prev=window.PLOT_ASSIST&&PLOT_ASSIST.begin?PLOT_ASSIST.begin('talk'):[];LV.hist=prev.slice(-6).flatMap(t=>[{role:'user',content:t.q},{role:'assistant',content:t.a}]);
@@ -200,8 +224,8 @@ function liveOpen(first,o){if(window.PLOT_ASSIST&&PLOT_ASSIST.close)PLOT_ASSIST.
  document.documentElement.classList.add('lv-on');requestAnimationFrame(()=>el.classList.add('on'));try{NA&&NA.wakePause&&NA.wakePause(true)}catch(e){}lvState('idle');lvCap();
  if(first)setTimeout(()=>lvHeard(first),350);else if(!aiReady()&&!MM.busy)lvState('idle','');else setTimeout(()=>lvGreet(),350)}
 function lvGreet(){const h=new Date().getHours(),n=S.settings.name;const g=LV.resumed?'Let’s pick up where we left off. Go ahead.':LV.hist.length?'I’m listening.':`${h<12?'Good morning':h<17?'Hey':'Good evening'}${n?', '+n:''}. What’s on your mind?`;LV.ai=g;lvCap();lvSay(g)}
-function liveClose(){if(!LV.open)return;LV.open=false;if(window.asHum)asHum(false);LV.gen++;const vno=()=>{if(!LV.open&&document.querySelector('.vdlg')&&ACT.vcNo)ACT.vcNo()};vno();setTimeout(vno,500);setTimeout(vno,1500);try{LV.ctl&&LV.ctl.abort()}catch(e){}if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);if(window.PLOT_ASSIST)PLOT_ASSIST.hush();
- const el=$('#live');document.documentElement.classList.remove('lv-on');if(el){el.classList.remove('on');setTimeout(()=>{if(!LV.open)el.remove()},380)}try{NA&&NA.wakePause&&NA.wakePause(false)}catch(e){}}
+function liveClose(){if(!LV.open)return;LV.open=false;LV.min=false;lvMiniPaint();if(window.asHum)asHum(false);LV.gen++;const vno=()=>{if(!LV.open&&document.querySelector('.vdlg')&&ACT.vcNo)ACT.vcNo()};vno();setTimeout(vno,500);setTimeout(vno,1500);try{LV.ctl&&LV.ctl.abort()}catch(e){}if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);if(window.PLOT_ASSIST)PLOT_ASSIST.hush();
+ const el=$('#live');document.documentElement.classList.remove('lv-on');if(el){el.classList.remove('on','min');setTimeout(()=>{if(!LV.open)el.remove()},380)}try{NA&&NA.wakePause&&NA.wakePause(false)}catch(e){}}
 function lvListen(){if(!LV.open||LV.muted)return lvState('idle');if(typeof voiceAvail==='function'&&!voiceAvail()){LV.typing=true;$('.lv-type').hidden=false;lvState('idle','Voice isn’t available here. Type instead.');return}
  if(window.PLOT_ASSIST)PLOT_ASSIST.hush();const i=$('#lvIn');i.value='';LV.you='';lvCap();lvState('listen');if(window.asCue)asCue('start');voiceStart(i,$('#lvOrb'))}
 /* after the voice loop closes: what was said goes to the conversation; nothing heard leaves the orb waiting */
@@ -241,7 +265,7 @@ async function lvHeard(text){const g=++LV.gen,t=String(text).trim();if(!t)return
   catch(e){if(g!==LV.gen)return;return done('My agent couldn’t do that: '+(e&&e.message||e),[])}}
  const P=parseActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/[*#_`]/g,''));let say=P.clean.replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'').trim()||'Hmm, I’m not sure. Can you say that another way?';const care=aiCare(t,say);if(care)say+=' '+care;done(say,P.acts)}
 Object.assign(ACT,{
- liveOpen:()=>liveOpen(),lvEnd:()=>liveClose(),
+ liveOpen:()=>liveOpen(),lvEnd:()=>liveClose(),lvMin:()=>lvMin(),lvBack:()=>lvBack(),
  lvOrb:()=>{if(LV.st==='listen'){if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(false,true);return}if(LV.st==='speak'){if(window.PLOT_ASSIST)PLOT_ASSIST.hush();lvListen();return}if(LV.st==='think'){LV.gen++;try{LV.ctl&&LV.ctl.abort()}catch(e){}lvState('idle','Stopped. Tap to talk.');return}if(LV.muted){LV.muted=false}lvListen()},
  lvMute:()=>{LV.muted=!LV.muted;if(LV.muted&&VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);lvState(LV.st==='listen'?'idle':LV.st);if(!LV.muted&&LV.st==='idle')lvListen()},
  lvType:()=>{const f=$('.lv-type');if(!f)return;f.hidden=!f.hidden;if(!f.hidden){LV.muted=true;if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);lvState('idle','');setTimeout(()=>$('#lvTxt').focus(),50)}},
@@ -249,13 +273,13 @@ Object.assign(ACT,{
  lvAct:(d,el)=>{const a=LV.pend.find(x=>x.id===d.id);if(!a||a.st)return;try{const r=doAct(a);toast(esc((r&&r.say)||'Added'))}catch(e){toast('Couldn’t add that')}lvCap()}});
 Object.assign(FORM,{lvSend:f=>{const i=f.querySelector('input'),v=i.value.trim();if(!v)return;i.value='';lvHeard(v)}});
 window.liveOpen=liveOpen;
-{const _b=window.__back;window.__back=()=>{if(LV.open){liveClose();return true}return _b?_b():false}}
-window.addEventListener('hashchange',()=>{if(LV.open)liveClose()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&LV.open)liveClose()});
+{const _b=window.__back;window.__back=()=>{if(LV.open&&!LV.min){liveClose();return true}return _b?_b():false}}
+window.addEventListener('hashchange',()=>{if(LV.open&&!LV.min)liveClose()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&LV.open&&!LV.min&&!window.__escSheet)liveClose()});
 /* a long press on the orb in the top bar starts a conversation */
 {let lp=0,lpx=null;document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('.as-btn');if(!b)return;lpx=b;clearTimeout(lp);lp=setTimeout(()=>{lpx=null;vib();liveOpen()},520)},true);
  ['pointerup','pointercancel','pointerleave'].forEach(k=>document.addEventListener(k,()=>clearTimeout(lp),true));
- document.addEventListener('click',e=>{if(!lpx&&e.target.closest&&e.target.closest('.as-btn')&&LV.open){e.stopPropagation();e.preventDefault()}},true)}
+ document.addEventListener('click',e=>{if(!lpx&&e.target.closest&&e.target.closest('.as-btn')&&LV.open){e.stopPropagation();e.preventDefault();if(LV.min)lvBack()}},true)}
 /* Home: a way in */
 if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){return _ht()+`<button class="lv-home rv" data-act="liveOpen"><span class="lv-hor" aria-hidden="true"></span><span><b>Talk it through with ${esc(nm())}</b><small>A voice conversation about anything. ${esc(nm())} can turn it into goals, habits and lists.</small></span>${ic('live')}</button>`}}
 /* routes from the widget or a shortcut: assistant-live */
@@ -321,7 +345,9 @@ input[data-vp=rate],input[data-vp=pitch]{width:100%;accent-color:var(--accent)}
 .lv-home>span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}.lv-home small{color:var(--muted);font-size:12.5px;margin-top:2px}.lv-home>svg{width:22px;height:22px;color:var(--accent);flex:none}
 .lv-hor{width:40px;height:40px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,#fff8 0,transparent 42%),conic-gradient(from 200deg,var(--accent),var(--c-learning),var(--c-career),var(--c-health),var(--accent));box-shadow:0 8px 22px -8px var(--accent);will-change:transform;animation:lvBreathe 2.8s cubic-bezier(.37,0,.63,1) infinite alternate}
 .lv{position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;padding:max(14px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));background:var(--bg);color:var(--text);opacity:0;transform:scale(1.03);transition:opacity .3s,transform .35s var(--spring,ease)}
-.lv.on{opacity:1;transform:none}html.lv-on body{overflow:hidden}
+.lv.on{opacity:1;transform:none}.lv.min{visibility:hidden;pointer-events:none;transition:opacity .3s,transform .35s,visibility 0s .35s}
+html.qs-on #scrim{z-index:130}html.qs-on #sheet{z-index:131}
+.qs-s{margin:6px 0 16px}.qs-s>h3{font:700 15px var(--f-body);margin:0 0 8px}.qs-s .as-cue select{min-width:0}.qs-s .chips{margin:6px 0 10px}html.lv-on body{overflow:hidden}
 .lv-glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 45% at 50% 38%,color-mix(in srgb,var(--accent) 26%,transparent),transparent 70%),radial-gradient(50% 40% at 30% 80%,color-mix(in srgb,var(--c-learning,var(--accent)) 16%,transparent),transparent 70%);transition:opacity .5s}
 .lv[data-st=idle] .lv-glow{opacity:.55}
 .lv-h{position:relative;display:flex;align-items:center;gap:8px}.lv-nm{flex:1;display:flex;flex-direction:column}.lv-nm b{font:700 18px var(--f-body)}.lv-nm small{color:var(--muted);font-size:13px}

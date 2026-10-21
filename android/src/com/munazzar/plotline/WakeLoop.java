@@ -62,11 +62,21 @@ final class WakeLoop implements RecognitionListener {
         AudioManager am = (AudioManager) c.getSystemService(Context.AUDIO_SERVICE);
         if (am != null) {
             boolean media = am.isMusicActive();
+            loadLinked(c);
+            int ring = am.getRingerMode();
             for (int st : QUIET) {
-                if (muted.contains(st) || (st == AudioManager.STREAM_MUSIC && media)) continue;
+                if (muted.contains(st) || linked.contains(st) || (st == AudioManager.STREAM_MUSIC && media)) continue;
                 try {
                     if (am.isStreamMute(st)) continue;
                     am.adjustStreamVolume(st, AudioManager.ADJUST_MUTE, 0);
+                    /* on many phones this stream shares the ringer's volume, so muting it flips the phone to vibrate
+                       (a buzz and a "silent" icon every round): put it back and leave that stream alone from now on */
+                    if (am.getRingerMode() != ring) {
+                        am.adjustStreamVolume(st, AudioManager.ADJUST_UNMUTE, 0);
+                        try { if (am.getRingerMode() != ring) am.setRingerMode(ring); } catch (Exception e) {}
+                        linked.add(st); saveLinked(c);
+                        continue;
+                    }
                     muted.add(st);
                 } catch (Exception e) {}
             }
@@ -74,6 +84,20 @@ final class WakeLoop implements RecognitionListener {
         }
         mh.removeCallbacks(unmuteR);
         mh.postDelayed(unmuteR, ms);
+    }
+
+    /* streams found to switch the ringer when muted */
+    static final java.util.HashSet<Integer> linked = new java.util.HashSet<Integer>();
+    static boolean linkedRead;
+    static void loadLinked(Context c) {
+        if (linkedRead) return;
+        linkedRead = true;
+        try { for (String t : Assist.prefs(c).getString("ringLinked", "").split(",")) if (!t.isEmpty()) linked.add(Integer.parseInt(t)); } catch (Exception e) {}
+    }
+    static void saveLinked(Context c) {
+        StringBuilder b = new StringBuilder();
+        for (int st : linked) b.append(st).append(',');
+        try { Assist.prefs(c).edit().putString("ringLinked", b.toString()).apply(); } catch (Exception e) {}
     }
 
     static void unmute() {
