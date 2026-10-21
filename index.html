@@ -3536,7 +3536,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.42.0';
+const APP_VER='1.42.1';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -3722,7 +3722,7 @@ const urgency=(a,b)=>(dueKey(a.s)-dueKey(b.s))||(b.g.pinned-a.g.pinned)||(a.g.pr
 const dayLabel=t=>{const d=new Date(t),n=new Date();const k=Math.round((new Date(n.getFullYear(),n.getMonth(),n.getDate())-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);return k===0?'Today':k===1?'Yesterday':d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',...(d.getFullYear()!==n.getFullYear()?{year:'numeric'}:{})})};
 let gear=()=>`<button class="ibtn fsb" data-act="focusMode" aria-label="Full screen" title="Full screen (F)">${ic('full')}</button><a class="ibtn mob gearb" href="#/settings" aria-label="Settings">${ic('settings')}</a>`;
 function iconSeg(key,items,val){return`<div class="seg-c ico" data-seg="lay-${key}" role="tablist"><span class="pill"></span>${items.map(([k,icn,l])=>`<button role="tab" aria-selected="${val===k}" aria-label="${l}" title="${l}" class="${val===k?'on':''}" data-act="layout" data-k="${key}" data-v="${k}">${ic(icn)}</button>`).join('')}</div>`}
-function hsShell(key,items,start,style=''){return`<div class="hs-shell rv" data-hs="${key}" data-start="${start}" style="${style}"><div class="hs" tabindex="0" data-zk="hs-${key.split('-')[0]}" style="${zoomCss('hs-'+key.split('-')[0])}" aria-label="Swipe or use arrow keys to move through cards"><div class="hs-row"><span class="hs-line"></span><span class="hs-fill"></span><span class="hs-sp"></span>${items}<span class="hs-sp"></span></div></div><div class="hs-foot"><button class="ibtn sm" data-act="hsNav" data-d="-1" aria-label="Previous">${ic('back')}</button><span class="data hs-count">··</span><button class="ibtn sm" data-act="hsNav" data-d="1" aria-label="Next">${ic('next')}</button></div></div>`}
+function hsShell(key,items,start,style=''){return`<div class="hs-shell rv" data-hs="${key}" data-start="${start}" style="${style}"><div class="hs" tabindex="0" data-zk="hs-${key.split('-')[0]}" style="--hsz:${hsZ(zoomOf('hs-'+key.split('-')[0]))}" aria-label="Swipe or use arrow keys to move through cards"><div class="hs-row"><span class="hs-line"></span><span class="hs-fill"></span><span class="hs-sp"></span>${items}<span class="hs-sp"></span></div></div><div class="hs-foot"><button class="ibtn sm" data-act="hsNav" data-d="-1" aria-label="Previous">${ic('back')}</button><span class="data hs-count">··</span><button class="ibtn sm" data-act="hsNav" data-d="1" aria-label="Next">${ic('next')}</button></div></div>`}
 const hsItem=(style,card,cls,node,label)=>`<div class="hs-item ${cls}" style="${style}"><div class="hs-card">${card}</div><span class="hs-stem"></span>${node}<div class="hs-lab data">${label}</div></div>`;
 function segHTML(key,act,items,val){return`<div class="seg-c" data-seg="${key}" role="tablist"><span class="pill"></span>${items.map(([k,n])=>`<button role="tab" aria-selected="${val===k}" class="${val===k?'on':''}" data-act="${act}" data-v="${k}">${n}</button>`).join('')}</div>`}
 
@@ -5023,7 +5023,7 @@ const TOUR_STEPS=[
  {r:'road',s:'[data-act=chapList]',t:'Chapters and your year',x:'Name seasons of your life, like “New job” or “Marathon training”. They show as bands behind the timeline. The sparkle opens your year in review: goals reached, habits kept, your best month and your own words, ready to share as one image.'},
  {r:'journal',nav:1,s:'.hs-shell,.spine',t:'Journal',x:'Moments, photos, milestones and achieved goals collect here as the story of your year.'},
  {r:'threads',nav:1,s:'#view .ph',t:'Threads',x:'Quick notes and chains of thought, like a stack of sticky notes. Add to a thread whenever an idea moves on, and Plot can summarise where it has got to.'},
- {r:'activity',nav:1,s:'#act-trk',t:'Your own trackers',x:'Track what your phone doesn’t count: yoga, reading, cycling, practice. Tap + to log, or “Fill in today” and your AI reads today’s journal and threads for the amounts. You confirm every value.'},
+ {r:'activity',nav:1,s:'#act-trk',t:'Your own trackers',x:'Track anything: yoga, reading, cycling, practice. Each tracker can count itself from a Health Connect workout, minutes in an app, time at a place, steps or a habit, and your AI can pick the best source. Tap + to add more, or “Fill in today” to read amounts from your journal.'},
  {r:'ask',nav:1,prep:()=>{IN.res=null},s:'.ask-comp',t:'Ask',x:'Your private assistant. Tap the mic to talk instead of typing. Ask anything about your goals, habits and journal, then keep asking follow-ups. It searches your own notes, answers with links back to them, and can save an answer to your journal.',d:'tap'},
  {r:'ask',s:'.ask-sugs',t:'Start with a suggestion',x:'A weekly reflection, mood patterns, stalled goals, habit patterns, wins. The dashed ones are questions written from your own plan.',d:'tap'},
  {r:'ask',s:'.ask-h .ph-r',t:'Choose how it answers',x:'The sliders open the assistant settings: run an open-source model on this phone (private and offline after one download), use your own AI server, or copy a ready prompt into any AI.'},
@@ -5799,6 +5799,8 @@ Object.assign(ACT,{
    the fingers (silky), and when the fingers lift the new size is laid out so more (or fewer, bigger) cards fit.
    The page itself never zooms. */
 const CZMIN=.35,CZMAX=1.8;const zoomOf=k=>Math.max(CZMIN,Math.min(CZMAX,+((S.settings.cz||{})[k])||1));
+/* carousels resize their cards within a narrow range (CSS zoom on the scroller breaks swiping in the Android WebView); everything else zooms */
+const hsZ=z=>Math.max(.75,Math.min(1.3,+z||1)).toFixed(3);
 const zoomCss=k=>{const z=zoomOf(k);return Math.abs(z-1)>.001?`zoom:${z.toFixed(3)}`:''};
 /* a zoomed-out timeline keeps its own width, so it shrinks into a narrower centred column instead of spreading out */
 function zfix(el){if(!el.classList.contains('spine'))return;const z=parseFloat(el.style.zoom)||1;el.style.width=z<.999?el.parentElement.clientWidth+'px':'';el.style.marginInline=z<.999?'auto':''}
@@ -5807,18 +5809,20 @@ window.addEventListener('resize',zfixAll);
 (()=>{let P=null,ZT=0,ZEND=0;const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY),mid=t=>[(t[0].clientX+t[1].clientX)/2,(t[0].clientY+t[1].clientY)/2];
  const hint=z=>{let e=$('.zoom-hint');if(!e){e=document.createElement('div');e.className='zoom-hint';document.body.appendChild(e)}e.textContent=Math.round(z*100)+'%';e.classList.add('on');clearTimeout(ZT);ZT=setTimeout(()=>e.classList.remove('on'),700)};
  const clamp=z=>Math.max(CZMIN,Math.min(CZMAX,z));
- function begin(el,cx,cy){const r=el.getBoundingClientRect(),z0=parseFloat(el.style.zoom)||1,hs=el.classList.contains('hs');
+ function begin(el,cx,cy){const r=el.getBoundingClientRect(),hs=el.classList.contains('hs'),z0=hs?(+el.style.getPropertyValue('--hsz')||1):(parseFloat(el.style.zoom)||1);
   return{el,z0,z:z0,hs,top:scrollY+r.top,left:r.left,offY:(cy-r.top)/z0,offX:(cx-r.left)/z0+(hs?el.scrollLeft:0),cx,cy}}
  function preview(G,z,cx,cy){G.z=clamp(z);G.cx=cx;G.cy=cy;const s=G.z/G.z0;
   G.el.style.transformOrigin=`${G.offX*G.z0-(G.hs?G.el.scrollLeft*G.z0:0)}px ${G.offY*G.z0}px`;
   G.el.style.transform=`translate(${cx-G.left-(G.offX*G.z0-(G.hs?G.el.scrollLeft*G.z0:0))}px,${(cy-(G.top-scrollY))-G.offY*G.z0}px) scale(${s.toFixed(4)})`;hint(G.z)}
- function finish(G){const el=G.el,z=G.z;el.style.transform='';el.style.transformOrigin='';
+ function finish(G){const el=G.el;let z=G.z;el.style.transform='';el.style.transformOrigin='';
+  if(G.hs){z=+hsZ(z);const sh=el.closest('.hs-shell'),it=el.querySelectorAll('.hs-item')[sh?HSP[sh.dataset.hs]||0:0];el.style.zoom='';el.style.setProperty('--hsz',z);if(it)el.scrollLeft=it.offsetLeft+it.offsetWidth/2-el.clientWidth/2;if(sh)hsFx(sh);S.settings.cz={...(S.settings.cz||{}),[el.dataset.zk]:z};save();return}
   el.style.zoom=Math.abs(z-1)<.002?'':z.toFixed(3);zfix(el);
   window.scrollTo(0,Math.max(0,G.top+G.offY*z-G.cy));
   if(G.hs){el.scrollLeft=Math.max(0,G.offX-(G.cx-G.left)/z);const sh=el.closest('.hs-shell');if(sh)hsFx(sh)}
   S.settings.cz={...(S.settings.cz||{}),[el.dataset.zk]:+z.toFixed(3)};save();fillSpine(false)}
  document.addEventListener('touchstart',e=>{if(e.touches.length!==2){return}const el=e.target.closest&&e.target.closest('[data-zk]');if(!el)return;const[cx,cy]=mid(e.touches);P={...begin(el,cx,cy),d0:dist(e.touches),moved:false};el.style.willChange='transform'},{passive:true});
- document.addEventListener('touchmove',e=>{if(!P||e.touches.length!==2)return;e.preventDefault();P.moved=true;const[cx,cy]=mid(e.touches);preview(P,P.z0*dist(e.touches)/P.d0,cx,cy)},{passive:false});
+ /* a pinch only counts once the fingers clearly spread or close: a stray second finger used to resize instead of swipe */
+ document.addEventListener('touchmove',e=>{if(!P||e.touches.length!==2)return;const k=dist(e.touches)/P.d0;if(!P.moved&&Math.abs(k-1)<.06)return;e.preventDefault();P.moved=true;const[cx,cy]=mid(e.touches);preview(P,P.z0*k,cx,cy)},{passive:false});
  document.addEventListener('touchend',e=>{if(P&&e.touches.length<2){P.el.style.willChange='';if(P.moved){ZEND=Date.now();finish(P)}P=null}},{passive:true});
  document.addEventListener('touchcancel',()=>{if(P){P.el.style.transform='';P.el.style.willChange='';P=null}},{passive:true});
  document.addEventListener('click',e=>{if(Date.now()-ZEND<450){e.stopPropagation();e.preventDefault()}},true);

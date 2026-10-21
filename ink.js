@@ -350,7 +350,8 @@ function linesToHTML(L){L=L.filter(l=>String(l.text||'').trim());if(!L.length)re
   else if(list&&!brk&&list.t!=='chk'&&l.x0>list.x+cw*1.2){const it=list.items[list.items.length-1];it.h+=' '+html}
   else{flushL();if(head){flushP();out.push(`<p><b>${html.replace(/<\/?b>/g,'')}</b></p>`);prev={...l,head:true};continue}
    if(!para||brk||(prev&&prev.head)||(prev&&l.x0>prev.x0+cw*2.5)){flushP();para={h:html}}
-   else{const full=prev.x1>=right-span*.16;if(full&&/[-‐]$/.test(para.h)&&/^\p{Ll}/u.test(raw))para.h=para.h.replace(/[-‐]$/,'')+html;else para.h+=(full?' ':'<br>')+html}}
+   /* every written line stays its own line (notes, lists, ruled pages); only a word hyphenated across the break is rejoined */
+   else{const full=prev.x1>=right-span*.16;if(full&&/[-‐]$/.test(para.h)&&/^\p{Ll}/u.test(raw))para.h=para.h.replace(/[-‐]$/,'')+html;else para.h+='<br>'+html}}
   prev=l}
  flushP();flushL();return out.join('')}
 function tessLines(data,B,sc){const L=[],W_=[];for(const bl of data.blocks||[])for(const pa of bl.paragraphs||[])for(const ln of pa.lines||[]){const ws=(ln.words||[]).filter((w,i)=>{const t=String(w.text||'').trim();if(!t)return false;if(!/[\p{L}\p{N}]/u.test(t))return i===0?/^[•·●○◦▪■➢➤►‣⁃∙*«»+~–—\-\[\]☐☑☒□✓✔]{1,3}$/u.test(t):w.confidence>75&&/^[&@#%$€£()"'“”‘’!?.,:;\/=]+$/.test(t);return w.confidence>18||t.length>2});if(!ws.length)continue;W_.push(...ws);L.push({text:ws.map(w=>w.text).join(' '),fs:ln.rowAttributes&&ln.rowAttributes.rowHeight?ln.rowAttributes.rowHeight/sc:0,x0:ln.bbox.x0/sc,y0:ln.bbox.y0/sc,x1:ln.bbox.x1/sc,y1:ln.bbox.y1/sc,words:ws,conf:ln.confidence})}
@@ -376,7 +377,7 @@ function inkCanvas(strokes){let a=1e9,b=1e9,c=-1e9,d=-1e9;strokes.forEach(s=>{co
 /* the AI from Workbench › AI, only when the person asks for it */
 const AIP=`You turn a picture into editable notes. Reply with HTML only, using just these tags: p, br, b, i, u, mark, ul, ol, li. No code fences, no comments.
 - Copy every word exactly as it appears, in reading order. Keep spelling, numbers and punctuation. Write [?] for anything unreadable.
-- Rebuild the layout: one <p> per paragraph; keep line breaks that matter (addresses, poems, short lines) as <br>; headings as <p><b>Heading</b></p>; bullet lists as <ul>, numbered lists as <ol>, nested lists nested; checkboxes as ☐ (empty) or ☑ (ticked) at the start of the line.
+- Rebuild the layout: one <p> per paragraph; keep every line break exactly where the writer broke the line, as <br> (do not join lines into flowing sentences); headings as <p><b>Heading</b></p>; bullet lists as <ul>, numbered lists as <ol>, nested lists nested; checkboxes as ☐ (empty) or ☑ (ticked) at the start of the line.
 - Keep emphasis: bold in <b>, italic in <i>, underlined in <u>, highlighted in <mark>.
 - A table becomes one line per row with cells separated by " · ".`;
 function aiClean(s){s=String(s||'').trim().replace(/^```(?:html)?\s*/i,'').replace(/```\s*$/,'').trim();if(!/<(p|ul|ol|br|b|li)\b/i.test(s))s=s.split(/\n{2,}/).map(p=>`<p>${escH(p).replace(/\n/g,'<br>')}</p>`).join('');return s}

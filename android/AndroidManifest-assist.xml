@@ -45,3 +45,10 @@
     </intent-filter>
     <meta-data android:name="android.speech" android:resource="@xml/assist_recognizer"/>
 </service>
+<!-- Orb widget (1.42.1): inside <application>, next to AssistWidget -->
+<receiver android:name="com.munazzar.plotline.OrbWidget" android:exported="true" android:label="Plotlines · Orb">
+    <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+    </intent-filter>
+    <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_orb_info"/>
+</receiver>
