@@ -457,7 +457,7 @@ function handsOff(){if(!AS.bg||!NA||!NA.background)return;clearTimeout(AS.bgT);A
 ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{if(AS.bg){AS.bg=false;clearTimeout(AS.bgT)}},true));
 
 /* ---------------- listening (the same mic as the rest of the app) ---------------- */
-function listen(pre){asOpen();const el=$('#asIn'),b=$('#asv .as-mic');if(!el||!b)return;if(typeof voiceAvail==='function'&&!voiceAvail()){toast('Voice isn’t available here. Type instead.');el.focus();return}hush();wakePause(true);el.value=typeof pre==='string'?pre:'';AS.listening=true;paintHead();voiceStart(el,b)}
+function listen(pre){if(!(AS.min&&$('#asv')))asOpen();const el=$('#asIn'),b=$('#asv .as-mic');if(!el||!b)return;if(typeof voiceAvail==='function'&&!voiceAvail()){toast('Voice isn’t available here. Type instead.');el.focus();return}hush();wakePause(true);el.value=typeof pre==='string'?pre:'';AS.listening=true;paintHead();voiceStart(el,b)}
 {const _vs=voiceStart;voiceStart=function(el,btn){wakePause(true);return _vs(el,btn)}}
 {const _vx=voiceStop;voiceStop=function(silent,keep){const c=VC;_vx(silent,keep);if(!c)return;if(c.el&&c.el.id==='asIn'){AS.listening=false;paintHead();const v=c.el.value.trim();if(keep&&v){c.el.value='';run(v,{spoken:true})}else wakePause(false)}else wakePause(false)}}
 
@@ -520,12 +520,20 @@ window.asCue=k=>{if(aset().cues===false)return;cuePlay(cueOf(k));try{navigator.v
 
 /* ---------------- the sheet ---------------- */
 function headSub(){if(AS.busy)return AS.prog||'Thinking…';if(AS.listening)return'Listening…';if(SPK)return'Speaking…';const a=aset();if(NA&&(a.wake||a.bg)){const w=AS.wst||'';return w==='err'?'Can’t hear the wake word right now':w==='perm'?'Allow the microphone for the wake word':w==='unavailable'?'The wake word needs online speech allowed':`Say “${wakeWord()}” anytime`}return'Talk or type'}
-function asOpen(){AS.open=true;let el=$('#asv');if(!el){el=document.createElement('div');el.id='asv';el.className='aov asv';
- el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="as-stop" data-act="asStop" aria-label="Stop talking">■ Stop</button><button class="ibtn sm" data-act="liveOpen" aria-label="Talk out loud" title="Talk out loud">${ic('live')}</button><button class="ibtn sm" data-act="convGo" aria-label="Conversation history" title="History">${ic('hist')}</button><button class="ibtn sm" data-act="asClear" aria-label="New conversation" title="New conversation">${ic('plus')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="submit" class="as-send" aria-label="Send" title="Send">${ic('up')}</button><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form>${window.AIX?AIX.note('as-note'):''}</div></section>`;
+function asOpen(){AS.open=true;if(AS.min){AS.min=false;miniPaint()}let el=$('#asv');if(el){el.classList.remove('min');el.classList.add('on')}else{el=document.createElement('div');el.id='asv';el.className='aov asv';
+ el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="as-stop" data-act="asStop" aria-label="Stop talking">■ Stop</button><button class="ibtn sm" data-act="liveOpen" aria-label="Talk out loud" title="Talk out loud">${ic('live')}</button><button class="ibtn sm" data-act="convGo" aria-label="Conversation history" title="History">${ic('hist')}</button><button class="ibtn sm" data-act="asClear" aria-label="New conversation" title="New conversation">${ic('plus')}</button><button class="ibtn sm" data-act="asSet" aria-label="Assistant settings" title="Settings">${ic('settings')}</button><button class="ibtn sm" data-act="asMin" aria-label="Minimize" title="Minimize">${ic('minz')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="submit" class="as-send" aria-label="Send" title="Send">${ic('up')}</button><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form>${window.AIX?AIX.note('as-note'):''}</div></section>`;
  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'))}
  document.documentElement.classList.add('aov-on');paint(true);return el}
-function asClose(){AS.open=false;if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);hush();const el=$('#asv');document.documentElement.classList.remove('aov-on');if(!el)return;el.classList.remove('on');setTimeout(()=>{if(!AS.open)el.remove()},360);wakePause(false)}
-function paintHead(){const el=$('#asv');if(!el)return;el.querySelector('.as-nm').textContent=aname();el.querySelector('.as-st').textContent=headSub();el.classList.toggle('lis',AS.listening);el.classList.toggle('spk',!!SPK);el.classList.toggle('busy',AS.busy)}
+function asClose(){AS.open=false;if(AS.min){AS.min=false;miniPaint()}$('#asv')?.classList.remove('min');if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);hush();const el=$('#asv');document.documentElement.classList.remove('aov-on');if(!el)return;el.classList.remove('on');setTimeout(()=>{if(!AS.open)el.remove()},360);wakePause(false)}
+function paintHead(){const el=$('#asv');if(!el)return;el.querySelector('.as-nm').textContent=aname();el.querySelector('.as-st').textContent=headSub();el.classList.toggle('lis',AS.listening);el.classList.toggle('spk',!!SPK);el.classList.toggle('busy',AS.busy);miniPaint()}
+IC.minz='<path d="M7 9l5 5 5-5"/><path d="M6 19h12"/>';
+/* minimized: the conversation keeps going (listening, thinking, talking) behind a small bubble */
+function asMin(){const el=$('#asv');if(!el||!AS.open)return;AS.min=true;document.activeElement?.blur?.();el.classList.remove('on');el.classList.add('min');document.documentElement.classList.remove('aov-on');miniPaint()}
+function miniPaint(){aiMini('asMini',AS.min&&AS.open?{open:'asBack',end:'asClose',name:aname(),st:headSub(),state:AS.listening?'lis':SPK?'spk':AS.busy?'busy':''}:null)}
+function aiMini(id,o){let el=document.getElementById(id);if(!o){if(el){el.classList.remove('on');setTimeout(()=>{if(!el.classList.contains('on'))el.remove()},320)}return}
+ if(!el){el=document.createElement('div');el.id=id;el.className='ai-mini';el.innerHTML=`<button class="ai-mi" data-act="${o.open}" aria-label="Open the conversation"><span class="as-av" aria-hidden="true"><i></i></span><span class="ai-mt"><b></b><small></small></span></button><button class="ai-mx" data-act="${o.end}" aria-label="End the conversation" title="End">${ic('x')}</button>`;document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'))}
+ else el.classList.add('on');el.querySelector('.ai-mt b').textContent=o.name;el.querySelector('.ai-mt small').textContent=o.st||'';el.dataset.st=o.state||''}
+window.aiMini=aiMini;
 function status(t){AS.prog=t||'';paintHead()}
 /* answers read like a chat: "* item" / "- item" lines become a list, **bold** stays bold, paragraphs stay apart */
 function ansHTML(a){if(window.AIX&&AIX.md)return`<div class="ai-md">${AIX.md(a)}</div>`;const L=String(a||'').replace(/\r/g,'').split('\n');let o='',ul=false;const inl=x=>esc(x).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
@@ -538,7 +546,7 @@ function paint(scroll){const el=$('#asv');if(!el)return;paintHead();const b=el.q
  if(scroll)b.scrollTop=b.scrollHeight;convSync()}
 Object.assign(ACT,{
  asOpen:()=>{asOpen();setTimeout(()=>{if(!AS.turns.length&&NA&&typeof voiceAvail==='function'&&voiceAvail())listen();else $('#asIn')?.focus()},300)},
- asClose:()=>asClose(),
+ asClose:()=>asClose(),asMin:()=>asMin(),asBack:()=>asOpen(),asSet:()=>{if(window.aiQuick)aiQuick();else go('settings/voice')},
  asMic:()=>{if(VC&&VC.el&&VC.el.id==='asIn'){voiceStop(false,true);return}if(AS.busy){AS.ctl&&AS.ctl.abort();return}AS.nlis=false;listen()},
  asStop:()=>{AS.after=null;if(AS.busy&&AS.ctl)AS.ctl.abort();if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);AS.listening=AS.nlis=false;hush();wakePause(false)},
  asTry:d=>run(d.q),
@@ -550,9 +558,11 @@ Object.assign(ACT,{
 Object.assign(FORM,{asSend:f=>{const i=f.querySelector('input'),v=i.value.trim();if(!v)return listen();i.value='';sendState();run(v,{spoken:false})}});
 function sendState(){const i=$('#asIn'),r=$('#asv .as-row');if(i&&r)r.classList.toggle('typed',!!i.value.trim()&&!AS.listening)}
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='asIn')sendState()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&AS.open&&!$('#sheet').classList.contains('on'))asClose()});
-window.addEventListener('hashchange',()=>{if(AS.open)asClose()});
-{const _b=window.__back;window.__back=()=>{if(AS.open){asClose();return true}return _b?_b():false}}
+/* was a sheet open when Escape was pressed? (the sheet's own handler closes it first) */
+document.addEventListener('keydown',e=>{if(e.key==='Escape')window.__escSheet=$('#sheet').classList.contains('on')},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&AS.open&&!AS.min&&!window.__escSheet)asClose()});
+window.addEventListener('hashchange',()=>{if(AS.open&&!AS.min)asClose()});
+{const _b=window.__back;window.__back=()=>{if(AS.open&&!AS.min){asClose();return true}return _b?_b():false}}
 
 /* routes from the widget, the app shortcut and the wake word: assistant, assistant-listen, assistant-type; the wake word heard in the background adds -bg */
 {const _r=window.__route;window.__route=r=>{if(/^assistant/.test(r||'')){if(/-bg$/.test(r))AS.bg=true;asOpen();const k=r.split('-')[1];setTimeout(()=>{if(k==='share'){if(shareIn())return;}takePending();if(k==='listen')listen();else if(k==='type')$('#asIn')?.focus()},450);return}return _r&&_r(r)}}
@@ -581,6 +591,10 @@ ${a.cues!==false?`<div class="as-cues">${[['cueStart','When I start listening','
  ${row('btn','Assistant button in the top bar','The orb next to search and settings',a.btn)}
  <div class="actions left"><button class="btn sm pri" data-act="asOpen">Try it</button></div></section>`}
 {const _vh=voiceHTML;voiceHTML=function(){return _vh()+assistHTML()}}
+/* the few that matter mid-conversation, for the quick settings sheet */
+function quickHTML(){const a=aset();return`<div class="field"><label>Read replies out loud</label><select data-assist="speak">${[['voice','When I talk to it'],['always','Always'],['never','Never']].map(([k,n])=>`<option value="${k}" ${(a.speak||'voice')===k?'selected':''}>${n}</option>`).join('')}</select></div>
+ <div class="field"><label>While I think</label><div class="as-cue"><select data-assist="think">${Object.entries(THINK).map(([id,q])=>`<option value="${id}" ${thinkOf()===id?'selected':''}>${q.n}</option>`).join('')}</select><button class="ibtn" data-act="asThinkTry" aria-label="Play this sound">${ic('play')}</button></div></div>
+ <label class="sw"><span>Listening sounds<small>A chime when I start and stop listening</small></span><input type="checkbox" data-assist="cues" ${a.cues!==false?'checked':''}><i></i></label>`}
 document.addEventListener('change',async e=>{const t=e.target;if(!t.dataset||!t.dataset.assist)return;const k=t.dataset.assist;let v=t.type==='checkbox'?t.checked:t.value;
  if(k==='name'){v=String(v).replace(/[^\p{L}\p{N} '\-]/gu,'').trim().slice(0,24)||'Plot';v=cap(v)}
  if((k==='wake'||k==='bg')&&v){const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud){const ok=await voiceConsent();if(!ok){t.checked=false;return}}if(!(await permAsk('mic','android.permission.RECORD_AUDIO'))){t.checked=false;return toast('Allow the microphone to use the wake word')}if(k==='bg')askNotif()}
@@ -592,7 +606,7 @@ function rerender(){try{render(false)}catch(e){}}
 function bgCheck(){if(nst().bgOff&&aset().bg){S.settings.assist={...aset(),bg:false};save();rerender()}}
 setTimeout(()=>{bgCheck();wakeSync();pushWidget2();takePending()},1200);
 window.addEventListener('app-resume',()=>{setTimeout(()=>{bgCheck();wakeSync();takePending()},300)});
-window.PLOT_ASSIST={run,asCtx,parse,parseWhen,localAsk,aname,ctx:asCtx,
+window.PLOT_ASSIST={quickHTML,run,asCtx,parse,parseWhen,localAsk,aname,ctx:asCtx,
  /* for the live conversation (ai.js) */
  command:t=>{const p=parse(t);if(!p||['hello','thanks','cancel','help','whoami','live'].includes(p.k))return null;if(p.k==='done'){const r=exec(p,t);return r&&r.undo?r:null}const r=exec(p,t);return r&&!r.await?r:null},
  lookup:t=>localAsk(t),say:(t,done,ov)=>speak(t,done||(()=>{}),ov),hush:()=>hush(),close:()=>{if(AS.open)asClose()},
@@ -647,6 +661,16 @@ const css=document.createElement('style');css.textContent=`
 .asv.lis .as-row{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
 .as-stop{display:none;flex:none;height:34px;padding:0 14px;border-radius:17px;border:0;background:var(--accent);color:var(--on-accent);font:700 13px var(--f-body);cursor:pointer}
 .asv.spk .as-stop,.asv.busy .as-stop,.asv.lis .as-stop{display:block}
-@media (prefers-reduced-motion:reduce){.as-big,.asv .as-av,.as-av::before{animation:none!important}}`;
+.asv.min{visibility:hidden;transition:visibility 0s .36s}
+.ai-mini{position:fixed;z-index:125;right:16px;bottom:calc(86px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:2px;max-width:min(300px,calc(100vw - 32px));padding:6px;border-radius:999px;background:var(--bg-2);border:1px solid var(--line-2);box-shadow:0 14px 36px -12px rgba(0,0,0,.45),0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent);opacity:0;transform:translateY(14px) scale(.94);transition:opacity .25s,transform .35s var(--spring,ease);pointer-events:none}
+.ai-mini.on{opacity:1;transform:none;pointer-events:auto}
+@media(min-width:821px){.ai-mini{bottom:24px;right:24px}}
+.ai-mi{display:flex;align-items:center;gap:10px;min-width:0;border:0;background:none;color:var(--text);font:inherit;text-align:left;padding:0 4px 0 0;cursor:pointer}
+.ai-mini .as-av{width:40px;height:40px}.ai-mini .as-av i{inset:9px}
+.ai-mt{display:flex;flex-direction:column;min-width:0}.ai-mt b{font:700 14px var(--f-body)}.ai-mt small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.ai-mx{flex:none;width:32px;height:32px;border-radius:50%;border:0;background:color-mix(in srgb,var(--text) 8%,transparent);color:var(--muted);display:grid;place-items:center;cursor:pointer}.ai-mx svg{width:14px;height:14px}
+.ai-mini[data-st=lis] .as-av,.ai-mini[data-st=spk] .as-av{animation:asPulse 1.4s ease-in-out infinite}.ai-mini[data-st=busy] .as-av i{animation:asPulse 1.4s ease-in-out infinite}.ai-mini[data-st=lis] .as-av i{transform:scale(.55)}
+@media(max-width:400px){.asv .aov-h{gap:4px;padding-left:14px;padding-right:10px}.asv .aov-h .ibtn.sm{width:33px;height:33px;border-radius:11px}.asv .aov-h .ibtn.sm svg{width:16px;height:16px}.asv .aov-t{gap:8px}}
+@media (prefers-reduced-motion:reduce){.as-big,.asv .as-av,.as-av::before,.ai-mini .as-av{animation:none!important}}`;
 document.head.appendChild(css);
 })();
