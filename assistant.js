@@ -158,7 +158,8 @@ function parse(raw){const t=strip(normCmd(raw)),l=lcs(t);let m;if(!t)return null
  /* reminders */
  if((m=/^(?:remind me|set (?:a |an |me a )?(?:reminder|alarm)|create (?:a )?reminder|add (?:a )?reminder|reminder|don'?t let me forget)\b\s*(.*)$/i.exec(t)))return{k:'remind',x:m[1]};
  /* agent tasks: "every morning summarise my emails", "each Friday look at my calendar and plan the weekend" */
- if(/\b(?:every|each)\s+(?:day|morning|afternoon|evening|night|weekday|week|hour|\d+\s+hours|other\s+day|(?:mon|tues|wednes|thurs|fri|satur|sun)day)\b/i.test(t)&&/\b(?:summari[sz]e|check|look|review|brief|tell|go through|scan|watch|plan|suggest|find|read|see|give|send|catch me up|keep an eye)\b/i.test(t))return{k:'agent',x:t};
+ /* a schedule for the agent, unless it's a habit, routine or reminder they're making ("a habit to read every night") */
+ if(!/\b(?:habits?|routines?|goals?|lists?|remind(?:er)?s?|journal|thread)\b/i.test(t)&&/\b(?:every|each)\s+(?:day|morning|afternoon|evening|night|weekday|week|hour|\d+\s+hours|other\s+day|(?:mon|tues|wednes|thurs|fri|satur|sun)day)\b/i.test(t)&&/\b(?:summari[sz]e|check|look|review|brief|tell|go through|scan|watch|plan|suggest|find|read|see|give|send|catch me up|keep an eye)\b/i.test(t))return{k:'agent',x:t};
  if((m=/^(?:keep an eye on|watch|monitor)\s+(.+)$/i.exec(t)))return{k:'agent',x:t};
  /* done */
  if((m=/^(?:mark|log|check(?:\s+off)?|tick(?:\s+off)?)\s+(?:my\s+)?(.+?)\s+(?:as\s+)?(?:done|complete|completed|finished)(?:\s+for\s+today)?$/i.exec(t))||(m=/^i\s+(?:just\s+)?(?:did|finished|completed|done)\s+(?:my\s+)?(.+?)(?:\s+today)?$/i.exec(t)))return{k:'done',x:m[1]};
@@ -168,7 +169,23 @@ function parse(raw){const t=strip(normCmd(raw)),l=lcs(t);let m;if(!t)return null
  if((m=/^(?:add|put|throw|stick)\s+(.+)\s+(?:to|on|in|onto|into)\s+(?:my\s+|the\s+)?(.+?)$/i.exec(t)))return{k:'add',x:m[1],to:m[2]};
  return null}
 
-window.PlotDo={addJournal,newThread,addToThread,addToday,addReminder,addTo,newList,parseWhen,pick,splitItems,body,aiReady:()=>aiReady()};
+/* things the AI decided to make, done now: "make a packing list with socks, charger and passport" */
+function doItem(it){const t=clean(it.title||''),x=clean(it.detail||'');if(!t&&!x)return null;
+ switch(it.type){
+  case'list':return newList(t||'New list',x?splitItems(x):[]);
+  case'list_add':{const L=pick(S.lists||[],t,l=>l.title);return L?addToList(L,splitItems(x||t)):newList(t||'New list',x?splitItems(x):[])}
+  case'journal':return addJournal(x||t);
+  case'today':return addToday(t||x);
+  case'thread':return newThread(t||x,t?x:'');
+  case'thread_update':{const th=pick(threads().filter(z=>z.status!=='archived'),t,z=>z.title||z.name);return th?addToThread(th,x||t):newThread(t,x)}
+  case'reminder':{const w=parseWhen((t+' '+x).trim());return addReminder(w.found?(w.rest||t):t,w.found?w:{date:addDays(1),time:'09:00'})}
+  case'goal':case'habit':case'routine':{if(!window.AIX)return null;const r=AIX.doAct({k:it.type,t:t||x,x:it.type==='routine'?x:''});return r&&{say:r.say,undo:r.undo,chips:r.go?[['Open',r.go]]:[]}}}
+ return null}
+function doItems(items){const said=[],undos=[],chips=[];
+ for(const it of(items||[]).slice(0,8)){let x=null;try{x=doItem(it)}catch(e){}if(!x||!x.say)continue;said.push(x.say);if(x.undo)undos.push(x.undo);if(x.chips)chips.push(...x.chips)}
+ if(!said.length)return null;
+ return{say:said.join(' '),undo:undos.length?()=>undos.reverse().forEach(f=>{try{f()}catch(e){}}):null,chips:chips.slice(0,3)}}
+window.PlotDo={doItems,addJournal,newThread,addToThread,addToday,addReminder,addTo,newList,parseWhen,pick,splitItems,body,aiReady:()=>aiReady()};
 function exec(p,raw){const A=aset();switch(p.k){
  case'agentNow':return{agent:p.x};
  case'agent':return window.agentFromVoice?agentFromVoice(p.x):{say:'The agent isn’t available here.'};
@@ -364,7 +381,7 @@ function asCtx(q,r,hint,big){const now=new Date(),tn=dnum(ymd()),lq=lcs(q),N=nam
  for(const s of sec){let block=`\n${s.title}\n`;for(const l of s.lines){if(used+block.length+l.length+1>budget)break;block+=l+'\n'}if(block.split('\n').length>3||s.lines.length&&block.length>s.title.length+3){used+=block.length;parts.push(block)}if(used>=budget)break}
  return parts.join('\n')+`\nQUESTION\n${q}`}
 async function aiAnswer(q,onP,hint){if(!aiReady())return null;const e=planEngine(),loc=e!=='api'&&e!=='native',X=window.AIX,spoken=AS.spoken,pr=insSet().profile;
- const r=await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);const prompt=asCtx(q,r,hint,!loc&&e==='api');
+ const r=(AS.rag&&AS.rag.q===q&&await AS.rag.p)||await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);const prompt=asCtx(q,r,hint,!loc&&e==='api');
  const sys=`You are ${aname()}, the assistant inside the Plotline app: a personal assistant that knows the user's own data and can talk about anything. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. ${spoken?'Your answer is read aloud: one to three short, natural sentences. No lists, no markdown, no note numbers like [2].':'Answer clearly and briefly: a few sentences, or a few short bullets when that really helps. No note numbers like [2].'} When the question is about their life, use the data given (dates, activity numbers, plans, threads, lists and notes); if the app looked something up, use that answer, and if the data doesn't have it, say what you do know. For anything else (the world, ideas, advice, writing, feelings), just answer it well.${window.AGENT?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nWHAT YOU KNOW ABOUT THEM\n'+pr.text:''}${X?'\n\n'+X.ACT_SYS+'\n\n'+X.safety():''}`;
  const hist=[];AS.turns.filter(t=>!t.wait&&t.a&&!t.sys).slice(-3).forEach(t=>hist.push({role:'user',content:t.q},{role:'assistant',content:t.a}));
  const msgs=[{role:'system',content:sys},...hist,{role:'user',content:prompt}];
@@ -395,15 +412,16 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
   if(aw)r=answerAwait(aw,text);
   if(!r){const p=parse(text);if(p)r=exec(p,text)}
   if(!r&&!aiReady())r=localAsk(text);
-  if(!r&&aiReady()&&window.AGENT&&AGENT.connected().length){status('Thinking…');const tk=await AGENT.route(text,AS.turns.filter(t=>!t.wait&&t.a));if(tk)r={agent:tk}}
-  if(!r&&aiReady()){const st=strip(text),cmd=!QRX.test(st)||/^(?:can|could|would|will) you\b|\b(?:please|i want to|i need to|i'd like to)\b/i.test(st);
+  /* the AI decides: make it now, ask the agent, schedule it, or just talk */
+  let dec=null;if(!r&&aiReady()&&window.AGENT){status('Thinking…');/* the note search runs while the AI decides */AS.rag={q:text,p:ragRetrieve(text,{win:0,goal:'',broad:insFocus(text).broad},null).catch(()=>null)};dec=await AGENT.decide(text,AS.turns.filter(t=>!t.wait&&t.a));if(dec&&dec.agent)r={agent:dec.agent};else if(dec&&dec.items)r=doItems(dec.items);else if(dec&&dec.schedule)r=exec({k:'agent',x:dec.schedule},text)}
+  if(!r&&aiReady()){const st=strip(text),cmd=!dec&&(!QRX.test(st)||/^(?:can|could|would|will) you\b|\b(?:please|i want to|i need to|i'd like to)\b/i.test(st));
    if(cmd&&!/^(?:can|could|would|will) you (?:tell|show|explain|remind me (?:what|when|how))/i.test(st)){status('Working it out…');const p=await llmIntent(st);if(p&&p.k)r=exec(p,text)}
    if(!r){const L=localAsk(text);if(L&&(L.ask||L.await))r=L;
     else{status('Thinking…');const a=await aiAnswer(text,status,L&&!L.miss?L.say:'').catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
      r=a?{say:a,chips:L&&L.chips||[['Ask more','?'+text]]}:L&&!L.miss?L:{say:'Sorry, I couldn’t answer that right now.',chips:[['Open in Ask','?'+text]]}}}}
   if(r&&r.ask){const q=r.ask;status('Thinking…');const a=await aiAnswer(q,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});r=a?{say:a}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'To ask about things, open Ask once to set up the AI.',chips:[['Open in Ask','?'+q]]}}
   if(r&&r.miss){const miss=r.miss;r=null;status('Thinking…');const a=await aiAnswer(text,status).catch(()=>null);r=a?{say:a}:{say:`I couldn't find anything about ${quote(miss)} in your journal, threads, lists or habits.`}}
-  if(!r&&!QRX.test(strip(text))&&/^(?:add|put|write|log|create|start|make|set|remind|schedule|note|save|mark|record|jot|track|new)\b/i.test(strip(text))){status('Working it out…');const p=await llmIntent(strip(text));if(p&&p.k)r=exec(p,text)}
+  if(!r&&!dec&&!QRX.test(strip(text))&&/^(?:add|put|write|log|create|start|make|set|remind|schedule|note|save|mark|record|jot|track|new)\b/i.test(strip(text))){status('Working it out…');const p=await llmIntent(strip(text));if(p&&p.k)r=exec(p,text)}
   if(!r){status('Thinking…');const a=await aiAnswer(text,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
    r=a?{say:a,chips:[['Ask more','?'+text]]}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'I can add things and look up when you last did something. For other questions, open this in Ask once to set up the AI, and after that I’ll answer from your notes too.',chips:[['Open in Ask','?'+text]]}}
   if(r&&r.say&&r.say.agent)r={agent:r.say.agent};
@@ -583,6 +601,7 @@ window.PLOT_ASSIST={run,asCtx,parse,parseWhen,localAsk,aname,ctx:asCtx,
  begin:kind=>{if(!(AS.turns.length&&AS.last&&Date.now()-AS.last<CV_GAP/2))convFresh(kind);return AS.turns.filter(t=>!t.wait&&t.a).map(t=>({q:t.q,a:t.a}))},
  resume:id=>{const c=window.CONV&&CONV.get(id);if(!c)return false;hush();AS.turns=c.turns.map(t=>({q:t.q,a:t.a,chips:[],t:t.t,id:t.id})).slice(-30);AS.cid=c.id;AS.kind=c.k==='ask'?'chat':c.k;AS.await=null;AS.undo={};AS.last=Date.now();if(AS.open)paint(true);return true},
  current:()=>AS.cid,
+ doItems:items=>doItems(items),
  dropTurn:tid=>{AS.turns=AS.turns.filter(t=>t.id!==tid);delete AS.undo[tid];if(AS.open)paint()},
  /* an agent result continued in chat (Agent page › Continue in chat) */
  inject:(q,a,chips)=>{if(!(AS.turns.length&&AS.last&&Date.now()-AS.last<CV_GAP))convFresh('chat');AS.turns.push({q,a,chips:(chips||[]).map(c=>({t:c.t,fn:agentChip(c.fn)})),t:Date.now(),id:uid()});AS.turns=AS.turns.slice(-30);asOpen();paint(true);setTimeout(()=>$('#asIn')?.focus(),300)}};

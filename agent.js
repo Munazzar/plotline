@@ -20,16 +20,16 @@ Object.assign(IC,{agent:'<path d="M12 3v2.5"/><circle cx="12" cy="2.6" r=".9"/><
 const now=()=>Date.now(),NA=window.PlotlineAssist||null;
 const ADEF={on:true,tasks:[],inbox:[]};
 const ag=()=>S.settings.agent=Object.assign({},ADEF,S.settings.agent||{});
-const CDEF={gcal:false,gmail:false,gdrive:false,notion:false,proxy:''};
+const CDEF={gcal:false,gmail:false,gdrive:false,notion:false,web:true,proxy:''};
 const cset=()=>S.settings.conn=Object.assign({},CDEF,S.settings.conn||{});
 const NOTK='plotline.notion';
 const notionKey=()=>{try{return localStorage.getItem(NOTK)||''}catch(e){return''}};
 
 /* ---------------- connections ---------------- */
 const SC={gcal:'https://www.googleapis.com/auth/calendar.events',gmail:'https://www.googleapis.com/auth/gmail.readonly',gdrive:'https://www.googleapis.com/auth/drive.metadata.readonly'};
-const CN={plot:['Plotline','Your goals, habits, journal, threads and lists'],gcal:['Google Calendar','Your events, and adding new ones'],gmail:['Gmail','Searches and reads your email when a task needs it. Read only'],gdrive:['Google Drive','Finds files by name'],notion:['Notion','Pages you shared with your integration']};
+const CN={plot:['Plotline','Your goals, habits, journal, threads and lists'],gcal:['Google Calendar','Your events, and adding new ones'],gmail:['Gmail','Searches and reads your email when a task needs it. Read only'],gdrive:['Google Drive','Finds files by name'],notion:['Notion','Pages you shared with your integration'],web:['The web','Weather now and ahead, places and their opening hours, quick facts. Free public services, no account']};
 window.connScopes=()=>{const c=cset();return Object.keys(SC).filter(k=>c[k]).map(k=>' '+SC[k]).join('')};
-const connOn=k=>k==='plot'||(k==='notion'?!!(cset().notion&&notionKey()):!!cset()[k]);
+const connOn=k=>k==='plot'||(k==='notion'?!!(cset().notion&&notionKey()):k==='web'?cset().web!==false:!!cset()[k]);
 async function googleConsent(){tokDrop();scopeSync();if(NATIVE&&NATIVE.googleToken){S.settings.sync.native=true;return nativeAuth(true)}return webAuth('consent')}
 async function gapi(url,opt={}){let t=tokGet();
  if(!t){if(NATIVE&&S.settings.sync.native)t=await token(false);else throw new Error('Sign in to Google again in Agent › Connections')}
@@ -62,15 +62,46 @@ async function notionSearch(q){const j=await nfetch('search',{query:q||'',page_s
 const TOOLS={gmail:[['gmail_search','{"tool":"gmail_search","query":"<Gmail search, e.g. is:unread newer_than:1d, from:amazon, subject:invoice>","max":20}','find emails; returns id, sender, subject, date, unread, preview'],['gmail_read','{"tool":"gmail_read","id":"<id from gmail_search>"}','the full text of one email']],
  gcal:[['calendar','{"tool":"calendar","from":"YYYY-MM-DD","to":"YYYY-MM-DD","query":"<optional words>"}','events between two dates']],
  gdrive:[['drive_search','{"tool":"drive_search","query":"<words in the file name, or empty for recent>"}','files by name, newest first']],
- notion:[['notion_search','{"tool":"notion_search","query":"<words>"}','Notion pages and their text']]};
+ notion:[['notion_search','{"tool":"notion_search","query":"<words>"}','Notion pages and their text']],
+ web:[['weather','{"tool":"weather","place":"<city, or here>","days":3}','current weather, the next hours and a daily forecast (1 to 7 days)'],['places','{"tool":"places","query":"<what, e.g. pharmacy, Starbucks, Central Library>","near":"<place, or here>"}','places with address, distance, opening hours, phone, website'],['web_search','{"tool":"web_search","query":"<words>"}','facts from the web (quick answers, Wikipedia)']]};
 async function lookup(x,raw,small){const k=x.tool,n=Math.max(1,Math.min(+x.max||15,small?15:30));
  if(k==='gmail_search'){const M=await mailSearch(x.query,n);raw.mail.push(...M.filter(m=>!raw.mail.some(y=>y.id===m.id)));return`gmail_search "${x.query||''}": ${M.length} email${M.length===1?'':'s'}\n`+M.map(m=>`- id ${m.id} · ${dd(m.t)} ${tm(m.t)} · ${m.unread?'UNREAD · ':''}from ${tr(m.from,40)} · ${tr(m.subject,100)} · ${tr(m.snippet,small?90:160)}`).join('\n')}
  if(k==='gmail_read'){const m=await mailRead(x.id);return`gmail_read ${x.id}: from ${m.from} · ${dd(m.t)} ${tm(m.t)} · ${m.subject}\n${tr(m.text,small?1200:3500)}`}
  if(k==='calendar'){const E=await calRange(x.from,x.to,x.query);raw.cal.push(...E);return`calendar ${x.from||'today'} to ${x.to||'+7 days'}${x.query?' "'+x.query+'"':''}: ${E.length} event${E.length===1?'':'s'}\n`+E.map(e=>`- ${dd(e.start)}${e.all?' all day':' '+tm(e.start)} ${e.title}${e.where?' @ '+tr(e.where,50):''}${e.who?' with '+tr(e.who,80):''}`).join('\n')}
  if(k==='drive_search'){const F=await driveSearch(x.query);return`drive_search "${x.query||''}": ${F.length} file${F.length===1?'':'s'}\n`+F.map(f=>`- ${dd(f.t)} ${f.name} (${f.kind})`).join('\n')}
  if(k==='notion_search'){const P=await notionSearch(x.query);return`notion_search "${x.query||''}": ${P.length} page${P.length===1?'':'s'}\n`+P.map(p=>`- ${dd(p.t)} ${p.title}${p.text?': '+tr(p.text,small?300:700):''}`).join('\n')}
+ if(k==='weather')return weather(x.place,x.days);
+ if(k==='places')return places(x.query||'',x.near);
+ if(k==='web_search')return webFacts(x.query||'');
  return`${k}: not available`}
-const HTTPCB={};window.__http=(id,st,b)=>{const f=HTTPCB[id];if(f)f(st,b)};
+const HTTPCB={};
+/* ---------------- the web: weather, places and quick facts, from free public services (no account, no key) ----------------
+   Open-Meteo for weather, OpenStreetMap (Nominatim) for places and their opening hours, Wikipedia for facts. Only the
+   words of the lookup are sent, plus where you are when you ask about "here". */
+const WMO={0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',45:'fog',48:'icy fog',51:'light drizzle',53:'drizzle',55:'heavy drizzle',56:'freezing drizzle',57:'freezing drizzle',61:'light rain',63:'rain',65:'heavy rain',66:'freezing rain',67:'freezing rain',71:'light snow',73:'snow',75:'heavy snow',77:'snow grains',80:'light showers',81:'showers',82:'heavy showers',85:'snow showers',86:'heavy snow showers',95:'thunderstorm',96:'thunderstorm with hail',99:'thunderstorm with hail'};
+async function jget(url,o={}){if(o.native&&NA&&NA.http)return new Promise((res,rej)=>{const id='h'+uid();const t=setTimeout(()=>{delete HTTPCB[id];rej(new Error('no answer'))},20000);HTTPCB[id]=(st,b)=>{clearTimeout(t);delete HTTPCB[id];if(st>=200&&st<300){try{res(JSON.parse(b))}catch(e){rej(e)}}else rej(new Error('status '+st))};NA.http(id,JSON.stringify({url,method:'GET',headers:{Accept:'application/json'},body:''}))});
+ const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),20000);try{const r=await fetch(url,{signal:ctl.signal,headers:{Accept:'application/json'}});if(!r.ok)throw new Error('status '+r.status);return await r.json()}finally{clearTimeout(t)}}
+const isHere=p=>!String(p||'').trim()||/^(here|near me|nearby|my (?:location|area|city)|current location|where i am|around me|local)$/i.test(String(p).trim());
+/* where the phone is (the same as Places uses), else a rough guess from the network */
+async function hereLL(){if(typeof plWhere==='function'){try{const r=await plWhere();if(r&&isFinite(r.lat))return{lat:r.lat,lng:r.lng,name:'your location'}}catch(e){}}
+ const j=await jget('https://get.geojs.io/v1/ip/geo.json');return{lat:+j.latitude,lng:+j.longitude,name:[j.city,j.country].filter(Boolean).join(', ')||'your area'}}
+async function geo(place){if(isHere(place))return hereLL();const j=await jget('https://geocoding-api.open-meteo.com/v1/search?count=1&format=json&name='+encodeURIComponent(String(place).split(',')[0].trim()));const g=(j.results||[])[0];if(!g)throw new Error(`couldn’t find “${place}”`);return{lat:g.latitude,lng:g.longitude,name:[g.name,g.admin1,g.country].filter(Boolean).join(', ')}}
+async function weather(place,days){const L=await geo(place),n=Math.max(1,Math.min(+days||3,7));
+ const j=await jget(`https://api.open-meteo.com/v1/forecast?latitude=${L.lat}&longitude=${L.lng}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&hourly=temperature_2m,precipitation_probability,weather_code&forecast_days=${n}&timezone=auto`);
+ const u=(j.current_units||{}).temperature_2m||'°C',c=j.current||{},d=j.daily||{},h=j.hourly||{};const hrs=[];
+ if(h.time){const nowI=h.time.findIndex(x=>x>=(c.time||''));for(let i=Math.max(0,nowI);i<Math.min(h.time.length,nowI+12);i+=3)hrs.push(`${h.time[i].slice(11,16)} ${Math.round(h.temperature_2m[i])}${u} ${WMO[h.weather_code[i]]||''}${h.precipitation_probability[i]?' '+h.precipitation_probability[i]+'% rain':''}`)}
+ return`weather for ${L.name} (local time ${String(c.time||'').replace('T',' ')}): now ${Math.round(c.temperature_2m)}${u}, feels like ${Math.round(c.apparent_temperature)}${u}, ${WMO[c.weather_code]||'—'}, humidity ${c.relative_humidity_2m}%, wind ${Math.round(c.wind_speed_10m)} ${(j.current_units||{}).wind_speed_10m||'km/h'}${c.precipitation?', '+c.precipitation+' mm falling':''}\nnext hours: ${hrs.join('; ')}\n`+(d.time||[]).map((t,i)=>`- ${dd(t+'T12:00')}: ${WMO[d.weather_code[i]]||''}, ${Math.round(d.temperature_2m_min[i])}–${Math.round(d.temperature_2m_max[i])}${u}, rain chance ${d.precipitation_probability_max[i]??'?'}%, sunrise ${String(d.sunrise[i]).slice(11)}, sunset ${String(d.sunset[i]).slice(11)}`).join('\n')}
+async function places(q,near){let L=null,url='https://nominatim.openstreetmap.org/search?format=jsonv2&extratags=1&addressdetails=1&limit=8&q='+encodeURIComponent(q);
+ if(isHere(near)||!near){try{L=await hereLL()}catch(e){}if(L)url+=`&viewbox=${L.lng-.15},${L.lat+.1},${L.lng+.15},${L.lat-.1}&bounded=1`}else url='https://nominatim.openstreetmap.org/search?format=jsonv2&extratags=1&addressdetails=1&limit=8&q='+encodeURIComponent(q+' '+near);
+ let R=await jget(url).catch(()=>[]);if(!R.length&&L)R=await jget(url.replace('&bounded=1','')).catch(()=>[]);
+ const km=p=>L?Math.round(Math.hypot((p.lat-L.lat)*111,(p.lon-L.lng)*111*Math.cos(L.lat*Math.PI/180))*10)/10:null;
+ const X=R.map(p=>{const e=p.extratags||{},a=p.address||{};return{name:p.name||p.display_name.split(',')[0],addr:[a.house_number,a.road,a.suburb||a.neighbourhood,a.city||a.town||a.village].filter(Boolean).join(' '),hours:e.opening_hours||'',phone:e.phone||e['contact:phone']||'',web:e.website||e['contact:website']||'',km:km(p),kind:p.type}}).sort((a,b)=>(a.km??99)-(b.km??99));
+ return`places "${q}"${near&&!isHere(near)?' near '+near:L?' near '+L.name:''}: ${X.length} found${X.length?'':' (OpenStreetMap may not list it; say so)'}\n`+X.map(p=>`- ${p.name}${p.kind?' ('+p.kind+')':''}${p.addr?' · '+p.addr:''}${p.km!=null?' · '+p.km+' km':''} · hours: ${p.hours||'not listed'}${p.phone?' · '+p.phone:''}${p.web?' · '+p.web:''}`).join('\n')+(X.some(p=>p.hours)?`\n(Opening hours are in OpenStreetMap format, e.g. "Mo-Fr 08:00-18:00". Today is ${new Date().toLocaleDateString('en',{weekday:'long'})}, ${tm(new Date())}: say whether each is open now.)`:'')}
+async function webFacts(q){const out=[];
+ try{const d=await jget('https://api.duckduckgo.com/?format=json&no_html=1&skip_disambig=1&q='+encodeURIComponent(q),{native:true});if(d.Answer)out.push('Answer: '+d.Answer);if(d.AbstractText)out.push(`${d.Heading||''}: ${d.AbstractText} (${d.AbstractSource||'web'})`);(d.RelatedTopics||[]).slice(0,3).forEach(t=>t.Text&&out.push('- '+t.Text))}catch(e){}
+ try{const s=await jget('https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=3&srsearch='+encodeURIComponent(q));for(const r of((s.query||{}).search||[]).slice(0,2)){try{const p=await jget('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(r.title.replace(/ /g,'_')));out.push(`Wikipedia, ${p.title}: ${tr(p.extract||'',900)}`)}catch(e){}}}catch(e){}
+ return`web_search "${q}":\n`+(out.length?out.join('\n'):'nothing found. Say you couldn’t find it online; don’t guess.')}
+window.__http=(id,st,b)=>{const f=HTTPCB[id];if(f)f(st,b)};
 function nfetch(path,body){return new Promise((res,rej)=>{const key=notionKey();if(!key)return rej(new Error('Add your Notion token in Agent › Connections'));
  const url='https://api.notion.com/v1/'+path,headers={Authorization:'Bearer '+key,'Notion-Version':'2022-06-28','Content-Type':'application/json'},done=(st,txt)=>{let j=null;try{j=JSON.parse(txt)}catch(e){}st>=200&&st<300&&j?res(j):rej(new Error('Notion said '+(st||'no answer')+((j&&j.message)?': '+j.message:'')))};
  if(NA&&NA.http){const id='h'+uid();const t=setTimeout(()=>{delete HTTPCB[id];rej(new Error('Notion didn’t answer'))},45000);HTTPCB[id]=(st,b)=>{clearTimeout(t);delete HTTPCB[id];done(st,b)};NA.http(id,JSON.stringify({url,method:body?'POST':'GET',headers,body:body?JSON.stringify(body):''}));return}
@@ -196,7 +227,7 @@ window.agentFromVoice=x=>{const s=String(x||'');let when='daily',at='08:00',dow=
  const W=window.PlotDo&&PlotDo.parseWhen(s);if(W&&W.time&&/\d|noon|midnight/.test(l))at=W.time;
  if(/every\s+evening|each\s+evening|every\s+night/.test(l))at=W&&W.time&&/\d/.test(l)?at:'19:00';else if(/every\s+afternoon/.test(l))at=/\d/.test(l)?at:'14:00';else if(/every\s+morning|each\s+morning/.test(l))at=/\d/.test(l)?at:'08:00';
  if(/every\s+hour/.test(l))when='hourly';else if(/every\s+\d+\s+hours/.test(l))when='3h';else if(/every\s+weekday/.test(l))when='weekdays';else{const m=/every\s+(sun|mon|tues|wednes|thurs|fri|satur)day/.exec(l);if(m){when='weekly';dow=['sun','mon','tues','wednes','thurs','fri','satur'].indexOf(m[1])}else if(/every\s+week/.test(l)){when='weekly';dow=1}else if(/^(keep an eye on|watch|monitor)/.test(l))when='3h'}
- const src=['plot',...['gcal','gmail','gdrive','notion'].filter(connOn)];
+ const src=['plot',...['gcal','gmail','gdrive','notion','web'].filter(connOn)];
  const title=tr(s.replace(/^(?:every|each)\s+\S+(?:\s+at\s+\S+(?:\s*[ap]m)?)?\s*,?\s*/i,'').replace(/^(?:keep an eye on|watch|monitor)\s+/i,'Watch ').replace(/^./,c=>c.toUpperCase()),50);
  const t=addTask({title,prompt:s,when,at,dow,src});const miss=src.filter(k=>k!=='plot'&&!connOn(k)).map(k=>CN[k][0]);
  return{say:`Okay, I'll do that ${whenTxt(t).replace(/^Every/,'every').replace(/^Weekdays/,'on weekdays')}.${miss.length?` Connect ${miss.join(' and ')} on the Agent page so I can read ${miss.length>1?'them':'it'}.`:''}`,undo:()=>{ag().tasks=ag().tasks.filter(x=>x.id!==t.id);save()},chips:[['Open agent','agent']]}};
@@ -231,7 +262,7 @@ function tasksHTML(){const T=ag().tasks;
  <div class="chips" style="margin-top:10px">${TPL.map(x=>`<button class="chip" data-act="agTpl" data-k="${x.k}">${ic('plus')}${esc(x.title)}</button>`).join('')}</div></section>`}
 function connHTML(){const c=cset(),nk=notionKey();
  const row=k=>{const on=connOn(k);return`<div class="ag-c"><span><b>${CN[k][0]}</b><small>${CN[k][1]}</small></span>${on?`<button class="btn sm ghost" data-act="agDisc" data-k="${k}">Disconnect</button>`:`<button class="btn sm" data-act="agConn" data-k="${k}">Connect</button>`}</div>`};
- return`<section class="panel rv" id="agConn"><h3>Connections</h3><p class="small muted">What the agent may read. Google uses the same sign-in as Drive sync and asks for the extra permission when you connect. Nothing is sent anywhere except to the AI you picked.</p>${['gcal','gmail','gdrive','notion'].map(row).join('')}
+ return`<section class="panel rv" id="agConn"><h3>Connections</h3><p class="small muted">What the agent may read. Google uses the same sign-in as Drive sync and asks for the extra permission when you connect. Nothing is sent anywhere except to the AI you picked.</p>${['gcal','gmail','gdrive','notion','web'].map(row).join('')}
   ${c.notion||nk?`<div class="field"><label>Notion integration token</label><input type="password" data-agk="notion" value="${esc(nk)}" placeholder="ntn_…" autocomplete="off"><small class="muted">Make one at notion.so/my-integrations, then share the pages you want with it. The token stays on this device.</small></div>${NA&&NA.http?'':`<div class="field"><label>Proxy for Notion in a browser</label><input data-agk="proxy" value="${esc(c.proxy)}" placeholder="https://your-proxy.example" autocomplete="off" spellcheck="false"><small class="muted">Notion doesn’t answer web pages directly. The Android app doesn’t need this.</small></div>`}`:''}</section>`}
 function aiMark(){const s=insSet(),m=aiModel();if(m&&planEngine()!=='api'){s.dl={...(s.dl||{}),[m[0]]:1};save()}}
 function vAgent(){const A=ag(),e=planEngine(),picked=aiPicked(),ready=picked;const m=aiModel(),dl=picked&&!aiOk()&&e!=='api'&&m;const unseen=A.inbox.filter(i=>!i.seen).length;
@@ -285,6 +316,7 @@ Object.assign(ACT,{
  agChat:d=>{const it=ag().inbox.find(x=>x.id===d.i);if(!it||!window.PLOT_ASSIST||!PLOT_ASSIST.inject)return;it.seen=true;save();PLOT_ASSIST.inject(it.title,it.summary||'',chipsOf(it))},
  agClear:()=>askConfirm('Clear the inbox?','Suggestions you haven’t acted on are dropped.','Clear',()=>{ag().inbox=[];save();render(false)}),
  agConn:async d=>{const k=d.k,c=cset();
+  if(k==='web'){c.web=true;save();render(false);toast('The agent can look things up online');return}
   if(k==='notion'){c.notion=true;save();render(false);setTimeout(()=>{const i=document.querySelector('[data-agk=notion]');if(i)i.focus()},120);return}
   if(!cfg().clientId)return toast('Set up Google sign-in in Settings › You & sync first');
   c[k]=true;save();try{await googleConsent();toast(`${CN[k][0]} connected`)}catch(e){c[k]=false;save();scopeSync();toast('Google sign-in didn’t finish: '+esc(e&&e.message||'cancelled'))}render(false)},
@@ -295,30 +327,41 @@ document.addEventListener('change',e=>{const x=e.target;if(!x.dataset)return;
  else if(x.dataset.agk==='proxy'){cset().proxy=x.value.trim();save()}});
 
 /* the agent in the app: a page in More (PG in index.html), a section in Settings, new results on Home */
-{const _ss=setSecs;setSecs=function(){const L=_ss(),i=L.findIndex(x=>x.k==='voice');L.splice(i<0?L.length:i+1,0,{k:'agent',t:'Agent & connections',ic:'agent',sub:()=>{const n=ag().tasks.filter(t=>t.on).length,c=['gcal','gmail','gdrive','notion'].filter(connOn).length;return`${n} task${n===1?'':'s'} · ${c} connection${c===1?'':'s'}`},html:()=>connHTML()+`<div class="actions left rv" style="margin-top:12px"><a class="btn" href="#/agent">${ic('agent')}Open the Agent</a></div>`});return L}}
+{const _ss=setSecs;setSecs=function(){const L=_ss(),i=L.findIndex(x=>x.k==='voice');L.splice(i<0?L.length:i+1,0,{k:'agent',t:'Agent & connections',ic:'agent',sub:()=>{const n=ag().tasks.filter(t=>t.on).length,c=['gcal','gmail','gdrive','notion','web'].filter(connOn).length;return`${n} task${n===1?'':'s'} · ${c} connection${c===1?'':'s'}`},html:()=>connHTML()+`<div class="actions left rv" style="margin-top:12px"><a class="btn" href="#/agent">${ic('agent')}Open the Agent</a></div>`});return L}}
 if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){const n=ag().inbox.filter(i=>!i.seen).length;return(n?`<a class="panel rv ag-home" href="#/agent"><span class="ag-hi">${ic('agent')}</span><span><b>Plot has ${n} new result${n===1?'':'s'}</b><small>${esc(tr(ag().inbox[0].summary||ag().inbox[0].title,90))}</small></span>${ic('next','ico-s')}</a>`:'')+_ht()}}
 
 /* ---------------- the assistant and Live hand their questions here ----------------
    The assistant's AI decides when a request needs email, calendar, Drive or Notion (it answers "AGENT: <task>"), and the
    agent does the task with every connection that's on. The answer comes back into the chat and also lands in the inbox. */
-const CONNS=()=>['gcal','gmail','gdrive','notion'].filter(connOn);
+const CONNS=()=>['gcal','gmail','gdrive','notion','web'].filter(connOn);
+/* what the agent can reach, in words */
+const reach=c=>{const g=c.filter(k=>k!=='web').map(k=>CN[k][0]);return[g.length?`in the user's ${g.join(', ')}${c.includes('gcal')?' (and add calendar events)':''}`:'',c.includes('web')?'online: current weather and forecasts, places and their opening hours, and facts from the web':''].filter(Boolean).join(', and ')};
 function chipsOf(it){return it.sugs.filter(s=>!s.st).map(s=>({id:s.id,t:SUGN[s.type]+': '+tr((s.target?s.target+': ':'')+s.text,60),fn:async()=>{try{const r=await apply(s,true);toast(esc((r&&r.say)||'Done'));return r}catch(e){toast('Couldn’t do that: '+esc(e.message||e));throw e}}}))}
 function sayOf(it){const t=firstLine(it.summary).replace(/\[([^\]]+)\]\([^)]*\)/g,'$1');const n=it.sugs.filter(s=>!s.st).length;
  return tr(t,240)+(n?` I’ve put ${n===1?'a suggestion':n+' suggestions'} on screen.`:'')}
 window.AGENT={plot:()=>plotLines(false),connected:()=>CONNS(),names:()=>CONNS().map(k=>CN[k][0]),busy:()=>BUSY,
  /* the lines added to the assistant's and Live's instructions */
- sys:()=>{const c=CONNS();if(!c.length)return`If they ask about their email, calendar, Google Drive or Notion, tell them you can read those once they connect them on the Agent page (More › Agent).`;
-  return`YOUR AGENT: you have an agent that can look things up in the user's ${c.map(k=>CN[k][0]).join(', ')}${c.includes('gcal')?' (and add calendar events)':''}. You can't see any of that yourself. Whenever answering or doing what they ask needs anything from there (their email or inbox, messages from someone, their meetings, schedule or events, their files or documents, their Notion pages), don't guess and don't say you can't: reply with only this one line and nothing else:
+ sys:()=>{const c=CONNS();if(!c.length)return`If they ask about their email, calendar, Google Drive, Notion or anything online (weather, places), tell them you can do that once they connect it on the Agent page (More › Agent).`;
+  return`YOUR AGENT: you have an agent that can look things up ${reach(c)}. You can't see any of that yourself. Whenever answering or doing what they ask needs any of it, don't guess and don't say you can't: reply with only this one line and nothing else:
 AGENT: <the task for the agent, written clearly and completely, with every detail they gave>
 Questions about their goals, habits, journal, lists and threads in Plotline you answer yourself from the data you have.`},
- /* a quick AI decision before answering, so even a small on-device model that wouldn't follow the AGENT line still
-    reaches the agent: does this message need anything from the connected apps? hist: earlier {q,a} turns for context */
- route:async(q,hist)=>{const c=CONNS();if(!c.length||!aiOk()||!window.AIX)return'';const names=c.map(k=>CN[k][0]).join(', ');
+ /* one quick AI decision before answering, so even a small on-device model acts instead of chatting about it:
+    "do" (make things in the app now), "agent" (needs the connected apps or the web) or "talk". hist: earlier {q,a} turns */
+ decide:async(q,hist)=>{if(!aiOk()||!window.AIX)return null;const c=CONNS();
   const h=(hist||[]).filter(t=>t&&t.q&&t.a).slice(-2).map(t=>`User: ${tr(t.q,200)}\nAssistant: ${tr(String(t.a).replace(/\s+/g,' '),220)}`).join('\n');
-  const msgs=[{role:'system',content:`You route messages in a personal planning app. The assistant can't see the user's ${names} itself, but an agent can look things up there${c.includes('gcal')?' and add calendar events':''}. Decide if answering the user's latest message needs anything from ${names}: their emails, inbox, replies, messages from someone, meetings, schedule, events, appointments, files, documents or pages there, or if they ask whether that was checked or ask you to check it. Messages only about their goals, habits, journal, lists or threads in the app, small talk, and general questions don't need it. Reply with JSON only: {"agent":true,"task":"the full task for the agent, specific, with every detail they gave"} or {"agent":false}.`},
+  const msgs=[{role:'system',content:`You decide what to do with the user's latest message in Plotline, their app for goals, habits, routines, lists, threads, reminders and a journal. Reply with JSON only.
+"do": they ask you to create, add, save, log, start or set something in the app (or say yes to something you offered). Put each thing in "items": type is goal, habit, routine, list (title is the list name; detail is its items separated by commas), list_add (title is an existing list; detail is the items), journal (detail is the text to save), reminder (title is what; detail is when, like "tomorrow at 9am"), today (a goal for today), thread (something to track over time; detail is a first update), or thread_update (title is the thread; detail is the update). Use their exact words for names and items.${c.length?`\n"agent": answering needs something ${reach(c)}, or they ask whether that was checked. Put the full task in "task".`:''}
+"schedule": they want something done again and again or on a schedule ("every morning tell me…", "keep an eye on…"). Put it in "task".
+"talk": anything else: questions about their own plan, advice, ideas, chat.`},
    {role:'user',content:`${h?'Conversation so far:\n'+h+'\n\n':''}Latest message: ${q}`}];
-  let out='';try{await AIX.chat(msgs,x=>{out+=x},{max_tokens:140,temperature:0,schema:{type:'object',properties:{agent:{type:'boolean'},task:{type:'string'}},required:['agent'],additionalProperties:false}})}catch(e){return''}
-  const j=parseJSON(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,''));return j&&j.agent===true?(String(j.task||'').trim()||q):''},
+  const schema={type:'object',properties:{kind:{enum:c.length?['do','agent','schedule','talk']:['do','schedule','talk']},task:{type:'string'},items:{type:'array',maxItems:8,items:{type:'object',properties:{type:{enum:['goal','habit','routine','list','list_add','journal','reminder','today','thread','thread_update']},title:{type:'string'},detail:{type:'string'}},required:['type','title'],additionalProperties:false}}},required:['kind'],additionalProperties:false};
+  let out='';try{await AIX.chat(msgs,x=>{out+=x},{max_tokens:260,temperature:0,schema})}catch(e){return null}
+  const j=parseJSON(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,''));if(!j)return null;
+  if(j.kind==='agent'&&c.length)return{agent:String(j.task||'').trim()||q};
+  if(j.kind==='schedule')return{schedule:q};
+  if(j.kind==='do'&&Array.isArray(j.items)&&j.items.length)return{items:j.items.filter(x=>x&&x.type&&String(x.title||x.detail||'').trim())};
+  return{talk:1}},
+ route:async(q,hist)=>{const d=await AGENT.decide(q,hist);return d&&d.agent||''},
  parse:t=>{const m=/(?:^|\n)\s*[*_`>-]*\s*AGENT\s*:\s*(.+)/i.exec(String(t||''));return m?m[1].replace(/[*_`]+$/,'').trim():''},
  async ask(q,o={}){const t={id:'ask',title:tr(q.replace(/^./,c=>c.toUpperCase()),50),prompt:q,src:['plot',...CONNS()],mode:'suggest',when:'manual'};STEPCB=o.onStep||null;
   try{const it=await runTask(t,true,{quiet:true});if(!it)throw new Error(t.err||'The agent couldn’t finish');it.seen=true;save();return{item:it,md:it.summary,say:sayOf(it),chips:chipsOf(it)}}
