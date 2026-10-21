@@ -42,7 +42,7 @@ Object.assign(IC,{
  unfull:'<path d="M9 4v3.4A1.6 1.6 0 0 1 7.4 9H4M20 9h-3.4A1.6 1.6 0 0 1 15 7.4V4M15 20v-3.4a1.6 1.6 0 0 1 1.6-1.6H20M4 15h3.4A1.6 1.6 0 0 1 9 16.6V20"/>',
  print:'<path d="M7 8.4V4.2a.8.8 0 0 1 .8-.8h8.4a.8.8 0 0 1 .8.8v4.2"/><path d="M7 17.2H5.4a2 2 0 0 1-2-2v-4.8a2 2 0 0 1 2-2h13.2a2 2 0 0 1 2 2v4.8a2 2 0 0 1-2 2H17"/><rect x="7" y="13.6" width="10" height="7" rx=".8"/>',
  share:'<path d="M12 14.6V3.6M8.2 7.2 12 3.4l3.8 3.8"/><path d="M8.4 10.2H7a2 2 0 0 0-2 2v6.4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.4a2 2 0 0 0-2-2h-1.4"/>',
- thread:'<path d="M4.2 6.6a3 3 0 0 1 3-3h9.6a3 3 0 0 1 3 3v6.2a3 3 0 0 1-3 3h-5.4l-4.4 3.6v-3.6h0a3 3 0 0 1-2.8-3z"/><path d="M8.2 8.2h7.6M8.2 11.4h4.6"/>',
+ thread:'<circle cx="6" cy="5.6" r="1.9"/><circle cx="6" cy="12" r="1.9"/><circle cx="6" cy="18.4" r="1.9"/><path d="M6 7.5v2.6M6 13.9v2.6M10.6 5.6h9M10.6 12h6.6M10.6 18.4h7.8"/>',
  pin:'<path d="M9.4 3.6h5.2M10.2 3.6v5.2l-3.3 3.6v1.8h10.2v-1.8l-3.3-3.6V3.6M12 14.2v6.2"/>',
  link:'<path d="M10.2 13.8a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.1 1.1"/><path d="M13.8 10.2a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.1-1.1"/>',
  lock:'<rect x="5" y="10.6" width="14" height="10" rx="2.4"/><path d="M8.2 10.6V7.4a3.8 3.8 0 0 1 7.6 0v3.2"/>',
@@ -152,6 +152,19 @@ function udkInit(){document.querySelectorAll('#view .udk-t').forEach(t=>{if(t._u
 addEventListener('pointermove',e=>{if(!UDR)return;const dx=e.clientX-UDR.x;UDR.m=Math.max(UDR.m,Math.abs(dx));if(UDR.m>5){UDR.t.classList.add('drag');UDR.t.scrollLeft=UDR.sl-dx}});
 addEventListener('pointerup',e=>{if(!UDR)return;const u=UDR;UDR=null;u.t.classList.remove('drag');if(u.m>5){UDX=Date.now();const dx=e.clientX-u.x;udkTo(u.t,Math.abs(dx)>40?u.i+(dx<0?1:-1):u.i,true)}});
 addEventListener('click',e=>{if(Date.now()-UDX<250&&e.target.closest&&e.target.closest('.udk-t')){e.stopPropagation();e.preventDefault()}},true);
+
+/* ---------- Home on wide screens: two columns, things to do on the left, things to glance at on the right ---------- */
+const WIDE=matchMedia('(min-width:1180px)');
+/* which column a Home section goes to: full width (header, banners, shortcuts), left (your day, habits) or right (talk, up next, today’s goals, insights) */
+const hSide=n=>{const c=n.classList,h=((n.querySelector(':scope>.st-h h3')||{}).textContent||'').trim().toLowerCase();
+ if(n.tagName==='HEADER'||c.contains('demob')||c.contains('sh-today')||c.contains('hft')||c.contains('hcust'))return'full';
+ if(c.contains('lv-home')||n.querySelector(':scope>.now')||n.id==='actCard'||c.contains('aip')||(n.dataset&&n.dataset.act==='weekly')||/^(today|insight|coming|pinned|thread)/.test(h))return'r';return'l'};
+{const _vt=vToday;vToday=function(){const o=_vt.apply(this,arguments);if(!WIDE.matches)return o;
+ const t=document.createElement('template');t.innerHTML=o;const N=[...t.content.children],top=[],L=[],Rt=[],end=[];
+ N.forEach(n=>{const k=hSide(n);if(k==='full')(L.length||Rt.length?end:top).push(n);else(k==='r'?Rt:L).push(n)});
+ if(!L.length||!Rt.length)return o;const col=(c,a)=>`<div class="hcol ${c}">${a.map(n=>n.outerHTML).join('')}</div>`;
+ return top.map(n=>n.outerHTML).join('')+`<div class="hgrid">${col('hcol-a',L)}${col('hcol-b',Rt)}</div>`+end.map(n=>n.outerHTML).join('')};VIEWS.today=vToday}
+WIDE.addEventListener('change',()=>{if(cur.p==='today')render(false)});
 
 /* ---------- canvas: goals, journal and threads edge to edge ---------- */
 const CANVAS=['goal','journal','threads','thread','list','habit'];
