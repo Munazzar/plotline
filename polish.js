@@ -107,10 +107,13 @@ const hIcons=(ds,max)=>{const L=dayHabits(ds);if(!L.length)return'';const sh=L.s
 
 /* ---------- habits: today, skip and a comment from the habit itself ---------- */
 const BUB='chat';
-{const _hr=hrow;hrow=function(h){let o=_hr(h);if(h.status!=='active'||h.kind==='quit')return o;const t=td(),c=((h.ck||{})[t]||{});
- const b=`<button class="ibtn hcm${c.n?' on':''}" data-act="hDaySheet" data-id="${h.id}" data-d="${t}" aria-label="${c.n?'Edit today’s comment':'Comment, skip or check off today'}" title="${c.n?'Edit comment':'Comment or skip'}">${ic(BUB)}</button>`;
- o=o.replace('<span class="hside-i">','<span class="hside-i">'+b);
- if(c.n)o=o.replace('<div class="s">',`<div class="hcm-q">“${esc(c.n.length>90?c.n.slice(0,88)+'…':c.n)}”</div><div class="s">`);return o}}
+/* a labelled note button on every habit row and the habit page, so nobody has to know about the long press */
+function noteBtn(h,cls){const t=td(),c=((h.ck||{})[t]||{}),dn=hDone(h,t);
+ return`<button class="hnote${cls?' '+cls:''}${c.n?' on':''}" data-act="hDaySheet" data-id="${h.id}" data-d="${t}">${ic(BUB)}<span>${c.n?esc(c.n.length>70?c.n.slice(0,68)+'…':c.n):dn?'How did it go?':'Add a note'}</span></button>`}
+{const _hr=hrow;hrow=function(h){const o=_hr(h);if(h.status!=='active'||h.kind==='quit')return o;
+ const tp=document.createElement('template');tp.innerHTML=o;const m=tp.content.querySelector('.hb>.s');if(!m)return o;m.insertAdjacentHTML('afterend',noteBtn(h));return tp.innerHTML}}
+{const _vh=vHabit;vHabit=function(id){const o=_vh(id),h=H(id);if(!h||h.status!=='active'||h.kind==='quit')return o;
+ const i=o.indexOf('class="hero tint hhero"'),j=i<0?-1:o.indexOf('</section>',i);return j<0?o:o.slice(0,j)+noteBtn(h,'big')+o.slice(j)};VIEWS.habit=vHabit}
 function snapFix(o){const t=td();
  return o.replace(/<button class="hsn-h" data-act="openHabit" data-id="([^"]+)">/g,(m,id)=>{const h=H(id);if(!h||h.kind==='quit')return m;const c=((h.ck||{})[t]||{});return`<button class="hsn-h${c.n?' cm':''}" data-act="hDaySheet" data-id="${id}" data-d="${t}" title="Check off today, skip or add a comment">`})
  .replace(/<button class="hsn-x ([^"]*)" data-act="hsnTap" data-id="([^"]+)" data-d="([^"]+)"/g,(m,c,id,ds)=>{const h=H(id),n=h&&((h.ck||{})[ds]||{}).n;return n?`<button class="hsn-x ${c} cm" data-act="hsnTap" data-id="${id}" data-d="${ds}"`:m})
@@ -118,7 +121,7 @@ function snapFix(o){const t=td();
 {const _hs=habitsStrip;habitsStrip=function(){return snapFix(_hs.apply(this,arguments))}}
 {const _vh=vHabits;vHabits=function(){return snapFix(_vh.apply(this,arguments))};VIEWS.habits=vHabits}
 {const _ds=ACT.hDaySheet;ACT.hDaySheet=function(d){_ds.apply(this,arguments);const h=H(d.id),sh=$('#sheet');if(!h||!sh||!sh.classList.contains('on'))return;
- const a=sh.querySelector('.actions');if(a&&!sh.querySelector('.hds-open'))a.insertAdjacentHTML('beforebegin',`<button class="link small hds-open" data-act="hdsOpen" data-id="${h.id}">Open ${esc(h.title)}</button>`)}}
+ const a=sh.querySelector('.actions');if(a&&!sh.querySelector('.hds-open')&&!(cur.p==='habit'&&cur.id===h.id))a.insertAdjacentHTML('beforebegin',`<button class="link small hds-open" data-act="hdsOpen" data-id="${h.id}">Open ${esc(h.title)}</button>`)}}
 ACT.hdsOpen=d=>{closeSheet();go('habit/'+d.id)};
 
 /* ---------- Home: Up next as swipe cards ---------- */
