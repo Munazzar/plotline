@@ -13,19 +13,23 @@ const normT=s=>{s=String(s||'').trim();if(!okT(s))return'';const[h,m]=s.split(':
 const okD=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''))&&!isNaN(new Date(s+'T12:00'));
 const atOf=(date,time)=>{const[y,m,d]=date.split('-').map(Number),[hh,mm]=time.split(':').map(Number);return new Date(y,m-1,d,hh,mm).getTime()};
 const cap=s=>{s=String(s||'').replace(/^[\s,:;-]+|[\s,.!?]+$/g,'').trim();return s.charAt(0).toUpperCase()+s.slice(1)};
-const every=m=>m%60===0?(m===60?'hour':m/60+' hours'):m===30?'half hour':m+' minutes';
+const every=m=>m%60===0?(m===60?'hour':m/60+' hours'):m===30?'half hour':m===1?'minute':m+' minutes';
 const everyS=m=>m%60===0?m/60+' h':m+' min';
 const sync=()=>{try{syncNative()}catch(e){}};
 const redraw=()=>{try{render(false)}catch(e){}};
 
 /* the times a repeating reminder goes off on its day */
-function occ(x){if(!x.rep||!okD(x.date)||!okT(x.time))return[];const m=Math.max(5,+x.rep.m||60),st=atOf(x.date,x.time);let end=atOf(x.date,okT(x.rep.to)?x.rep.to:'21:00');if(end<st)end+=864e5;
- const L=[];for(let t=st;t<=end&&L.length<96;t+=m*6e4)L.push(t);if(+x.rep.n>0)L.length=Math.min(L.length,+x.rep.n);return L}
+function occ(x){if(!x.rep||!okD(x.date)||!okT(x.time))return[];const m=Math.max(1,+x.rep.m||60),st=atOf(x.date,x.time);let end=atOf(x.date,okT(x.rep.to)?x.rep.to:'21:00');if(end<st)end+=864e5;
+ const L=[];for(let t=st;t<=end&&L.length<1440;t+=m*6e4)L.push(t);if(+x.rep.n>0)L.length=Math.min(L.length,+x.rep.n);return L}
 const oneAt=x=>+x.at>0?+x.at:null;
 
-/* every repeat (and timer) for the phone's alarm list; plain day reminders stay with syncNative's own loop */
-window.schedAlarms=(now,L)=>{S.days.forEach(x=>{if(x.done)return;
- if(x.rep){const O=occ(x);O.forEach((t,i)=>{if(t>now)L.push({at:t,title:x.title,body:`Every ${every(+x.rep.m)} · ${i+1} of ${O.length}${i===O.length-1?' · last one today':''}`,k:'rem',id:x.id,d:x.date})})}
+/* repeats (and timers) for the phone's alarm list; plain day reminders stay with syncNative's own loop. The phone gets only
+   the next time of each repeat, with rpm (ms apart) and end: RepAlarm.java arms the one after when it rings, so a reminder
+   every 2 minutes takes one of Android's 60 alarm slots, not hundreds. all: every time, for the Scheduled card. */
+window.schedAlarms=(now,L,all)=>{S.days.forEach(x=>{if(x.done)return;
+ if(x.rep){const O=occ(x),i=O.findIndex(t=>t>now);if(i<0)return;const m=+x.rep.m,last=O[O.length-1];
+  if(all)O.slice(i).forEach(t=>L.push({at:t,title:x.title,body:'',k:'rem',id:x.id,d:x.date}));
+  else L.push({at:O[i],title:x.title,body:`Every ${every(m)} until ${new Date(last).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`,k:'rem',id:x.id,d:x.date,rpm:m*6e4,end:last})}
  else{const t=oneAt(x);if(t&&t>now)L.push({at:t,title:x.title,body:x.tmr?`Your ${x.tmr} min timer is done`:'Reminder',k:'rem',id:x.id,d:x.date,rp:!x.tmr})}})};
 const own=x=>!!(x.rep||oneAt(x));
 /* in the browser (and as a toast in the app) while it's open */
@@ -38,11 +42,11 @@ function addItem(o){const x={id:uid(),title:o.title,date:o.date,time:o.time,dur:
  if(o.rep)x.rep=o.rep;if(o.at){x.at=o.at;x.tmr=o.tmr||0}S.days.push(x);return x}
 function drop(ids){S.days=S.days.filter(y=>!ids.includes(y.id));save();sync();redraw()}
 const dayWord=d=>d===ymd()?'today':d===addDays(1)?'tomorrow':(typeof dayName==='function'?dayName(d):d);
-const lc=s=>s.charAt(0).toLowerCase()+s.slice(1);
+const lc=s=>(s.charAt(0).toLowerCase()+s.slice(1)).replace(/\bmy\b/gi,'your').replace(/\bmyself\b/gi,'yourself').replace(/\bI\b/g,'you');
 
 /* o: {title, date, time, every (minutes), until (HH:MM), times, days, repeat: daily|weekdays|weekly} */
 function remind(o){const title=cap(String(o.title||'').replace(/^(?:(?:please|remind|set|a|an|reminder|alarm|me|to|that|about|for)\s+)+/i,'')).slice(0,90)||'Reminder',now=new Date();
- let m=Math.round(+o.every||0);if(m&&m<5)m=5;if(m>=1440){o.repeat=o.repeat||(m>=10080?'weekly':'daily');m=0}
+ let m=Math.round(+o.every||0);if(m<0)m=0;if(m>=1440){o.repeat=o.repeat||(m>=10080?'weekly':'daily');m=0}
  const rpt=['daily','weekdays','weekly'].includes(o.repeat)?o.repeat:'';let date=okD(o.date)&&o.date>=ymd()?o.date:'',time=normT(o.time);
  /* every day / weekday / week with no end: that's a habit with a reminder, so it keeps going and keeps a streak */
  if(rpt&&!m&&!(+o.days>1)){const t=time||'09:00',dw=new Date((date||ymd())+'T12:00').getDay();
@@ -51,16 +55,18 @@ function remind(o){const title=cap(String(o.title||'').replace(/^(?:(?:please|re
   return{say:`Okay, I'll remind you to ${lc(title)} ${rpt==='daily'?'every day':rpt==='weekdays'?'every weekday':'every '+new Date(2024,0,7+dw).toLocaleDateString(undefined,{weekday:'long'})} at ${fmtTime(t)}. It's a habit now, so you can tick it off and keep a streak.`,
    undo:()=>{S.habits=S.habits.filter(y=>y.id!==h.id);save();sync();redraw()},chips:[['Open habit','habit/'+h.id]]}}
  if(!date)date=ymd();
+ /* "3 times tomorrow" with no interval: spread them across the day (or the window they gave) */
+ const n0=Math.round(+o.times||0);if(!m&&n0>1){const a=time||(date===ymd()?hm(new Date(Math.ceil((now.getTime()+6e4)/3e5)*3e5)):'09:00'),b=normT(o.until)||'21:00',span=(+b.slice(0,2)*60+ +b.slice(3))-(+a.slice(0,2)*60+ +a.slice(3));if(span>0){m=Math.max(1,Math.floor(span/(n0-1)));time=a}}
  /* the first time: what they said; for repeats with no start, soon (today) or the morning (another day) */
- if(!time){if(m&&date===ymd()){const t=new Date(Math.ceil((now.getTime()+m*6e4)/3e5)*3e5);time=hm(t)}else time='09:00'}
+ if(!time){if(m&&date===ymd()){const t=new Date(Math.ceil((now.getTime()+Math.min(m,60)*6e4)/6e4)*6e4);time=hm(t)}else time='09:00'}
  let until=m?(normT(o.until)||'21:00'):'';
  if(!m&&date===ymd()&&atOf(date,time)<=now.getTime())date=addDays(1);
  if(m&&date===ymd()&&atOf(date,until)<=now.getTime()&&atOf(date,time)<=now.getTime())date=addDays(1);
  if(m&&date===ymd()&&atOf(date,time)<=now.getTime()){const t=new Date(Math.ceil((now.getTime()+6e4)/3e5)*3e5);time=hm(t)}
  const n=Math.max(0,Math.round(+o.times||0)),days=Math.min(14,Math.max(1,Math.round(+o.days||0)||(rpt&&m?7:1)));
  const ds=[];for(let k=0,d=new Date(date+'T12:00');ds.length<days&&k<30;k++,d.setDate(d.getDate()+1)){const w=d.getDay(),s=ymd(d);if(rpt==='weekdays'&&(w===0||w===6))continue;if(rpt==='weekly'&&k%7)continue;ds.push(s)}
- const made=ds.map(d=>addItem({title,date:d,time,rep:m?{m,to:until,...(n?{n}:{})}:null}));save();sync();redraw();
- const ids=made.map(x=>x.id),cnt=m?occ(made[0]).length:0;
+ const t1=normT(o.time)||'09:00',made=ds.map((d,i)=>addItem({title,date:d,time:i?t1:time,rep:m?{m,to:until,...(n?{n}:{})}:null}));save();sync();redraw();
+ const ids=made.map(x=>x.id),cnt=m?occ(made[made.length>1?1:0]).length:0;
  const when=ds.length>1?`${dayWord(ds[0])} and the next ${ds.length-1} day${ds.length>2?'s':''}`:dayWord(date);
  const say=m?`Okay, ${when} I'll remind you to ${lc(title)} every ${every(m)}${n?`, ${cnt} time${cnt===1?'':'s'}`:''} from ${fmtTime(time)} until ${fmtTime(until)}${!n&&cnt?` (${cnt} reminder${cnt===1?'':'s'}${ds.length>1?' a day':''})`:''}.`
   :`Okay, I'll remind you ${dayWord(date)} at ${fmtTime(time)}${ds.length>1?` and the next ${ds.length-1} day${ds.length>2?'s':''}`:''}: “${title}”.`;
@@ -80,15 +86,27 @@ function checkin(o){const L=active();if(!L.length)return{say:'You don’t have a
   undo:()=>{g.checkin=prev.c;g.checkinTime=prev.t;g.checkinDay=prev.d;save();sync();redraw()},chips:[['Open goal','goal/'+g.id]]}}
 
 /* when there's no AI (or an ACTION line only gave words): "every 2 hours", "hourly", "until 9pm", "3 times", "for 3 days" */
-const NUMW={a:1,an:1,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,twelve:12,fifteen:15,twenty:20,thirty:30,'forty-five':45,ninety:90,half:.5};
-const nv=w=>{const n=parseFloat(w);return isNaN(n)?NUMW[String(w).toLowerCase()]||1:n};
-function words(src){let s=' '+String(src||'')+' ',m,o={};const cut=rx=>{const r=rx.exec(s);if(r)s=s.replace(r[0],' ');return r};
- if((m=cut(/\s(?:every|each)\s+(?:(\d+(?:\.\d+)?|an?|one|two|three|four|five|six|eight|ten|twelve|fifteen|twenty|thirty|forty-five|ninety|half)\s*(?:an?\s+)?)?(minutes?|mins?|hours?|hrs?|h)\b/i)))o.every=Math.round(nv(m[1]||1)*(/^h/i.test(m[2])?60:1));
- else if(cut(/\s(?:every\s+half\s+(?:an\s+)?hour|half[\s-]hourly)\b/i))o.every=30;else if(cut(/\s(?:hourly|every\s+hour)\b/i))o.every=60;
- if((m=cut(/\s(?:until|till|til|to|through)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?(?=[\s,.!?])/i))){let h=+m[1];const ap=(m[3]||'').toLowerCase();if(ap==='pm'&&h<12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h<12&&h<=9)h+=12;o.until=pad(h%24)+':'+(m[2]||'00')}
- if((m=cut(/\s(\d+|two|three|four|five|six|seven|eight|nine|ten)\s+times\b/i)))o.times=nv(m[1]);
- if((m=cut(/\sfor\s+(?:the\s+)?(?:next\s+)?(\d+|two|three|four|five|six|seven|ten)\s+days\b/i)))o.days=nv(m[1]);
- if(cut(/\s(?:every\s+day|daily|each\s+day)\b/i))o.repeat='daily';else if(cut(/\s(?:every\s+weekday|on\s+weekdays|weekdays)\b/i))o.repeat='weekdays';else if(cut(/\s(?:every\s+week|weekly)\b/i))o.repeat='weekly';
+const NUMW={a:1,an:1,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,twelve:12,fifteen:15,twenty:20,thirty:30,'forty-five':45,ninety:90,half:.5,couple:2,few:3};
+const nv=w=>{const n=parseFloat(w);return isNaN(n)?NUMW[String(w).toLowerCase().replace(/\s+of$/,'')]||1:n};
+function words(src){let s=' '+String(src||'').replace(/\b([ap])\.\s?m\.?/gi,'$1m')+' ',m,o={};const cut=rx=>{const r=rx.exec(s);if(r)s=s.replace(r[0],' ');return r};
+ const N='(\\d+(?:\\.\\d+)?|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty-five|ninety|half|couple(?:\\s+of)?|few)';
+ const hr=(h,mi,ap,ctx)=>{h=+h;ap=(ap||'').toLowerCase();if(ap==='pm'&&h<12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&ctx&&h<ctx)h+=12;return pad(h%24)+':'+pad(+(mi||0))};
+ /* the window: "from 9 to 5", "between 8am and 10pm" */
+ if((m=cut(/\s(?:from|between)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:to|and|until|till|-|–)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?(?=[\s,.!?])/i))){o.time=hr(m[1],m[2],m[3],7);o.until=hr(m[4],m[5],m[6],+o.time.slice(0,2)+1)}
+ /* how often: "every 2 minutes", "every couple of hours", "every 90 mins", "every other hour", "twice an hour", "hourly" */
+ if((m=cut(new RegExp('\\s(?:every|each)\\s+(?:'+N+'\\s*(?:an?\\s+)?)?(seconds?|secs?|minutes?|mins?|m|hours?|hrs?|h)\\b','i'))))o.every=Math.max(1,Math.round(nv(m[1]||1)*(/^h/i.test(m[2])?60:/^s/i.test(m[2])?1/60:1)));
+ else if(cut(/\severy\s+other\s+hour\b/i))o.every=120;
+ else if(cut(/\s(?:every\s+half\s+(?:an\s+)?hour|half[\s-]hourly|twice\s+an\s+hour)\b/i))o.every=30;else if(cut(/\s(?:hourly|every\s+hour|once\s+an\s+hour)\b/i))o.every=60;
+ else if((m=cut(new RegExp('\\s'+N+'\\s+times\\s+(?:an|per|each|every)\\s+hour\\b','i'))))o.every=Math.max(1,Math.round(60/nv(m[1])));
+ if(!o.until&&(m=cut(/\s(?:until|till|til|to|through|up\s+to)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?(?=[\s,.!?])/i)))o.until=hr(m[1],m[2],m[3],10);
+ if(!o.until&&cut(/\s(?:until|till|til|to)\s+(?:the\s+)?(?:evening|tonight)\b/i))o.until='21:00';else if(!o.until&&cut(/\s(?:until|till|til|to)\s+(?:bed(?:time)?|night|midnight)\b/i))o.until='23:00';
+ /* how many: "3 times", "twice", "5 times tomorrow" */
+ if((m=cut(new RegExp('\\s'+N+'\\s+times\\b(?:\\s+(?:a|per|each)\\s+day)?','i'))))o.times=Math.round(nv(m[1]));else if(cut(/\stwice\b(?:\s+(?:a|per)\s+day)?/i))o.times=2;else if(cut(/\sthrice\b/i))o.times=3;
+ if((m=cut(new RegExp('\\sfor\\s+(?:the\\s+)?(?:next\\s+)?'+N+'\\s+days\\b','i'))))o.days=Math.round(nv(m[1]));else if(cut(/\s(?:all|this|the\s+whole)\s+week\b/i)){o.days=7}
+ /* for how long: "for the next 2 hours", "for an hour" (from now) */
+ if((m=cut(new RegExp('\\sfor\\s+(?:the\\s+)?(?:next\\s+)?'+N+'\\s*(hours?|hrs?|minutes?|mins?)\\b','i')))){const mn=nv(m[1])*(/^h/i.test(m[2])?60:1),t=new Date(Date.now()+mn*6e4);o.until=hm(t);o.soon=1}
+ if((m=cut(/\s(?:every|each)\s+(morning|afternoon|evening|night)\b/i))){o.repeat='daily';o.time={morning:'08:00',afternoon:'14:00',evening:'19:00',night:'21:00'}[m[1].toLowerCase()]}
+ else if(cut(/\s(?:every\s+day|daily|each\s+day|every\s+single\s+day)\b/i))o.repeat='daily';else if(cut(/\s(?:every\s+weekday|on\s+weekdays|weekdays)\b/i))o.repeat='weekdays';else if(cut(/\s(?:every\s+week|weekly)\b/i))o.repeat='weekly';
  o.rest=s.replace(/\s+/g,' ').trim();return o}
 
 /* one item from AGENT.decide (or an ACTION line) */
@@ -97,18 +115,21 @@ function make(it){const ty=it.type==='alarm'?'reminder':it.type;
  if(ty==='checkin')return checkin(it);
  if(ty!=='reminder')return null;
  const has=['date','time','every','until','times','days','repeat'].some(k=>it[k]!=null&&it[k]!==''&&it[k]!==0);
- /* the AI's fields first; words it left in the title ("Drink water every 2 hours") fill the gaps */
- if(has){const wt=words(it.title||''),wx=words(it.detail||''),f=k=>it[k]||wt[k]||wx[k]||'';return remind({...it,title:wt.rest||it.title,every:f('every'),until:f('until'),times:f('times'),days:f('days'),repeat:f('repeat')})}
+ /* the AI's fields first; words it left in the title ("Drink water every 2 hours"), or in what they said (q, when this
+    was the only reminder in the message), fill the gaps. A small model often gets the date right and drops the repeat. */
+ const wq=it.q?words(it.q):{};
+ if(has||wq.every||wq.repeat||wq.days||wq.times){const wt=words(it.title||''),wx=words(it.detail||''),f=k=>it[k]||wt[k]||wx[k]||wq[k]||'';it={...it,time:f('time'),date:it.date||(wq.soon?ymd():'')};
+  if(!has&&window.PlotDo){const w=PlotDo.parseWhen(wq.rest||'');if(w.found){it={...it,date:w.date,time:/\d|noon|midnight|morning|afternoon|evening|night/i.test(it.q)?w.time:''}}}return remind({...it,title:wt.rest||it.title,every:f('every'),until:f('until'),times:f('times'),days:f('days'),repeat:f('repeat')})}
  /* only words: read them here */
  const txt=[it.title,it.detail].filter(Boolean).join(' '),wd=words(txt),w=window.PlotDo?PlotDo.parseWhen(wd.rest):{found:false};
  const title=w.found?(w.rest||it.title):wd.rest||it.title;
- return remind({...wd,title,date:w.found?w.date:'',time:w.found&&(/\d|noon|midnight|morning|afternoon|evening|night/i.test(txt))?w.time:''})}
+ return remind({...wd,title,date:w.found?w.date:wd.soon?ymd():'',time:wd.time||(w.found&&(/\d|noon|midnight|morning|afternoon|evening|night/i.test(txt))?w.time:'')})}
 /* the assistant's quick path: only a reminder that repeats needs this; a plain one stays as it was */
-function fromText(x){const wd=words(x);if(!wd.every&&!wd.repeat&&!wd.days)return null;return make({type:'reminder',title:x})}
+function fromText(x){const wd=words(x);if(!wd.every&&!wd.repeat&&!wd.days&&!(wd.times>1))return null;return make({type:'reminder',title:x})}
 
 /* ---------------- Home: what's scheduled ---------------- */
 const KIND={rem:['bell','Reminder'],day:['bell','Reminder'],step:['target','Step'],checkin:['goals','Check-in'],habit:['rep','Habit'],timer:['timer','Focus timer'],litem:['checklist','List'],wrap:['journal','Day wrap-up'],agent:['agent','Agent'],mile:['flag','Milestone']};
-function upcoming(now,span){let L=[];try{L=alarmList(now)}catch(e){}return L.filter(x=>x.at>now&&x.at<=now+span).sort((a,b)=>a.at-b.at)}
+function upcoming(now,span){let L=[];try{L=alarmList(now,true)}catch(e){}return L.filter(x=>x.at>now&&x.at<=now+span).sort((a,b)=>a.at-b.at)}
 function rows(L){const out=[],seen={};L.forEach(x=>{const key=x.k==='rem'&&x.id?'r'+x.id:x.k==='habit'?'h'+x.hid+x.hd:'';if(key&&seen[key]){seen[key].more++;return}const r={...x,more:0};if(key)seen[key]=r;out.push(r)});return out}
 const tWhen=t=>{const d=new Date(t),ds=ymd(d);return{day:ds===ymd()?'Today':ds===addDays(1)?'Tomorrow':d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}),time:d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}};
 function rowHTML(r){const x=r.id&&(r.k==='rem'||r.k==='day')?S.days.find(y=>y.id===r.id):null,[icon,lab]=x&&x.tmr?['timer','Timer']:KIND[r.k]||['bell','Reminder'],w=tWhen(r.at);
