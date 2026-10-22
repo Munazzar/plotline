@@ -3539,7 +3539,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.45.2';
+const APP_VER='1.45.3';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -7439,7 +7439,7 @@ const thrPick=v=>{if(!v)return null;const i=v.indexOf(':');return{k:v.slice(0,i)
 function thrBig(t){const u=thrUps(t)[0],tg=u?thrTag(u.k):null,n=thrUps(t).length,lk=thrLink(t);
  return`<div class="jb tint thr-jb${t.status==='done'?' fin':''}" data-act="thrOpen" data-id="${t.id}" role="button" tabindex="0" aria-label="Open thread ${esc(t.title)}"><div class="jh"><span class="data">${t.status==='done'?'✅ Done':tg?tg[1]+' '+tg[2]:'🧵 New'} · ${n} update${n===1?'':'s'}</span>${t.status==='done'?'':`<button class="x" data-act="thrAddSheet" data-id="${t.id}" aria-label="Add an update">${ic('plus')}</button>`}</div><div class="data" style="margin-top:4px">${thrAgo(thrLast(t))}</div><div class="jb-big">${esc(t.title)}</div>${u?`<div class="jb-q thr-clamp">${esc(trunc(u.x,180))}</div>`:'<div class="jb-q" style="opacity:.65">Nothing logged yet</div>'}${lk?`<span class="jg">${esc(lk.e)} ${esc(trunc(lk.n,34))}</span>`:''}</div>`}
 function thrFlip(t){const U=thrUps(t),u=U[0],tg=u?thrTag(u.k):null,lk=thrLink(t),when=thrAgo(thrLast(t));
- return`<div class="jf" style="${thrCol(t)}" data-act="flip" tabindex="0" role="button" aria-label="${esc(t.title)}. Show latest updates"><div class="jf-in"><div class="jf-face jf-front tint"><div class="sc-top"><span class="data">${tg?tg[1]+' ':''}Thread · ${when}</span><span class="flip-hint">${ic('flipi')}</span></div><div class="jt-big">${esc(t.title)}</div><div class="data" style="margin-top:10px">${U.length} update${U.length===1?'':'s'}${lk?' · '+esc(trunc(lk.n,28)):''}</div></div>
+ return`<div class="jf" style="${thrCol(t)}" data-act="flip" data-tid="${t.id}" tabindex="0" role="button" aria-label="${esc(t.title)}. Show latest updates"><div class="jf-in"><div class="jf-face jf-front tint"><div class="sc-top"><span class="data">${tg?tg[1]+' ':''}Thread · ${when}</span><span class="flip-hint">${ic('flipi')}</span></div><div class="jt-big">${esc(t.title)}</div><div class="data" style="margin-top:10px">${U.length} update${U.length===1?'':'s'}${lk?' · '+esc(trunc(lk.n,28)):''}</div></div>
  <div class="jf-face jf-back tint"><div class="data">${when}</div><h4>${esc(t.title)}</h4>${U.slice(0,3).map(x=>`<p class="note thr-ln">${thrTag(x.k)[1]} ${esc(trunc(x.x,90))}</p>`).join('')||'<p class="note" style="opacity:.7">Nothing logged yet.</p>'}<div class="sc-act"><button class="btn inkline sm" data-act="thrOpen" data-id="${t.id}">${ic('eye')}<span>Open</span></button>${t.status==='done'?'':`<button class="btn inkline sm" data-act="thrAddSheet" data-id="${t.id}">${ic('plus')}<span>Update</span></button>`}</div></div></div></div>`}
 function thrSpine(L,dateOf,card,colOf){let last='',h='',i=0;L.forEach(x=>{const d=dOf(dateOf(x));if(d!==last){h+=`<div class="sp-date rv" data-jday="${d}"><span class="data">${dayLabel(dateOf(x))}</span></div>`;last=d}h+=`<div class="sp-item ${i++%2?'r':'l'} rv" style="${colOf(x)}"><div class="sp-card">${card(x)}</div><span class="jdot"></span></div>`});return`<div class="spine" data-zk="journal" style="${zoomCss('journal')}">${h}</div>`}
 /* 1.30.3 grid view: goal-style cards. Linked threads take their goal's or habit's colour; the rest get a steady colour
@@ -7455,7 +7455,7 @@ ACT.thrGrid=()=>{S.settings.layout.thr='grid';save();render(false)};
 let THF='open';
 function vThreads(){const all=threads().slice().sort((a,b)=>thrLast(b)-thrLast(a)),open=all.filter(t=>t.status!=='done'),L=THF==='done'?all.filter(t=>t.status==='done'):THF==='all'?all:open;
  const head=`<header class="ph"><div><h1>Journal</h1></div><div class="ph-r"><button class="btn pri" data-act="thrNew" aria-label="New thread">${ic('plus')}<span>New thread</span></button>${gear()}</div></header>`;
- const chips=all.length?`<div class="jchips rv">${segHTML('thf','thrFilt',[['open',`Active · ${open.length}`],['done','Done'],['all','All']],THF)}</div>`:'';
+ const chips=all.length?`<div class="jchips rv">${segHTML('thf','thrFilt',[['open',`Active · ${open.length}`],['done','Done'],['all','All']],THF)}<button class="chip thr-sel" data-act="smStart" data-k="thread" aria-label="Select threads to delete">${ic('check')}<span>Select</span></button></div>`:'';
  const H0=S.settings.layout.journal==='h';
  const LV=S.settings.layout.journal==='list';
  /* list view: one compact row per thread, latest update clipped to two lines with "more" */
@@ -8770,7 +8770,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&dlgClose())e.stopImmediatePr
 const KINDS={
  goal:{p:['goals','goal'],q:'.fc[data-vt],.sc.subc,.lv-r[data-act=open][data-id],.sp-item.sub',id:el=>el.dataset.vt||el.dataset.id||((el.querySelector('[data-act=open][data-id]')||{}).dataset||{}).id,one:'goal',many:'goals'},
  habit:{p:['habits'],q:'.hrow[data-act=openHabit],.hsn-h[data-act=openHabit],.hc-r[data-act=openHabit]',id:el=>el.dataset.id,one:'habit',many:'habits'},
- thread:{p:['threads'],q:'[data-act=thrOpen][data-id]:not(.btn)',id:el=>el.dataset.id,one:'thread',many:'threads'},
+ thread:{p:['threads'],q:'[data-act=thrOpen][data-id]:not(.btn),.jf[data-tid]',id:el=>el.dataset.id||el.dataset.tid,one:'thread',many:'threads'},
  list:{p:['lists'],q:'a[href^="#/list/"]',id:el=>el.getAttribute('href').slice(7),one:'list',many:'lists'},
  item:{p:['list'],q:'.ls-it[data-iid]',id:el=>el.dataset.iid,one:'item',many:'items'},
  entry:{p:['journal'],q:'[data-jt],.hs [data-jid]',id:el=>el.dataset.jt||el.dataset.jid,one:'entry',many:'entries'}};
@@ -8786,6 +8786,8 @@ function paint(){const on=!!SM;document.documentElement.classList.toggle('sm-on'
  const n=SM.ids.size,K=KINDS[SM.k],full=n&&n===ids.size;
  bar.innerHTML=`<button class="ibtn sm-x" data-sm="done" aria-label="Done selecting">${ic('x')}</button><b>${n?`${n} ${n===1?K.one:K.many}`:`Select ${K.many}`}</b><button class="chip sm-all" data-sm="all">${full?'Clear':'Select all'}</button><button class="btn danger sm-del" data-sm="del" ${n?'':'disabled'}>${ic('trash')}<span>Delete</span></button>`}
 function start(k,id){SM={k,ids:new Set(id?[id]:[])};vib();paint()}
+/* a Select button where holding isn't obvious (the Thread page) */
+ACT.smStart=d=>{if(SM&&SM.k===d.k)stop();else start(d.k)};
 function stop(){if(!SM)return;SM=null;paint()}
 function tog(id){if(!SM)return;SM.ids.has(id)?SM.ids.delete(id):SM.ids.add(id);if(!SM.ids.size&&!document.getElementById('smbar'))return stop();paint()}
 function del(){if(!SM||!SM.ids.size)return;const k=SM.k,ids=[...SM.ids],K=KINDS[k],n=ids.length,lab=`${n} ${n===1?K.one:K.many}`;
