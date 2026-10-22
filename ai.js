@@ -287,6 +287,23 @@ if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){return _ht(
 /* routes from the widget or a shortcut: assistant-live */
 {const _r=window.__route;window.__route=r=>{if(r==='assistant-live'){liveOpen();return}return _r&&_r(r)}}
 
+/* ---------------- talking over the screen (?talk=1: TalkActivity, from the home-screen widgets) ----------------
+   Only the Live card shows, as a sheet on a dim backdrop with whatever was on screen behind it. Ending the talk,
+   Back, or a tap on the backdrop saves and closes it. Anything that would go to a page of the app (Open as chat,
+   a suggestion that opens a goal) opens the full app there instead. With the app lock on, the lock comes first. */
+if(TALK){
+ let ending=false;const H0=location.hash;
+ const talkEnd=async route=>{if(ending)return;ending=true;
+  if(route==null&&location.hash!==H0)route=location.hash.replace(/^#\/?/,'');
+  clearTimeout(saveT);try{stamp();await Promise.race([DB.set('state',S),new Promise(r=>setTimeout(r,800))])}catch(e){}try{pushWidget()}catch(e){}
+  try{route?PlotTalk.openApp(route):PlotTalk.close()}catch(e){}};
+ const _lc=liveClose;liveClose=function(){const was=LV.open;_lc.apply(this,arguments);if(was)talkEnd()};
+ window.liveClose=()=>liveClose();
+ ACT.lvChat=()=>{liveClose();talkEnd('assistant')};
+ window.talkStart=()=>{try{PlotTalk.ready()}catch(e){}const go=()=>{if(LOCKED)return setTimeout(go,300);liveOpen()};go()};
+ document.addEventListener('pointerdown',e=>{if((e.target===document.documentElement||e.target===document.body)&&LV.open&&!document.querySelector('#sheet.on'))liveClose()});
+}
+
 /* ---------------- ideas: what to ask the assistant or the agent, written by the AI from their plan ----------------
    Kept in settings (aiSugs) so they show at once; Refresh asks for fresh ones, and they renew on their own twice a day
    when the AI is quick (your own server). Until then, sensible defaults. */
@@ -383,6 +400,17 @@ html.qs-on #scrim{z-index:130}html.qs-on #sheet{z-index:131}
 .ai-sgr.spin svg{animation:mmSpin 1s linear infinite}
 .ai-sgl{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:6px}
 .ai-sgi{display:flex;align-items:flex-start;gap:8px;min-width:0;text-align:left;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:500 14px/1.35 var(--f-body);cursor:pointer}.ai-sgi svg{flex:none;color:var(--accent);margin-top:2px}.ai-sgi span{min-width:0;overflow-wrap:anywhere}.ai-sgi:active{transform:scale(.98)}
-@media (prefers-reduced-motion:reduce){.lv-orb,.lv-orb span,.lv-hor{animation:none!important}}`;
+@media (prefers-reduced-motion:reduce){.lv-orb,.lv-orb span,.lv-hor{animation:none!important}}
+html.talk,html.talk body{height:100%;min-height:0;overflow:hidden}
+html.talk body{background:rgba(6,8,22,.34)!important;transition:none}
+html.talk #live{inset:auto 10px calc(10px + var(--sab,0px)) 10px;max-height:calc(100% - 40px - var(--sat,0px));padding:14px 16px 16px;border-radius:32px;background:color-mix(in srgb,var(--bg) 97%,transparent);-webkit-backdrop-filter:blur(26px) saturate(1.4);backdrop-filter:blur(26px) saturate(1.4);box-shadow:0 30px 90px -20px rgba(0,0,0,.6),0 0 0 1px color-mix(in srgb,var(--text) 8%,transparent);overflow:hidden;transform:translateY(40px);opacity:0}
+html.talk #live.on{transform:none;opacity:1}
+html.talk .lv-glow{border-radius:inherit}
+html.talk .lv-mid{flex:none;min-height:0;padding:18px 0 6px}
+html.talk .lv-orb{width:min(38vw,150px)}
+html.talk .lv-hint{margin-top:16px}
+html.talk .lv-cap{max-height:30vh}
+html.talk .lv-ctl{margin-top:12px}
+html.talk #live [data-act=lvMin]{display:none}`;
 document.head.appendChild(css);
 })();

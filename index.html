@@ -9,6 +9,8 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Plotlines</title>
+<script>/* ?talk=1: the voice conversation over the screen (TalkActivity). Set before anything paints, so the app never flashes behind it. */if(/[?&]talk=1\b/.test(location.search))document.documentElement.classList.add('talk')</script>
+<style>html.talk,html.talk body{background:transparent!important}html.talk #app,html.talk .sbar,html.talk #tpill,html.talk .ai-mini{display:none!important}html.talk body::before,html.talk body::after{display:none!important}</style>
 <style>@font-face{font-family:'Big Shoulders Display';font-weight:600;font-display:swap;src:url(fonts/big-shoulders-display-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Big Shoulders Display';font-weight:700;font-display:swap;src:url(fonts/big-shoulders-display-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Big Shoulders Display';font-weight:800;font-display:swap;src:url(fonts/big-shoulders-display-latin-800-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:400;font-display:swap;src:url(fonts/figtree-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:500;font-display:swap;src:url(fonts/figtree-latin-500-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:600;font-display:swap;src:url(fonts/figtree-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Figtree';font-weight:700;font-display:swap;src:url(fonts/figtree-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Martian Mono';font-weight:400;font-display:swap;src:url(fonts/martian-mono-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Martian Mono';font-weight:500;font-display:swap;src:url(fonts/martian-mono-latin-500-normal.woff2) format('woff2')}
 </style>
 <style>
@@ -3420,6 +3422,7 @@ html.sm-on .tabbar{display:none}
 <div class="sbar" aria-hidden="true"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tpill" id="tpill" role="timer"></div>
 <script>
+const TALK=document.documentElement.classList.contains('talk');
 /* Back for Ink's full-screen pads and photo screens (ink.js) runs before every other popstate handler */
 addEventListener('popstate',e=>{if(window.__inkPop&&window.__inkPop(e))e.stopImmediatePropagation()});
 /* Dates are formatted hundreds of times per screen. toLocale*String builds a new formatter on every call, which is
@@ -3535,8 +3538,8 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 /* ================= storage ================= */
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
- async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.43.0';
+ async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
+const APP_VER='1.44.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -3544,6 +3547,18 @@ let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
  return{v:2,dead:d.dead||{},goals:(d.goals||[]).filter(g=>g&&typeof g==='object').map(g=>({links:[],steps:[],parent:'',why:'',targetDate:'',pinned:false,status:'active',priority:2,checkin:'',checkinTime:'19:00',checkinDay:1,lastCheckin:'',...g,steps:(Array.isArray(g.steps)?g.steps:[]).filter(x=>x&&typeof x==='object').map(x=>({...x,id:x.id||uid(),title:String(x.title??''),due:typeof x.due==='string'?x.due:'',time:typeof x.time==='string'?x.time:''})),links:Array.isArray(g.links)?g.links:[],title:String(g.title||'Untitled goal'),targetDate:typeof g.targetDate==='string'?g.targetDate:'',checkin:typeof g.checkin==='string'?g.checkin:'',startDate:typeof g.startDate==='string'&&g.startDate?g.startDate:ymd(new Date(g.createdAt||Date.now()))})),entries:d.entries||[],days:(d.days||[]).filter(x=>x&&x.id&&validDate(x.date)),habits:(d.habits||[]).filter(x=>x&&x.id).map(normHabit),chapters:(d.chapters||[]).filter(x=>x&&x.id&&validDate(x.start)),shares:(d.shares||[]).filter(x=>x&&x.id),lists:(d.lists||[]).filter(x=>x&&x.id&&x.items),threads:(d.threads||[]).filter(x=>x&&x.id).map(t=>({ups:[],status:'open',link:null,...t})),ident:d.ident&&d.ident.pub&&d.ident.priv?d.ident:null,settings:st}}
 let saveT;function save(){if(TOURING)return;clearTimeout(saveT);saveT=setTimeout(()=>{stamp();DB.set('state',S).catch(()=>toast('Couldn’t save on this device'));syncNative();pushWidget();if(DIRTY)syncSoon()},200)}
+/* Two copies of the app can be open on a phone at once: the full app, and the talk over the screen (?talk=1), which
+   runs while the app waits in the background. Each marks its saves (plotline.stAt: who, when). Before one saves
+   after the other has, or when the app comes back, it merges what's on the device first, the same way sync merges
+   two devices, so neither copy writes over what the other added. */
+const ME=Math.random().toString(36).slice(2);let ST_SEEN=Date.now();
+const stOther=()=>{try{const o=JSON.parse(localStorage.getItem('plotline.stAt')||'null');return o&&o.id!==ME&&o.t>ST_SEEN?o:null}catch(e){return null}};
+async function stPull(){const o=stOther();if(!o)return false;ST_SEEN=o.t;let d=null;try{d=await DB.get('state')}catch(e){}if(!d||!d.goals)return false;
+ stamp();const m=mergeDocs(docOf(S),docOf(norm(d)));
+ S.goals=m.goals;S.entries=m.entries;S.days=m.days;S.habits=m.habits.map(normHabit);S.chapters=m.chapters||[];S.shares=m.shares||[];S.threads=m.threads||[];S.lists=m.lists||[];S.ident=m.ident||S.ident||null;S.dead=m.dead;if(m.act&&Object.keys(m.act).length)S.settings.actLog=m.act;
+ primeSig();return true}
+/* the talk over the screen starts Live (ai.js, which may load a moment after the boot); before onboarding it opens the full app instead */
+function talkBoot(){if(!S.settings.onboarded&&window.PlotTalk){PlotTalk.openApp('');return}let n=0;const go=()=>{if(window.talkStart)talkStart();else if(n++<100)setTimeout(go,50)};go()}
 /* ---- change tracking: every goal/entry carries u (last changed); deletions become tombstones ---- */
 const SIG=new Map();let DIRTY=false;
 const sigOf=o=>{const{u,...r}=o;return JSON.stringify(r)};
@@ -5300,13 +5315,15 @@ function seedDemo0(){const day=864e5;const mk=(o,done,ago)=>{const g=newGoal(o);
   if(window.opener||window.name==='plotline-auth'){setTimeout(()=>window.close(),150);document.body.innerHTML='<p style="font:16px sans-serif;padding:24px">Signed in. You can close this window.</p>';return}
   if(a.token){tokSet(a.token,a.exp);try{localStorage.removeItem('plotline.silentNo')}catch(e){}}if(st.startsWith('webs')&&!a.token)try{localStorage.setItem('plotline.silentNo','1')}catch(e){}const back=st.startsWith('webs')?sessionStorage.getItem('plotline.ret')||'#/today':'#/settings';history.replaceState(null,'',location.pathname+back)}
  try{const d=await DB.get('state');if(d&&d.goals)S=norm(d)}catch(e){}
+ try{const o=JSON.parse(localStorage.getItem('plotline.stAt')||'null');if(o)ST_SEEN=Math.max(ST_SEEN,o.t)}catch(e){}
  /* 1.9.0: notification replies no longer go to the journal; tidy away the ones earlier versions made (synced devices drop them too) */
  if(!S.settings.replyClean){S.dead=S.dead||{};S.entries=S.entries.filter(e=>{const r=e.type==='note'&&/^Reply to “/.test(e.title||'')&&!e.html&&!e.img&&!e.mood;if(r){S.dead[e.id]=Date.now();DIRTY=true}return!r});S.settings.replyClean=1;save()}
  primeSig();
- applyTheme();buildChrome();applyFocus(false);syncNative();pushWidget();scopeSync();fbNative();if(lockActive())showLock();try{if(NATIVE&&NATIVE.setSecure&&lockSet().on&&lockSet().secure)NATIVE.setSecure(true)}catch(e){}if(typeof landHere==='function')landHere();route();if(S.settings.onboarded&&S.settings.tourOffered&&!S.settings.setupDone&&!navigator.webdriver)setTimeout(()=>{if(!LOCKED&&!$('#sheet').classList.contains('on'))setupFlow()},1800);applyWidgetQueue();if(!S.settings.onboarded)welcome();else if(!S.settings.tourOffered&&!S.settings.pinHash)setTimeout(tourPrompt,1400);buildTimer();tick();setInterval(tick,20000);setInterval(paintTimer,1000);
+ applyTheme();buildChrome();applyFocus(false);syncNative();pushWidget();scopeSync();fbNative();if(lockActive())showLock();try{if(NATIVE&&NATIVE.setSecure&&lockSet().on&&lockSet().secure)NATIVE.setSecure(true)}catch(e){}if(typeof landHere==='function')landHere();route();if(!TALK&&S.settings.onboarded&&S.settings.tourOffered&&!S.settings.setupDone&&!navigator.webdriver)setTimeout(()=>{if(!LOCKED&&!$('#sheet').classList.contains('on'))setupFlow()},1800);applyWidgetQueue();if(TALK)talkBoot();else if(!S.settings.onboarded)welcome();else if(!S.settings.tourOffered&&!S.settings.pinHash)setTimeout(tourPrompt,1400);buildTimer();tick();setInterval(tick,20000);setInterval(paintTimer,1000);
  try{matchMedia('(prefers-color-scheme: light)').addEventListener('change',()=>{if(S.settings.matchSystem)applyTheme(true)})}catch(e){}
  if(syncOn()){if(sessionStorage.getItem('plotline.after')==='sync'){sessionStorage.removeItem('plotline.after');connectDrive()}else syncNow(false)}
- document.addEventListener('visibilitychange',()=>{if(!document.hidden){applyWidgetQueue();syncSoon(400)}});window.addEventListener('app-resume',()=>{applyWidgetQueue();syncSoon(400)});window.addEventListener('online',()=>syncSoon(400));setInterval(()=>syncSoon(0),5*60e3);
+ const stBack=()=>(window.CONV&&CONV.pull&&CONV.pull(),stPull()).then(c=>{if(c){save();if(!$('#sheet').classList.contains('on'))render(false)}}).catch(()=>{});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){stBack();applyWidgetQueue();syncSoon(400)}});window.addEventListener('app-resume',()=>{stBack();applyWidgetQueue();syncSoon(400)});window.addEventListener('online',()=>syncSoon(400));setInterval(()=>syncSoon(0),5*60e3);
  if(!NATIVE&&'serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
  if(document.fonts)document.fonts.ready.then(()=>{moveInd();placeSegs();fillSpine(false);document.querySelectorAll('.hs-shell').forEach(hsLayout)})})();
 /* ================= INSIGHTS (on-device RAG) =================

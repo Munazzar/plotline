@@ -124,8 +124,8 @@ function snapFix(o){const t=td();
  const a=sh.querySelector('.actions');if(a&&!sh.querySelector('.hds-open')&&!(cur.p==='habit'&&cur.id===h.id))a.insertAdjacentHTML('beforebegin',`<button class="link small hds-open" data-act="hdsOpen" data-id="${h.id}">Open ${esc(h.title)}</button>`)}}
 ACT.hdsOpen=d=>{closeSheet();go('habit/'+d.id)};
 
-/* ---------- Home: Up next as swipe cards ---------- */
-let UDI=0;
+/* ---------- Home: Up next as swipe cards (the Thread page uses the same deck, with its own place: DKI by data-k) ---------- */
+let UDI=0;const DKI={};const dk=t=>t.dataset.k||'up',dkI=t=>dk(t)==='up'?UDI:(DKI[dk(t)]||0),dkSet=(t,i)=>{if(dk(t)==='up')UDI=i;else DKI[dk(t)]=i};
 function deckCard(g,s,i,n){return`<article class="now tint udk-c${haloOn(g,i===0)?' halo':''}" style="${cvar(g)}" data-i="${i}"><div class="data">${i?'Coming up':'Up next'} · ${esc(g.title)}</div><h2>${esc(s.title)}</h2><div class="data">${dueText(s)||'No date set'}${hasRem(s)?' · reminder on':''}</div><div class="now-a"><button class="btn ink" data-act="toggleStep" data-g="${g.id}" data-s="${s.id}">${ic('check')}Mark done</button><button class="btn inkline" data-act="timerPick" data-g="${g.id}" data-s="${s.id}">${ic('timer')}Focus</button><button class="btn inkline" data-act="open" data-id="${g.id}">Open goal</button></div></article>`}
 function deckHTML(){const nx=active().map(g=>({g,s:nextStep(g)})).filter(x=>x.s).sort(urgency).slice(0,8),n=nx.length;if(!n)return'';UDI=Math.min(UDI,n-1);
  return`<div class="now udk" style="--n:${n}"><div class="udk-t" tabindex="0" aria-roledescription="carousel" aria-label="Up next. Swipe for more">${nx.map(({g,s},i)=>deckCard(g,s,i,n)).join('')}</div>
@@ -136,22 +136,38 @@ function deckHTML(){const nx=active().map(g=>({g,s:nextStep(g)})).filter(x=>x.s)
  const com=[...C.children].find(n=>n.tagName==='SECTION'&&((n.querySelector(':scope>.st-h h3')||{}).textContent||'').trim().toLowerCase().startsWith('coming up'));
  if(now){const d=deckHTML();if(d)now.innerHTML=d;if(com)com.remove()}else if(com){const d=deckHTML();if(d)com.innerHTML=d}
  return t.innerHTML};VIEWS.today=vToday}
-function udkTo(t,i,smooth){const cs=t.querySelectorAll('.udk-c');if(!cs.length)return;i=Math.max(0,Math.min(cs.length-1,i));UDI=i;const c=cs[i];
+function udkTo(t,i,smooth){const cs=t.querySelectorAll('.udk-c');if(!cs.length)return;i=Math.max(0,Math.min(cs.length-1,i));dkSet(t,i);const c=cs[i];
  t.scrollTo({left:c.offsetLeft-(t.clientWidth-c.offsetWidth)/2,behavior:smooth&&!reduced()?'smooth':'auto'})}
 function udkPaint(t){const cs=[...t.querySelectorAll('.udk-c')],mid=t.scrollLeft+t.clientWidth/2;let best=0,bd=1e9;
  cs.forEach((c,i)=>{const d=(c.offsetLeft+c.offsetWidth/2-mid)/(c.offsetWidth||1),a=Math.min(1,Math.abs(d));if(Math.abs(d)<bd){bd=Math.abs(d);best=i}
   if(!reduced()){c.style.transform=`scale(${(1-a*.06).toFixed(4)})`;c.style.opacity=(1-a*.35).toFixed(3)}});
- UDI=best;t.parentNode.querySelectorAll('.udk-dots button').forEach((b,i)=>b.classList.toggle('on',i===best))}
-ACT.udkGo=(d,el)=>{const t=el.closest('.udk').querySelector('.udk-t');udkTo(t,d.i!=null?+d.i:UDI+(+d.d),true)};
+ dkSet(t,best);t.parentNode.querySelectorAll('.udk-dots button').forEach((b,i)=>b.classList.toggle('on',i===best))}
+ACT.udkGo=(d,el)=>{const t=el.closest('.udk').querySelector('.udk-t');udkTo(t,d.i!=null?+d.i:dkI(t)+(+d.d),true)};
 let UDR=null,UDX=0;
-function udkInit(){document.querySelectorAll('#view .udk-t').forEach(t=>{if(t._ud)return;t._ud=1;udkTo(t,UDI,false);udkPaint(t);let raf=0;
+function udkInit(){document.querySelectorAll('#view .udk-t').forEach(t=>{if(t._ud)return;t._ud=1;udkTo(t,dkI(t),false);udkPaint(t);let raf=0;
  t.addEventListener('scroll',()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;udkPaint(t)})},{passive:true});
- t.addEventListener('keydown',e=>{if(e.target!==t)return;if(e.key==='ArrowRight'){e.preventDefault();udkTo(t,UDI+1,true)}if(e.key==='ArrowLeft'){e.preventDefault();udkTo(t,UDI-1,true)}});
+ t.addEventListener('keydown',e=>{if(e.target!==t)return;if(e.key==='ArrowRight'){e.preventDefault();udkTo(t,dkI(t)+1,true)}if(e.key==='ArrowLeft'){e.preventDefault();udkTo(t,dkI(t)-1,true)}});
  t.addEventListener('dragstart',e=>e.preventDefault());
- t.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0||e.target.closest('button'))return;UDR={t,x:e.clientX,sl:t.scrollLeft,m:0,i:UDI}})})}
+ t.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0||e.target.closest('button'))return;UDR={t,x:e.clientX,sl:t.scrollLeft,m:0,i:dkI(t)}})})}
 addEventListener('pointermove',e=>{if(!UDR)return;const dx=e.clientX-UDR.x;UDR.m=Math.max(UDR.m,Math.abs(dx));if(UDR.m>5){UDR.t.classList.add('drag');UDR.t.scrollLeft=UDR.sl-dx}});
 addEventListener('pointerup',e=>{if(!UDR)return;const u=UDR;UDR=null;u.t.classList.remove('drag');if(u.m>5){UDX=Date.now();const dx=e.clientX-u.x;udkTo(u.t,Math.abs(dx)>40?u.i+(dx<0?1:-1):u.i,true)}});
 addEventListener('click',e=>{if(Date.now()-UDX<250&&e.target.closest&&e.target.closest('.udk-t')){e.stopPropagation();e.preventDefault()}},true);
+
+/* ---------- Thread page: threads side by side as a swipe deck, like Up next on Home ----------
+   It used to borrow the goal-steps carousel (grey cards on a dashed timeline with a TODAY node), which didn't suit threads. */
+function thrDeckCard(t,i){const U=thrUps(t),u=U[0],lk=thrLink(t),dn=t.status==='done',n=U.length;
+ return`<article class="now tint udk-c tdk-c${dn?' fin':''}${haloOn({},i===0)?' halo':''}" style="${thrGC(t)}" data-i="${i}">
+ <div class="tdk-top"><span class="tdk-k">${dn?'✅ Finished':n?'🧵 Active':'🧵 New'}</span>${lk?`<span class="tdk-ln ell">${esc(lk.e)} ${esc(trunc(lk.n,30))}</span>`:''}</div>
+ <h2 data-act="thrOpen" data-id="${t.id}">${esc(t.title)}</h2>
+ ${u?U.slice(0,2).map((x,j)=>`<p class="tdk-u${j?' tdk-u2':''}"><span>${thrTag(x.k)[1]}</span>${esc(trunc(x.x.replace(/[*_=]{2}/g,'').replace(/\n+/g,' · '),j?110:200))}</p>`).join(''):'<p class="tdk-u tdk-e">Nothing logged yet. Add the first line.</p>'}
+ <div class="data">${n} update${n===1?'':'s'} · ${esc(thrAgo(thrLast(t)))}</div>
+ <div class="now-a">${dn?'':`<button class="btn ink" data-act="thrAddSheet" data-id="${t.id}">${ic('plus')}Add update</button>`}<button class="btn inkline" data-act="thrOpen" data-id="${t.id}">Open thread</button></div></article>`}
+function thrDeck(L){const n=L.length,k='thr-'+THF;DKI[k]=Math.min(DKI[k]||0,n-1);const at=DKI[k];
+ return`<div class="now udk tdk rv" style="--n:${n}"><div class="udk-t" data-k="${k}" tabindex="0" aria-roledescription="carousel" aria-label="Threads. Swipe for more">${L.map((t,i)=>thrDeckCard(t,i)).join('')}</div>
+ <div class="udk-f">${n>1?`<button class="ibtn sm udk-a" data-act="udkGo" data-d="-1" aria-label="Previous">${ic('back')}</button><div class="udk-dots">${L.map((t,i)=>`<button class="${i===at?'on':''}" data-act="udkGo" data-i="${i}" aria-label="Thread ${i+1} of ${n}" style="${thrGC(t)}"></button>`).join('')}</div><button class="ibtn sm udk-a" data-act="udkGo" data-d="1" aria-label="Next">${ic('next')}</button><span class="data tdk-n">${n} thread${n===1?'':'s'}</span>`:''}</div></div>`}
+{const _v=vThreads;vThreads=function(){const o=_v.apply(this,arguments),i=o.indexOf('<div class="hs-shell rv" data-hs="threads-');if(i<0)return o;
+ const all=threads().slice().sort((a,b)=>thrLast(b)-thrLast(a)),L=THF==='done'?all.filter(t=>t.status==='done'):THF==='all'?all:all.filter(t=>t.status!=='done');
+ return L.length?o.slice(0,i)+thrDeck(L):o};VIEWS.threads=vThreads}
 
 /* ---------- Home on wide screens: two columns, things to do on the left, things to glance at on the right ---------- */
 const WIDE=matchMedia('(min-width:1180px)');

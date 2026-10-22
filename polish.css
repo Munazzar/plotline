@@ -241,3 +241,17 @@ html[data-bgp=image] body::after{background:var(--bgimg) center/cover no-repeat}
 .tk-srcb{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:6px}
 #tkSrc{width:100%}
 #sheet form[data-form=tkSave]>.two:first-child{display:grid!important;grid-template-columns:72px minmax(0,1fr)!important;gap:10px}
+
+/* Thread page: threads as a swipe deck (same deck as Up next on Home) */
+.tdk{margin-top:18px}
+.tdk-c{display:flex;flex-direction:column;min-height:280px}
+.tdk-c h2{font-size:clamp(30px,8.4vw,46px);margin:14px 0 10px;cursor:pointer;-webkit-line-clamp:3!important}
+.tdk-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tdk-k,.tdk-ln{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:5px 11px;border-radius:999px;background:color-mix(in srgb,var(--t-fg,#0B1020) 10%,transparent);color:var(--t-fg,inherit);font:600 12.5px/1.2 var(--f-body)}
+.tdk-ln{background:none;border:1px solid color-mix(in srgb,var(--t-fg,#0B1020) 22%,transparent);font-weight:500}
+.tdk-u{display:flex;gap:9px;margin:0 0 10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,#fff 34%,transparent);color:var(--t-fg,inherit);font:500 15.5px/1.45 var(--f-body);overflow:hidden;max-height:calc(4 * 1.45em + 20px)}
+.tdk-u>span{flex:none}.tdk-u2{opacity:.72;font-size:14px;max-height:calc(2 * 1.45em + 20px)}
+.tdk-e{opacity:.7;font-style:italic}
+.tdk-c>.data{margin-top:auto}.tdk-c .now-a{margin-top:16px}
+.tdk-c.fin h2{opacity:.75}
+.tdk-n{margin-left:auto}

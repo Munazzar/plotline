@@ -52,3 +52,5 @@
     </intent-filter>
     <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_orb_info"/>
 </receiver>
+<!-- Talk over the screen (1.44.0): inside <application>. Started by the Orb widget and Talk on the Assistant widget. -->
+<activity android:name="com.munazzar.plotline.TalkActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false" android:taskAffinity="com.munazzar.plotline.talk" android:excludeFromRecents="true" android:launchMode="singleTask" android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|density" android:windowSoftInputMode="adjustResize"/>
