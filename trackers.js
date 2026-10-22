@@ -144,7 +144,7 @@ Object.assign(FORM,{
  tkSet:f=>{setTotal(f.dataset.id,today(),+f.elements.v.value||0);closeSheet();render(false)}});
 
 /* for Insights and the assistant */
-window.TRK={list:trk,val,fmt:fmtV};
+window.TRK={list:trk,val,fmt:fmtV,man,setVal};
 
 /* ---------- Insights, read by your AI ----------
    A compact digest of the last two weeks goes to whichever AI is set up (on-device by default); it writes three

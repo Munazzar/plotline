@@ -221,7 +221,7 @@ function liveOpen(first,o){if(LV.open&&LV.min&&!(o&&o.resume)){lvBack();if(first
  if(o&&o.resume&&window.PLOT_ASSIST&&PLOT_ASSIST.resume)PLOT_ASSIST.resume(o.resume);LV.resumed=!!(o&&o.resume);
  const prev=window.PLOT_ASSIST&&PLOT_ASSIST.begin?PLOT_ASSIST.begin('talk'):[];LV.hist=prev.slice(-6).flatMap(t=>[{role:'user',content:t.q},{role:'assistant',content:t.a}]);
  const el=lvEl();LV.open=true;LV.you='';LV.ai=aiReady()?'':`To talk about anything, ${nm()} needs its AI on this ${NATIVE?'phone':'device'}. You can still ask me to add things.`;LV.pend=[];
- document.documentElement.classList.add('lv-on');requestAnimationFrame(()=>el.classList.add('on'));try{NA&&NA.wakePause&&NA.wakePause(true)}catch(e){}lvState('idle');lvCap();
+ document.documentElement.classList.add('lv-on');requestAnimationFrame(()=>el.classList.add('on'));try{NA&&NA.wakePause&&NA.wakePause(true)}catch(e){}try{window.PLOT_ASSIST&&PLOT_ASSIST.warm&&PLOT_ASSIST.warm()}catch(e){}lvState('idle');lvCap();
  if(first)setTimeout(()=>lvHeard(first),350);else if(!aiReady()&&!MM.busy)lvState('idle','');else setTimeout(()=>lvGreet(),350)}
 function lvGreet(){const h=new Date().getHours(),n=S.settings.name;const g=LV.resumed?'Let’s pick up where we left off. Go ahead.':LV.hist.length?'I’m listening.':`${h<12?'Good morning':h<17?'Hey':'Good evening'}${n?', '+n:''}. What’s on your mind?`;LV.ai=g;lvCap();lvSay(g)}
 function liveClose(){if(!LV.open)return;LV.open=false;LV.min=false;lvMiniPaint();if(window.asHum)asHum(false);LV.gen++;const vno=()=>{if(!LV.open&&document.querySelector('.vdlg')&&ACT.vcNo)ACT.vcNo()};vno();setTimeout(vno,500);setTimeout(vno,1500);try{LV.ctl&&LV.ctl.abort()}catch(e){}if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);if(window.PLOT_ASSIST)PLOT_ASSIST.hush();
@@ -235,9 +235,9 @@ function lvListen(){if(!LV.open||LV.muted)return lvState('idle');if(typeof voice
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='lvIn'&&LV.open){LV.you=e.target.value;const c=$('#lvCap');if(c){let p=c.querySelector('.lv-you');if(!p){c.innerHTML='<p class="lv-you"></p>'}c.querySelector('.lv-you').textContent=LV.you}}});
 function lvSay(text,then){const t=String(text||'').trim();if(!t||!LV.open)return then?then():lvListen();lvState('speak');
  if(window.PLOT_ASSIST&&PLOT_ASSIST.say)PLOT_ASSIST.say(t,()=>{if(!LV.open)return;if(LV.st==='speak')(then||lvListen)()});else(then||lvListen)()}
-async function lvHeard(text){const g=++LV.gen,t=String(text).trim();if(!t)return lvListen();LV.you=t;LV.ai='';lvCap();lvState('think');
+async function lvHeard(text){const g=++LV.gen,t=String(text).trim(),PA=window.PLOT_ASSIST||{},SP=PA.stream;if(!t)return lvListen();LV.you=t;LV.ai='';lvCap();lvState('think');
  const done=(say,acts,extra,full)=>{if(g!==LV.gen||!LV.open)return;LV.ai=say;if(acts)LV.pend=keepActs(acts);lvCap();LV.hist.push({role:'user',content:t},{role:'assistant',content:full||say});LV.hist=LV.hist.slice(-12);
-  try{PLOT_ASSIST.addTurn(t,full||say)}catch(e){}if(extra==='bye'){lvSay(say,()=>liveClose());return}lvSay(say)};
+  try{PLOT_ASSIST.addTurn(t,full||say)}catch(e){}if(extra==='bye'){lvSay(say,()=>liveClose());return}if(SP&&SP.end(say))return;lvSay(say)};
  if(BYE.test(t))return done(['Bye for now.','Talk soon.','Okay, bye!'][Math.floor(Math.random()*3)],[],'bye');
  const blocked=aiBlock(t);if(blocked)return done(blocked,[]);
  /* "yes" to what was offered */
@@ -249,14 +249,16 @@ async function lvHeard(text){const g=++LV.gen,t=String(text).trim();if(!t)return
  const ctl=LV.ctl=new AbortController();let out='';
  /* the AI decides first (while the note search runs): make it now, ask the agent, schedule it, or talk */
  const rp=ragRetrieve(t,{win:0,goal:'',broad:insFocus(t).broad},null).catch(()=>null);
- if(window.AGENT){const d=await AGENT.decide(t,LV.hist.reduce((a,m,i,A)=>(m.role==='user'&&A[i+1]?a.concat({q:m.content,a:A[i+1].content}):a),[]));if(g!==LV.gen)return;
+ /* instant mode: only requests to make something, or that need the agent, wait for the AI's routing call */
+ if(window.AGENT&&(!PA.needsDecide||PA.needsDecide(t))){const d=await AGENT.decide(t,LV.hist.reduce((a,m,i,A)=>(m.role==='user'&&A[i+1]?a.concat({q:m.content,a:A[i+1].content}):a),[]));if(g!==LV.gen)return;
   LV.web=d&&d.agent?d.web:undefined;
   if(d&&d.agent)out='AGENT: '+d.agent;
   else if(d&&d.items){const r=PLOT_ASSIST.doItems(d.items);if(r)return done(r.say.replace(/[“”]/g,''),[])}
   else if(d&&d.schedule&&window.agentFromVoice){const r=agentFromVoice(d.schedule);return done(r.say,[])}}
- if(!out) try{const q=t;let ctx='';try{const r=(await rp)||await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},null);ctx=PLOT_ASSIST.ctx(q,r,'',planEngine()==='api')}catch(e){ctx='QUESTION\n'+q}
+ if(!out) try{const q=t;let ctx='';try{const r=(await rp)||await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},null);ctx=PLOT_ASSIST.ctx(q,r,'',planEngine()==='api',PA.fast&&PA.fast()&&planEngine()!=='api')}catch(e){ctx='QUESTION\n'+q}
   const msgs=[{role:'system',content:LV_SYS()},...LV.hist.slice(-8),{role:'user',content:`DATA ABOUT ME (use only if it helps)\n${ctx.replace(/\nQUESTION\n[\s\S]*$/,'')}\n\nWHAT I JUST SAID\n${q}`}];
-  await aiChat(msgs,x=>{if(g!==LV.gen)return;out+=x;let v=hideActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,''));if(/^\W*AG?E?N?T?$|AGENT\s*:/.test(v))v='';if(v){LV.ai=v;const c=$('#lvCap');const p=c&&c.querySelector('.lv-ai');if(p)p.textContent=v;else lvCap()}},{ctl,max_tokens:planEngine()==='api'?400:260,temperature:.7,reading:'Thinking…',onP:x=>{if(x&&g===LV.gen)lvState('think',x)},reset:()=>{out=''}})}
+  if(SP)SP.start({first:()=>{if(g===LV.gen&&LV.open)lvState('speak')},done:()=>{if(LV.open&&g===LV.gen&&LV.st==='speak')lvListen()}});
+  await aiChat(msgs,x=>{if(g!==LV.gen)return;out+=x;if(SP)SP.feed(out);let v=hideActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,''));if(/^\W*AG?E?N?T?$|AGENT\s*:/.test(v))v='';if(v){LV.ai=v;const c=$('#lvCap');const p=c&&c.querySelector('.lv-ai');if(p)p.textContent=v;else lvCap()}},{ctl,max_tokens:planEngine()==='api'?400:260,temperature:.7,reading:'Thinking…',onP:x=>{if(x&&g===LV.gen)lvState('think',x)},reset:()=>{out=''}})}
  catch(e){if(g!==LV.gen)return;if(e&&e.name==='AbortError')return;return done('Sorry, I couldn’t think that through: '+(e&&e.message||e),[])}
  if(g!==LV.gen)return;
  /* the AI asked for the agent: it reads email, calendar, Drive or Notion, and the takeaway is said out loud */

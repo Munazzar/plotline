@@ -3536,7 +3536,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.42.1';
+const APP_VER='1.43.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -5325,6 +5325,10 @@ const LLMS=[['llama3.2-1b','Llama 3.2 1B · 0.8 GB · fast, good',HFR('bartowski
  ['phi4-mini','Phi-4 mini 3.8B · smartest, about a minute per answer',HFR('bartowski/microsoft_Phi-4-mini-instruct-GGUF','microsoft_Phi-4-mini-instruct-Q3_K_S.gguf'),1.9,HFR('bartowski/microsoft_Phi-4-mini-instruct-GGUF','microsoft_Phi-4-mini-instruct-Q4_0.gguf'),2.33],
  ['gemma4-e2b','Gemma 4 E2B · 2 GB · smartest, fast (Google, 2026)',HFR('litert-community/gemma-4-E2B-it-litert-lm','gemma-4-E2B-it-web.litertlm'),2,HFR('ggml-org/gemma-4-E2B-it-GGUF','gemma-4-E2B-it-Q4_0.gguf'),2.84,'lrt'],
  ['qwen2.5-0.5b','Qwen 2.5 0.5B · 0.5 GB · fastest, basic',HFR('Qwen/Qwen2.5-0.5B-Instruct-GGUF','qwen2.5-0.5b-instruct-q4_k_m.gguf'),.5,HFR('Qwen/Qwen2.5-0.5B-Instruct-GGUF','qwen2.5-0.5b-instruct-q4_0.gguf'),.43]].concat(window.PLOTLINE_RAG&&window.PLOTLINE_RAG.llms||[]);
+/* Plot Mini: the small command model trained for Plotlines with train/ (Gemma 3 270M + LoRA). It turns a request into one JSON
+ action in well under a second; questions still go to a bigger model or your own server. Listed once its files are on Hugging Face. */
+const MINI=['plot-mini','Plot Mini 270M · 0.3 GB · instant commands, trained for Plotlines',HFR('Munazzar/plot-mini','plot-mini.litertlm'),.3,HFR('Munazzar/plot-mini','plot-mini-q4_0.gguf'),.25,'lrt'];
+try{if(localStorage.getItem('plotline.mini')==='1')LLMS.push(MINI);const c=+localStorage.getItem('plotline.miniT')||0;if(Date.now()-c>864e5)setTimeout(()=>fetch(MINI[4],{method:'HEAD'}).then(r=>{localStorage.setItem('plotline.miniT',Date.now());localStorage.setItem('plotline.mini',r.ok?'1':'0');if(r.ok&&!LLMS.includes(MINI))LLMS.push(MINI)}).catch(()=>{}),8000)}catch(e){}
 /* rows: [id, label, wasm url (web, ≤2 GB), GB, native url (Android app, Q4_0: repacked for ARM dot-product → fastest on phones), GB, 'lrt' when the
    web side runs it with LiteRT-LM on the GPU instead of wllama] */
 const API_PRE=[['Ollama','http://localhost:11434/v1','llama3.2'],['LM Studio','http://localhost:1234/v1','local-model'],['OpenRouter','https://openrouter.ai/api/v1','meta-llama/llama-3.3-70b-instruct']];
@@ -5542,10 +5546,22 @@ async function lrtChat(msgs,onTok,onP,opts={}){const e=await lrtEngine(onP);cons
  const tick=setInterval(()=>{if(!got&&onP)onP(`${opts.reading||'Thinking on the GPU…'} ${Math.round((Date.now()-t0)/1000)}s`)},1000);
  const sys=msgs.filter(x=>x.role==='system').map(x=>x.content).join('\n\n'),rest=msgs.filter(x=>x.role!=='system'),last=rest.pop();
  const preface=[...(sys?[{role:'system',content:sys+(opts.schema?'\n\nReply with one JSON object that follows this schema, and nothing else: '+JSON.stringify(opts.schema):'')}]:[]),...rest.map(x=>({role:x.role,content:x.content}))];
- const c=await e.createConversation({preface:{messages:preface},sessionConfig:{maxOutputTokens:opts.max_tokens||(IS_PHONE?450:600),samplerParams:{type:2,k:40,p:.9,temperature:opts.temperature??.3}}});
- const outer=IN.ctl&&IN.ctl.signal,stop=()=>{try{c.cancel()}catch(_){}};if(outer)outer.addEventListener('abort',stop,{once:true});
- try{for await(const ch of c.sendMessageStreaming(last.content)){for(const it of ch.content||[]){if(it.type!=='text'||!it.text)continue;acc+=it.text;if(!got){got=true;clearInterval(tick);onP&&onP('')}if(!opts.schema&&garbled(acc)){stop();throw new Error('The model got confused. Try again.')}onTok(it.text)}}}
- finally{clearInterval(tick);if(outer)outer.removeEventListener('abort',stop);try{await c.delete()}catch(_){}}}
+ const sc={maxOutputTokens:opts.max_tokens||(IS_PHONE?450:600),samplerParams:{type:2,k:40,p:.9,temperature:opts.temperature??.3}};
+ /* the system prompt is prefilled once and kept; each turn clones it, so only the history and the new message are read.
+    If that fails for any reason, it falls back to a fresh conversation with everything in the preface. */
+ const fresh=async()=>({c:await e.createConversation({preface:{messages:preface},sessionConfig:sc}),m:last.content});
+ const cloned=async()=>{const s=preface[0];if(!s||s.role!=='system')return null;const key=JSON.stringify([s,sc]);
+  if(LRT_BASE.e!==e||LRT_BASE.key!==key){const old=LRT_BASE.c;LRT_BASE={e,key,c:null};LRT_BASE.c=await e.createConversation({preface:{messages:[s]},sessionConfig:sc,prefillPrefaceOnInit:true});if(old)old.delete().catch(()=>{})}
+  const hist=preface.slice(1);return{c:await LRT_BASE.c.clone(),m:hist.length?[...hist,{role:'user',content:last.content}]:last.content,k:1}};
+ const outer=IN.ctl&&IN.ctl.signal;
+ const go=async x=>{const c=x.c,stop=()=>{try{c.cancel()}catch(_){}};if(outer)outer.addEventListener('abort',stop,{once:true});
+  try{for await(const ch of c.sendMessageStreaming(x.m)){for(const it of ch.content||[]){if(it.type!=='text'||!it.text)continue;acc+=it.text;if(!got){got=true;clearInterval(tick);onP&&onP('')}if(!opts.schema&&garbled(acc)){stop();throw new Error('The model got confused. Try again.')}onTok(it.text)}}}
+  finally{if(outer)outer.removeEventListener('abort',stop);try{await c.delete()}catch(_){}}};
+ try{let x=null;try{x=await cloned()}catch(err){LRT_BASE={}}
+  if(x){try{await go(x);return}catch(err){if(got||outer&&outer.aborted)throw err;LRT_BASE={}}}
+  await go(await fresh())}
+ finally{clearInterval(tick)}}
+let LRT_BASE={};
 /* if the prompt is too long for the model, drop the least relevant notes (they come last) and try again */
 const insShrink=msgs=>msgs.map(m=>{if(m.role!=='user'||!/\n\[\d+\] /.test(m.content))return m;const L=m.content.split('\n'),ix=L.map((l,i)=>/^\[\d+\] /.test(l)?i:-1).filter(i=>i>=0);const cut=new Set(ix.slice(Math.ceil(ix.length*.5)));return{...m,content:L.filter((l,i)=>!cut.has(i)).map(l=>l.length>700&&/^\[\d+\] /.test(l)?l.slice(0,700)+'…':l).join('\n')}});
 /* garbled output (runs of commas, a token repeating): stop early instead of filling the screen */
@@ -5565,8 +5581,9 @@ const natFile=m=>(m[4]||m[2]).split('/').pop();
 const natHave=m=>!!(natSt().have||{})[natFile(m)];
 const natCtx=m=>(m[5]||m[3])>1.5?4096:8192,natThreads=()=>Math.max(2,Math.min(4,(NAT_ST&&NAT_ST.cores)||4));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-let NAT_WARM='';
-function natWarm(){try{replyModelSync()}catch(e){}if(!NAT_OK()||insSet().engine!=='local'||lrtOn())return;const m=llmOf(insSet().llm);if(NAT_WARM===m[0]||!natHave(m)||natSt().running===natFile(m))return;NAT_WARM=m[0];const id='w'+uid();LLMCB[id]=()=>{delete LLMCB[id]};NATIVE.llmStart(id,natFile(m),natCtx(m),natThreads())}
+let NAT_WARM='',NAT_WT=0;
+/* load the picked model ahead of the question (Ask, the wake word): again if the engine was stopped since */
+function natWarm(){try{replyModelSync()}catch(e){}if(!NAT_OK()||insSet().engine!=='local')return;const m=llmOf(insSet().llm);if(lrtOn()){if(!LRT&&!LRT_P)lrtHave(m).then(f=>f&&lrtEngine().catch(()=>{}));return}if(NAT_WARM===m[0]&&Date.now()-NAT_WT<60e3||!natHave(m)||natSt().running===natFile(m))return;NAT_WARM=m[0];NAT_WT=Date.now();const id='w'+uid();LLMCB[id]=()=>{delete LLMCB[id]};NATIVE.llmStart(id,natFile(m),natCtx(m),natThreads())}
 async function natEnsure(m,onP){const f=natFile(m),gb=m[5]||m[3];
  if(!natHave(m)){if(!(natSt().dl||{}).busy)NATIVE.llmDownload(m[4]||m[2],f);
   for(;;){await sleep(700);if(IN.ctl&&IN.ctl.signal.aborted)throw Object.assign(new Error('stopped'),{name:'AbortError'});const st=natSt();if(st.have&&st.have[f])break;const d=st.dl||{};
@@ -6168,7 +6185,7 @@ async function voiceStart(el,btn){const v=vset(),st=vstate();voiceStop(true);
  const pause=Math.max(1000,+v.pause||5000),grace=Math.max(pause*2,el.id==='lvIn'||el.id==='asIn'?12000:8000),join=(a,b)=>a&&b?a+(/\s$/.test(a)?'':' ')+b:a||b;VC.t0=Date.now();
  const quiet=()=>{clearTimeout(VC.qt);VC.qt=setTimeout(()=>{if(VC&&VC.id===id){VC.txt=VC.acc;voiceStop(false,true)}},pause)};
  const again=()=>{if(!VC||VC.id!==id)return;if(Date.now()-(VC.ag||0)<250)return;VC.ag=Date.now();try{if(NATIVE)NATIVE.voiceStart(id,v.lang||'',!st.onDevice&&!!vset().cloud);else{const r=VC.r=mkR();r.start()}}catch(e){voiceStop(false,true)}};
- const on=(k,t)=>{if(!VC||VC.id!==id)return;if(k==='partial'||k==='final'){const all=join(VC.acc,t);VC.txt=all;if(t)quiet();if(VC.mark)VC.mark.textContent=(VC.mark.previousSibling&&!/\s$/.test(VC.mark.previousSibling.textContent||'')?' ':'')+all;else vInsert(el,base,all);if(k==='final'){VC.acc=all;VC.fin=1;if(all)again();else voiceStop(false,true)}return}
+ const on=(k,t)=>{if(!VC||VC.id!==id)return;if(k==='partial'||k==='final'){const all=join(VC.acc,t);VC.txt=all;if(t){quiet();VC.heard=Date.now()}if(VC.mark)VC.mark.textContent=(VC.mark.previousSibling&&!/\s$/.test(VC.mark.previousSibling.textContent||'')?' ':'')+all;else vInsert(el,base,all);if(k==='final'){VC.acc=all;VC.fin=1;/* a complete command ("add milk to groceries") closes the mic at once instead of waiting out the pause */if(all&&window.__vDone&&window.__vDone(el,all)){vInsert(el,base,all);voiceStop(false,true);return}if(all)again();else voiceStop(false,true)}return}
   if((k==='end'||(k==='err'&&/^(6|7|no-speech|no-match|aborted)$/.test(String(t))))&&VC.acc){if(!VC.fin){again()}VC.fin=0;return}
   /* nothing final yet: keep what was half-heard and keep listening, so a slow start or a long think doesn't close the mic */
   if((k==='end'||(k==='err'&&/^(6|7|no-speech|no-match)$/.test(String(t))))&&Date.now()-VC.t0<grace){if(VC.txt)VC.acc=VC.txt;VC.fin=0;again();return}
