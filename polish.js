@@ -108,7 +108,7 @@ const hIcons=(ds,max)=>{const L=dayHabits(ds);if(!L.length)return'';const sh=L.s
 /* ---------- habits: today, skip and a comment from the habit itself ---------- */
 const BUB='chat';
 /* a labelled note button on every habit row and the habit page, so nobody has to know about the long press */
-function noteBtn(h,cls){const t=td(),c=((h.ck||{})[t]||{}),dn=hDone(h,t);
+function noteBtn(h,cls){const t=cls==='big'&&typeof hPageDay==='function'?hPageDay(h):td(),c=((h.ck||{})[t]||{}),dn=hDone(h,t);
  return`<button class="hnote${cls?' '+cls:''}${c.n?' on':''}" data-act="hDaySheet" data-id="${h.id}" data-d="${t}">${ic(BUB)}<span>${c.n?esc(c.n.length>70?c.n.slice(0,68)+'…':c.n):dn?'How did it go?':'Add a note'}</span></button>`}
 {const _hr=hrow;hrow=function(h){const o=_hr(h);if(h.status!=='active'||h.kind==='quit')return o;
  const tp=document.createElement('template');tp.innerHTML=o;const m=tp.content.querySelector('.hb>.s');if(!m)return o;m.insertAdjacentHTML('afterend',noteBtn(h));return tp.innerHTML}}
