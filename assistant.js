@@ -14,7 +14,10 @@
 (()=>{
 'use strict';
 const NA=window.PlotlineAssist||null;
-const ADEF={name:'Plot',wake:false,bg:false,speak:'voice',btn:true};
+const ADEF={name:'Plot',wake:false,bg:false,speak:'voice',btn:true,fast:true};
+/* instant mode (Settings › AI & voice): commands and simple lookups are answered on the phone without the AI, questions skip
+   the extra AI routing call, spoken answers get a short prompt, and speech starts with the first sentence */
+const fastOn=()=>aset().fast!==false;
 const aset=()=>({...ADEF,...(S.settings.assist||{})});
 const aname=()=>String(aset().name||'').replace(/[^\p{L}\p{N} '\-]/gu,'').replace(/\s+/g,' ').trim().slice(0,24)||'Plot';
 const wakeWord=()=>'Hey '+aname();
@@ -91,8 +94,31 @@ function markDone(name){const h=pick(S.habits.filter(x=>!x.archived),name,x=>x.t
  if(h){const d=today(),prev=hVal(h,d);hSetVal(h,d,hTarget(h));h.u=Date.now();save();try{checkMilestones()}catch(e){}rerender();return{say:`Nice. Marked ${quote(h.title)} done for today.`,undo:()=>{hSetVal(h,d,prev);save();rerender()},chips:[['Open habit','habit/'+h.id]]}}
  const x=pick(S.days.filter(y=>y.date===today()&&!y.done),name,y=>y.title);
  if(x){x.done=true;x.doneAt=Date.now();save();rerender();return{say:`Done: ${quote(x.title)}.`,undo:()=>{x.done=false;x.doneAt=null;save();rerender()},chips:[['Open today','today']]}}
+ const st=[];active().forEach(g=>(g.steps||[]).forEach(s=>{if(!s.done)st.push({g,s})}));const o=pick(st,name,y=>y.s.title);
+ if(o&&ACT.toggleStep){const d={g:o.g.id,s:o.s.id};ACT.toggleStep(d);return{say:`Done: ${quote(o.s.title)}, a step in ${o.g.title}.`,undo:()=>{if(o.s.done)ACT.toggleStep(d)},chips:[['Open goal','goal/'+o.g.id]]}}
  return{say:`I couldn't find a habit or goal for today called ${quote(name)}.`}}
-const PAGES={today:'today',home:'today',goals:'goals',habits:'habits',journal:'journal',thread:'threads',threads:'threads',lists:'lists',calendar:'cal',settings:'settings',ask:'ask',insights:'ask',activity:'activity',timeline:'road',vista:'road',map:'map',agent:'agent'};
+/* trackers (trackers.js): "log 20 minutes of yoga", "I drank 2 glasses of water", "I meditated for 10 minutes" */
+const NUMRX='(\\d+(?:\\.\\d+)?|an?|one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty|thirty|forty|forty-five|sixty|half an?)';
+const UNITRX='(minutes?|mins?|hours?|hrs?|km|kilomet(?:er|re)s?|miles?|pages?|glass(?:es)?|cups?|reps?|times?|steps?)';
+const num=w=>{const n=parseFloat(w);if(!isNaN(n))return n;const l=lcs(w);return/^half/.test(l)?.5:l==='sixty'?60:NUMW[l]||1};
+const RX_TRK=new RegExp(`^(?:log|add|track|record|count|i\\s+(?:did|drank|had|read|ran|walked|cycled|rode|swam|practi[cs]ed|meditated|played))\\s+${NUMRX}\\s*${UNITRX}?\\s+(?:of\\s+)?(.+?)(?:\\s+(?:today|just now|this morning))?$`,'i');
+const RX_TRK2=new RegExp(`^i\\s+(?:just\\s+)?([a-z]+?)(?:ed)?\\s+for\\s+${NUMRX}\\s*${UNITRX}(?:\\s+today)?$`,'i');
+const trkPick=name=>{if(!window.TRK)return null;const L=TRK.list();if(!L.length)return null;const q=lcs(name).replace(/^(?:of|my|the)\s+/,'').trim();return L.find(t=>lcs(t.n)===q)||L.find(t=>q&&lcs(t.n).includes(q))||pick(L,q,t=>t.n)};
+function trkLog(id,n,u){const T=window.TRK&&TRK.list().find(t=>t.id===id);if(!T)return null;const lu=lcs(u||'');
+ if(/^h/.test(lu)&&T.u==='min')n*=60;else if(/^m(?:in|$)/.test(lu)&&T.u==='h')n/=60;
+ const d=today(),prev=TRK.man(T.id,d);TRK.setVal(T.id,d,prev+n);rerender();const v=TRK.val(T.id,d);
+ return{say:`Logged ${TRK.fmt(n,T.u)} of ${T.n}. ${T.g?v>=T.g?`That’s ${TRK.fmt(v,T.u)} today, goal reached.`:`That’s ${TRK.fmt(v,T.u)} of ${TRK.fmt(T.g,T.u)} today.`:`That’s ${TRK.fmt(v,T.u)} today.`}`,undo:()=>{TRK.setVal(T.id,d,prev);rerender()},chips:[['Open activity','activity']]}}
+/* "snooze", "snooze it for an hour", "snooze my reminder until 6pm": the reminder that just went off, or else the next one */
+function snooze(x){const now=Date.now(),R=S.days.filter(d=>!d.done&&d.time&&d.remind!=null&&d.remind!=='').map(d=>({d,t:new Date(d.date+'T'+d.time).getTime()}));
+ const o=R.filter(z=>z.t<=now+5*6e4&&z.t>now-12*36e5).sort((a,b)=>b.t-a.t)[0]||R.filter(z=>z.t>now).sort((a,b)=>a.t-b.t)[0];
+ if(!o)return{say:'There’s no reminder to snooze right now.'};
+ const m=new RegExp(NUMRX+'\\s*(minutes?|mins?|hours?|hrs?)','i').exec(x||'');let w=null;
+ if(m){const t=new Date(now+num(m[1])*(/^h/i.test(m[2])?36e5:6e4));w={date:ymd(t),time:pad2(t.getHours())+':'+pad2(t.getMinutes())}}
+ else{const p=parseWhen(x||'');if(p.found)w={date:p.date,time:p.time}}
+ if(!w){const t=new Date(now+10*6e4);w={date:ymd(t),time:pad2(t.getHours())+':'+pad2(t.getMinutes())}}
+ const it=o.d,prev={date:it.date,time:it.time};it.date=w.date;it.time=w.time;save();try{syncNative()}catch(e){}rerender();
+ return{say:`Snoozed ${quote(it.title)} until ${atTxt(w.date,w.time)}.`,undo:()=>{it.date=prev.date;it.time=prev.time;save();try{syncNative()}catch(e){}rerender()}}}
+const PAGES={trackers:'activity',today:'today',home:'today',goals:'goals',habits:'habits',journal:'journal',thread:'threads',threads:'threads',lists:'lists',calendar:'cal',settings:'settings',ask:'ask',insights:'ask',activity:'activity',timeline:'road',vista:'road',map:'map',agent:'agent'};
 
 /* "add X to Y": Y can be a list, a thread, the journal or today */
 function addTo(what,where){const w=lcs(where).replace(/^(?:my|the)\s+/,'').trim();
@@ -155,6 +181,10 @@ function parse(raw){const t=strip(normCmd(raw)),l=lcs(t);let m;if(!t)return null
  if((m=RX_T.exec(t))&&!/^add\s+(?!a\s|an\s|new\s)/i.test(t)){const p=m[1].split(/\s*(?::|\s+(?:with|saying)\s+(?:the\s+)?(?:first\s+)?(?:update|note)?\s*)\s*/i);return{k:'thrnew',title:p[0]||'',x:p.slice(1).join(' ')}}
  if((m=/^(?:add|start|create|make|open|begin)\s+(?:a\s+)?new\s+thread\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))||(m=/^(?:start|create|make|begin)\s+(?:a\s+)?thread\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))||(m=/^new\s+thread\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))){const p=m[1].split(/\s*(?::|\s+(?:with|saying)\s+(?:the\s+)?(?:first\s+)?(?:update|note)?\s*)\s*/i);return{k:'thrnew',title:p[0]||'',x:p.slice(1).join(' ')}}
  if((m=/^update\s+(?:my\s+|the\s+)?(.+?)\s+thread\s*(?:with|:|,|saying)\s*(.+)$/i.exec(t)))return{k:'add',x:m[2],to:m[1]+' thread'};
+ /* trackers and snoozing */
+ if((m=RX_TRK.exec(t))){const T=trkPick(m[3]);if(T)return{k:'trk',id:T.id,n:num(m[1]),u:m[2]||''}}
+ if((m=RX_TRK2.exec(t))){const T=trkPick(m[1]);if(T)return{k:'trk',id:T.id,n:num(m[2]),u:m[3]}}
+ if((m=/^snooze\b\s*(?:it|that|this|the|my)?\s*(?:reminder|alarm)?\s*(.*)$/i.exec(t)))return{k:'snooze',x:m[1]};
  /* reminders */
  if((m=/^(?:remind me|set (?:a |an |me a )?(?:reminder|alarm)|create (?:a )?reminder|add (?:a )?reminder|reminder|don'?t let me forget)\b\s*(.*)$/i.exec(t)))return{k:'remind',x:m[1]};
  /* agent tasks: "every morning summarise my emails", "each Friday look at my calendar and plan the weekend" */
@@ -204,6 +234,8 @@ function exec(p,raw){const A=aset();switch(p.k){
  case'thrnew':if(!p.title)return{say:'What should I call the new thread?',listen:true,await:{k:'thrnew'}};return newThread(p.title,p.x);
  case'today':return p.x?addToday(p.x):{say:'What’s the goal for today?',listen:true,await:{k:'today'}};
  case'done':return markDone(p.x);
+ case'trk':return trkLog(p.id,p.n,p.u);
+ case'snooze':return snooze(p.x);
  case'remind':{const w=parseWhen(p.x),title=clean(w.rest.replace(/^(?:(?:me|to|that|about|for)\s+)+/i,''));
   if(!title&&!w.found)return{say:'What should I remind you about?',listen:true,await:{k:'remind'}};
   if(!title)return{say:`What should I remind you about ${atTxt(w.date,w.time)}?`,listen:true,await:{k:'remwhat',w}};
@@ -311,6 +343,9 @@ function actAsk(t){const l=lcs(t);if(!/^(?:how|what|did|when|which|was|were|tell
 
 function localAsk(q){const t=strip(q);let m;
  {const a=actAsk(t);if(a)return a}
+ /* trackers: "how much water today", "how long did I meditate" */
+ if(window.TRK&&TRK.list().length&&/^(?:how\s+(?:much|many|long|far)|what(?:'s| is)\s+my)\b/i.test(t)){const l=lcs(t),T=TRK.list().find(x=>l.includes(lcs(x.n)))||TRK.list().find(x=>toks(x.n).some(w=>w.length>3&&toks(t).some(y=>y.length>3&&(y.startsWith(w.slice(0,5))||w.startsWith(y.slice(0,5))))));
+  if(T){const v=TRK.val(T.id,today());return{say:`${v?`${cap(T.n)}: ${TRK.fmt(v,T.u)} today`:`Nothing logged for ${T.n} today yet`}${T.g?`, your goal is ${TRK.fmt(T.g,T.u)}`:''}.`,chips:[['Open activity','~activity']]}}}
  if((m=/^(?:when|what day)\s+(?:did|was|were|have)\s+(?:i|we)\s+(?:last\s+)?(.+?)(?:\s+last)?\??$/i.exec(t))||(m=/^when\s+was\s+the\s+last\s+time\s+(?:i|we)\s+(.+?)\??$/i.exec(t))||(m=/^(?:the\s+)?last\s+time\s+(?:i|we)\s+(.+?)\??$/i.exec(t))||(m=/^when\s+was\s+(?:my|the)\s+last\s+(.+?)\??$/i.exec(t)))return lastTime(m[1])||{miss:m[1]};
  if((m=/^how\s+(?:many\s+times|often)\s+(?:did|have|do)\s+(?:i|we)\s+(.+?)(?:\s+(?:this|in the (?:last|past)|over the (?:last|past))\s+(week|month|year))?\??$/i.exec(t)))return countTimes(m[1],m[2]&&lcs(m[2]))||{miss:m[1]};
  if((m=/^what(?:'s| is| do i have)\s+(?:on|in)\s+(?:my\s+|the\s+)?(.+?)(?:\s+list)?\??$/i.exec(t))||(m=/^(?:read|show)\s+(?:me\s+)?(?:my\s+|the\s+)?(.+?)\s+list\??$/i.exec(t))){if(/^(?:today|my day|the agenda|my plate|for today)$/i.test(m[1]))return todayRead();const L=pick(S.lists||[],m[1],l=>l.title);if(L)return listRead(L)}
@@ -356,7 +391,7 @@ const GEN=new Set(['go','do','get','make','have','day','time','take','new','my',
 function named(q){const qt=new Set(toks(q)),hit=t=>{const tt=toks(t);if(!tt.length)return 0;const m=tt.filter(w=>qt.has(w)||w.length>=4&&[...qt].some(x=>x.length>=4&&(x.startsWith(w)||w.startsWith(x)))),real=m.filter(w=>!GEN.has(w)&&!/^\d+$/.test(w));return real.length&&m.length>=Math.ceil(tt.length*.3)?m.length/tt.length:0};
  const by=(xs,f)=>xs.map(x=>[x,hit(f(x))]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
  return{h:by(S.habits.filter(h=>h.status!=='archived'),h=>h.title),g:by(S.goals,g=>g.title),t:by(threads().filter(t=>t.status!=='archived'),t=>t.title),l:by(S.lists||[],l=>l.title)}}
-function asCtx(q,r,hint,big){const now=new Date(),tn=dnum(ymd()),lq=lcs(q),N=named(q),days=askDays(q);
+function asCtx(q,r,hint,big,small){const now=new Date(),tn=dnum(ymd()),lq=lcs(q),N=named(q),days=askDays(q);
  const head=`TODAY IS ${now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}, ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}.${S.settings.name?` The user's name is ${S.settings.name}.`:''} Words like "this Tuesday", "last week" or "yesterday" are dates relative to today. In habit rows, "last 7 days" runs oldest to today: ✓ done, ✗ missed, · not due, … due today and not done yet.`;
  const sec=[];const add=(title,lines,score)=>{lines=lines.filter(Boolean);if(lines.length)sec.push({title,lines,score})};
  if(hint)add('LOOKED UP BY THE APP (exact, trust this)',[hint],100);
@@ -377,15 +412,18 @@ function asCtx(q,r,hint,big){const now=new Date(),tn=dnum(ymd()),lq=lcs(q),N=nam
  add('THREADS',threads().filter(t=>t.status!=='archived').sort((a,b)=>(b.u||0)-(a.u||0)).slice(0,big?20:8).map(t=>{const u=thrUps(t)[0];return`- ${t.title}${t.status==='done'?' (done)':''}${u?`: last update ${asDay(tsDay(u.t))}, ${tr(u.x,big?160:80)}`:''}`}),kw(/thread|project|car|house|update|status|progress|last time|when did/,50)+5);
  add('LISTS',(S.lists||[]).map(l=>{const I=Object.values(l.items||{}).filter(x=>!x.del),o=I.filter(x=>!x.done);return`- ${l.title}: ${o.length} to do${o.length?': '+o.slice(0,big?15:6).map(x=>x.t).join(', '):''}`}),kw(/list|grocer|shopping|buy|pack|to-?do|items?/,60)+4);
  sec.sort((a,b)=>b.score-a.score);
- const budget=big?30000:5200;let used=head.length+q.length+40;const parts=[head];
+ const budget=big?30000:small?1800:5200;let used=head.length+q.length+40;const parts=[head];
  for(const s of sec){let block=`\n${s.title}\n`;for(const l of s.lines){if(used+block.length+l.length+1>budget)break;block+=l+'\n'}if(block.split('\n').length>3||s.lines.length&&block.length>s.title.length+3){used+=block.length;parts.push(block)}if(used>=budget)break}
  return parts.join('\n')+`\nQUESTION\n${q}`}
 async function aiAnswer(q,onP,hint){if(!aiReady())return null;const e=planEngine(),loc=e!=='api'&&e!=='native',X=window.AIX,spoken=AS.spoken,pr=insSet().profile;
- const r=(AS.rag&&AS.rag.q===q&&await AS.rag.p)||await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);const prompt=asCtx(q,r,hint,!loc&&e==='api');
- const sys=`You are ${aname()}, the assistant inside the Plotlines app: a personal assistant that knows the user's own data and can talk about anything. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. ${spoken?'Your answer is read aloud: one to three short, natural sentences. No lists, no markdown, no note numbers like [2].':'Answer clearly and briefly: a few sentences, or a few short bullets when that really helps. No note numbers like [2].'} When the question is about their life, use the data given (dates, activity numbers, plans, threads, lists and notes); if the app looked something up, use that answer, and if the data doesn't have it, say what you do know. For anything else (the world, ideas, advice, writing, feelings), just answer it well.${window.AGENT?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nWHAT YOU KNOW ABOUT THEM\n'+pr.text:''}${X?'\n\n'+X.ACT_SYS+'\n\n'+X.safety():''}`;
- const hist=[];AS.turns.filter(t=>!t.wait&&t.a&&!t.sys).slice(-3).forEach(t=>hist.push({role:'user',content:t.q},{role:'assistant',content:t.a}));
- const msgs=[{role:'system',content:sys},...hist,{role:'user',content:prompt}];
- let out='';const on=x=>{out+=x;onP&&onP('')};const opts={max_tokens:spoken?260:(loc?450:700),reading:'Thinking…',temperature:.5};
+ const quick=spoken&&fastOn();
+ const r=(AS.rag&&AS.rag.q===q&&await AS.rag.p)||await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);const prompt=asCtx(q,r,hint,!loc&&e==='api',quick&&e!=='api');tmMark('ctx');
+ /* spoken, instant mode: a short system prompt that never changes between turns (the engine keeps it prefilled), a small
+    slice of their data, and short answers */
+ const sys=quick?`You are ${aname()}, the voice assistant in Plotlines, the user's app for goals, habits, a journal, lists, threads and reminders. Your answer is read aloud: one to three short, natural sentences, no lists, no markdown, no note numbers. For questions about their life, use the data given, and if it isn't there, say what you do know. For anything else, just answer it well.${window.AGENT&&AGENT.connected().length?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nABOUT THEM\n'+tr(pr.text,500):''}${X?'\n\n'+X.safety():''}`:`You are ${aname()}, the assistant inside the Plotlines app: a personal assistant that knows the user's own data and can talk about anything. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. ${spoken?'Your answer is read aloud: one to three short, natural sentences. No lists, no markdown, no note numbers like [2].':'Answer clearly and briefly: a few sentences, or a few short bullets when that really helps. No note numbers like [2].'} When the question is about their life, use the data given (dates, activity numbers, plans, threads, lists and notes); if the app looked something up, use that answer, and if the data doesn't have it, say what you do know. For anything else (the world, ideas, advice, writing, feelings), just answer it well.${window.AGENT?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nWHAT YOU KNOW ABOUT THEM\n'+pr.text:''}${X?'\n\n'+X.ACT_SYS+'\n\n'+X.safety():''}`;
+ const hist=[];AS.turns.filter(t=>!t.wait&&t.a&&!t.sys).slice(quick?-2:-3).forEach(t=>hist.push({role:'user',content:t.q},{role:'assistant',content:quick?tr(t.a,240):t.a}));
+ const msgs=[{role:'system',content:sys},...hist,{role:'user',content:prompt}];if(TM)TM.pc=msgs.reduce((a,m)=>a+m.content.length,0);
+ let out='';const on=x=>{tmMark('tok');out+=x;sqFeed(out);onP&&onP('')};const opts={max_tokens:quick?180:spoken?260:(loc?450:700),reading:'Thinking…',temperature:.5};
  if(e==='api')await apiChat(msgs,on,AS.ctl.signal,opts);else if(e==='native')await natChat(msgs,on,onP,()=>{out=''},opts);else await localChat(msgs,on,onP,0,()=>{out=''},false,opts);
  out=out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'');
  const ag=window.AGENT&&AGENT.parse(out);if(ag)return{agent:ag};
@@ -400,6 +438,53 @@ async function llmIntent(t){const e=typeof planEngine==='function'?planEngine():
   const x=String(j.text||''),tg=String(j.target||''),w=String(j.when||'');
   return{journal:{k:'journal',x:body(x)},new_thread:{k:'thrnew',title:x},thread_update:{k:'add',x,to:tg+' thread'},reminder:{k:'remind',x:x+(w?' '+w:'')},list_add:{k:'add',x,to:tg+' list'},new_list:{k:'listnew',title:x,items:tg?splitItems(tg):[]},today_goal:{k:'today',x},habit_done:{k:'done',x},agent_task:{k:'agent',x},agent_now:window.AGENT&&AGENT.connected().length?{k:'agentNow',x:t}:null}[j.action]||null}catch(err){return null}}
 
+/* ---------------- speed ----------------
+   The instant path: a request the parser fully understands, or a simple lookup in their own data, is answered here in a few
+   milliseconds; only the rest goes to the AI. Each turn's timings are kept on this device (Settings › AI & voice › Speed)
+   and logged as [plot-speed]: from the last word heard to the mic closing, the route, the first token, the first word spoken. */
+const DONE_K=new Set(['cancel','help','hello','thanks','time','date','whoami','open','live','name','done','trk','snooze','add','listnew','thrnew','today']);
+/* a parse that needs nothing more said: the mic can close now (a journal entry or a reminder without a time can go on) */
+function complete(p){if(!p||!DONE_K.has(p.k)&&p.k!=='remind')return false;if(p.k==='remind'){const w=parseWhen(p.x);return w.found&&!!clean(w.rest)}
+ if(p.k==='add'||p.k==='today')return!!clean(p.x);if(p.k==='listnew'||p.k==='thrnew')return!!clean(p.title);return true}
+/* a lookup that is short and plain enough to trust without the AI ("how many steps today", "when did I last change my oil") */
+const DEEP=/\b(?:why|compare[ds]?|versus|vs|than|should|advice|suggest|explain|better|worse|trend|pattern|improve|tips?|plan|think)\b/i;
+function quickAsk(t){const s=strip(t);if(s.split(/\s+/).length>14||DEEP.test(s))return null;const L=localAsk(s);return L&&L.say&&!L.miss&&!L.ask&&!L.await?L:null}
+/* does this need the AI's routing call (agent, web, schedule, several things to make)? Plain questions go straight to the answer */
+const NEEDS_DECIDE=/\b(?:e-?mails?|mail|inbox|repl(?:y|ied|ies)|messages?|calendar|meetings?|events?|appointments?|drive|docs?|files?|notion|weather|forecast|rain|open now|hours|near me|nearby|news|prices?|every|each|keep an eye|monitor|watch)\b/i;
+const MAKE=/^(?:add|make|create|start|set|log|save|put|remind|schedule|track|new|write|note|jot|mark|turn|plan|book|send)\b/i;
+const needsDecide=t=>!fastOn()||NEEDS_DECIDE.test(t)||MAKE.test(strip(t))||/\b(?:can|could|would|will)\s+you\b/i.test(t);
+window.__vDone=(el,text)=>{if(!fastOn()||!el||(el.id!=='asIn'&&el.id!=='lvIn'))return false;const tx=String(text||'').replace(new RegExp('^(?:(?:hey|hi|ok(?:ay)?)\\s+)?'+aname().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[,.!]?\\s*','i'),'');
+ try{const p=parse(tx);if(p)return complete(p)||p.k==='journal'&&!!p.x&&/\b(?:journal|diary)(?:\s+entry)?$/i.test(tx);return el.id==='asIn'&&!!quickAsk(tx)}catch(e){return false}};
+const TM_KEY='plotline.speed';let TM=null;
+const tmMark=k=>{if(TM&&TM[k]==null)TM[k]=Date.now()};
+function tmBegin(text,o){let m='';try{const e=planEngine();m=e==='api'?'own server':e?llmOf(insSet().llm)[1].split(' · ')[0]+(e==='native'?(lrtOn()?' (GPU)':' (llama.cpp)'):''):'no AI'}catch(e){}TM={q:tr(text,60),t0:o.heard||Date.now(),mic:Date.now(),spoken:!!o.spoken,model:m}}
+function tmEnd(){if(!TM)return;const x=TM;TM=null;x.done=Date.now();const d=k=>x[k]!=null?x[k]-x.t0:null;
+ const row={t:x.mic,q:x.q,path:x.path||'',model:x.model,spoken:x.spoken,pc:x.pc||0,mic:d('mic'),routed:d('routed'),ctx:d('ctx'),tok:d('tok'),say:d('say'),done:d('done')};
+ try{console.log('[plot-speed]',JSON.stringify(row))}catch(e){}
+ try{const L=JSON.parse(localStorage.getItem(TM_KEY)||'[]');L.unshift(row);localStorage.setItem(TM_KEY,JSON.stringify(L.slice(0,20)))}catch(e){}}
+const speedRows=()=>{try{return JSON.parse(localStorage.getItem(TM_KEY)||'[]')}catch(e){return[]}};
+window.PLOT_SPEED=speedRows;
+const sec=ms=>ms==null?'–':(ms/1000).toFixed(ms<10000?2:1)+'s';
+function speedHTML(){const L=speedRows();if(!L.length)return'<p class="small muted">Talk to me once and the timings show here.</p>';
+ return`<ul class="as-spd">${L.slice(0,8).map(r=>`<li><b>${esc(r.q)}</b><small>${r.path==='fast'?'instant':esc(r.path||'')} · ${esc(r.model)}${r.pc?` · ${Math.round(r.pc/4)} tokens in`:''}</small><span>${r.spoken?`mic ${sec(r.mic)} · `:''}${r.path!=='fast'&&r.tok!=null?`first token ${sec(r.tok)} · `:''}${r.say!=null?`first word ${sec(r.say)} · `:''}done ${sec(r.done)}</span></li>`).join('')}</ul><p class="small muted">Times count from your last word.${L.length?' <button class="btn sm ghost" data-act="asSpdClear">Clear</button>':''}</p>`}
+/* streamed speech: each full sentence is spoken while the AI is still writing the rest */
+const SQ={on:false,q:[],said:'',last:'',busy:false,end:false,done:null,first:null};
+const norm=s=>String(s||'').replace(/\s+/g,' ').trim();
+const spText=raw=>norm((window.AIX?AIX.hideActs:x=>x)(String(raw||'').replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'')).replace(/[*#_`]/g,''));
+function sqStart(o){Object.assign(SQ,{on:true,q:[],said:'',last:'',busy:false,end:false,done:o&&o.done||null,first:o&&o.first||null})}
+function sqFeed(raw){if(!SQ.on||SQ.end)return;const v=spText(raw);if(/^\{|^A(?:G(?:E(?:N(?:T)?)?)?)?$|AGENT\s*:/i.test(v)){if(!SQ.said)SQ.on=false;return}
+ const rest=v.slice(SQ.said.length);let cut=-1;const rx=/[.!?…]["”')\]]?(?= )/g;let m;while((m=rx.exec(rest)))cut=m.index+m[0].length;
+ if(cut<0)return;const ch=rest.slice(0,cut);if(ch.trim().split(' ').length<3&&!SQ.said)return;SQ.said+=ch;SQ.last=ch.trim();SQ.q.push(ch.trim());sqPump()}
+function sqPump(){if(SQ.busy)return;if(!SQ.q.length){if(SQ.end){SQ.on=false;const f=SQ.done;SQ.done=null;if(f)f();else afterSpeak()}return}
+ SQ.busy=true;if(SQ.first){const f=SQ.first;SQ.first=null;f()}window.asHum(false);tmMark('say');speak(SQ.q.shift(),()=>{SQ.busy=false;sqPump()})}
+/* the answer is complete: speak what's left; false when nothing was streamed (the caller speaks it the usual way) */
+function sqEnd(final){if(!SQ.on||!SQ.said){SQ.on=false;return false}const f=norm(final).replace(/[“”]/g,'"'),s=SQ.said.replace(/[“”]/g,'"');let rem='';
+ if(f.startsWith(s))rem=f.slice(s.length);else{const i=f.indexOf(SQ.last.replace(/[“”]/g,'"'));rem=i>=0?f.slice(i+SQ.last.length):''}
+ rem=rem.trim();if(rem)SQ.q.push(rem);SQ.end=true;sqPump();return true}
+function sqStop(){SQ.on=false;SQ.q=[];SQ.done=null;SQ.first=null;SQ.busy=false}
+/* load the model while they're still talking: at the wake word, when the sheet opens */
+function asWarm(){if(!fastOn())return;try{if(typeof natWarm==='function')natWarm()}catch(e){}}
+
 /* ---------------- one request, start to finish ---------------- */
 const QRX=/^(?:who|what|when|where|why|how|which|is|are|was|were|do|does|did|have|has|had|can i|should i|tell me|show me|list|summari[sz]e|give me)\b/i;
 async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegExp('^(?:(?:hey|hi|ok(?:ay)?)\\s+)?'+aname().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[,.!]?\\s*','i'),'');
@@ -407,13 +492,18 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
  if(AS.busy){toast('Still working on the last one');return}
  if(AS.turns.length&&AS.last&&Date.now()-AS.last>CV_GAP)convFresh('chat');
  asOpen();wakePause(true);$('#asIn')?.setAttribute('placeholder','Ask or tell me something…');const turn={q:text,a:'',chips:[],t:Date.now(),id:uid(),wait:true};AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.spoken=!!o.spoken;AS.busy=true;AS.ctl=new AbortController();paint(true);if(AS.spoken)window.asHum(true);
- let r=null;AS.acts=null;
+ let r=null;AS.acts=null;tmBegin(text,o);sqStop();
+ /* spoken answers from the AI start talking at the first full sentence */
+ if(fastOn()&&(aset().speak==='always'||aset().speak==='voice'&&AS.spoken))sqStart();
  try{const aw=AS.await;AS.await=null;const blk=window.AIX&&AIX.block(text);if(blk)r={say:blk};
   if(aw)r=answerAwait(aw,text);
   if(!r){const p=parse(text);if(p)r=exec(p,text)}
+  if(!r&&fastOn()&&aiReady())r=quickAsk(text);
   if(!r&&!aiReady())r=localAsk(text);
+  if(TM){TM.path=r?'fast':'model';tmMark('routed')}
+  if(!r&&aiReady())asWarm();
   /* the AI decides: make it now, ask the agent, schedule it, or just talk */
-  let dec=null;if(!r&&aiReady()&&window.AGENT){status('Thinking…');/* the note search runs while the AI decides */AS.rag={q:text,p:ragRetrieve(text,{win:0,goal:'',broad:insFocus(text).broad},null).catch(()=>null)};dec=await AGENT.decide(text,AS.turns.filter(t=>!t.wait&&t.a));if(dec&&dec.agent)r={agent:dec.agent,web:dec.web};else if(dec&&dec.items)r=doItems(dec.items);else if(dec&&dec.schedule)r=exec({k:'agent',x:dec.schedule},text)}
+  let dec=null;if(!r&&aiReady()&&window.AGENT&&needsDecide(text)){status('Thinking…');/* the note search runs while the AI decides */AS.rag={q:text,p:ragRetrieve(text,{win:0,goal:'',broad:insFocus(text).broad},null).catch(()=>null)};dec=await AGENT.decide(text,AS.turns.filter(t=>!t.wait&&t.a));if(dec&&dec.agent)r={agent:dec.agent,web:dec.web};else if(dec&&dec.items)r=doItems(dec.items);else if(dec&&dec.schedule)r=exec({k:'agent',x:dec.schedule},text)}
   if(!r&&aiReady()){const st=strip(text),cmd=!dec&&(!QRX.test(st)||/^(?:can|could|would|will) you\b|\b(?:please|i want to|i need to|i'd like to)\b/i.test(st));
    if(cmd&&!/^(?:can|could|would|will) you (?:tell|show|explain|remind me (?:what|when|how))/i.test(st)){status('Working it out…');const p=await llmIntent(st);if(p&&p.k)r=exec(p,text)}
    if(!r){const L=localAsk(text);if(L&&(L.ask||L.await))r=L;
@@ -431,7 +521,7 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
  if(AS.acts&&AS.acts.length&&window.AIX){const A=AS.acts;AS.acts=null;turn.chips.unshift(...A.map(a=>{const c={t:'+ '+AIX.actLabel(a),act:1};c.fn=()=>{let x;try{x=AIX.doAct(a)}catch(e){return toast('Couldn’t add that')}c.t='✓ '+AIX.actLabel(a);c.fn=()=>x&&x.go&&(asClose(),setTimeout(()=>go(x.go),380));paint();toast(esc((x&&x.say)||'Added'))};return c}))}
  AS.await=r.await||null;AS.busy=false;AS.ctl=null;paint(true);pushWidget2();
  const talk=!r.quiet&&(aset().speak==='always'||aset().speak==='voice'&&AS.spoken);AS.after=(r.listen||AS.await)&&AS.spoken?'listen':null;
- if(talk&&turn.a)speak(r.speak||turn.a);else afterSpeak()}
+ if(talk&&turn.a){if(!sqEnd(r.speak||turn.a))speak(r.speak||turn.a)}else{sqStop();afterSpeak()}tmEnd()}
 /* the assistant's AI asked for its agent (email, calendar, Drive, Notion): the agent's answer becomes this turn, its suggestions one-tap chips */
 async function agentRun(task,web){if(!window.AGENT)return{say:'The agent isn’t available here.'};
  if(!AGENT.connected().length)return{say:'I can read your email, calendar, Google Drive and Notion once you connect them on the Agent page.',chips:[['Connect on the Agent page','agent']]};
@@ -443,14 +533,14 @@ const agentChip=f=>async c=>{if(c.done)return;try{await f();c.done=1;c.t='✓ '+
 /* ---------------- speaking ---------------- */
 let SPK=null,SPK_CB=null;
 /* the voice, speed and pitch picked in Settings › Voice; done (optional) runs instead of the assistant's own follow-up */
-function speak(text,done,ov){const t=String(text).replace(/[“”]/g,'"').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu,'').replace(/[*#_`]/g,'').trim();SPK_CB=done||null;if(!t)return spoke();const id='s'+uid();SPK=id;paintHead();
+function speak(text,done,ov){const t=String(text).replace(/[“”]/g,'"').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu,'').replace(/[*#_`]/g,'').trim();SPK_CB=done||null;if(!t)return spoke();const id='s'+uid();SPK=id;paintHead();tmMark('say');
  const A={...aset(),...(ov||{})},rate=+A.rate||1,pitch=+A.pitch||1,voice=A.voice||'';
  if(NA&&NA.speak2){try{NA.speak2(id,t,vset().lang||'',rate,pitch,voice);return}catch(e){}}
  if(NA&&NA.speak){try{NA.speak(id,t,vset().lang||'',rate);return}catch(e){}}
  if(window.speechSynthesis){try{const u=new SpeechSynthesisUtterance(t);if(vset().lang)u.lang=vset().lang;const v=voice&&speechSynthesis.getVoices().find(x=>x.name===voice);if(v){u.voice=v;u.lang=v.lang}u.rate=rate;u.pitch=pitch;u.onend=u.onerror=()=>{if(SPK===id){SPK=null;spoke()}};speechSynthesis.cancel();speechSynthesis.speak(u);return}catch(e){}}
  SPK=null;spoke()}
 function spoke(){const f=SPK_CB;SPK_CB=null;if(f){paintHead();f();return}afterSpeak()}
-function hush(){SPK=null;SPK_CB=null;try{if(NA&&NA.stopSpeaking)NA.stopSpeaking();else if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}paintHead()}
+function hush(){sqStop();SPK=null;SPK_CB=null;try{if(NA&&NA.stopSpeaking)NA.stopSpeaking();else if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}paintHead()}
 function afterSpeak(){paintHead();const a=AS.after;AS.after=null;if(a==='listen'&&AS.open)setTimeout(()=>listen(),250);else{wakePause(false);handsOff()}}
 /* woken by "Hey Plot" while Plotlines was closed or the phone locked: once the answer is spoken and nothing follows, step aside again */
 function handsOff(){if(!AS.bg||!NA||!NA.background)return;clearTimeout(AS.bgT);AS.bgT=setTimeout(()=>{if(!AS.bg||AS.busy||AS.listening||AS.await||SPK)return;AS.bg=false;asClose();try{NA.background()}catch(e){}},2500)}
@@ -459,7 +549,7 @@ function handsOff(){if(!AS.bg||!NA||!NA.background)return;clearTimeout(AS.bgT);A
 /* ---------------- listening (the same mic as the rest of the app) ---------------- */
 function listen(pre){if(!(AS.min&&$('#asv')))asOpen();const el=$('#asIn'),b=$('#asv .as-mic');if(!el||!b)return;if(typeof voiceAvail==='function'&&!voiceAvail()){toast('Voice isn’t available here. Type instead.');el.focus();return}hush();wakePause(true);el.value=typeof pre==='string'?pre:'';AS.listening=true;paintHead();voiceStart(el,b)}
 {const _vs=voiceStart;voiceStart=function(el,btn){wakePause(true);return _vs(el,btn)}}
-{const _vx=voiceStop;voiceStop=function(silent,keep){const c=VC;_vx(silent,keep);if(!c)return;if(c.el&&c.el.id==='asIn'){AS.listening=false;paintHead();const v=c.el.value.trim();if(keep&&v){c.el.value='';run(v,{spoken:true})}else wakePause(false)}else wakePause(false)}}
+{const _vx=voiceStop;voiceStop=function(silent,keep){const c=VC;_vx(silent,keep);if(!c)return;if(c.el&&c.el.id==='asIn'){AS.listening=false;paintHead();const v=c.el.value.trim();if(keep&&v){c.el.value='';run(v,{spoken:true,heard:c.heard})}else wakePause(false)}else wakePause(false)}}
 
 /* ---------------- wake word (Android) ---------------- */
 function wakePause(p){if(!NA||!NA.wakePause)return;try{NA.wakePause(!!p)}catch(e){}}
@@ -468,10 +558,10 @@ window.__assist=(k,a,b)=>{
  if(k==='tts'){if(a===SPK&&(b==='done'||b==='err')){SPK=null;spoke()}return}
  if(k==='voices'){window.dispatchEvent(new Event('plot-voices'));return}
  /* "Hey Plot" on its own: the page's own mic takes over, with room to pause and think (the wake loop would stop at the first pause) */
- if(k==='wake'){if(window.liveOpen&&document.getElementById('live'))return;asOpen();vib();AS.nlis=false;listen();return}
+ if(k==='wake'){asWarm();if(window.liveOpen&&document.getElementById('live'))return;asOpen();vib();AS.nlis=false;listen();return}
  if(k==='partial'){const i=$('#asIn');if(AS.nlis&&i)i.value=a;return}
  /* "Hey Plot, …" in one breath: a clear command runs now; anything else keeps listening in case there's more to say */
- if(k==='cmd'){if(VC&&VC.el&&(VC.el.id==='asIn'||VC.el.id==='lvIn'))return;if(AS.nlis){AS.listening=AS.nlis=false;const i=$('#asIn');if(i)i.value=''}const tx=String(a||'').trim();if(!tx||parse(tx)||AS.busy){run(tx,{spoken:true});return}asOpen();listen(tx);return}
+ if(k==='cmd'){asWarm();if(VC&&VC.el&&(VC.el.id==='asIn'||VC.el.id==='lvIn'))return;if(AS.nlis){AS.listening=AS.nlis=false;const i=$('#asIn');if(i)i.value=''}const tx=String(a||'').trim();if(!tx||parse(tx)||AS.busy){run(tx,{spoken:true});return}asOpen();listen(tx);return}
  if(k==='wstate'){AS.wst=a;if(a==='timeout'&&AS.nlis){AS.listening=AS.nlis=false;const i=$('#asIn');if(i)i.value=''}paintHead();return}};
 function takePending(){if(!NA||!NA.takePending)return;let p='';try{p=NA.takePending()||''}catch(e){}if(p)setTimeout(()=>run(p,{spoken:true}),350)}
 
@@ -545,7 +635,7 @@ function paint(scroll){const el=$('#asv');if(!el)return;paintHead();const b=el.q
  `<div class="as-empty"><button class="as-big" data-act="asMic" aria-label="Talk"><i></i></button><p><b>Hi, I’m ${esc(aname())}.</b> Tap and talk${NA&&(aset().wake||aset().bg)?`, or say “${esc(wakeWord())}”`:''}. Ask me anything.</p><div class="as-go"><button class="btn sm pri" data-act="liveOpen">${ic('live')}Talk out loud</button><a class="btn sm" href="#/agent">${ic('agent')}Agent</a></div>${NA&&!aset().wake&&!aset().bg?`<button class="btn sm" data-act="asWakeOn" style="margin:4px 0 6px">Turn on “${esc(wakeWord())}”</button>`:''}${window.AIX&&AIX.sugs?(setTimeout(()=>AIX.sugAuto('chat'),0),AIX.sugs('chat','asTry')):`<div class="as-sugs">${['Add “had a great workout” to my journal','When did I last change my oil?','Remind me to call mom at 6pm','What do I have today?'].map(s=>`<button class="as-sug" data-act="asTry" data-q="${esc(s.replace(/[“”]/g,''))}">${esc(s)}</button>`).join('')}</div>`}</div>`;
  if(scroll)b.scrollTop=b.scrollHeight;convSync()}
 Object.assign(ACT,{
- asOpen:()=>{asOpen();setTimeout(()=>{if(!AS.turns.length&&NA&&typeof voiceAvail==='function'&&voiceAvail())listen();else $('#asIn')?.focus()},300)},
+ asOpen:()=>{asOpen();asWarm();setTimeout(()=>{if(!AS.turns.length&&NA&&typeof voiceAvail==='function'&&voiceAvail())listen();else $('#asIn')?.focus()},300)},
  asClose:()=>asClose(),asMin:()=>asMin(),asBack:()=>asOpen(),asSet:()=>{if(window.aiQuick)aiQuick();else go('settings/voice')},
  asMic:()=>{if(VC&&VC.el&&VC.el.id==='asIn'){voiceStop(false,true);return}if(AS.busy){AS.ctl&&AS.ctl.abort();return}AS.nlis=false;listen()},
  asStop:()=>{AS.after=null;if(AS.busy&&AS.ctl)AS.ctl.abort();if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);AS.listening=AS.nlis=false;hush();wakePause(false)},
@@ -588,7 +678,9 @@ function assistHTML(){const a=aset(),st=nst(),v=vset();
 ${a.cues!==false?`<div class="as-cues">${[['cueStart','When I start listening','start'],['cueDone','When I stop listening','done']].map(([k,l,w])=>`<div class="field"><label>${l}</label><div class="as-cue"><select data-assist="${k}">${Object.entries(CUES).map(([id,q])=>`<option value="${id}" ${cueOf(w)===id?'selected':''}>${q.n}</option>`).join('')}</select><button class="ibtn" data-act="asCueTry" data-w="${w}" aria-label="Play this sound">${ic('play')}</button></div></div>`).join('')}</div>`:''}
  <div class="field"><label>Read replies out loud</label><select data-assist="speak">${[['voice','When I talk to it'],['always','Always'],['never','Never']].map(([k,n])=>`<option value="${k}" ${a.speak===k?'selected':''}>${n}</option>`).join('')}</select></div>
  ${NA&&NA.openAssistSettings?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>${st.assistRole?`${esc(aname())} is your phone’s assistant`:`Use ${esc(aname())} as your phone’s assistant`}</b><small>${st.assistRole?'Press and hold the side button to talk to it from anywhere.':'Pick Plotlines as the digital assistant app, then press and hold the side button to talk from anywhere. On Samsung: Settings › Advanced features › Side button › Press and hold › Digital assistant. This replaces Gemini on that button.'} You can also share text from any app to Plotlines, or select text and tap Send to Plotlines.</small></div><button class="btn sm" data-act="asRole">${st.assistRole?'Change':'Set up'}</button></div>`:''}
+ ${row('fast','Instant mode','Commands and simple lookups (“add milk to groceries”, “log 2 glasses of water”, “how many steps today”) are done on the phone at once, without the AI. Questions skip an extra AI step, spoken answers stay short, and I start talking at the first sentence.',a.fast!==false)}
  ${row('btn','Assistant button in the top bar','The orb next to search and settings',a.btn)}
+ <details class="as-sd"><summary>Speed of my last answers</summary>${speedHTML()}</details>
  <div class="actions left"><button class="btn sm pri" data-act="asOpen">Try it</button></div></section>`}
 {const _vh=voiceHTML;voiceHTML=function(){return _vh()+assistHTML()}}
 /* the few that matter mid-conversation, for the quick settings sheet */
@@ -599,12 +691,12 @@ document.addEventListener('change',async e=>{const t=e.target;if(!t.dataset||!t.
  if(k==='name'){v=String(v).replace(/[^\p{L}\p{N} '\-]/gu,'').trim().slice(0,24)||'Plot';v=cap(v)}
  if((k==='wake'||k==='bg')&&v){const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud){const ok=await voiceConsent();if(!ok){t.checked=false;return}}if(!(await permAsk('mic','android.permission.RECORD_AUDIO'))){t.checked=false;return toast('Allow the microphone to use the wake word')}if(k==='bg')askNotif()}
  S.settings.assist={...aset(),[k]:v};save();wakeSync();render(false);if(k==='cueStart'||k==='cueDone')cuePlay(v);if(k==='think')thinkTry();if((k==='wake'||k==='bg')&&v)toast(`Say “${wakeWord()}” to try it`)});
-Object.assign(ACT,{asThinkTry:()=>thinkTry(),asCueTry:d=>cuePlay(cueOf(d.w)),asWakeOn:async()=>{const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud&&!(await voiceConsent()))return;if(!(await permAsk('mic','android.permission.RECORD_AUDIO')))return toast('Allow the microphone to use the wake word');S.settings.assist={...aset(),wake:true};save();wakeSync();paint();toast(`Say “${wakeWord()}” while Plotlines is open`)},asOverlay:()=>{try{NA.openOverlaySettings()}catch(e){}},asRole:()=>{try{NA.openAssistSettings()}catch(e){}}});
+Object.assign(ACT,{asSpdClear:()=>{try{localStorage.removeItem(TM_KEY)}catch(e){}rerender()},asThinkTry:()=>thinkTry(),asCueTry:d=>cuePlay(cueOf(d.w)),asWakeOn:async()=>{const st=typeof vstate==='function'?vstate():{};if(!st.onDevice&&!vset().cloud&&!(await voiceConsent()))return;if(!(await permAsk('mic','android.permission.RECORD_AUDIO')))return toast('Allow the microphone to use the wake word');S.settings.assist={...aset(),wake:true};save();wakeSync();paint();toast(`Say “${wakeWord()}” while Plotlines is open`)},asOverlay:()=>{try{NA.openOverlaySettings()}catch(e){}},asRole:()=>{try{NA.openAssistSettings()}catch(e){}}});
 
 /* ---------------- start ---------------- */
 function rerender(){try{render(false)}catch(e){}}
 function bgCheck(){if(nst().bgOff&&aset().bg){S.settings.assist={...aset(),bg:false};save();rerender()}}
-setTimeout(()=>{bgCheck();wakeSync();pushWidget2();takePending()},1200);
+setTimeout(()=>{bgCheck();wakeSync();pushWidget2();takePending();if(NA&&(aset().wake||aset().bg))setTimeout(asWarm,4000)},1200);
 window.addEventListener('app-resume',()=>{setTimeout(()=>{bgCheck();wakeSync();takePending()},300)});
 window.PLOT_ASSIST={quickHTML,run,asCtx,parse,parseWhen,localAsk,aname,ctx:asCtx,
  /* for the live conversation (ai.js) */
@@ -616,11 +708,15 @@ window.PLOT_ASSIST={quickHTML,run,asCtx,parse,parseWhen,localAsk,aname,ctx:asCtx
  resume:id=>{const c=window.CONV&&CONV.get(id);if(!c)return false;hush();AS.turns=c.turns.map(t=>({q:t.q,a:t.a,chips:[],t:t.t,id:t.id})).slice(-30);AS.cid=c.id;AS.kind=c.k==='ask'?'chat':c.k;AS.await=null;AS.undo={};AS.last=Date.now();if(AS.open)paint(true);return true},
  current:()=>AS.cid,
  doItems:items=>doItems(items),
+ /* streamed speech for Live: start({first,done}), feed(text so far), end(final) → false when nothing was streamed */
+ needsDecide:t=>needsDecide(t),
+ stream:{start:o=>{if(fastOn())sqStart(o)},feed:t=>sqFeed(t),end:t=>sqEnd(t),stop:()=>sqStop()},fast:()=>fastOn(),warm:()=>asWarm(),
  dropTurn:tid=>{AS.turns=AS.turns.filter(t=>t.id!==tid);delete AS.undo[tid];if(AS.open)paint()},
  /* an agent result continued in chat (Agent page › Continue in chat) */
  inject:(q,a,chips)=>{if(!(AS.turns.length&&AS.last&&Date.now()-AS.last<CV_GAP))convFresh('chat');AS.turns.push({q,a,chips:(chips||[]).map(c=>({t:c.t,fn:agentChip(c.fn)})),t:Date.now(),id:uid()});AS.turns=AS.turns.slice(-30);asOpen();paint(true);setTimeout(()=>$('#asIn')?.focus(),300)}};
 
 const css=document.createElement('style');css.textContent=`
+.as-sd{margin:12px 0 4px}.as-sd summary{cursor:pointer;font:600 14px var(--f-body);color:var(--accent);padding:6px 0}.as-spd{list-style:none;margin:6px 0;padding:0}.as-spd li{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-top:1px solid var(--line);min-width:0}.as-spd b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.as-spd small{color:var(--muted);font-size:12px}.as-spd span{font-size:13px;font-variant-numeric:tabular-nums}
 .as-cues{display:grid;gap:0}.as-cue{display:flex;gap:8px;align-items:center}.as-cue select{flex:1;min-width:0}.as-cue .ibtn{flex:none}
 
 .as-av{position:relative;width:30px;height:30px;border-radius:50%;flex:none;display:block;isolation:isolate;box-shadow:0 0 0 1px var(--line-2),0 6px 18px -6px var(--accent)}
