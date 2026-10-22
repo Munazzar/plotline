@@ -200,7 +200,7 @@ function canvasMark(){R.toggleAttribute('data-canvas',canvasPg());R.dataset.pgx=
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&S.settings.focus&&canvasPg()){S.settings.focus=false;save();applyFocus(true)}});
 
 /* ---------- navigation: pages grouped by what they're for, the same on the rail and the full-screen bar ---------- */
-const NAVG=[['Today',['today','cal']],['Plan',['goals','habits','lists','activity']],['Capture',['journal','threads','vista','bench']],['AI',['ask','agent','chats']]];
+const NAVG=[['Today',['today','cal']],['Plan',['goals','habits','lists','activity']],['Capture',['journal','threads','vista','bench']],['AI',['ask','agent','chats','me']]];
 const NAV_ORD=NAVG.flatMap(g=>g[1]);
 /* the page list (key, name, icon) is index.html's own; read it off the rail it builds */
 let PAGES=[];
@@ -219,7 +219,7 @@ buildFloater();addEventListener('hashchange',()=>setTimeout(()=>{if(S.settings.f
 /* ---------- the gear on each page opens the settings for that page, scrolled to the right panel ---------- */
 const GEARS={today:['look','Home page'],habits:['notif','Reminders'],habit:['notif','Reminders'],day:['notif','Reminders'],cal:['notif','Reminders'],goals:['notif','Reminders'],goal:['notif','Reminders'],
  journal:['privacy','Privacy'],threads:['data','Your data'],thread:['data','Your data'],activity:['auto','Automations'],lists:['share','Sharing'],list:['share','Sharing'],
- ask:['voice','Assistant'],ai:['voice','Assistant'],chats:['voice','Assistant'],agent:['agent','Connections'],bench:['look','Theme'],road:['look','Theme'],map:['look','Theme']};
+ ask:['voice','Assistant'],ai:['voice','Assistant'],chats:['voice','Assistant'],me:['voice','Assistant'],agent:['agent','Connections'],bench:['look','Theme'],road:['look','Theme'],map:['look','Theme']};
 let GEAR_H='';
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('#view a.gearb,#view a[href="#/settings"]'),m=a&&GEARS[cur.p];if(!m)return;e.preventDefault();e.stopPropagation();GEAR_H=m[1];go('settings/'+m[0])},true);
 function gearScroll(){if(!GEAR_H||cur.p!=='settings')return;const h=[...document.querySelectorAll('#view h3')].find(x=>x.textContent.trim()===GEAR_H);GEAR_H='';if(!h)return;const p=h.closest('section,.panel')||h;
