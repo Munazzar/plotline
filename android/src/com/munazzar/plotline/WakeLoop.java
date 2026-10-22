@@ -150,7 +150,7 @@ final class WakeLoop implements RecognitionListener {
     void setPaused(boolean p) {
         paused = p;
         h.removeCallbacks(unstick);
-        if (p) { kill(); cb.state("paused"); h.postDelayed(unstick, 60000); }
+        if (p) { kill(); destroy(); cb.state("paused"); h.postDelayed(unstick, 60000); } /* let go of the recognizer, so a mic button can have it */
         else if (running) { h.removeCallbacks(goR); h.postDelayed(goR, 500); }
     }
 
@@ -183,6 +183,7 @@ final class WakeLoop implements RecognitionListener {
                 i.putExtra("android.speech.extra.SEGMENTED_SESSION", "android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS");
                 i.putExtra("android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 60000L);
             }
+            last = i;
             listening = true;
             started = System.currentTimeMillis();
             hush(1200);
@@ -193,6 +194,15 @@ final class WakeLoop implements RecognitionListener {
             destroy();
             retry();
         }
+    }
+
+    boolean askedLang;
+    Intent last;
+
+    /* Android 13+: ask for the on-device language pack, so the wake word works without online speech next time */
+    void fetchLang() {
+        if (Build.VERSION.SDK_INT < 33 || rec == null || last == null) return;
+        try { SpeechRecognizer.class.getMethod("triggerModelDownload", Intent.class).invoke(rec, last); } catch (Exception e) {}
     }
 
     void kill() {
@@ -299,7 +309,13 @@ final class WakeLoop implements RecognitionListener {
         if (seg && System.currentTimeMillis() - started < 1500 && e != SpeechRecognizer.ERROR_NO_MATCH && e != SpeechRecognizer.ERROR_SPEECH_TIMEOUT && ++segFails >= 2) seg = false;
         if (e == SpeechRecognizer.ERROR_NO_MATCH || e == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) { fails = 0; next(120); return; }
         if (e == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) { cb.state("perm"); return; }
-        if ((e == 12 || e == 13) && onDevice && cloud) forceCloud = true; /* on-device can't do this language */
+        if (onDevice && (e == 12 || e == 13)) { /* on-device can't do this language (13: not downloaded yet) */
+            if (e == 13 && !askedLang) { askedLang = true; fetchLang(); }
+            if (cloud) forceCloud = true;
+            else { destroy(); fails = Math.max(fails, 5); retry(); cb.state("lang"); return; } /* slow retries; the page says why */
+        }
+        /* the on-device service keeps falling over: use the regular one when online speech is allowed */
+        if (onDevice && cloud && (e == SpeechRecognizer.ERROR_CLIENT || e == 11 || e == SpeechRecognizer.ERROR_SERVER) && fails >= 2) forceCloud = true;
         destroy();
         retry();
     }

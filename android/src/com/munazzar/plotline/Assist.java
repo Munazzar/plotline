@@ -43,9 +43,11 @@ public class Assist {
     static final String CH = "assistant", CH_HEARD = "assistant_heard";
 
     final Context c;
+    final WeakReference<MainActivity> own;
 
     Assist(MainActivity a) {
         c = a.getApplicationContext();
+        own = new WeakReference<MainActivity>(a);
         act = new WeakReference<MainActivity>(a);
         resumed = true;
         hook(a);
@@ -358,6 +360,16 @@ public class Assist {
 
     @JavascriptInterface
     public void wakePause(boolean p) { jsPause = p; apply(c); }
+
+    /* the mic buttons: listen(id, lang, mode) with mode 0 on-device only, 1 on-device then online, 2 online (Listen) */
+    @JavascriptInterface
+    public void listen(String id, String lang, int mode) {
+        MainActivity a = own.get();
+        if (a != null) Listen.start(a, id == null ? "" : id, lang, mode);
+    }
+
+    @JavascriptInterface
+    public void listenStop() { Listen.stop(); }
 
     @JavascriptInterface
     public String takePending() {
