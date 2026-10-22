@@ -3539,7 +3539,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.46.1';
+const APP_VER='1.46.2';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -3571,15 +3571,15 @@ function mergeDocs(a,b){const dead={...(a.dead||{})};for(const[k,v]of Object.ent
  const cut=Date.now()-120*864e5;for(const k in dead)if(dead[k]<cut)delete dead[k];
  const pick=(xs,ys)=>{const m=new Map();(xs||[]).forEach(o=>m.set(o.id,o));(ys||[]).forEach(o=>{const c=m.get(o.id);if(!c||(o.u||0)>(c.u||0))m.set(o.id,o)});return[...m.values()].filter(o=>!(dead[o.id]>=(o.u||0)))};
  const goals=pick(a.goals,b.goals),ids=new Set(goals.map(g=>g.id));goals.forEach(g=>{g.links=(g.links||[]).filter(l=>ids.has(l))});
- return{goals,entries:pick(a.entries,b.entries),days:pick(a.days,b.days),habits:pick(a.habits,b.habits),chapters:pick(a.chapters,b.chapters),shares:pick(a.shares,b.shares),act:mergeAct(a.act,b.act),lists:pick(a.lists,b.lists),threads:mergeThreads(a.threads,b.threads,dead),benches:window.WBSYNC?WBSYNC.merge(a.benches,b.benches,dead):(b.benches||a.benches||[]),ident:!a.ident?b.ident||null:!b.ident?a.ident:((a.ident.c||0)<=(b.ident.c||0)?a.ident:b.ident),dead}}
+ return{goals,entries:pick(a.entries,b.entries),days:pick(a.days,b.days),habits:pick(a.habits,b.habits),chapters:pick(a.chapters,b.chapters),shares:pick(a.shares,b.shares),act:mergeAct(a.act,b.act),lists:pick(a.lists,b.lists),threads:mergeThreads(a.threads,b.threads,dead),benches:window.WBSYNC?WBSYNC.merge(a.benches,b.benches,dead):(b.benches||a.benches||[]),me:window.MESYNC?MESYNC.merge(a.me,b.me):(b.me||a.me||null),ident:!a.ident?b.ident||null:!b.ident?a.ident:((a.ident.c||0)<=(b.ident.c||0)?a.ident:b.ident),dead}}
 /* activity (steps, sleep, screen time, workouts) is read on the phone and travels in your own Drive file, so the web
    can show it. Last 120 days; per day the fuller record wins (the phone's totals only grow through the day). */
 const actTrim=L=>{const cut=fromN(dnum(ymd())-120),o={};for(const k in L||{})if(k>=cut&&L[k])o[k]=L[k];return o};
 const actScore=o=>o?(+o.s||0)+(+o.z||0)+(+o.m||0)+(o.w||[]).length+(o.a||[]).length+(o.ss||[]).length:-1;
 /* the more recently read day wins (it's the phone's latest reading); days from before 1.27 have no time, so the fuller one wins */
 function mergeAct(a,b){const o={...(a||{})};for(const[k,v]of Object.entries(b||{})){const c=o[k],tu=+(v&&v.u)||0,cu=+(c&&c.u)||0;if(tu||cu?tu>cu:actScore(v)>actScore(c))o[k]=v}return actTrim(o)}
-const docOf=x=>({app:'plotline',v:1,act:actTrim(x.act||(x.settings&&x.settings.actLog)),goals:x.goals,entries:x.entries,days:x.days||[],habits:x.habits||[],chapters:x.chapters||[],shares:x.shares||[],lists:x.lists||[],threads:x.threads||[],benches:x.benches||[],ident:x.ident||null,dead:x.dead||{}});
-const sameDoc=(a,b)=>JSON.stringify([a.act||{},a.lists||[],a.goals,a.entries,a.days||[],a.habits||[],a.chapters||[],a.shares||[],a.threads||[],a.benches||[],a.ident||null,a.dead])===JSON.stringify([b.act||{},b.lists||[],b.goals,b.entries,b.days||[],b.habits||[],b.chapters||[],b.shares||[],b.threads||[],b.benches||[],b.ident||null,b.dead]);
+const docOf=x=>({app:'plotline',v:1,act:actTrim(x.act||(x.settings&&x.settings.actLog)),goals:x.goals,entries:x.entries,days:x.days||[],habits:x.habits||[],chapters:x.chapters||[],shares:x.shares||[],lists:x.lists||[],threads:x.threads||[],benches:x.benches||[],me:x.me||null,ident:x.ident||null,dead:x.dead||{}});
+const sameDoc=(a,b)=>JSON.stringify([a.act||{},a.lists||[],a.goals,a.entries,a.days||[],a.habits||[],a.chapters||[],a.shares||[],a.threads||[],a.benches||[],a.me||null,a.ident||null,a.dead])===JSON.stringify([b.act||{},b.lists||[],b.goals,b.entries,b.days||[],b.habits||[],b.chapters||[],b.shares||[],b.threads||[],b.benches||[],b.me||null,b.ident||null,b.dead]);
 
 /* ---- Google auth: web = popup/redirect (implicit flow), Android = device account with browser fallback ---- */
 const cfg=()=>({clientId:(S.settings.sync.clientId||PLOTLINE_CFG.googleClientId||'').trim(),webUrl:(S.settings.sync.webUrl||PLOTLINE_CFG.webUrl||'').trim()});
@@ -3666,10 +3666,13 @@ async function syncNow(manual){if(!syncOn()||TOURING)return;if(SYNCING){SYNC_AGA
   let f=S.settings.sync.fileId?{id:S.settings.sync.fileId}:await driveFind();let remote=null;
   if(f){try{remote=await driveRead(f.id)}catch(e){if(String(e.message).includes('404')){S.settings.sync.fileId='';f=await driveFind();remote=f?await driveRead(f.id):null}else throw e}}
   const l0=docOf(S);l0.benches=window.WBSYNC?await WBSYNC.list():(remote&&remote.benches)||[];
+  /* Picture of me lives in its own store too (me.js) */
+  l0.me=window.MESYNC?await MESYNC.get():(remote&&remote.me)||null;
   /* photos go out as their own Drive files (refs in the plan); mine = merged with the pictures back in, for this device */
   const local=await imgOut(l0),merged=await imgOut(remote?mergeDocs(local,remote):local),mine=await imgIn(merged);
   /* Workbench boards live in their own store, not in S */
   if(window.WBSYNC&&JSON.stringify(merged.benches||[])!==JSON.stringify(local.benches))await WBSYNC.apply(mine.benches,merged.dead);
+  if(window.MESYNC&&JSON.stringify(merged.me||null)!==JSON.stringify(local.me||null))await MESYNC.apply(merged.me);
   const changedLocal=!sameDoc(merged,local);
   if(changedLocal){S.goals=mine.goals;S.entries=mine.entries;S.days=mine.days;S.habits=mine.habits.map(normHabit);S.chapters=mine.chapters||[];S.shares=mine.shares||[];S.threads=mine.threads||[];S.lists=mine.lists||[];if(mine.act&&Object.keys(mine.act).length)S.settings.actLog=mine.act;S.ident=mine.ident||S.ident||null;S.dead=merged.dead;primeSig();await DB.set('state',S).catch(()=>{});syncNative();pushWidget();if(!$('#sheet').classList.contains('on'))render(false)}
   if(!remote||!sameDoc(merged,remote)||DIRTY){S.settings.sync.fileId=await driveWrite(f&&f.id,docOf(merged))}else S.settings.sync.fileId=f.id;
