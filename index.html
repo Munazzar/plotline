@@ -3539,7 +3539,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.44.0';
+const APP_VER='1.45.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -4456,19 +4456,22 @@ function applyWidgetQueue(){if(!NATIVE||!NATIVE.widgetQueue||TOURING)return;let 
  if(rq.length)setTimeout(()=>applyReplies(rq),600);
  if(n)checkMilestones();
  if(n){save();render(false);toast(`${n} update${n>1?'s':''} from your home screen`)}}
-function syncNative(){if(!NATIVE||TOURING)return;const now=Date.now(),L=[];
+/* everything that will notify: the phone's alarm list, and Home's Scheduled card */
+function alarmList(now){const L=[];
  S.goals.forEach(g=>{if(g.status!=='active')return;g.steps.forEach(s=>{if(s.done)return;const t=reminderAt(s);if(t!=null&&t>now)L.push({at:t,title:s.title,body:g.title+(s.time?' · '+fmtTime(s.time):''),k:'step',g:g.id,s:s.id})});
   if(g.checkin){const[hh,mm]=(g.checkinTime||'19:00').split(':').map(Number);for(let k=0;k<35;k++){const d=new Date();d.setDate(d.getDate()+k);d.setHours(hh,mm,0,0);if(d.getTime()<=now)continue;if(k===0&&g.lastCheckin===ymd())continue;if(g.checkin==='weekly'&&d.getDay()!==+g.checkinDay)continue;const n=nextStep(g);L.push({at:d.getTime(),title:'Check in: '+g.title,body:(n?'Next: '+n.title+'. ':'')+'How is it going? Reply right here.',k:'checkin',g:g.id})}}});
  const t=S.settings.timer;if(t&&t.end>now){const g=G(t.g),s=g&&g.steps.find(x=>x.id===t.s);L.push({at:t.end,title:'Focus session complete',body:s?`${t.m} min on “${s.title}”`:'',k:'timer',rp:false})}
- S.days.forEach(x=>{if(x.done)return;const at=dayRemAt(x);if(at&&at>now)L.push({at,title:x.title,body:(x.time?fmtTime(x.time)+' · ':'')+'Goal for '+(x.date===ymd(new Date(at))?'today':dayName(x.date)),k:'day',id:x.id,d:x.date})});
+ S.days.forEach(x=>{if(x.done||x.rep||+x.at>0)return;const at=dayRemAt(x);if(at&&at>now)L.push({at,title:x.title,body:(x.time?fmtTime(x.time)+' · ':'')+'Goal for '+(x.date===ymd(new Date(at))?'today':dayName(x.date)),k:'day',id:x.id,d:x.date})});
  S.goals.forEach(g=>{const at=goalTargetAt(g);if(at&&at>now)L.push({at,title:'Target: '+g.title,body:`${+g.remTarget?`${g.remTarget==='1'?'Tomorrow':'In '+g.remTarget+' days'}`:'Today'} is the target date · ${pct(g)}% there`,k:'checkin',g:g.id})});
- habitAlarms(now,L);wrapAlarms(now,L);if(typeof listAlarms==='function')listAlarms(now,L);if(window.agentAlarms)agentAlarms(now,L);try{autoSync()}catch(e){}const N=nlist(L);try{NATIVE.schedule(JSON.stringify(N.slice(0,60)))}catch(e){}replyModelSync()}
+ habitAlarms(now,L);wrapAlarms(now,L);if(typeof listAlarms==='function')listAlarms(now,L);if(window.agentAlarms)agentAlarms(now,L);if(window.schedAlarms)schedAlarms(now,L);return L}
+function syncNative(){if(!NATIVE||TOURING)return;const now=Date.now(),L=alarmList(now);try{autoSync()}catch(e){}const N=nlist(L);try{NATIVE.schedule(JSON.stringify(N.slice(0,60)))}catch(e){}replyModelSync()}
 window.__back=()=>{if(TR){endTour();return true}if($('#sheet').classList.contains('on')){if(RP){ACT.rpClose();return true}if(!SHEET_LOCK)closeSheet();return true}const f=document.querySelector('.fc.flip,.sc.flip,.jf.flip');if(f){f.classList.remove('flip');return true}return navBack()};
 function tick(){const now=Date.now(),td=ymd();let ch=false;
  S.goals.forEach(g=>{if(g.status!=='active')return;
   g.steps.forEach(s=>{if(s.done||s.reminded)return;const t=reminderAt(s);if(t!=null&&t<=now){if(now-t<2*864e5)notify(s.title,`${g.title}${s.time?' · '+fmtTime(s.time):''}`);s.reminded=true;ch=true}});
   if(g.checkin&&g.lastCheckin!==td){const[hh,mm]=(g.checkinTime||'19:00').split(':').map(Number);const d=new Date();if((g.checkin==='daily'||+g.checkinDay===d.getDay())&&d.getHours()*60+d.getMinutes()>=hh*60+mm){const n=nextStep(g);notify('Check in: '+g.title,n?'Next: '+n.title:'How is it going?');g.lastCheckin=td;ch=true}}});
  if(habitTick(now,td))ch=true;
+ if(window.schedTick&&schedTick(now))ch=true;
  if(ch)save()}
 function startTimer(gid,sid,m){S.settings.timer={g:gid,s:sid,end:Date.now()+m*6e4,m};save();closeSheet();askNotif();buildTimer();toast(`Focus timer: ${m} min`)}
 function buildTimer(){const t=S.settings.timer,p=$('#tpill');if(!t){p.classList.remove('on');return}const g=G(t.g),s=g&&g.steps.find(x=>x.id===t.s);if(!s){S.settings.timer=null;save();p.classList.remove('on');return}
@@ -8304,12 +8307,12 @@ habitsStrip=function(){return hSnap(7,'home')};
 /* ---------- home: a clearer order ---------- */
 /* Home shows a focused day by default. Each device can switch sections on or off and reorder them (Customize Home);
    the choice lives in S.settings, so it stays on this device. The header, sample-data banner and sharing invites always show. */
-const HOME_ORDER=['head','demo','share','feat','day','talk','weekly','goals','snap','next','coming','insights','act','quick','pinned','threads','aip','other'];
+const HOME_ORDER=['head','demo','share','feat','day','talk','weekly','goals','sched','snap','next','coming','charts','insights','act','quick','pinned','threads','aip','other'];
 const HOME_FIXED=['head','demo','share','other'],HOME_OFF0=['quick','pinned','threads','aip'];
-const HOME_NAME={feat:['Page shortcuts','Journal, Lists, Ask, Agent and more'],talk:['Talk with your assistant','Start a voice conversation'],day:['Your day','Progress ring and what’s next'],weekly:['Weekly review nudge','At the end of the week'],goals:['Today’s goals','Your checklist for today'],snap:['Habits','This week at a glance'],next:['Up next','The next step on your top goal'],coming:['Coming up','Next steps on other goals'],insights:['Insights','Streaks and patterns worth knowing'],act:['Activity','Steps and sleep'],quick:['Quick add','Buttons to add a goal, habit, entry…'],pinned:['Pinned goals','Goals you pinned'],threads:['Threads','Your running logs'],aip:['Plan with AI','Turn a wish into a plan']};
+const HOME_NAME={feat:['Page shortcuts','Journal, Lists, Ask, Agent and more'],talk:['Talk with your assistant','Start a voice conversation'],day:['Your day','Progress ring and what’s next'],weekly:['Weekly review nudge','At the end of the week'],goals:['Today’s goals','Your checklist for today'],snap:['Habits','This week at a glance'],next:['Up next','The next step on your top goal'],coming:['Coming up','Next steps on other goals'],sched:['Scheduled','Reminders, timers and check-ins coming up'],charts:['Trends','Charts of your habits, goals and journal'],insights:['Insights','Streaks and patterns worth knowing'],act:['Activity','Steps and sleep'],quick:['Quick add','Buttons to add a goal, habit, entry…'],pinned:['Pinned goals','Goals you pinned'],threads:['Threads','Your running logs'],aip:['Plan with AI','Turn a wish into a plan']};
 const homeCfg=()=>{const c=S.settings.homeSecs||{};const o=(c.order||[]).filter(k=>HOME_ORDER.includes(k));HOME_ORDER.forEach(k=>{if(!o.includes(k))o.splice(Math.max(0,HOME_ORDER.indexOf(k)),0,k)});return{order:o,off:c.off||HOME_OFF0}};
 function homeKey(n){const c=n.classList,h=((n.querySelector(':scope>.st-h h3')||{}).textContent||'').trim().toLowerCase();
- if(n.tagName==='HEADER')return'head';if(c.contains('demob'))return'demo';if(c.contains('sh-today'))return'share';if(c.contains('hft'))return'feat';if(c.contains('hmq'))return'quick';if(c.contains('hday'))return'day';if(c.contains('lv-home'))return'talk';if(c.contains('hsnap'))return'snap';if(n.id==='actCard')return'act';if(c.contains('aip'))return'aip';if(n.dataset&&n.dataset.act==='weekly')return'weekly';if(n.querySelector(':scope>.now'))return'next';
+ if(n.tagName==='HEADER')return'head';if(c.contains('demob'))return'demo';if(c.contains('sh-today'))return'share';if(c.contains('hft'))return'feat';if(c.contains('hmq'))return'quick';if(c.contains('hday'))return'day';if(c.contains('lv-home'))return'talk';if(c.contains('hsnap'))return'snap';if(c.contains('hsched'))return'sched';if(c.contains('hcharts'))return'charts';if(n.id==='actCard')return'act';if(c.contains('aip'))return'aip';if(n.dataset&&n.dataset.act==='weekly')return'weekly';if(n.querySelector(':scope>.now'))return'next';
  if(h.startsWith('insight'))return'insights';if(h.startsWith('today'))return'goals';if(h.startsWith('coming'))return'coming';if(h.startsWith('pinned'))return'pinned';if(h.startsWith('thread'))return'threads';return'other'}
 function homeOrder(html){const t=document.createElement('template');t.innerHTML=html;const N=[...t.content.children];if(N.length<3)return html;const C=homeCfg();
  const L=N.map((n,i)=>({n,i,k:homeKey(n)})).filter(x=>HOME_FIXED.includes(x.k)||!C.off.includes(x.k)).map(x=>({...x,r:x.k==='head'?-2:x.k==='demo'||x.k==='share'?-1:C.order.indexOf(x.k)}));L.sort((a,b)=>a.r-b.r||a.i-b.i);
@@ -8817,5 +8820,6 @@ window.smStop=stop;
 <script src="ink.js"></script>
 <script src="polish.js"></script>
 <script src="trackers.js"></script>
+<script src="sched.js"></script>
 </body>
 </html>
