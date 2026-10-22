@@ -978,6 +978,30 @@ html,body{overscroll-behavior-y:contain}
 .hstep b{display:block;font:800 54px/.9 var(--f-display)}
 .hstep span{font-size:13px;opacity:.75}
 .hstep.ink{justify-content:flex-start}
+.hpd{margin-top:22px;padding:10px;border-radius:20px;background:color-mix(in srgb,var(--t-fg,#0B1020) 7%,transparent);color:var(--t-fg);touch-action:pan-y}
+.hpd-h{display:flex;align-items:center;gap:8px}
+.hpd-h .ibtn{background:color-mix(in srgb,var(--t-fg) 10%,transparent);border-color:color-mix(in srgb,var(--t-fg) 22%,transparent);color:var(--t-fg);flex:none}
+.hpd-h .ibtn[disabled]{opacity:.3;pointer-events:none}
+.hpd-t{flex:1;min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px}
+.hpd-t b{font-size:16px;font-weight:700}
+.hpd-t .link{color:var(--t-fg);opacity:.75;font-size:12px}
+.hpd-s{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.hpd-d{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 8px;border:0;border-radius:14px;background:transparent;color:var(--t-fg);font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hpd-d small{font-size:10.5px;opacity:.7;text-transform:uppercase;letter-spacing:.04em}
+.hpd-d b{font-size:15px;font-weight:650;font-variant-numeric:tabular-nums}
+.hpd-d i{width:7px;height:7px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--t-fg) 35%,transparent)}
+.hpd-d.d i{background:var(--t-fg);border-color:var(--t-fg)}
+.hpd-d.p i{background:linear-gradient(90deg,var(--t-fg) 50%,transparent 50%);border-color:var(--t-fg)}
+.hpd-d.s i{border-style:dashed;border-color:var(--t-fg)}
+.hpd-d.x i{border-color:#D9443C;background:color-mix(in srgb,#D9443C 30%,transparent)}
+.hpd-d em{position:absolute;top:4px;right:calc(50% - 15px);width:5px;height:5px;border-radius:50%;background:var(--t-fg);opacity:.7}
+.hpd-d.on{background:var(--t-fg);color:var(--t-inv,#F4F2EC)}
+.hpd-d.on i{border-color:var(--t-inv,#F4F2EC)}.hpd-d.on.d i{background:var(--t-inv,#F4F2EC)}.hpd-d.on em{background:var(--t-inv,#F4F2EC)}
+.hpd-d.on.p i{background:linear-gradient(90deg,var(--t-inv,#F4F2EC) 50%,transparent 50%)}
+.hpd-n{margin-top:12px;opacity:.8}
+.hpd.sw-l{animation:hpdL .22s ease}.hpd.sw-r{animation:hpdR .22s ease}
+@keyframes hpdL{from{transform:translateX(14px);opacity:.6}}@keyframes hpdR{from{transform:translateX(-14px);opacity:.6}}
+@media (prefers-reduced-motion:reduce){.hpd.sw-l,.hpd.sw-r{animation:none}}
 .hstep.ink .ibtn{background:color-mix(in srgb,var(--t-fg) 10%,transparent);border-color:color-mix(in srgb,var(--t-fg) 25%,transparent);color:var(--t-fg)}
 .hheat{display:grid;gap:6px}
 .hmo{display:grid;font:500 9.5px var(--f-mono);color:var(--muted);text-transform:uppercase;height:14px}
@@ -2555,6 +2579,7 @@ html.fnat :is(.ph h1,.hero h1,.sheet h2,.st-h h3,.panel h3){letter-spacing:0}
 .hrd{display:grid;gap:6px}
 .hrd-r{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);width:100%;text-align:left;font:inherit;color:var(--text);cursor:pointer}
 .hrd-r .d{flex:1;min-width:0;font-size:14.5px}
+.hrd-r.sel{border-color:var(--c,var(--accent));box-shadow:0 0 0 1px var(--c,var(--accent)) inset}
 .hrd-r .v{font:500 12.5px var(--f-mono);color:var(--muted)}
 .hrd-r .s{width:12px;height:12px;border-radius:50%;flex:none;border:2px solid var(--line-2)}
 .hrd-r.ok .s{background:var(--c);border-color:var(--c)}
@@ -3539,7 +3564,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB={_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.45.3';
+const APP_VER='1.45.4';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -4800,24 +4825,34 @@ function hTiles(L){return`<div class="hstats rv">${L.map(([v,l,x])=>`<div class=
 function slipInsight(h){const sl=h.slips.filter(s=>s.t>=h.start);if(sl.length<2)return'';const c={};sl.forEach(s=>{if(s.trig)c[s.trig]=(c[s.trig]||0)+1});const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
  const part=x=>{const hh=new Date(x).getHours();return hh<5?'late at night':hh<12?'in the morning':hh<17?'in the afternoon':hh<21?'in the evening':'late at night'};const pc={};sl.forEach(s=>{const p=part(s.t);pc[p]=(pc[p]||0)+1});const tp=Object.entries(pc).sort((a,b)=>b[1]-a[1])[0];
  return`<p class="small" style="margin-top:12px">${top?`Most slips come from <b>${esc(top[0].toLowerCase())}</b>`:'Slips'}${tp&&tp[1]>1?` and happen most ${tp[0]}`:''}. ${h.plan?'Keep your plan ready for exactly those moments.':'Write a plan for those moments in Edit.'}</p>`}
+/* habit page: the day being looked at. ‹ › or the strip move it back and forth; marking, the counter, rest days and the note all follow it */
+let HPD={id:'',d:'',t:0},EATSW=0;
+function hPageDay(h){const td=ymd();if(HPD.id!==h.id||!validDate(HPD.d)||HPD.d>td||Date.now()-HPD.t>6e5)HPD={id:h.id,d:td,t:Date.now()};else HPD.t=Date.now();return HPD.d}
+function hDayWord(ds){const n=daysUntil(ds);return n===0?'today':n===-1?'yesterday':'on '+dayName(ds)}
+function hDayCls(h,ds){if(h.kind==='quit'){const v=+h.log[ds]||0;return ds<ymd(new Date(h.start))?'n':v>h.limit?'x':v?'p':'d'}const v=hVal(h,ds),n=hTarget(h);return h.skip[ds]||((h.ck||{})[ds]||{}).sk?'s':v>=n?'d':v?'p':ds<h.startDate||!hDue(h,ds)||ds===ymd()||h.freq==='times'?'n':'x'}
+function hDayBar(h,ds){const tn=dnum(ymd()),k0=dnum(ds),end=Math.min(tn,k0+3),st=end-6,isT=k0===tn;let o='';
+ for(let k=st;k<=end;k++){const d=fromN(k),D=dUTC(k),c=((h.ck||{})[d]||{}).n;o+=`<button class="hpd-d ${hDayCls(h,d)}${k===k0?' on':''}" data-act="hPgDay" data-id="${h.id}" data-d="${d}" aria-label="${esc(dayName(d))}"${k===k0?' aria-current="date"':''}><small>${D.toLocaleDateString(undefined,{weekday:'narrow',timeZone:'UTC'})}</small><b>${D.getUTCDate()}</b><i></i>${c?'<em></em>':''}</button>`}
+ return`<div class="hpd" data-id="${h.id}"><div class="hpd-h"><button class="ibtn" data-act="hPgDay" data-id="${h.id}" data-d="${fromN(k0-1)}" aria-label="Previous day">${ic('back')}</button><div class="hpd-t"><b>${esc(dayName(ds))}</b>${isT?'':`<button class="link small" data-act="hPgDay" data-id="${h.id}" data-d="${ymd()}">Back to today</button>`}</div><button class="ibtn" data-act="hPgDay" data-id="${h.id}" data-d="${fromN(k0+1)}" aria-label="Next day"${isT?' disabled':''}>${ic('next')}</button></div><div class="hpd-s">${o}</div></div>`}
 function vHabit(id){const h=H(id);if(!h)return`<header class="ph"><div><h1>Not found</h1></div></header><a class="btn" href="#/habits">Back to habits</a>`;
- const td=ymd(),g=h.goalId&&G(h.goalId);let o=`<div class="crumb"><a href="#/habits" class="ibtn" data-act="navBack" aria-label="Back">${ic('back')}</a><div class="ph-r">${thrBtn('habit',h.id)}${h.status==='active'?habitBell(h,'pill')+(NATIVE?autoBtn('habit',`data-id="${h.id}"`,h,'pill'):''):''}<button class="ibtn" data-act="editHabit" data-id="${h.id}" aria-label="Edit habit">${ic('edit')}</button><button class="ibtn" data-act="habitMenu" data-id="${h.id}" aria-label="More">${ic('more')}</button></div></div>`;
+ const td=ymd(),ds=h.kind==='quit'&&h.mode!=='limit'?td:hPageDay(h),dw=hDayWord(ds),g=h.goalId&&G(h.goalId);let o=`<div class="crumb"><a href="#/habits" class="ibtn" data-act="navBack" aria-label="Back">${ic('back')}</a><div class="ph-r">${thrBtn('habit',h.id)}${h.status==='active'?habitBell(h,'pill')+(NATIVE?autoBtn('habit',`data-id="${h.id}"`,h,'pill'):''):''}<button class="ibtn" data-act="editHabit" data-id="${h.id}" aria-label="Edit habit">${ic('edit')}</button><button class="ibtn" data-act="habitMenu" data-id="${h.id}" aria-label="More">${ic('more')}</button></div></div>`;
  const kindTxt=h.kind==='quit'?(h.mode==='limit'?'Cutting down':'Breaking'):h.kind==='routine'?'Routine':'Building';
  o+=`<section class="hero tint hhero" style="${cvar(h)}"><div class="data">${kindTxt} · ${areaName(h.area)}${h.kind!=='quit'?' · '+freqText(h):''}${h.status!=='active'?' · '+cap(h.status):''}${typeof shareChip==='function'?shareChip('habit',h.id):''}</div><h1><span class="hh-ic">${esc(hIcon(h))}</span>${esc(h.title)}</h1>${h.why?`<p class="why">${esc(h.why)}</p>`:''}${h.cue&&h.kind==='build'?`<p class="hcue">${ic('link','ico-s')} ${esc(h.cue)}, I will ${esc(h.title.toLowerCase())}${h.target>1?` (${h.target} ${esc(h.unit)})`:''}.</p>`:''}${h.mini&&h.kind==='build'?`<p class="hcue">${ic('shield','ico-s')} <b>On a hard day:</b> ${esc(h.mini)}. It still counts.</p>`:''}`;
  if(h.kind==='quit'&&h.mode!=='limit'){const since=qSince(h);o+=`<div class="hq-clock big" data-since="${since}">${clockHTML(Date.now()-since)}</div><div class="hq-a" style="margin-top:18px"><button class="btn ink" data-act="urge" data-id="${h.id}">${ic('wave')}I have an urge</button><button class="btn inkline" data-act="slip" data-id="${h.id}">Log a slip</button></div></section>`;
   const sv=qSaved(h),ub=h.urges.filter(u=>u.ok).length,d=qDays(h),nx=MILES.find(m=>m>d);
   o+=hTiles([[`${qBest(h)}<small>d</small>`,'Best run'],[h.cost?money(h,sv.money):ub,h.cost?'Money saved':'Urges beaten'],[h.mins?hrs(sv.mins):h.slips.filter(s=>s.t>=h.start).length,h.mins?'Time back':'Slips'],[nx?mileName(nx).replace(' ','<small> ')+'</small>':'—','Next milestone']]);
   o+=`<section class="rv"><div class="st-h"><h3>Milestones</h3><span class="data">current run</span></div><div class="hmiles">${MILES.map(m=>`<div class="hm${d>=m?' ok':''}${m===nx?' nx':''}"><span>${d>=m?ic('check'):m===nx?ic('flag'):''}</span><b>${mileName(m)}</b></div>`).join('')}</div></section>`}
- else if(h.kind==='quit'){const v=+h.log[td]||0;o+=`<div class="hq-lim big"><b>${v}</b><span>of ${h.limit}${h.unit?' '+esc(h.unit):''} today</span></div><div class="hq-a" style="margin-top:18px"><button class="btn ink" data-act="hLimit" data-id="${h.id}" data-n="1">${ic('plus')}Log one</button>${v?`<button class="btn inkline" data-act="hLimit" data-id="${h.id}" data-n="-1">Undo</button>`:''}<button class="btn inkline" data-act="urge" data-id="${h.id}">${ic('wave')}I have an urge</button></div></section>`;
+ else if(h.kind==='quit'){const v=+h.log[ds]||0;o+=hDayBar(h,ds)+`<div class="hq-lim big"><b>${v}</b><span>of ${h.limit}${h.unit?' '+esc(h.unit):''} ${esc(dw)}</span></div><div class="hq-a" style="margin-top:18px"><button class="btn ink" data-act="hLimit" data-id="${h.id}" data-d="${ds}" data-n="1">${ic('plus')}Log one</button>${v?`<button class="btn inkline" data-act="hLimit" data-id="${h.id}" data-d="${ds}" data-n="-1">${ds===td?'Undo':'One less'}</button>`:''}${ds===td?`<button class="btn inkline" data-act="urge" data-id="${h.id}">${ic('wave')}I have an urge</button>`:''}</div></section>`;
   o+=hTiles([[lStreak(h)+'<small>d</small>','On track'],[lBest(h)+'<small>d</small>','Best run'],[h.urges.filter(u=>u.ok).length,'Urges beaten'],[(()=>{const tn=dnum(ymd());let t=0,n=0;for(let k=tn-7;k<tn;k++){const ds=fromN(k);if(ds<h.startDate)continue;t+=+h.log[ds]||0;n++}return n?(t/n).toFixed(1):'—'})(),'Daily avg · 7d']])}
- else{const v=hVal(h,td),n=hTarget(h),s=hStreak(h),u=h.freq==='times'?'wk':'d';
+ else{const v=hVal(h,ds),n=hTarget(h),s=hStreak(h),u=h.freq==='times'?'wk':'d',isT=ds===td,ck=(h.ck||{})[ds]||{},sk=!!h.skip[ds]||!!ck.sk;
   o+=`<div class="hero-f"><div><div class="data">Strength ${hStrength(h)}%</div><div class="pbar"><i style="width:${hStrength(h)}%"></i></div></div><div class="hero-pct">${s}<small>${u}</small></div></div>`;
-  if(h.status==='active'){if(h.kind==='routine'&&h.steps.length)o+=`<div class="hq-a" style="margin-top:20px"><button class="btn ink" data-act="routineGo" data-id="${h.id}">${ic('play')}${v>=n?'Run again':v?`Continue · ${v} of ${n}`:'Start routine'}</button></div>`;
-   else if(n>1)o+=`<div class="hstep ink" style="margin-top:20px"><button class="ibtn" data-act="hAdj" data-id="${h.id}" data-d="${td}" data-n="-1" aria-label="One less">${ic('minus')}</button><div><b>${v}</b><span>of ${n} ${esc(h.unit)} today</span></div><button class="ibtn" data-act="hAdj" data-id="${h.id}" data-d="${td}" data-n="1" aria-label="One more">${ic('plus')}</button></div>`;
-   else o+=`<div class="hq-a" style="margin-top:20px"><button class="btn ${v>=n?'inkline':'ink'}" data-act="hTap" data-id="${h.id}">${ic('check')}${v>=n?'Done today · undo':'Mark done for today'}</button>${hDue(h,td)&&v<n&&(hRestOK(h)||h.skip[td])?`<button class="btn inkline" data-act="hSkip" data-id="${h.id}" data-d="${td}">${h.skip[td]?'Undo rest day':'Rest day'}</button>`:''}</div>`}
+  if(h.status==='active'){o+=hDayBar(h,ds);const tg=`h|${h.id}|${ds}`,nd=!hDue(h,ds)&&v<n&&!sk?`<p class="small hpd-n">Not on the plan ${esc(dw)}. You can still check it off.</p>`:'';
+   const rest=v<n&&(hRestOK(h)?`<button class="btn inkline" data-act="hSkip" data-id="${h.id}" data-d="${ds}">${h.skip[ds]?'Undo rest day':'Rest day'}</button>`:sk?`<button class="btn inkline" data-act="ckDo" data-t="${tg}" data-v="unskip">Undo skip</button>`:`<button class="btn inkline" data-act="ckDo" data-t="${tg}" data-v="skip">${ic('skip')}Skip</button>`);
+   if(h.kind==='routine'&&h.steps.length)o+=nd+`<div class="hq-a" style="margin-top:14px">${isT?`<button class="btn ink" data-act="routineGo" data-id="${h.id}">${ic('play')}${v>=n?'Run again':v?`Continue · ${v} of ${n}`:'Start routine'}</button>`:`<button class="btn ${v>=n?'inkline':'ink'}" data-act="hDay" data-id="${h.id}" data-d="${ds}">${ic('check')}${v>=n?`Done ${esc(dw)} · undo`:v?`${v} of ${n} · mark all done`:`Mark done ${esc(dw)}`}</button>`}${rest||''}</div>`;
+   else if(n>1)o+=nd+`<div class="hstep ink" style="margin-top:14px"><button class="ibtn" data-act="hAdj" data-id="${h.id}" data-d="${ds}" data-n="-1" aria-label="One less">${ic('minus')}</button><div><b>${v}</b><span>of ${n} ${esc(h.unit)} ${esc(dw)}</span></div><button class="ibtn" data-act="hAdj" data-id="${h.id}" data-d="${ds}" data-n="1" aria-label="One more">${ic('plus')}</button></div>${rest?`<div class="hq-a" style="margin-top:10px">${rest}</div>`:''}`;
+   else o+=nd+`<div class="hq-a" style="margin-top:14px"><button class="btn ${v>=n?'inkline':'ink'}" data-act="${isT?'hTap':'hDay'}" data-id="${h.id}" data-d="${ds}">${ic('check')}${v>=n?`Done ${esc(dw)} · undo`:`Mark done ${esc(dw)}`}</button>${rest||''}</div>`}
   o+=`</section>`+histHTML('h:'+h.id);const r=hRate(h),age=dnum(td)-dnum(h.startDate)+1;
   o+=hTiles([[`${s}<small>${u}</small>`,'Current streak'],[`${hBest(h)}<small>${u}</small>`,'Best streak'],[`${hStrength(h)}<small>%</small>`,'Strength'],[r==null?'—':`${r}<small>%</small>`,h.freq==='times'?'Last 4 weeks':'Last 30 days']]);
-  if(h.kind==='routine')o+=`<section class="rv"><div class="st-h"><h3>Steps</h3><button class="link" data-act="editHabit" data-id="${h.id}">Edit</button></div><div class="list">${h.steps.map((st,i)=>`<label class="li"><input type="checkbox" class="rchk" data-hstep="${st.id}" data-id="${h.id}" data-d="${td}" ${(h.rs[td]||[]).includes(st.id)?'checked':''}><span class="nbadge sm" style="position:static">${pad2(i+1)}</span><div style="flex:1;min-width:0"><div class="t">${esc(st.title)}</div></div><span class="data">${st.min?st.min+' min':''}</span></label>`).join('')||'<p class="small muted" style="padding:16px">No steps yet. Add them in Edit.</p>'}</div></section>`;
+  if(h.kind==='routine')o+=`<section class="rv"><div class="st-h"><h3>Steps${ds===td?'':' · '+esc(dayName(ds))}</h3><button class="link" data-act="editHabit" data-id="${h.id}">Edit</button></div><div class="list">${h.steps.map((st,i)=>`<label class="li"><input type="checkbox" class="rchk" data-hstep="${st.id}" data-id="${h.id}" data-d="${ds}" ${(h.rs[ds]||[]).includes(st.id)?'checked':''}><span class="nbadge sm" style="position:static">${pad2(i+1)}</span><div style="flex:1;min-width:0"><div class="t">${esc(st.title)}</div></div><span class="data">${st.min?st.min+' min':''}</span></label>`).join('')||'<p class="small muted" style="padding:16px">No steps yet. Add them in Edit.</p>'}</div></section>`;
   o+=`<section class="rv"><div class="st-h"><h3>Becoming automatic</h3><span class="data">day ${age}</span></div><div class="panel"><div class="pbar" style="height:6px;${cvar(h)}"><i style="width:${Math.min(100,age/66*100)}%"></i></div><p class="small muted" style="margin-top:10px">${age<66?`New habits take about two months to feel automatic, on average, and the range is wide. Day ${age} of roughly 66. Keep the bar low and show up.`:'Past the two-month mark. For most people it feels automatic by now. Protect it on busy days.'}</p></div></section>`}
  o+=`<section class="rv"><div class="st-h"><h3>History</h3>${h.kind!=='quit'?'<span class="data">tap a day to change it</span>':''}</div><div class="panel">${hHeat(h)}</div></section>`;
  if(h.kind!=='quit')o+=hWeekdays(h);
@@ -4929,7 +4964,8 @@ function habitTick(now,td){let ch=false;const d=new Date(),cm=d.getHours()*60+d.
 /* ================= habit actions ================= */
 Object.assign(ACT,{
  hView:d=>{HV=d.v;render(false)},
- openHabit:d=>go('habit/'+d.id),
+ openHabit:d=>{HPD={id:'',d:'',t:0};go('habit/'+d.id)},
+ hPgDay:d=>{const h=H(d.id);if(!h||!validDate(d.d)||d.d>ymd())return;const was=HPD.id===h.id?HPD.d:ymd();HPD={id:h.id,d:d.d,t:Date.now()};vib();render(false);const b=$('.hpd');if(b&&was!==d.d)b.classList.add(d.d<was?'sw-r':'sw-l');if(d.top){const e=$('.hhero');if(e)e.scrollIntoView({behavior:'smooth',block:'start'})}},
  newHabit:d=>openSheet(`<div class="data">New</div><h2 style="margin-top:8px">What do you want to work on?</h2><div class="hnew">${[['build','🌱','Build a habit','Something to do daily or a few times a week'],['quit','🛡️','Break a habit','Stop completely, or cut down to a daily limit'],['routine','🔁','Create a routine','A short sequence with a guided timer']].map(([k,e,t,s])=>`<button class="tpl big" data-act="hBlank" data-k="${k}"><span class="hic">${e}</span><span><b>${t}</b><small>${s}</small></span></button>`).join('')}</div>${tplGrid(d&&d.k)}`),
  hBlank:d=>openHabitForm(null,d.k),
  hTpl:d=>{const t=HTPL[+d.i];if(t)openHabitForm(null,t.kind,t)},
@@ -4937,7 +4973,7 @@ Object.assign(ACT,{
  hTap:d=>{const h=H(d.id);if(!h)return;const td=ymd(),v=hVal(h,td),n=hTarget(h);
   if(v>=n){const u=undoPoint();hSetVal(h,td,0);JUST='';save();render(false);toast('Unchecked for today',u);return}
   hSetVal(h,td,v+1);JUST=h.id;vib();if(v+1>=n&&checkMilestones()!==2)hCelebrate(h);save();render(false)},
- hDay:d=>{const h=H(d.id);if(!h||d.d>ymd())return;const v=hVal(h,d.d),n=hTarget(h);hSetVal(h,d.d,v>=n?0:n);if(v<n){vib();JUST=d.d===ymd()?h.id:'';checkMilestones()}save();render(false)},
+ hDay:d=>{const h=H(d.id);if(!h||d.d>ymd())return;const v=hVal(h,d.d),n=hTarget(h);hSetVal(h,d.d,v>=n?0:n);if(v<n){vib();JUST=d.d===ymd()?h.id:'';checkMilestones()}save();render(false);if(d.d!==ymd()&&cur.p==='habit')toast(v<n?'Marked done '+hDayWord(d.d):'Marked not done '+hDayWord(d.d))},
  hAdj:d=>{const h=H(d.id);if(!h)return;const v=hVal(h,d.d);hSetVal(h,d.d,v+(+d.n));if(v+(+d.n)>=hTarget(h)&&v<hTarget(h)){vib();if(checkMilestones()!==2&&d.d===ymd())hCelebrate(h)}save();render(false);const b=$('#hsv');if(b)b.textContent=hVal(h,d.d)},
  hSkip:d=>{const h=H(d.id);if(!h)return;if(h.skip[d.d])delete h.skip[d.d];else{h.skip[d.d]=1;hSetVal(h,d.d,0);h.skip[d.d]=1}closeSheet();save();render(false);toast(h.skip[d.d]?'Rest day. Your streak is safe.':'Rest day removed')},
  hSetDay:d=>{const h=H(d.id);if(!h)return;hSetVal(h,d.d,+d.v?hTarget(h):0);closeSheet();checkMilestones();save();render(false)},
@@ -4946,7 +4982,7 @@ Object.assign(ACT,{
   ${rt?`<div class="clist" style="margin-top:14px">${h.steps.map(s=>`<label class="citem" style="${cvar(h)}"><input type="checkbox" data-hstep="${s.id}" data-id="${h.id}" data-d="${ds}" ${(h.rs[ds]||[]).includes(s.id)?'checked':''}><i></i><span>${esc(s.title)}</span><span class="data">${s.min?s.min+' min':''}</span></label>`).join('')}</div>`
    :n>1?`<div class="hstep" style="margin-top:14px"><button class="ibtn" data-act="hAdj" data-id="${h.id}" data-d="${ds}" data-n="-1" aria-label="One less">${ic('minus')}</button><div><b id="hsv">${v}</b><span>of ${n} ${esc(h.unit)}</span></div><button class="ibtn" data-act="hAdj" data-id="${h.id}" data-d="${ds}" data-n="1" aria-label="One more">${ic('plus')}</button></div>`:`<p class="muted small">${v?'Marked done.':h.skip[ds]?'Rest day.':'Not done.'}</p>`}
   <div class="actions">${hRestOK(h)||h.skip[ds]?`<button class="btn ghost" data-act="hSkip" data-id="${h.id}" data-d="${ds}">${h.skip[ds]?'Undo rest day':'Rest day'}</button>`:''}${rt||n>1?`<button class="btn pri" data-act="close">Done</button>`:`<button class="btn pri" data-act="hSetDay" data-id="${h.id}" data-d="${ds}" data-v="${v?0:1}">${v?'Mark not done':'Mark done'}</button>`}</div>`)},
- hLimit:d=>{const h=H(d.id);if(!h)return;const td=ymd(),v=Math.max(0,(+h.log[td]||0)+(+d.n));if(v)h.log[td]=v;else delete h.log[td];vib();save();render(false);if(+d.n>0)toast(v>h.limit?`Over today’s limit of ${h.limit}. Tomorrow resets.`:v===h.limit?'That’s today’s limit':`${h.limit-v} left today`)},
+ hLimit:d=>{const h=H(d.id);if(!h)return;const td=validDate(d.d)&&d.d<=ymd()?d.d:ymd(),now=td===ymd(),v=Math.max(0,(+h.log[td]||0)+(+d.n));if(v)h.log[td]=v;else delete h.log[td];vib();save();render(false);if(+d.n>0)toast(!now?`${v} of ${h.limit} ${hDayWord(td)}`:v>h.limit?`Over today’s limit of ${h.limit}. Tomorrow resets.`:v===h.limit?'That’s today’s limit':`${h.limit-v} left today`)},
  habitMenu:d=>{const h=H(d.id);openSheet(`<div class="data">${HKN[h.kind]}</div><h2 style="margin-top:8px">${esc(hIcon(h))} ${esc(h.title)}</h2>${colorRow('habit',h)}<div class="menu"><button data-act="shareHabit" data-id="${h.id}">${ic('link')}Share or do it together…</button><button class="mob-only" data-act="printIt" data-k="habit" data-id="${h.id}">${ic('print')}Print or save as PDF</button>
   ${h.kind==='routine'&&h.steps.length?`<button data-act="routineGo" data-id="${h.id}">${ic('play')}Start routine</button>`:''}
   ${h.kind==='quit'&&h.mode!=='limit'?`<button data-act="slip" data-id="${h.id}">${ic('reset')}Log a slip and restart the clock</button>`:''}
@@ -6603,6 +6639,10 @@ function ckToast(msg,attrs){const t=$('#toast'),fresh=t.classList.contains('on')
  ['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,()=>{clearTimeout(T)},{passive:true}));addEventListener('scroll',off,{passive:true,capture:true});
  addEventListener('click',e=>{if(Date.now()-EAT<700&&e.target.closest&&e.target.closest(SEL)){e.stopPropagation();e.preventDefault()}},true);
  document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest(SEL))e.preventDefault()})})();
+/* swipe the day bar on the habit page: left for the next day, right for the day before */
+(()=>{let X=0,Y=0,on=null;document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('.hpd');on=b;X=e.clientX;Y=e.clientY},{passive:true});
+ document.addEventListener('pointerup',e=>{const b=on;on=null;if(!b)return;const dx=e.clientX-X,dy=e.clientY-Y;if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*.7)return;const h=H(b.dataset.id);if(!h)return;const k=dnum(HPD.id===h.id&&HPD.d?HPD.d:ymd())+(dx<0?1:-1);if(k>dnum(ymd()))return;EATSW=Date.now();ACT.hPgDay({id:h.id,d:fromN(k)})},{passive:true});
+ addEventListener('click',e=>{if(Date.now()-EATSW<400&&e.target.closest&&e.target.closest('.hpd')){e.stopPropagation();e.preventDefault()}},true)})();
 /* the log: on the habit page, the day page and step cards */
 function ckLogH(h){const tn=dnum(ymd()),rows=[];
  for(let k=tn;k>tn-90&&rows.length<10;k--){const ds=fromN(k);if(ds<h.startDate)break;const c=(h.ck||{})[ds],dn=hDone(h,ds),rest=!!(h.skip&&h.skip[ds]),sk=rest||!!(c&&c.sk);if(!dn&&!sk&&!(c&&c.n))continue;
@@ -8181,9 +8221,9 @@ function goalGlance(g){const tn=today(),dn=g.steps.filter(s=>s.done),late=g.step
 function habitRecent(h){if(h.kind==='quit')return'';const tn=dnum(today()),n=hTarget(h),rows=[];
  for(let k=tn;k>tn-14&&k>=dnum(h.startDate);k--){const ds=fromN(k),v=hVal(h,ds),due=hDue(h,ds),rest=!!h.skip[ds];
   const cls=hDone(h,ds)?'ok':v>0?'part':rest?'rest':due&&k<tn?'miss':'';const lab=hDone(h,ds)?'Done':v>0?`${v} of ${n}${h.unit?' '+h.unit:''}`:rest?'Rest day':!due?'Not due':k===tn?'Not yet':'Missed';
-  rows.push(`<button class="hrd-r ${cls}" style="${cvar(h)}" data-act="calItem" data-k="habit" data-id="${h.id}" data-d="${ds}"><span class="s"></span><span class="d">${esc(dayName(ds))}</span><span class="v">${lab}</span></button>`)}
+  rows.push(`<button class="hrd-r ${cls}${HPD.id===h.id&&HPD.d===ds?' sel':''}" style="${cvar(h)}" data-act="hPgDay" data-top="1" data-id="${h.id}" data-d="${ds}"><span class="s"></span><span class="d">${esc(dayName(ds))}</span><span class="v">${lab}</span></button>`)}
  if(!rows.length)return'';const first=rows.slice(0,7),rest=rows.slice(7);
- return`<section class="rv ov"><div class="st-h"><h3>Recent days</h3><span class="data">tap a day for details</span></div><div class="hrd">${first.join('')}</div>${rest.length?`<details class="ov-more"><summary>Show 14 days</summary><div class="hrd" style="margin-top:6px">${rest.join('')}</div></details>`:''}</section>`}
+ return`<section class="rv ov"><div class="st-h"><h3>Recent days</h3><span class="data">tap a day to open it above</span></div><div class="hrd">${first.join('')}</div>${rest.length?`<details class="ov-more"><summary>Show 14 days</summary><div class="hrd" style="margin-top:6px">${rest.join('')}</div></details>`:''}</section>`}
 {const _vh=vHabit;vHabit=function(id){const o=_vh(id),h=H(id);if(!h)return o;const m='<section class="rv"><div class="st-h"><h3>Becoming automatic';const i=o.indexOf(m);const add=habitRecent(h);if(!add)return o;if(i<0){const k=o.indexOf('<section class="rv"><div class="st-h"><h3>History');return k<0?o+add:o.slice(0,k)+add+o.slice(k)}return o.slice(0,i)+add+o.slice(i)};VIEWS.habit=vHabit}
 
 /* ---------- journal: one card per item, events become its history ---------- */
