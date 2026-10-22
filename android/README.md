@@ -115,3 +115,10 @@ the previous or next card (`showPrevious` / `showNext` through `partiallyUpdateA
 before, which some launchers squeezed into thin tilted columns. The class lives in `classes.dex` with the original
 widgets, so the release swaps its smali into that dex (baksmali, replace `ThreadsWidget*.smali`, smali). The source
 is `src/.../ThreadsWidget.java`. `ThreadsCards` (the card factory) and `widget_thr_card.xml` are unchanged.
+
+# Repeating reminders (Android)
+
+`RepAlarm` (in `classes.dex` beside `Reminders`): the app sends a repeating reminder as one alarm, the next time only,
+with `rpm` (ms between repeats) and `end` (the last time). `AlarmReceiver.onReceive` calls `RepAlarm.next(context, o, id)`
+right after `Reminders.show(...)`, which arms the following time in the same slot and updates the saved list. 1.46.0
+added that one call to `AlarmReceiver` with smali (baksmali → edit → smali), since the receiver isn't in this repo.

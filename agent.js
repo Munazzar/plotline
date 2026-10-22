@@ -362,7 +362,10 @@ For a reminder, title is only what to remind them about ("Drink water"), and the
   if(j.kind==='apps'&&apps.length)return{agent:String(j.task||'').trim()||q,web:false};
   if(j.kind==='live'&&c.includes('web'))return{agent:String(j.task||'').trim()||q,web:true};
   if(j.kind==='schedule')return{schedule:q};
-  if(j.kind==='do'&&Array.isArray(j.items)&&j.items.length)return{items:j.items.filter(x=>x&&x.type&&(String(x.title||x.detail||'').trim()||x.type==='timer'&&x.minutes))};
+  if(j.kind==='do'&&Array.isArray(j.items)&&j.items.length){const items=j.items.filter(x=>x&&x.type&&(String(x.title||x.detail||'').trim()||x.type==='timer'&&x.minutes));
+   /* one reminder in the message: it keeps their words, so a repeat the model dropped isn't lost */
+   const rm=items.filter(x=>['reminder','alarm','today'].includes(x.type));if(rm.length===1&&/\b(?:remind|reminder|alarm|nudge|ping)\b/i.test(q)){rm[0].q=q;if(rm[0].type==='today')rm[0].type='reminder'}
+   return{items}}
   return{talk:1}},
  route:async(q,hist)=>{const d=await AGENT.decide(q,hist);return d&&d.agent||''},
  parse:t=>{const m=/(?:^|\n)\s*[*_`>-]*\s*AGENT\s*:\s*(.+)/i.exec(String(t||''));return m?m[1].replace(/[*_`]+$/,'').trim():''},
