@@ -107,3 +107,11 @@ page close it or hand over to the full app (Open as chat, or anything that goes 
 ends, on Back, a tap on the backdrop, or when you leave it. The full app may be open in the background at the same
 time; both copies mark their saves (`plotline.stAt`) and merge what's on the device before writing, like sync does.
 Files: `src/.../TalkActivity.java` and the `<activity>` at the end of `AndroidManifest-assist.xml`.
+
+# Threads widget (1.45.3)
+
+`ThreadsWidget` shows one full thread card at a time in an `AdapterViewFlipper`, with ‹ › in the header that slide to
+the previous or next card (`showPrevious` / `showNext` through `partiallyUpdateAppWidget`). It used a `StackView`
+before, which some launchers squeezed into thin tilted columns. The class lives in `classes.dex` with the original
+widgets, so the release swaps its smali into that dex (baksmali, replace `ThreadsWidget*.smali`, smali). The source
+is `src/.../ThreadsWidget.java`. `ThreadsCards` (the card factory) and `widget_thr_card.xml` are unchanged.

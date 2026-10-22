@@ -153,22 +153,6 @@ addEventListener('pointermove',e=>{if(!UDR)return;const dx=e.clientX-UDR.x;UDR.m
 addEventListener('pointerup',e=>{if(!UDR)return;const u=UDR;UDR=null;u.t.classList.remove('drag');if(u.m>5){UDX=Date.now();const dx=e.clientX-u.x;udkTo(u.t,Math.abs(dx)>40?u.i+(dx<0?1:-1):u.i,true)}});
 addEventListener('click',e=>{if(Date.now()-UDX<250&&e.target.closest&&e.target.closest('.udk-t')){e.stopPropagation();e.preventDefault()}},true);
 
-/* ---------- Thread page: threads side by side as a swipe deck, like Up next on Home ----------
-   It used to borrow the goal-steps carousel (grey cards on a dashed timeline with a TODAY node), which didn't suit threads. */
-function thrDeckCard(t,i){const U=thrUps(t),u=U[0],lk=thrLink(t),dn=t.status==='done',n=U.length;
- return`<article class="now tint udk-c tdk-c${dn?' fin':''}${haloOn({},i===0)?' halo':''}" style="${thrGC(t)}" data-i="${i}">
- <div class="tdk-top"><span class="tdk-k">${dn?'✅ Finished':n?'🧵 Active':'🧵 New'}</span>${lk?`<span class="tdk-ln ell">${esc(lk.e)} ${esc(trunc(lk.n,30))}</span>`:''}</div>
- <h2 data-act="thrOpen" data-id="${t.id}">${esc(t.title)}</h2>
- ${u?U.slice(0,2).map((x,j)=>`<p class="tdk-u${j?' tdk-u2':''}"><span>${thrTag(x.k)[1]}</span>${esc(trunc(x.x.replace(/[*_=]{2}/g,'').replace(/\n+/g,' · '),j?110:200))}</p>`).join(''):'<p class="tdk-u tdk-e">Nothing logged yet. Add the first line.</p>'}
- <div class="data">${n} update${n===1?'':'s'} · ${esc(thrAgo(thrLast(t)))}</div>
- <div class="now-a">${dn?'':`<button class="btn ink" data-act="thrAddSheet" data-id="${t.id}">${ic('plus')}Add update</button>`}<button class="btn inkline" data-act="thrOpen" data-id="${t.id}">Open thread</button></div></article>`}
-function thrDeck(L){const n=L.length,k='thr-'+THF;DKI[k]=Math.min(DKI[k]||0,n-1);const at=DKI[k];
- return`<div class="now udk tdk rv" style="--n:${n}"><div class="udk-t" data-k="${k}" tabindex="0" aria-roledescription="carousel" aria-label="Threads. Swipe for more">${L.map((t,i)=>thrDeckCard(t,i)).join('')}</div>
- <div class="udk-f">${n>1?`<button class="ibtn sm udk-a" data-act="udkGo" data-d="-1" aria-label="Previous">${ic('back')}</button><div class="udk-dots">${L.map((t,i)=>`<button class="${i===at?'on':''}" data-act="udkGo" data-i="${i}" aria-label="Thread ${i+1} of ${n}" style="${thrGC(t)}"></button>`).join('')}</div><button class="ibtn sm udk-a" data-act="udkGo" data-d="1" aria-label="Next">${ic('next')}</button><span class="data tdk-n">${n} thread${n===1?'':'s'}</span>`:''}</div></div>`}
-{const _v=vThreads;vThreads=function(){const o=_v.apply(this,arguments),i=o.indexOf('<div class="hs-shell rv" data-hs="threads-');if(i<0)return o;
- const all=threads().slice().sort((a,b)=>thrLast(b)-thrLast(a)),L=THF==='done'?all.filter(t=>t.status==='done'):THF==='all'?all:all.filter(t=>t.status!=='done');
- return L.length?o.slice(0,i)+thrDeck(L):o};VIEWS.threads=vThreads}
-
 /* ---------- Home on wide screens: two columns, things to do on the left, things to glance at on the right ---------- */
 const WIDE=matchMedia('(min-width:1180px)');
 /* which column a Home section goes to: full width (header, banners, shortcuts), left (your day, habits) or right (talk, up next, today’s goals, insights) */
