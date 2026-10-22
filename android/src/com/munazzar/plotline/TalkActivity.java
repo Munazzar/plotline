@@ -107,6 +107,10 @@ public class TalkActivity extends MainActivity {
     @Override
     protected void onDestroy() {
         if (Assist.act.get() == this) Assist.act = new java.lang.ref.WeakReference<MainActivity>(null);
+        /* the talk paused the wake word; closing it before its page could say so mustn't leave the wake word off */
+        Listen.gone(this);
+        Assist.jsPause = false;
+        Assist.apply(this);
         try { web.destroy(); } catch (Exception e) {}
         super.onDestroy();
     }
