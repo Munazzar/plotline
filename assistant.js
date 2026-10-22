@@ -576,7 +576,7 @@ const CUES={rise:{n:'Rising',f:[[784,0],[1175,.11]],h:2,hv:.18,d:.26},fall:{n:'F
  marimbad:{n:'Marimba down',f:[[784,0],[659,.09],[523,.18]],h:3.9,hv:.3,d:.22},low:{n:'Low hum',f:[[330,0]],h:2,hv:.25,d:.35},
  chirp:{n:'Chirp',f:[[1568,0],[2093,.06]],h:2,hv:.05,d:.07},none:{n:'Silent (buzz only)',f:[]}};
 window.CUES=CUES;
-const cueOf=k=>{const a=aset(),id=k==='start'?(a.cueStart||'rise'):(a.cueDone||'fall');return CUES[id]?id:k==='start'?'rise':'fall'};
+const cueOf=k=>{const a=aset(),id=k==='start'?(a.cueStart||'soft'):(a.cueDone||'low');return CUES[id]?id:k==='start'?'soft':'low'};
 let ACX=null;
 function cuePlay(id){const q=CUES[id];if(!q||!q.f.length)return;try{ACX=ACX||new(window.AudioContext||window.webkitAudioContext)();const c=ACX;if(c.state==='suspended')c.resume();const t0=c.currentTime+.02,g=c.createGain();g.connect(c.destination);g.gain.value=1;
  q.f.forEach(([f,d])=>{[1,q.h].forEach((h,j)=>{const o=c.createOscillator(),e=c.createGain();o.type=j?'triangle':'sine';o.frequency.value=f*h;o.connect(e);e.connect(g);const a=t0+d,v=j?q.hv:.75,dd=j?q.d*.6:q.d;e.gain.setValueAtTime(0,a);e.gain.linearRampToValueAtTime(v,a+.008);e.gain.exponentialRampToValueAtTime(.001,a+dd);o.start(a);o.stop(a+dd+.04)})})}catch(e){}}
@@ -585,7 +585,7 @@ function cuePlay(id){const q=CUES[id];if(!q||!q.f.length)return;try{ACX=ACX||new
    (never a clash), soft ticks and blips, a slow breath. Nothing low or droning, and all of it quiet. */
 const PENTA=[523.25,587.33,659.25,783.99,880];
 const THINK={shimmer:{n:'Shimmer'},ripple:{n:'Ripple of notes'},ticks:{n:'Soft ticks'},bubbles:{n:'Bubbles'},compute:{n:'Computing'},breath:{n:'Breathing'},none:{n:'Silent'}};
-const thinkOf=()=>{const a=aset();if(a.think&&THINK[a.think])return a.think;return a.hum===false||a.think==='none'?'none':'shimmer'};
+const thinkOf=()=>{const a=aset();if(a.think&&THINK[a.think])return a.think;return a.hum===false||a.think==='none'?'none':'bubbles'};
 /* one soft note: sine body plus a quick bright partial for the pluck */
 function pluck(c,out,f,t,o={}){const d=o.d||1.4,v=o.v||.5;[[1,v,'sine',d],[o.h||4.01,v*(o.hv||.16),'sine',d*.25]].forEach(([m,vv,w,dd])=>{const x=c.createOscillator(),g=c.createGain();x.type=o.w&&m===1?o.w:w;x.frequency.value=f*m;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vv,t+(o.a||.006));g.gain.exponentialRampToValueAtTime(.0001,t+dd);x.connect(g);g.connect(out);x.start(t);x.stop(t+dd+.05)})}
 let NOISE=null;const noiseBuf=c=>{if(NOISE&&NOISE.sampleRate===c.sampleRate)return NOISE;const n=c.sampleRate*2,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);let p=0;for(let i=0;i<n;i++){const w=Math.random()*2-1;p=.97*p+.03*w;d[i]=w*.5+p*2}return NOISE=b};
