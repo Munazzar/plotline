@@ -4,7 +4,8 @@
    what keeps coming up, their strengths, where they get stuck, and what to try next. The AI picks the sections; the app
    only gathers the data. It rewrites itself when the data has changed since the last picture, and the user can tell it
    things it should know or got wrong. Its short version becomes the profile every assistant reads.
-   Kept on this device only (IndexedDB key "me"), never synced. */
+   Stored in IndexedDB key "me" and synced with the rest of the plan through the user's Google Drive (MESYNC), so the
+   picture and the notes are the same on every device signed in to the same account. */
 (()=>{
 'use strict';
 const nm=()=>(window.PLOT_ASSIST&&PLOT_ASSIST.aname)?PLOT_ASSIST.aname():'Plot';
@@ -15,10 +16,11 @@ const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 Object.assign(IC,{me:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'});
 
 /* ---------------- the store ---------------- */
-let ME={t:0,sig:'',text:'',head:'',secs:[],prof:'',by:'',counts:null,prev:[],notes:[]};
+let ME={t:0,sig:'',text:'',head:'',secs:[],prof:'',by:'',counts:null,prev:[],notes:[],nx:{}};
 let BUSY=false,ERR='',CTL=null,OUT='',paintT=0;
-DB.get('me').then(v=>{if(v&&typeof v==='object')ME={...ME,...v};if(cur.p==='me')render(false)}).catch(()=>{});
-const persist=()=>DB.set('me',ME).catch(()=>{});
+const LOADED=DB.get('me').then(v=>{if(v&&typeof v==='object')ME={...ME,...v};if(cur.p==='me')render(false)}).catch(()=>{});
+/* every change goes out with the next sync */
+const persist=()=>{DB.set('me',ME).catch(()=>{});try{if(typeof syncSoon==='function')syncSoon()}catch(e){}};
 
 /* what's in the app right now: the picture is stale once any of this moves */
 const notes=()=>S.entries.filter(e=>e.type==='note');
@@ -114,7 +116,7 @@ function stats(){const tn=dnum(ymd()),c=counts();let due=0,dn=0;S.habits.filter(
  ${mt?`<div class="panel"><h4>Your moods</h4><div class="me-md">${Object.entries(M).sort((a,b)=>b[1]-a[1]).map(([k,n],i)=>`<i style="flex:${n};--o:${1-i*.12}" title="${esc(MOODN[k]||k)} ${n}"></i>`).join('')}</div><p class="small muted">${Object.entries(M).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,n])=>`${esc(MOODN[k]||k)} ${n}`).join(' · ')} in the last 30 days</p></div>`:''}</div>`:''}`}
 function vMe(){const ready=window.AIX&&AIX.ready(),has=!!ME.text,st=stale(),sn=st?since():'';
  /* the picture keeps up: opening the page rewrites it once the data has moved on */
- if(ready&&!BUSY&&!ERR&&(!has&&hasAny()||st&&Date.now()-ME.t>2*36e5))setTimeout(()=>build({quiet:true}),300);
+ if(ready&&!BUSY&&!ERR&&(!has&&!ME.t&&hasAny()||st&&Date.now()-ME.t>2*36e5))setTimeout(()=>build({quiet:true}),300);
  return`<header class="ph"><div><h1>Picture of me</h1><div class="data">${has?`Updated ${ago(ME.t)}`:`Written by ${esc(nm())} from everything you add`}</div></div><div class="ph-r">${has&&!BUSY?`<button class="ibtn" data-act="meMore" aria-label="More">${ic('more')}</button>`:''}${gear()}</div></header>
  ${stats()}
  ${!ready?`<div class="rv">${window.AIX?AIX.modelCard('me'):''}<p class="small muted">${esc(nm())} needs the AI to write your picture. Your stats above come straight from your data.</p></div>`:''}
@@ -127,7 +129,7 @@ function vMe(){const ready=window.AIX&&AIX.ready(),has=!!ME.text,st=stale(),sn=s
  ${ME.notes.length?`<ul class="me-nl">${ME.notes.map(n=>`<li><span>${esc(n.x)}</span><button class="ibtn sm" data-act="meNoteX" data-id="${n.id}" aria-label="Remove">${ic('x')}</button></li>`).join('')}</ul>`:''}
  <form data-form="meNote"><div class="field"><textarea name="x" rows="2" maxlength="600" placeholder="I’m a night owl. I work in design. My sister Sara keeps me going…" aria-label="Something about you"></textarea></div><div class="actions left"><button class="btn sm pri">Add</button></div></form></section>
  ${(ME.prev||[]).length?`<details class="panel rv me-prev"><summary>How your picture has changed</summary>${ME.prev.map(p=>`<p class="small"><b>${new Date(p.t).toLocaleDateString([],{month:'short',day:'numeric'})}</b> ${esc(p.head)}</p>`).join('')}</details>`:''}
- <p class="small muted me-priv">${ic('lock','ico-s')} ${has?`Written by ${esc(ME.by||planEngineName())}. `:''}Kept on this device only and never synced.${planEngine()==='api'?' To write it, your data goes to the AI server you picked.':''}</p>`}
+ <p class="small muted me-priv">${ic('lock','ico-s')} ${has?`Written by ${esc(ME.by||planEngineName())}. `:''}${typeof syncOn==='function'&&syncOn()?'Syncs with the rest of your plan through your Google Drive, so it’s the same on every device you sign in to.':'Kept on this device. Turn on sync in Settings to have it on every device.'}${planEngine()==='api'?' To write it, your data goes to the AI server you picked.':''}</p>`}
 const hasAny=()=>S.goals.length||S.habits.length||S.entries.length||threads().length||(window.CONV&&CONV.list().length)||ME.notes.length;
 VIEWS.me=vMe;
 
@@ -136,11 +138,11 @@ Object.assign(ACT,{
  meGo:()=>{ERR='';build()},
  meStop:()=>{if(CTL)CTL.abort()},
  meFix:d=>{openSheet(`<h2>Not quite right?</h2><p class="small muted">Tell ${esc(nm())} what it got wrong or missed about “${esc(d.h)}”. It goes by this from now on.</p><form data-form="meNote" data-go="1"><div class="field"><textarea name="x" rows="3" maxlength="600" aria-label="What to change"></textarea></div><div class="actions"><button type="button" class="btn ghost" data-act="close">Cancel</button><button class="btn pri">Save and update</button></div></form>`);setTimeout(()=>$('#sheet textarea')?.focus(),80)},
- meNoteX:d=>{ME.notes=ME.notes.filter(n=>n.id!==d.id);persist();render(false)},
+ meNoteX:d=>{ME.notes=ME.notes.filter(n=>n.id!==d.id);ME.nx={...(ME.nx||{}),[d.id]:Date.now()};persist();render(false)},
  meMore:()=>openSheet(`<h2>Picture of me</h2><div class="cv-menu"><button class="btn" data-act="meGo2">${ic('ai')}Write it again</button><button class="btn" data-act="meCopy">${ic('copy')}Copy</button><button class="btn danger" data-act="meDel">${ic('trash')}Delete the picture</button></div>`),
  meGo2:()=>{closeSheet();ERR='';build()},
  meCopy:async()=>{const t=[ME.head,...ME.secs.map(s=>`${s.h}\n${s.b}`)].join('\n\n');toast(await copyText(t)?'Copied':'Copy failed');closeSheet()},
- meDel:()=>askConfirm('Delete your picture?','It’s removed from this device. What you told '+esc(nm())+' about you stays.','Delete',()=>{Object.assign(ME,{t:0,sig:'',text:'',head:'',secs:[],prof:'',counts:null,prev:[]});persist();closeSheet();render(false);toast('Picture deleted')})
+ meDel:()=>askConfirm('Delete your picture?','It’s removed from every device you sync. What you told '+esc(nm())+' about you stays.','Delete',()=>{Object.assign(ME,{t:Date.now(),sig:'',text:'',head:'',secs:[],prof:'',counts:null,prev:[]});persist();closeSheet();render(false);toast('Picture deleted')})
 });
 Object.assign(FORM,{meNote:f=>{const x=String(new FormData(f).get('x')||'').trim();if(!x)return;ME.notes.push({id:uid(),t:Date.now(),x:tr(x,600)});persist();
  const again=f.dataset&&f.dataset.go;closeSheet();if(again&&window.AIX&&AIX.ready()){ERR='';build()}else{render(false);toast('Got it. It’s in your next picture.')}}});
@@ -149,6 +151,23 @@ Object.assign(FORM,{meNote:f=>{const x=String(new FormData(f).get('x')||'').trim
 function quiet(){if(!ME.text||BUSY||planEngine()!=='api'||!stale()||Date.now()-ME.t<20*36e5||document.hidden)return;if(window.AIX&&AIX.ready())build({quiet:true})}
 setTimeout(quiet,60000);window.addEventListener('app-resume',()=>setTimeout(quiet,30000));
 window.ME_PIC={get:()=>ME,build,stale};
+
+/* ---------------- sync: the newest picture wins, notes join up (removed ones stay removed) ---------------- */
+const NXCUT=()=>Date.now()-120*864e5;
+function form(m){if(!m)return null;const nx={};Object.keys(m.nx||{}).sort().forEach(k=>{if(m.nx[k]>NXCUT())nx[k]=m.nx[k]});
+ return{t:m.t||0,text:m.text||'',head:m.head||'',secs:m.secs||[],prof:m.prof||'',by:m.by||'',prev:(m.prev||[]).slice(0,8),
+  notes:(m.notes||[]).filter(n=>n&&n.id&&!nx[n.id]).map(n=>({id:n.id,t:n.t||0,x:n.x})).sort((a,b)=>a.t-b.t||(a.id<b.id?-1:1)),nx}}
+function merge(A,B){A=form(A);B=form(B);if(!A||!B)return A||B;const P=(B.t||0)>(A.t||0)?B:A,nx={...A.nx};for(const k in B.nx)nx[k]=Math.max(nx[k]||0,B.nx[k]);
+ const nm=new Map();[...A.notes,...B.notes].forEach(n=>nm.set(n.id,n));const pm=new Map();[...A.prev,...B.prev].forEach(p=>{if(p&&p.t&&p.t!==P.t)pm.set(p.t,p)});
+ return form({...P,prev:[...pm.values()].sort((a,b)=>b.t-a.t),notes:[...nm.values()],nx})}
+window.MESYNC={
+ get:async()=>{await LOADED;return ME.t||ME.notes.length||Object.keys(ME.nx||{}).length?form(ME):null},
+ merge,
+ apply:async r=>{await LOADED;if(!r)return;const newer=(r.t||0)>(ME.t||0);
+  Object.assign(ME,{notes:r.notes,nx:r.nx,prev:r.prev});
+  if(newer){Object.assign(ME,{t:r.t,text:r.text,head:r.head,secs:r.secs,prof:r.prof,by:r.by,sig:sigNow(),counts:counts()});
+   const pt=r.prof||[r.head,...(r.secs||[]).map(s=>s.b)].join(' ').replace(/[*#_`]/g,'');if(pt.length>40){insSet().profile={t:Date.now(),text:tr(pt,900)}}}
+  DB.set('me',ME).catch(()=>{});if(cur.p==='me'&&!BUSY)render(false)}};
 
 const css=document.createElement('style');css.textContent=`
 .me-st{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:4px 0 12px}
