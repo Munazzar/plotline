@@ -55,7 +55,7 @@ function doAct(a){const D=window.PlotDo;let r=null;const t=a.t,x=a.x;if(a.fn){a.
   case'journal':r=D&&D.addJournal(x?t+'. '+x:t);break;
   case'today':r=D&&D.addToday(t);break;
   case'thread':r=D&&D.newThread(t);break;
-  case'reminder':{const w=D.parseWhen(x?t+' '+x:t);r=D.addReminder(w.found?(w.rest||t):t,w.found?w:{date:addDays(1),time:'09:00'});break}}
+  case'reminder':{if(window.SCHED){r=SCHED.make({type:'reminder',title:t,detail:x});if(r)break}const w=D.parseWhen(x?t+' '+x:t);r=D.addReminder(w.found?(w.rest||t):t,w.found?w:{date:addDays(1),time:'09:00'});break}}
  a.st='done';try{render(false)}catch(e){}return r}
 const actChips=(acts,act)=>acts.length?`<div class="ai-acts">${acts.map(a=>a.st==='done'?`<span class="ai-act done">${ic('check','ico-s')}${esc(actLabel(a))}</span>`:`<button class="ai-act" data-act="${act||'aiAct'}" data-id="${a.id}">${ic('plus','ico-s')}${esc(actLabel(a))}</button>`).join('')}</div>`:'';
 const ACTS=new Map();const keepActs=acts=>{acts.forEach(a=>ACTS.set(a.id,a));return acts};

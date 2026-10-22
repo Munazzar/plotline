@@ -186,7 +186,7 @@ function parse(raw){const t=strip(normCmd(raw)),l=lcs(t);let m;if(!t)return null
  if((m=RX_TRK2.exec(t))){const T=trkPick(m[1]);if(T)return{k:'trk',id:T.id,n:num(m[2]),u:m[3]}}
  if((m=/^snooze\b\s*(?:it|that|this|the|my)?\s*(?:reminder|alarm)?\s*(.*)$/i.exec(t)))return{k:'snooze',x:m[1]};
  /* reminders */
- if((m=/^(?:remind me|set (?:a |an |me a )?(?:reminder|alarm)|create (?:a )?reminder|add (?:a )?reminder|reminder|don'?t let me forget)\b\s*(.*)$/i.exec(t)))return{k:'remind',x:m[1]};
+ if((m=/^(?:remind me|set (?:a |an |me a )?(?:reminder|alarm)|create (?:a )?reminder|add (?:a )?reminder|reminder|don'?t let me forget)\b\s*(.*)$/i.exec(t))){if(aiReady()&&window.SCHED){const w=SCHED.words(m[1]);if(w.every||w.repeat||w.days||w.times||/\b(?:every|each|until|till|between|times|hourly|daily|weekly)\b/i.test(m[1]))return null}return{k:'remind',x:m[1]}}
  /* agent tasks: "every morning summarise my emails", "each Friday look at my calendar and plan the weekend" */
  /* a schedule for the agent, unless it's a habit, routine or reminder they're making ("a habit to read every night") */
  if(!/\b(?:habits?|routines?|goals?|lists?|remind(?:er)?s?|journal|thread)\b/i.test(t)&&/\b(?:every|each)\s+(?:day|morning|afternoon|evening|night|weekday|week|hour|\d+\s+hours|other\s+day|(?:mon|tues|wednes|thurs|fri|satur|sun)day)\b/i.test(t)&&/\b(?:summari[sz]e|check|look|review|brief|tell|go through|scan|watch|plan|suggest|find|read|see|give|send|catch me up|keep an eye)\b/i.test(t))return{k:'agent',x:t};
@@ -200,7 +200,7 @@ function parse(raw){const t=strip(normCmd(raw)),l=lcs(t);let m;if(!t)return null
  return null}
 
 /* things the AI decided to make, done now: "make a packing list with socks, charger and passport" */
-function doItem(it){const t=clean(it.title||''),x=clean(it.detail||'');if(!t&&!x)return null;
+function doItem(it){const t=clean(it.title||''),x=clean(it.detail||'');if(!t&&!x&&!(it.type==='timer'&&it.minutes))return null;
  switch(it.type){
   case'list':return newList(t||'New list',x?splitItems(x):[]);
   case'list_add':{const L=pick(S.lists||[],t,l=>l.title);return L?addToList(L,splitItems(x||t)):newList(t||'New list',x?splitItems(x):[])}
@@ -208,7 +208,7 @@ function doItem(it){const t=clean(it.title||''),x=clean(it.detail||'');if(!t&&!x
   case'today':return addToday(t||x);
   case'thread':return newThread(t||x,t?x:'');
   case'thread_update':{const th=pick(threads().filter(z=>z.status!=='archived'),t,z=>z.title||z.name);return th?addToThread(th,x||t):newThread(t,x)}
-  case'reminder':{const w=parseWhen((t+' '+x).trim());return addReminder(w.found?(w.rest||t):t,w.found?w:{date:addDays(1),time:'09:00'})}
+  case'reminder':case'alarm':case'timer':case'checkin':{if(window.SCHED){const r=SCHED.make(it);if(r)return r}if(it.type==='checkin')return null;const w=parseWhen((t+' '+x).trim());return addReminder(w.found?(w.rest||t):t,w.found?w:{date:addDays(1),time:'09:00'})}
   case'goal':case'habit':case'routine':{if(!window.AIX)return null;const r=AIX.doAct({k:it.type,t:t||x,x:it.type==='routine'?x:''});return r&&{say:r.say,undo:r.undo,chips:r.go?[['Open',r.go]]:[]}}}
  return null}
 function doItems(items){const said=[],undos=[],chips=[];
@@ -236,7 +236,7 @@ function exec(p,raw){const A=aset();switch(p.k){
  case'done':return markDone(p.x);
  case'trk':return trkLog(p.id,p.n,p.u);
  case'snooze':return snooze(p.x);
- case'remind':{const w=parseWhen(p.x),title=clean(w.rest.replace(/^(?:(?:me|to|that|about|for)\s+)+/i,''));
+ case'remind':{if(window.SCHED){const rr=SCHED.fromText(p.x);if(rr)return rr}const w=parseWhen(p.x),title=clean(w.rest.replace(/^(?:(?:me|to|that|about|for)\s+)+/i,''));
   if(!title&&!w.found)return{say:'What should I remind you about?',listen:true,await:{k:'remind'}};
   if(!title)return{say:`What should I remind you about ${atTxt(w.date,w.time)}?`,listen:true,await:{k:'remwhat',w}};
   if(!w.found)return{say:`When should I remind you to ${title.replace(/^to\s+/i,'')}?`,listen:true,await:{k:'remwhen',title}};
