@@ -11,8 +11,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 /* Plotline · Assistant: what you last said to the assistant and what it answered, with Talk and Type.
-   Talk opens Plotline on the assistant and starts listening; Type opens it with the keyboard.
-   A home-screen widget can't use the mic or take typing itself, so both open the app. */
+   Talk starts a voice conversation over the home screen (TalkActivity, the same as the Orb widget); Type opens
+   Plotline on the assistant with the keyboard, since a home-screen widget can't take typing itself. */
 public class AssistWidget extends AppWidgetProvider {
     @Override
     public void onUpdate(Context c, AppWidgetManager m, int[] ids) { for (int id : ids) m.updateAppWidget(id, build(c)); }
@@ -59,7 +59,7 @@ public class AssistWidget extends AppWidgetProvider {
             v.setTextColor(W.id(c, "as_w_hint"), W.MUTED);
             W.bgRes(c, v, W.id(c, "w_root"), W.id(c, "widget_bg", "drawable"));
         }
-        v.setOnClickPendingIntent(W.id(c, "as_w_talk"), tap(c, "assistant-listen", 2960));
+        v.setOnClickPendingIntent(W.id(c, "as_w_talk"), OrbWidget.talk(c, 2960));
         v.setOnClickPendingIntent(W.id(c, "as_w_type"), tap(c, "assistant-type", 2961));
         v.setOnClickPendingIntent(W.id(c, "as_w_body"), tap(c, "assistant", 2962));
         return v;

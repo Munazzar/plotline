@@ -87,11 +87,23 @@ word, a voice and a widget, through a second JavaScript interface, `window.Plotl
 4. One line in `MainActivity.onCreate`, after `PlotlineNative` is added:
    `web.addJavascriptInterface(new Assist(this), "PlotlineAssist");`
 
-# Orb widget (Android, 1.42.1)
+# Orb widget (Android, 1.42.1; talks over the screen and swirls since 1.44.0)
 
-`OrbWidget` (Plotlines · Orb): only Plot's orb, one cell or bigger. Tapping it opens Plotline on the assistant,
-listening (`AssistWidget.tap(..., "assistant-listen", ...)`). Files: `src/.../OrbWidget.java`, `res/layout/widget_orb.xml`,
+`OrbWidget` (Plotlines · Orb): only Plot's orb, one cell or bigger. Tapping it starts a voice conversation over
+whatever is on screen (`TalkActivity`), and so does Talk on the Assistant widget. The orb slowly swirls and breathes:
+`widget_orb.xml` is a `ViewFlipper` that cross-fades through 16 frames from `assets/orb/` (made by
+`tools/orb_frames.py`), which `OrbWidget` loads into ImageViews that reuse ids the other widgets already declare. Files: `src/.../OrbWidget.java`, `res/layout/widget_orb.xml`,
 `res/xml/widget_orb_info.xml`, `res/drawable-nodpi/widget_orb_img.png`, `res/values/orb_strings.xml`, and the receiver at
 the end of `AndroidManifest-assist.xml`. There is no Java compiler on the release machine, so 1.42.1 shipped it as
 hand-written smali in `smali_classes4/com/munazzar/plotline/OrbWidget.smali` (the Java file is the same code), built
 from a full apktool decode of 1.42.0.
+
+# Talk over the screen (Android, 1.44.0)
+
+`TalkActivity` is `MainActivity` with a see-through window (`Theme.Translucent.NoTitleBar`, its own task, out of
+Recents). It loads the page with `?talk=1`: `index.html` hides the app and `ai.js` shows only the Live card as a sheet
+on a dim backdrop, so the home screen stays in view. `window.PlotTalk` (`ready`, `close`, `openApp(route)`) lets the
+page close it or hand over to the full app (Open as chat, or anything that goes to a page). It closes when the talk
+ends, on Back, a tap on the backdrop, or when you leave it. The full app may be open in the background at the same
+time; both copies mark their saves (`plotline.stAt`) and merge what's on the device before writing, like sync does.
+Files: `src/.../TalkActivity.java` and the `<activity>` at the end of `AndroidManifest-assist.xml`.

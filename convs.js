@@ -25,7 +25,9 @@ function sync(id,k,turns){turns=(turns||[]).filter(t=>t&&t.q&&String(t.a||'').tr
 const get=id=>CV.find(c=>c.id===id)||null;
 /* one exchange removed; a conversation with nothing left goes too */
 function removeTurn(id,tid){const c=get(id);if(!c)return;c.turns=c.turns.filter(t=>t.id!==tid);c.sig='';if(!c.turns.length)CV=CV.filter(x=>x!==c);else if(!c.named)c.title=tr(c.turns[0].q,70);persist()}
-window.CONV={sync,get,list:()=>CV.slice(),removeTurn};
+/* the talk over the screen saves its conversation while the full app waits in the background: pick it up on return */
+function pull(){DB.get('convs').then(v=>{if(!Array.isArray(v))return;let ch=0;v.forEach(c=>{if(!c||!c.id)return;const i=CV.findIndex(x=>x.id===c.id);if(i<0){CV.push(c);ch=1}else if((c.t1||0)>(CV[i].t1||0)){CV[i]=c;ch=1}});if(ch){CV.sort((a,b)=>b.t1-a.t1);if(cur.p==='chats')render(false)}}).catch(()=>{})}
+window.CONV={sync,get,list:()=>CV.slice(),removeTurn,pull};
 
 /* Ask threads are conversations too: save each one once an answer finishes */
 if(typeof insRun==='function'){const _r=insRun;insRun=async function(){const R=IN.res;try{return await _r.apply(this,arguments)}finally{try{

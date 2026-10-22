@@ -1,5 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The orb slowly swirls: OrbWidget puts assets/orb/o00…o15.png into the 16 ImageViews and the flipper cross-fades
+     through them. The ids are reused from the other widgets (only the ids, no other resources), and each ImageView
+     shows the still orb by itself, in the widget picker or if a frame can't load. -->
 <FrameLayout android:id="@+id/orb_root" android:layout_width="fill_parent" android:layout_height="fill_parent" android:padding="4.0dip" android:contentDescription="Talk to Plot"
   xmlns:android="http://schemas.android.com/apk/res/android">
-    <ImageView android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_gravity="center" android:scaleType="fitCenter" android:adjustViewBounds="true" android:src="@drawable/widget_orb_img" android:contentDescription="Talk to Plot" />
+    <ViewFlipper android:id="@id/w_stack" android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_gravity="center"
+      android:flipInterval="650" android:autoStart="true" android:animateFirstView="false"
+      android:inAnimation="@android:anim/fade_in" android:outAnimation="@android:anim/fade_out">
+        <ImageView android:id="@id/w_d0" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_d1" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_d2" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_d3" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_d4" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_d5" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_d6" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_c0" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_c1" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_c2" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_c3" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_c4" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_c5" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_e0" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_e1" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+        <ImageView android:id="@id/w_e2" android:layout_width="fill_parent" android:layout_height="fill_parent" android:src="@drawable/widget_orb_img" android:scaleType="fitCenter" android:adjustViewBounds="true" />
+    </ViewFlipper>
 </FrameLayout>
