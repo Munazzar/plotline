@@ -349,8 +349,27 @@ public class Assist {
 
     @JavascriptInterface
     public void stopSpeaking() {
+        Kokoro.stop();
         H.post(new Runnable() { public void run() { try { if (tts != null) tts.stop(); } catch (Exception e) {} ttsPause = false; applyNow(c); } });
     }
+
+    /* natural voices (Kokoro): kokoro() is the state as JSON, kokoroGet() downloads the model once,
+       kokoroSay(id, [[phoneme ids], …] one list per sentence, voice id, speed) speaks like speak2 does */
+    @JavascriptInterface
+    public String kokoro() { return Kokoro.state(c); }
+
+    @JavascriptInterface
+    public void kokoroGet() { Kokoro.get(c); }
+
+    @JavascriptInterface
+    public void kokoroRemove() { new Thread(new Runnable() { public void run() { Kokoro.remove(c); } }).start(); }
+
+    /* load the model ahead of the first sentence (a few seconds), e.g. when a conversation starts */
+    @JavascriptInterface
+    public void kokoroWarm() { new Thread(new Runnable() { public void run() { try { Kokoro.session(c); } catch (Throwable e) {} } }).start(); }
+
+    @JavascriptInterface
+    public void kokoroSay(String id, String json, String voice, double rate) { Kokoro.say(c, id == null ? "" : id, json == null ? "[]" : json, voice == null ? "" : voice, rate); }
 
     @JavascriptInterface
     public void wake(String json) {

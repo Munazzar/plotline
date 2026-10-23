@@ -483,7 +483,7 @@ function sqEnd(final){if(!SQ.on||!SQ.said){SQ.on=false;return false}const f=norm
  rem=rem.trim();if(rem)SQ.q.push(rem);SQ.end=true;sqPump();return true}
 function sqStop(){SQ.on=false;SQ.q=[];SQ.done=null;SQ.first=null;SQ.busy=false}
 /* load the model while they're still talking: at the wake word, when the sheet opens */
-function asWarm(){if(!fastOn())return;try{if(typeof natWarm==='function')natWarm()}catch(e){}}
+function asWarm(){try{if(/^kokoro:/.test(aset().voice||'')&&window.KOKORO)KOKORO.warm()}catch(e){}if(!fastOn())return;try{if(typeof natWarm==='function')natWarm()}catch(e){}}
 
 /* ---------------- one request, start to finish ---------------- */
 const QRX=/^(?:who|what|when|where|why|how|which|is|are|was|were|do|does|did|have|has|had|can i|should i|tell me|show me|list|summari[sz]e|give me)\b/i;
@@ -534,13 +534,17 @@ const agentChip=f=>async c=>{if(c.done)return;try{await f();c.done=1;c.t='✓ '+
 let SPK=null,SPK_CB=null;
 /* the voice, speed and pitch picked in Settings › Voice; done (optional) runs instead of the assistant's own follow-up */
 function speak(text,done,ov){const t=String(text).replace(/[“”]/g,'"').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu,'').replace(/[*#_`]/g,'').trim();SPK_CB=done||null;if(!t)return spoke();const id='s'+uid();SPK=id;paintHead();tmMark('say');
- const A={...aset(),...(ov||{})},rate=+A.rate||1,pitch=+A.pitch||1,voice=A.voice||'';
+ const A={...aset(),...(ov||{})},rate=+A.rate||1,pitch=+A.pitch||1;let voice=A.voice||'';
+ /* a natural (Kokoro) voice speaks English; anything else, or if it fails before a word, the system voice does */
+ if(/^kokoro:/.test(voice)){const kv=voice.slice(7);voice='';if(window.KOKORO&&KOKORO.can(t,vset().lang)){KOKORO.speak(t,{voice:kv,rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},()=>{if(SPK===id)sysSpeak(id,t,rate,pitch,'')});return}}
+ sysSpeak(id,t,rate,pitch,voice)}
+function sysSpeak(id,t,rate,pitch,voice){
  if(NA&&NA.speak2){try{NA.speak2(id,t,vset().lang||'',rate,pitch,voice);return}catch(e){}}
  if(NA&&NA.speak){try{NA.speak(id,t,vset().lang||'',rate);return}catch(e){}}
  if(window.speechSynthesis){try{const u=new SpeechSynthesisUtterance(t);if(vset().lang)u.lang=vset().lang;const v=voice&&speechSynthesis.getVoices().find(x=>x.name===voice);if(v){u.voice=v;u.lang=v.lang}u.rate=rate;u.pitch=pitch;u.onend=u.onerror=()=>{if(SPK===id){SPK=null;spoke()}};speechSynthesis.cancel();speechSynthesis.speak(u);return}catch(e){}}
  SPK=null;spoke()}
 function spoke(){const f=SPK_CB;SPK_CB=null;if(f){paintHead();f();return}afterSpeak()}
-function hush(){sqStop();SPK=null;SPK_CB=null;try{if(NA&&NA.stopSpeaking)NA.stopSpeaking();else if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}paintHead()}
+function hush(){sqStop();SPK=null;SPK_CB=null;try{if(window.KOKORO)KOKORO.stop()}catch(e){}try{if(NA&&NA.stopSpeaking)NA.stopSpeaking();else if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}paintHead()}
 function afterSpeak(){paintHead();const a=AS.after;AS.after=null;if(a==='listen'&&AS.open)setTimeout(()=>listen(),250);else{wakePause(false);handsOff()}}
 /* woken by "Hey Plot" while Plotlines was closed or the phone locked: once the answer is spoken and nothing follows, step aside again */
 function handsOff(){if(!AS.bg||!NA||!NA.background)return;clearTimeout(AS.bgT);AS.bgT=setTimeout(()=>{if(!AS.bg||AS.busy||AS.listening||AS.await||SPK)return;AS.bg=false;asClose();try{NA.background()}catch(e){}},2500)}
@@ -555,7 +559,8 @@ function listen(pre){if(!(AS.min&&$('#asv')))asOpen();const el=$('#asIn'),b=$('#
 function wakePause(p){if(!NA||!NA.wakePause)return;try{NA.wakePause(!!p)}catch(e){}}
 function wakeSync(){if(!NA||!NA.wake)return;const a=aset(),v=vset();try{NA.wake(JSON.stringify({on:!!(a.wake||a.bg),bg:!!a.bg,name:aname(),lang:v.lang||'',cloud:!!v.cloud,quiet:a.quiet!==false,cues:a.cues!==false,cueStart:cueOf('start'),cueDone:cueOf('done')}))}catch(e){}}
 window.__assist=(k,a,b)=>{
- if(k==='tts'){if(a===SPK&&(b==='done'||b==='err')){SPK=null;spoke()}return}
+ if(k==='tts'){if(window.KOKORO&&KOKORO.tts(a,b))return;if(a===SPK&&(b==='done'||b==='err')){SPK=null;spoke()}return}
+ if(k==='kokoro'){if(window.KOKORO)KOKORO.ev(a,b);return}
  if(k==='voices'){window.dispatchEvent(new Event('plot-voices'));return}
  /* "Hey Plot" on its own: the page's own mic takes over, with room to pause and think (the wake loop would stop at the first pause) */
  if(k==='wake'){asWarm();if(window.liveOpen&&document.getElementById('live'))return;asOpen();vib();AS.nlis=false;listen();return}
