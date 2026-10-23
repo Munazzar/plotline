@@ -3575,7 +3575,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.49.0';
+const APP_VER='1.49.1';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -5575,7 +5575,7 @@ async function apiChat(msgs,onTok,signal,opts={}){const s=insSet(),key=aiKey();i
  if(!r.ok)throw new Error(`The server said ${r.status}. ${(await r.text().catch(()=>'')).slice(0,160)}`);
  if(!r.body||!(r.headers.get('content-type')||'').includes('event-stream')){const j=await r.json();onTok(j.choices?.[0]?.message?.content||'');return}
  const rd=r.body.getReader(),dec=new TextDecoder();let buf='';for(;;){const{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
-  while((i=buf.indexOf('\n'))>=0){const ln=buf.slice(0,i).trim();buf=buf.slice(i+1);if(!ln.startsWith('data:'))continue;const d=ln.slice(5).trim();if(d==='[DONE]')return;try{const t=JSON.parse(d).choices?.[0]?.delta?.content;if(t)onTok(t)}catch(e){}}}}
+  while((i=buf.indexOf('\n'))>=0){const ln=buf.slice(0,i).trim();buf=buf.slice(i+1);if(!ln.startsWith('data:'))continue;const d=ln.slice(5).trim();if(d==='[DONE]')return;try{const dl=JSON.parse(d).choices?.[0]?.delta||{},t=dl.content;if(t)onTok(t);else if(opts.onThink&&(dl.reasoning_content||dl.reasoning))opts.onThink(dl.reasoning_content||dl.reasoning)}catch(e){}}}}
 /* on-device: wllama (llama.cpp in WebAssembly, bundled with the app) runs an open-source GGUF model on the CPU, or on the GPU through WebGPU when there is one */
 const llmOf=id=>LLMS.find(m=>m[0]===id)||LLMS[0];
 /* phones: CPU only (mobile WebGPU drivers can freeze the phone or return garbage), leave cores free for the UI, smaller context */

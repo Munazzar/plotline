@@ -127,18 +127,47 @@ function applyEdits(src,edits){let out=src;for(const[a,b]of edits){if(!a.trim())
 function live(raw){const s=unthink(raw),i=s.search(/```|<{5,9} ?SEARCH|<!doctype html|<html[\s>]/i),code=i>=0?s.slice(i):'';
  return{note:(i>=0?s.slice(0,i):s).trim(),lines:code?code.split('\n').length:0,edit:/<{5,9} ?SEARCH/.test(code),thinking:/<think>(?![\s\S]*<\/think>)/.test(raw)}}
 
+/* One answer, kept alive through dropped connections. Long pages from a big model can take many minutes, and a phone,
+   a tunnel or a proxy may cut the stream partway (Chrome then says just "network error"). When that happens after
+   some of the answer has arrived, ask the model to carry on from the exact point it stopped and join the pieces,
+   up to 4 times. A drop before anything arrived is tried once more. */
+const CONT='Your last reply was cut off by a dropped connection. Continue it from exactly the last character you sent: no repeats, no preamble, no new code fence, just the rest.';
+async function stream(msgs,ctl){let tries=0,cold=0;
+ for(;;){const base=RUN.out;let got='';RUN.think='';
+  const ask=base?[...msgs,{role:'assistant',content:base},{role:'user',content:CONT}]:msgs;
+  try{await AIX.chat(ask,t=>{if(RUN&&RUN.ctl===ctl){got+=t;RUN.out=base?join(base,got):got;livePaint()}},{max_tokens:planEngine()==='api'?16000:3000,temperature:.35,ctl,reading:'Reading the canvas…',onThink:t=>{if(RUN&&RUN.ctl===ctl){RUN.think+=t;livePaint()}}});return}
+  catch(e){if(ctl.signal.aborted||planEngine()!=='api'||!/network|fetch|load|reset|abort|terminated|stream/i.test(String(e&&e.message||e)))throw e;
+   if(RUN.out){if(++tries>4)throw e}else if(++cold>1)throw e;
+   RUN.drops=(RUN.drops||0)+1;livePaint();await new Promise(r=>setTimeout(r,1500))}}}
+/* the continuation may repeat the end of what came before, or reopen the code block: drop the overlap */
+function join(a,b){let x=b.replace(/^\s*```[a-z]*[ \t]*\n/i,m=>/```[a-z]*[ \t]*\n?[^`]*$/i.test(a.slice(-4000))&&!/```\s*$/.test(a)?'':m);
+ const tail=a.slice(-600);for(let n=Math.min(tail.length,x.length);n>=12;n--)if(tail.endsWith(x.slice(0,n)))return a+x.slice(n);return a+x}
+/* what went wrong, in words: never reached the server, or the connection dropped while it was writing */
+function netErr(e,R){const m=String(e&&e.message||e),secs=R?Math.round((Date.now()-R.t)/1e3):0,dur=secs>=90?Math.round(secs/60)+' min':secs+' s';
+ if(planEngine()!=='api'||!/network|fetch|load|reset|terminated|stream/i.test(m))return m;
+ if(R&&(R.out||R.think||/network error/i.test(m)))return`The connection to your AI server dropped after ${dur}${R.out?`, ${R.out.split('\n').length} lines in`:''}, and it didn’t come back. The server answered, so the address and CORS are fine. Something between the phone and the server cut the long answer: the phone sleeping or leaving the app, switching networks, or a tunnel or proxy time limit. Try again with the app open and the screen on, or ask for the change in smaller steps.`;
+ return m+' · Couldn’t reach your AI server. Check the address, that it’s running, and that it allows this app (CORS).'}
+/* keep the screen on while it writes: a sleeping phone drops the connection */
+let WL=null;
+async function wake(on){try{if(on){if(!WL&&navigator.wakeLock)WL=await navigator.wakeLock.request('screen')}else if(WL){const w=WL;WL=null;await w.release()}}catch(e){WL=null}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&RUN)wake(true)});
+
 let RUN=null;
+/* pick a dropped answer up where it stopped */
+function resume(c,m){const part=m.part;delete m.part;touch(c);return send(c,m.q,{retry:userMsg(c,m.q),part})}
 async function send(c,q,o={}){if(RUN)return toast('Still working on the last one');if(!window.AIX||!AIX.ready())return toast('Set up the AI first in Settings › AI & voice');
+ const last=c.msgs[c.msgs.length-1];if(!o.retry&&last&&last.part&&/^\s*(continue|go on|keep going|carry on|resume)\W*$/i.test(q)){c.msgs.push({id:uid(),r:'u',x:q,t:Date.now()});return resume(c,last)}
  const blk=AIX.block(q);if(blk){c.msgs.push({id:uid(),r:'u',x:q,t:Date.now()},{id:uid(),r:'a',x:blk,t:Date.now()});touch(c);return logPaint()}
  if(!o.retry)c.msgs.push({id:uid(),r:'u',x:q,t:Date.now()});if(c.msgs.length>MAXM)c.msgs=c.msgs.slice(-MAXM);
  if(!c.named&&!c.html&&c.msgs.filter(m=>m.r==='u').length===1)c.title=tr(q,48);
- const ctl=new AbortController();RUN={id:c.id,ctl,out:'',t:Date.now()};touch(c);if(TAB==='code')TAB='view';paint();
+ const ctl=new AbortController();RUN={id:c.id,ctl,out:o.part||'',t:Date.now()};touch(c);if(TAB==='code')TAB='view';paint();
  const msgs=[{role:'system',content:SYS(c)},...history(c).slice(0,o.retry?undefined:-1),{role:'user',content:o.retry?o.retry:userMsg(c,q)}];
- let err='';
- try{await AIX.chat(msgs,t=>{if(RUN&&RUN.ctl===ctl){RUN.out+=t;livePaint()}},{max_tokens:planEngine()==='api'?16000:3000,temperature:.35,ctl,reading:'Reading the canvas…'})}
- catch(e){if(!ctl.signal.aborted)err=String(e&&e.message||e)+(planEngine()==='api'&&/fetch|network|load/i.test(String(e&&e.message))?' · Check the AI server address, that it’s running, and that it allows this app (CORS).':'')}
+ let err='';wake(true);
+ try{await stream(msgs,ctl)}
+ catch(e){if(!ctl.signal.aborted)err=netErr(e,RUN)}
+ finally{wake(false)}
  const raw=RUN?RUN.out:'';RUN=null;
- if(err){c.msgs.push({id:uid(),r:'a',x:err,err:1,t:Date.now()});touch(c);return paint()}
+ if(err){c.msgs.push({id:uid(),r:'a',x:err,err:1,t:Date.now(),...(raw.trim()?{part:raw,q}:{})});touch(c);return paint()}
  if(ctl.signal.aborted&&!raw.trim()){touch(c);return paint()}
  const P=parse(raw);let html=P.html,note=P.note;
  if(!html&&P.edits.length){html=applyEdits(c.html||'',P.edits);
@@ -168,9 +197,9 @@ function vList(){return`<header class="ph"><div><h1>Canvas</h1><div class="data"
  ${CS.length?`<h4 class="cv-g">Your canvases</h4><div class="cvs-grid rv">${CS.map(c=>`<button class="cvs-card" data-act="cvsOpen" data-id="${c.id}"><span class="cvs-thumb">${c.html?ic('cvs'):ic('ai')}</span><span class="cvs-cb"><b>${esc(c.title)}</b><small>${c.ver.length?`${c.ver.length} version${c.ver.length===1?'':'s'}`:'Nothing built yet'} · ${ago(c.t1)}</small></span>${RUN&&RUN.id===c.id?'<i class="cvs-dot" title="Working"></i>':''}</button>`).join('')}</div>`:''}
  <p class="small muted me-priv">${ic('lock','ico-s')} Canvases are kept on this device. Pages run in a closed box: they can read a snapshot of your data when you allow it, and can’t change anything in the app.${planEngine()==='api'?' Your requests and the page go to the AI server you picked.':''}</p>`}
 function msgHTML(c,m){if(m.r==='u')return`<div class="cv-q"><p>${esc(m.x).replace(/\n/g,'<br>')}</p></div>`;
- return`<div class="cv-a${m.err?' cvs-err':''}"><span class="cv-av" aria-hidden="true"></span><div>${m.err?`<p class="small err">${esc(m.x)}</p>`:`<div class="ai-md">${window.AIX&&AIX.md?AIX.md(m.x):esc(m.x)}</div>`}${m.v!=null&&c.ver[m.v]?`<button class="cvs-vtag" data-act="cvsVer" data-id="${c.id}" data-v="${m.v}">${ic('cvs','ico-s')}Version ${m.v+1}${c.vi===m.v?' · showing':''}</button>`:''}</div></div>`}
+ return`<div class="cv-a${m.err?' cvs-err':''}"><span class="cv-av" aria-hidden="true"></span><div>${m.err?`<p class="small err">${esc(m.x)}</p>${m.part&&c.msgs[c.msgs.length-1]===m?`<button class="btn sm pri cvs-res" data-act="cvsResume" data-id="${c.id}" data-m="${m.id}">${ic('play')}Continue where it stopped</button>`:''}`:`<div class="ai-md">${window.AIX&&AIX.md?AIX.md(m.x):esc(m.x)}</div>`}${m.v!=null&&c.ver[m.v]?`<button class="cvs-vtag" data-act="cvsVer" data-id="${c.id}" data-v="${m.v}">${ic('cvs','ico-s')}Version ${m.v+1}${c.vi===m.v?' · showing':''}</button>`:''}</div></div>`}
 function runHTML(){if(!RUN)return'';const L=live(RUN.out),secs=Math.round((Date.now()-RUN.t)/1e3);
- return`<div class="cv-a cvs-run" id="cvsRun"><span class="cv-av" aria-hidden="true"></span><div>${L.note?`<div class="ai-md">${window.AIX&&AIX.md?AIX.md(L.note):esc(L.note)}</div>`:''}<p class="cvs-st"><i></i>${L.lines?(L.edit?`Making the change · ${L.lines} lines`:`Writing the page · ${L.lines} lines`):L.thinking?'Thinking…':RUN.out?'Answering…':secs>4?'Waiting for the AI…':'Starting…'}</p></div></div>`}
+ return`<div class="cv-a cvs-run" id="cvsRun"><span class="cv-av" aria-hidden="true"></span><div>${L.note?`<div class="ai-md">${window.AIX&&AIX.md?AIX.md(L.note):esc(L.note)}</div>`:''}<p class="cvs-st"><i></i>${RUN.drops?`Reconnected ${RUN.drops===1?'once':RUN.drops+' times'} · `:''}${L.lines?(L.edit?`Making the change · ${L.lines} lines`:`Writing the page · ${L.lines} lines`):L.thinking||RUN.think&&!RUN.out?`Thinking… ${secs}s`:RUN.out?'Answering…':secs>4?'Waiting for the AI…':'Starting…'}</p></div></div>`}
 function logHTML(c){const L=c.msgs.map(m=>msgHTML(c,m)).join('')+runHTML();
  return L||`<div class="cvs-empty"><span class="cvs-orb"></span><p><b>Tell ${esc(nm())} what to build.</b></p><p class="small muted">Then keep going one step at a time: “make the chart weekly”, “add a dark mode”, “put my streaks at the top”.</p></div>`}
 function frameHTML(c){if(!c.html)return`<div class="cvs-blank">${RUN&&RUN.id===c.id?`<span class="cvs-orb"></span><p class="muted">Building…</p>`:`${ic('cvs')}<p class="muted">The page shows up here.</p>`}</div>`;
@@ -220,6 +249,7 @@ Object.assign(ACT,{
  cvsOpen:d=>{TAB=get(d.id)&&get(d.id).html&&!wide()?'view':'chat';go('canvas/'+d.id)},
  cvsTab:d=>{TAB=d.k;const r=$('#cvs');if(!r)return;r.dataset.tab=TAB;r.querySelectorAll('.cvs-tabs button').forEach(b=>{const on=b.dataset.k===TAB;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});if(TAB==='code'){const c=get(cur.id),t=$('#cvsCode');if(c&&t&&!t.matches(':focus'))t.value=c.html||''}if(TAB==='chat')logPaint(true)},
  cvsStop:()=>{if(RUN)RUN.ctl.abort()},
+ cvsResume:d=>{const c=get(d.id),m=c&&c.msgs.find(x=>x.id===d.m);if(c&&m&&m.part&&!RUN)resume(c,m)},
  cvsW:d=>{const c=get(d.id);if(!c)return;c.w=d.w;touch(c);const w=$('.cvs-fw');if(w)w.classList.toggle('ph',c.w==='phone');document.querySelectorAll('[data-act=cvsW]').forEach(b=>b.classList.toggle('on',b.dataset.w===c.w))},
  cvsReload:()=>{document.querySelectorAll('iframe.cvs-fr').forEach(x=>x.dataset.k='');FR_ERR=null;errPaint();fillFrames()},
  cvsFull:()=>{FULL=true;paint()},cvsFullX:()=>{FULL=false;paint()},
@@ -278,7 +308,7 @@ const css=document.createElement('style');css.textContent=`
 .cvs-log{flex:1;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:4px 2px 8px}
 .cvs-log .cv-q{align-self:flex-end;max-width:86%;padding:10px 14px;border-radius:18px 18px 6px 18px;background:color-mix(in srgb,var(--accent) 15%,var(--surface))}.cvs-log .cv-q p{margin:0}
 .cvs-log .cv-a{display:flex;gap:10px;align-items:flex-start}.cvs-log .cv-a>div{min-width:0;flex:1}
-.cvs-vtag{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 12px var(--f-body);cursor:pointer}.cvs-vtag:hover{color:var(--ink);border-color:var(--accent)}
+.cvs-res{margin-top:6px}.cvs-vtag{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 12px var(--f-body);cursor:pointer}.cvs-vtag:hover{color:var(--ink);border-color:var(--accent)}
 .cvs-st{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:4px 0}.cvs-st i{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:meBl 1s ease-in-out infinite}
 .cvs-empty{margin:auto;text-align:center;max-width:340px;padding:20px}.cvs-empty p{margin:6px 0}
 .cvs-orb{display:block;margin:0 auto 10px;width:44px;height:44px;border-radius:50%;background:conic-gradient(from 0deg,var(--accent),var(--c-learning,var(--accent)),var(--c-health,var(--accent)),var(--accent));animation:mmSpin 2.4s linear infinite}
