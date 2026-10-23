@@ -3575,7 +3575,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.49.1';
+const APP_VER='1.49.2';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halolight',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -5570,8 +5570,19 @@ function askBlocked(q,msg){const R=IN.res,t={q,a:msg||OFF_LINE,done:true,err:'',
  if(R&&!R.pending&&!R.offOnly)R.turns.push(t);else IN.res={srcs:[],turns:[t],engine:insSet().engine,msgs:[],offOnly:1,opt:{win:IN.win,goal:IN.goal},mode:'keyword',total:0};
  render(false);askScroll(true)}
 /* ---- answer engines ---- */
+/* Thinking on or off (insSet().think: '' = the model's default, 'off', 'on'). Servers spell it differently, so send every
+   common form: Ollama's think, OpenAI-style reasoning_effort, and chat_template_kwargs.enable_thinking (llama.cpp, vLLM,
+   SGLang), plus Qwen3's /no_think switch when off. A server that refuses the extra fields gets the request again without
+   them, and isn't sent them again. */
+const THINK_BAD=new Set();
+function thinkOpts(s,o){const v=o.think!=null?o.think:s.think;if(v!=='on'&&v!=='off'||THINK_BAD.has(s.url))return null;const on=v==='on';
+ return{think:on,reasoning_effort:on?'medium':'none',chat_template_kwargs:{enable_thinking:on}}}
+function thinkMsgs(msgs,s,o){const v=o.think!=null?o.think:s.think;if(v!=='off'||THINK_BAD.has(s.url))return msgs;const m=msgs.map(x=>({...x})),i=m.findIndex(x=>x.role==='system');
+ if(i>=0)m[i].content+='\n/no_think';else m.unshift({role:'system',content:'/no_think'});return m}
 async function apiChat(msgs,onTok,signal,opts={}){const s=insSet(),key=aiKey();if(!s.url)throw new Error('Add your AI server address first');
- const r=await fetch(s.url.replace(/\/+$/,'')+'/chat/completions',{method:'POST',signal,headers:{'Content-Type':'application/json',...(key?{Authorization:'Bearer '+key}:{})},body:JSON.stringify({model:s.model,messages:msgs,stream:true,temperature:opts.temperature??.4,...(opts.max_tokens?{max_tokens:opts.max_tokens}:{}),...(opts.schema?{response_format:{type:'json_object'}}:{})})});
+ const call=th=>fetch(s.url.replace(/\/+$/,'')+'/chat/completions',{method:'POST',signal,headers:{'Content-Type':'application/json',...(key?{Authorization:'Bearer '+key}:{})},body:JSON.stringify({model:s.model,messages:th?thinkMsgs(msgs,s,opts):msgs,stream:true,temperature:opts.temperature??.4,...(opts.max_tokens?{max_tokens:opts.max_tokens}:{}),...(opts.schema?{response_format:{type:'json_object'}}:{}),...(th||{})})});
+ const th=thinkOpts(s,opts);let r=await call(th);
+ if(th&&(r.status===400||r.status===422)){THINK_BAD.add(s.url);try{toast('Your AI server doesn’t accept the thinking switch, so it uses the model’s default')}catch(e){}r=await call(null)}
  if(!r.ok)throw new Error(`The server said ${r.status}. ${(await r.text().catch(()=>'')).slice(0,160)}`);
  if(!r.body||!(r.headers.get('content-type')||'').includes('event-stream')){const j=await r.json();onTok(j.choices?.[0]?.message?.content||'');return}
  const rd=r.body.getReader(),dec=new TextDecoder();let buf='';for(;;){const{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
@@ -5750,6 +5761,7 @@ function insEngineHTML(){const s=insSet();return`<div class="ins-eng" id="askSet
   <div class="field"><label for="insUrl">Server address</label><input id="insUrl" data-ins="url" value="${esc(s.url)}" placeholder="http://localhost:11434/v1" autocomplete="off" spellcheck="false"></div>
   <div class="field"><label for="insModel">Model</label><input id="insModel" data-ins="model" value="${esc(s.model)}" placeholder="llama3.2" autocomplete="off" spellcheck="false"></div>
   <div class="field"><label for="insKey">API key <small class="muted">(not needed for Ollama)</small></label><input id="insKey" data-ins="key" type="password" value="${esc(aiKey())}" autocomplete="off"></div>
+  <div class="field"><label>Thinking</label><div class="radios sm wrap">${[['','Model default'],['off','Off · faster'],['on','On · deeper']].map(([k,n])=>`<label><input type="radio" name="insT" data-ins="think" value="${k}" ${(s.think||'')===k?'checked':''}><span>${n}</span></label>`).join('')}</div><small class="muted">For models that think before answering (Qwen3, DeepSeek R1, gpt-oss and others). Off answers much sooner; On takes longer but reasons more. Works with Ollama, LM Studio, llama.cpp and vLLM.</small></div>
   <p class="small muted">For Ollama on your computer, start it with <code>OLLAMA_ORIGINS=${esc(NATIVE?'https://appassets.androidplatform.net':location.origin)}</code>. The phone app needs an https address (for example through Tailscale).</p>
   <div class="actions left"><button class="btn sm" data-act="insTest">Test connection</button></div>`:''}
  ${s.engine==='local'&&!NAT_OK()?`<label class="sw"><span>Use the GPU<small>Faster on laptops. Off on phones by default, where it can freeze the device or garble answers.</small></span><input type="checkbox" data-ins="gpu" ${useGPU()?'checked':''}><i></i></label>`:''}
@@ -5813,7 +5825,7 @@ document.addEventListener('input',e=>{const t=e.target;if(t.id==='askIn'){IN.q=t
 document.addEventListener('keydown',e=>{if(e.target&&e.target.id==='askIn'&&e.key==='Enter'&&!e.shiftKey&&(!IS_PHONE||e.ctrlKey||e.metaKey)){e.preventDefault();ACT.askSend()}});
 document.addEventListener('change',e=>{const t=e.target,k=t.dataset&&t.dataset.ins;if(!k||k==='url'||k==='model'||k==='key')return;const s=insSet();
  if(k==='win'){IN.win=+t.value;if(insPage())render(false);return}if(k==='goal'){IN.goal=t.value;if(insPage())render(false);return}
- if(k==='engine'||k==='llm')s[k]=t.value;else if(k==='smart'||k==='priv'||k==='gpu'||k==='lgpu'||k==='family')s[k]=t.checked;save();if(k==='engine'||k==='llm'){NAT_WARM='';try{natWarm()}catch(_){}}
+ if(k==='engine'||k==='llm'||k==='think')s[k]=t.value;else if(k==='smart'||k==='priv'||k==='gpu'||k==='lgpu'||k==='family')s[k]=t.checked;save();if(k==='engine'||k==='llm'){NAT_WARM='';try{natWarm()}catch(_){}}
  if(k==='smart'&&t.checked){toast('Preparing smart search…');ensureVecs(ragDocs(),()=>{}).then(()=>toast('Smart search is ready')).catch(()=>toast('Couldn’t load the search model. Keyword search still works'))}
  const sh=$('#sheet'),inSheet=sh&&sh.classList.contains('on')&&sh.contains(t);if(insPage()||!inSheet)render(false);askSetRefresh()});
 /* account-switch choices (helpers live with the sync code) */
