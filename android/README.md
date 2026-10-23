@@ -122,3 +122,17 @@ is `src/.../ThreadsWidget.java`. `ThreadsCards` (the card factory) and `widget_t
 with `rpm` (ms between repeats) and `end` (the last time). `AlarmReceiver.onReceive` calls `RepAlarm.next(context, o, id)`
 right after `Reminders.show(...)`, which arms the following time in the same slot and updates the saved list. 1.46.0
 added that one call to `AlarmReceiver` with smali (baksmali → edit → smali), since the receiver isn't in this repo.
+
+# Natural voices (Android)
+
+`Kokoro.java` runs the Kokoro-82M voice model (Apache-2.0) on ONNX Runtime with up to four CPU cores, which is several
+times faster than the page's WebAssembly copy in `kokoro.js`. The page turns the text into phoneme ids (eSpeak NG in
+`lib/phonemizer`), one list per sentence, and calls `PlotlineAssist.kokoroSay(id, json, voice, speed)`; each sentence is
+synthesised while the one before it plays through an `AudioTrack`. Done or failed comes back as `window.__assist('tts', id, …)`,
+like the system voice. `kokoroGet()` downloads `model_fp16.onnx` (163 MB) from Hugging Face into `files/kokoro`
+(fallback: the same file in pieces on jsDelivr, `kokoro-fp16-shards`), reporting progress as `window.__assist('kokoro', state, fraction)`.
+
+The build needs ONNX Runtime Android **1.20.0** from Maven Central (`com.microsoft.onnxruntime:onnxruntime-android`):
+its `classes.jar` (Java 8 bytecode) dexed with `dx --min-sdk-version=26` as `classes5.dex`, and
+`jni/arm64-v8a/libonnxruntime.so` + `libonnxruntime4j_jni.so` in `lib/arm64-v8a/`. Newer versions ship Java 17 bytecode,
+which `dx` can't read. The AAR's telemetry provider is left out of the manifest.
