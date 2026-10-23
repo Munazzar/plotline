@@ -38,7 +38,11 @@ async function pull(urls,prog){const parts=[],est=MB*1048576;let got=0;
   for(;;){const{done,value}=await rd.read();if(done)break;parts.push(value);got+=value.length;prog&&prog(Math.min(.99,got/n))}}
  return new Blob(parts)}
 /* the phone's own download: progress comes back as window.__assist('kokoro', state, fraction) → ev() */
-function nSetup(prog){if(KS.get)return KS.get;KS.get=new Promise((ok,no)=>{KS.nget={ok,no,prog};try{NK.kokoroGet()}catch(e){no(e)}}).finally(()=>{KS.get=null;KS.nget=null});nState();emit();return KS.get}
+function nSetup(prog){if(KS.get)return KS.get;let t=0;
+ KS.get=new Promise((ok,no)=>{KS.nget={ok,no,prog};try{NK.kokoroGet()}catch(e){no(e)}
+  /* also ask the phone now and then, in case a progress message went missing */
+  t=setInterval(()=>{const was=KS.st;nState();if(KS.st==='getting'){prog&&prog(KS.p);emit()}else if(KS.st!==was||KS.st!=='getting')ev(KS.st,KS.p)},1500)}).finally(()=>{clearInterval(t);KS.get=null;KS.nget=null});
+ nState();emit();return KS.get}
 function ev(st,p){KS.st=st==='getting'?'getting':st==='have'?'have':st==='err'?'err':'none';KS.p=+p||0;if(KS.st==='err')nState();const g=KS.nget;
  if(g){if(KS.st==='getting')g.prog&&g.prog(KS.p);else if(KS.st==='have')g.ok();else g.no(new Error(KS.err||'Couldn’t download the voices'))}emit()}
 /* download the model once (with progress) and the first voice */

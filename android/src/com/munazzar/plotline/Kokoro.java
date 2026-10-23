@@ -36,7 +36,7 @@ final class Kokoro {
     static final String HF = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/";
     static final String SHARDS = "https://cdn.jsdelivr.net/npm/kokoro-fp16-shards@1.0.4/kokoro-fp16.part";
     static final String[] VOICES = {HF + "voices/", "https://cdn.jsdelivr.net/npm/kokoro-local-runtime@0.1.0/voices/"};
-    static final long MIN_MODEL = 150000000L;
+    static final long MIN_MODEL = 150000000L, MODEL_BYTES = 163234740L;
     static final int RATE = 24000;
 
     static volatile String st = "";
@@ -85,15 +85,16 @@ final class Kokoro {
                     for (int i = 0; i < 10; i++) srcs[1][i] = SHARDS + i + ".bin";
                     boolean ok = false;
                     for (String[] src : srcs) {
-                        try { pull(src, part, 163 * 1048576L); ok = part.length() > MIN_MODEL; if (ok) break; }
+                        try { pull(src, part, MODEL_BYTES, true); ok = part.length() > MIN_MODEL; if (ok) break; }
                         catch (Exception e) { last = e; }
                     }
                     if (!ok) throw last != null ? last : new Exception("The download was cut short");
                     if (!part.renameTo(m)) throw new Exception("Couldn't save the voices");
                 }
-                voice(c, "af_heart");
+                /* ready as soon as the model is in place; the first voice follows quietly (or on first use) */
                 st = "have"; prog = 1;
                 tell("have", 1);
+                try { voice(c, "af_heart"); } catch (Exception e) {}
             } catch (Exception e) {
                 st = "err"; err = e.getMessage() == null ? "Couldn't download the voices" : e.getMessage();
                 tell("err", 0);
@@ -114,20 +115,23 @@ final class Kokoro {
         throw new Exception("Too many redirects");
     }
 
-    /* the files in urls, one after another, into out; progress against the expected total */
-    static void pull(String[] urls, File out, long expect) throws Exception {
+    /* the files in urls, one after another, into out; progress (if report) against the real size when the server
+       says it, else the expected total */
+    static void pull(String[] urls, File out, long expect, boolean report) throws Exception {
         OutputStream os = new FileOutputStream(out);
         long got = 0; int lastPct = -1;
         try {
             byte[] buf = new byte[65536];
             for (String u : urls) {
                 HttpURLConnection h = open(u);
+                long len = h.getContentLengthLong();
+                if (urls.length == 1 && len > 0) expect = len;
                 InputStream in = h.getInputStream();
                 int n;
                 while ((n = in.read(buf)) > 0) {
                     os.write(buf, 0, n); got += n;
                     int pct = (int) Math.min(99, got * 100 / expect);
-                    if (pct != lastPct) { lastPct = pct; prog = pct / 100f; tell("getting", prog); }
+                    if (report && pct != lastPct) { lastPct = pct; prog = pct / 100f; tell("getting", prog); }
                 }
                 in.close(); h.disconnect();
             }
@@ -153,7 +157,7 @@ final class Kokoro {
         if (f.length() < 256 * 510 * 4) {
             Exception last = null;
             for (String b : VOICES) {
-                try { pull(new String[]{b + v + ".bin"}, f, 522240); if (f.length() >= 256 * 510 * 4) break; }
+                try { pull(new String[]{b + v + ".bin"}, f, 522240, false); if (f.length() >= 256 * 510 * 4) break; }
                 catch (Exception e) { last = e; f.delete(); }
             }
             if (f.length() < 256 * 510 * 4) throw last != null ? last : new Exception("Couldn't get that voice");
