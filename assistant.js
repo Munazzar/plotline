@@ -13,7 +13,7 @@
    The last exchange is sent to the "Plotlines · Assistant" home-screen widget. */
 (()=>{
 'use strict';
-const NA=window.PlotlineAssist||null;
+const NA=!window.PLOT_DEMO&&window.PlotlineAssist||null;
 const ADEF={name:'Plot',wake:false,bg:false,speak:'voice',btn:true,fast:true};
 /* instant mode (Settings › AI & voice): commands and simple lookups are answered on the phone without the AI, questions skip
    the extra AI routing call, spoken answers get a short prompt, and speech starts with the first sentence */

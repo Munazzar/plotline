@@ -12,7 +12,7 @@
      saying "let's talk". */
 (()=>{
 'use strict';
-const NA=window.PlotlineAssist||null;
+const NA=!window.PLOT_DEMO&&window.PlotlineAssist||null;
 const nm=()=>(window.PLOT_ASSIST&&PLOT_ASSIST.aname)?PLOT_ASSIST.aname():'Plot';
 const tr=(s,n)=>{s=String(s||'').replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n-1)+'…':s};
 Object.assign(IC,{live:'<path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 10.5v3M21.5 12h-.5"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',micoff:'<path d="M9 9v2a3 3 0 0 0 5.1 2.1M15 10V6a3 3 0 0 0-5.7-1.3M5 11a7 7 0 0 0 11.5 5.4M19 11a7 7 0 0 1-.6 2.8M12 18v3M3 3l18 18"/>',chat:'<path d="M20 12.5a7.5 7.5 0 0 1-11 6.6L4 20l1-4.4A7.5 7.5 0 1 1 20 12.5z"/>',play:'<path d="M8 5.5v13l10.5-6.5z"/>'});
