@@ -17,7 +17,7 @@
 (()=>{
 'use strict';
 Object.assign(IC,{agent:'<path d="M12 3v2.5"/><circle cx="12" cy="2.6" r=".9"/><rect x="4.5" y="6" width="15" height="11.5" rx="4"/><path d="M9.2 11.2v.6M14.8 11.2v.6M9.5 14.5c1.6 1 3.4 1 5 0M2.5 11v3M21.5 11v3M9 17.5V21M15 17.5V21"/>',plug:'<path d="M9 2v5M15 2v5M6.5 7h11v3.5a5.5 5.5 0 0 1-11 0z"/><path d="M12 16v6"/>'});
-const now=()=>Date.now(),NA=window.PlotlineAssist||null;
+const now=()=>Date.now(),NA=!window.PLOT_DEMO&&window.PlotlineAssist||null;
 const ADEF={on:true,tasks:[],inbox:[]};
 const ag=()=>S.settings.agent=Object.assign({},ADEF,S.settings.agent||{});
 const CDEF={gcal:false,gmail:false,gdrive:false,notion:false,web:true,proxy:''};
