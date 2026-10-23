@@ -200,7 +200,7 @@ function canvasMark(){R.toggleAttribute('data-canvas',canvasPg());R.dataset.pgx=
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&S.settings.focus&&canvasPg()){S.settings.focus=false;save();applyFocus(true)}});
 
 /* ---------- navigation: pages grouped by what they're for, the same on the rail and the full-screen bar ---------- */
-const NAVG=[['Today',['today','cal']],['Plan',['goals','habits','lists','activity']],['Capture',['journal','threads','vista','bench']],['AI',['ask','agent','chats','me']]];
+const NAVG=[['Today',['today','cal']],['Plan',['goals','habits','lists','activity']],['Capture',['journal','threads','vista','bench']],['AI',['ask','agent','canvas','chats','me']]];
 const NAV_ORD=NAVG.flatMap(g=>g[1]);
 /* the page list (key, name, icon) is index.html's own; read it off the rail it builds */
 let PAGES=[];
