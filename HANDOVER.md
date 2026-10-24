@@ -4,7 +4,7 @@ Written 2026-10-24 for a fresh Claude (new account, no project memory) picking u
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.51.1 is on main and released** (versionCode 139). **The next versionCode is 140.**
+Current state: **v1.52.1 is on main** (versionCode 141). **The next versionCode is 142.**
 
 ---
 
@@ -98,7 +98,7 @@ unless noted.
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139. **Next: 140.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141. **Next: 142.**
 
 ## 4. Building the APK (cloud, no Android SDK)
 
