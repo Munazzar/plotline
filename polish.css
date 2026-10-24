@@ -23,7 +23,7 @@ html.f-apple .sc.big .sc-t{font-size:clamp(28px,7.4vw,40px)!important;line-heigh
 html.f-apple :is(.hq h3,.rcard h3,.trcard h3){font-size:23px!important;line-height:1.12!important}
 html.f-apple :is(.jf .jt-big,.jc.big .jt,.cprev .t,.mapcard .t){font-size:21px!important;line-height:1.12!important}
 html.f-apple .wr-title{font-size:24px!important}
-html.f-apple :is(.hero-pct,.fc-n,.sc-n,.cprev-n,.hq-clock b,.hq-lim b,.hstep b,.rp-t b,.yr-big b,.ag-h b,.hst b){letter-spacing:-.04em;font-weight:700}
+html.f-apple :is(.hero-pct,.fc-n,.sc-n,.cprev-n,.hq-clock b,.hq-lim b,.hstep b,.rp-t b,.yr-big b,.ag>.ag-h b,.hst b){letter-spacing:-.04em;font-weight:700}
 html.fm-apple :is(.data,.lbl){letter-spacing:.045em;font-weight:500;font-variant-numeric:tabular-nums}
 html.fm-apple .data{font-size:max(10px,.88em)}
 section>.now.udk{margin-top:26px}
