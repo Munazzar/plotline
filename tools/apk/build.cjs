@@ -1,8 +1,10 @@
-// node build.cjs <base.apk> <repo dir> <out.apk> <oldVer> <newVer> <oldCode> <newCode> <key.pem> <cert.der>
+// node build.cjs <base.apk> <repo dir> <out.apk> <oldVer> <newVer> <oldCode> <newCode> <key.pem> <cert.der> [entry=file ...]
+// Extra entry=file pairs replace or add APK entries as they are (e.g. classes4.dex=new4.dex classes6.dex=bridge.dex).
 // Rebuilds the base APK with the repo's web files in assets/www, the new version in the manifest, stored entries
 // 4-byte aligned, old signatures dropped, then signs it with APK Signature Scheme v2.
 const fs = require('fs'), path = require('path'), zlib = require('zlib'), v2 = require('./v2.cjs');
-const [base, repo, out, oldV, newV, oldC, newC, keyF, certF] = process.argv.slice(2);
+const [base, repo, out, oldV, newV, oldC, newC, keyF, certF, ...PUT] = process.argv.slice(2);
+const put = new Map(PUT.map(x => { const i = x.indexOf('='); return [x.slice(0, i), x.slice(i + 1)]; }));
 const b = fs.readFileSync(base), e = v2.eocdOf(b);
 const WEB = ['index.html', 'polish.css', 'sw.js', 'privacy.html', ...fs.readdirSync(repo).filter(f => f.endsWith('.js'))];
 
@@ -33,11 +35,13 @@ for (const x of ents) {
   if (/^META-INF\/.*\.(SF|RSA|DSA|EC|MF)$/i.test(x.name)) continue;
   const w = x.name.startsWith('assets/www/') && x.name.slice(11);
   if (w && WEB.includes(w)) { list.push(fresh(x.name, fs.readFileSync(path.join(repo, w)), x.time)); rep.push(w); continue; }
+  if (put.has(x.name)) { list.push(fresh(x.name, fs.readFileSync(put.get(x.name)), x.time)); rep.push(x.name); put.delete(x.name); continue; }
   if (x.name === 'AndroidManifest.xml') { list.push(fresh(x.name, patchManifest(zlib.inflateRawSync(x.raw)), x.time)); continue; }
   list.push(x);
 }
 const added = WEB.filter(w => !have.has('assets/www/' + w));
 for (const w of added) list.push(fresh('assets/www/' + w, fs.readFileSync(path.join(repo, w)), ents[0].time));
+for (const [n, fp] of put) { list.push(fresh(n, fs.readFileSync(fp), ents[0].time)); added.push(n); }
 
 // write: local headers (stored entries 4-byte aligned with zero padding in the extra field), central directory, EOCD
 const parts = [], cds = []; let off = 0;
