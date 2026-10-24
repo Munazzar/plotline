@@ -1,0 +1,225 @@
+# Plotlines handover
+
+Written 2026-10-24 for a fresh Claude (new account, no project memory) picking up this project. Read this file
+first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
+tokens. Where a secret is needed, this file says where the owner keeps it.
+
+Current state: **v1.51.1 is on main and released** (versionCode 139). **The next versionCode is 140.**
+
+---
+
+## 1. Who and what
+
+- **Owner:** Munazzar (GitHub `Munazzar` owns the repo; the Claude-side login was `munazzaruddin`). Tests on both
+  the web app and an Android phone. Uses a Windows PC called **PORTAL** for publishing.
+- **Repo:** `Munazzar/plotline` (the only active repo). `plotline-native` is paused: don't work there.
+- **App:** a personal life planner called **Plotlines** (renamed from "Plotline" in 1.41.0; the package id, storage
+  keys, repo name and the `Plotline.apk` release asset kept the old name on purpose).
+- **Web app:** GitHub Pages at `https://munazzar.github.io/plotline/` (served from `main`, so merging to main
+  deploys the web app at once).
+- **Android app:** a WebView wrapper that ships the same web files inside the APK (`assets/www/`), plus native Java
+  for the voice assistant, widgets, alarms, natural voices and on-device AI. Distributed through GitHub Releases;
+  the app's update banner points users at the latest release.
+
+## 2. Architecture
+
+Plain HTML/JS, no build step, no framework. Every file is loaded by `index.html` with a `<script src>` tag, in this
+order: `bench.js, lists.js, assistant.js, agent.js, ai.js, convs.js, me.js, canvas.js, ink.js, kokoro.js, polish.js,
+trackers.js, sched.js, guides.js, howto.js, setup.js`. Later scripts patch or wrap functions defined earlier, so
+**order matters** and a later file often overrides an earlier one by reusing the same function name.
+
+Run locally: `npx http-server -p 8765 -c-1` in the repo root (see `.claude/launch.json`). Test with headless
+Playwright at 390 px (phone) and 1280 px (desktop).
+
+| File | What it holds |
+|---|---|
+| `index.html` (~1.4 MB) | The core app: state `S`, storage (`DB`, IndexedDB store "waypoints"), router (`VIEWS`, hash routes like `#/today`, `#/goals`, `#/habits`, `#/cal`, `#/journal`, `#/settings`), Today/Home, habits, goals, calendar, journal, settings, Google sign-in and Drive sync, PIN lock, alarms (`alarmList`, `syncNative`), update banner, demo mode (`window.PLOT_DEMO`). `APP_VER` near line 3578. `PLOTLINE_CFG` near line 3490 holds the public Google client id, web URL and Firebase project id (public config, not secrets). Home cards order: `HOME_ORDER`. |
+| `ai.js` | AI engines and settings (`window.AIX`): on-device models (wllama/llama.cpp in `lib/wllama`, Gemma via LiteRT-LM on Android), "Your AI server" (any OpenAI-compatible URL, e.g. Ollama/LM Studio), API engines, model setup card, Live conversation mode, voice picker, safety (family-safe mode), ACTION chips, quick settings sheet (`aiQuick`), Thinking switch, widget talk overlay (`talkStart/talkEnd`). |
+| `agent.js` | The agent (`window.AGENT`): `AGENT.decide` (one JSON call choosing do/apps/live/schedule/talk), `AGENT.ask`, `AGENT.route`, tool lookups over Gmail, Google Calendar, Drive, Notion and the web (Open-Meteo weather, Nominatim places, DuckDuckGo + Wikipedia search), the Agent page with background tasks and inbox, connections UI (`AGENT.connHTML`). |
+| `assistant.js` | "Hey Plot" voice assistant and the orb chat (`#asv`): command parser, chat UI (Ask was merged into it in 1.51.0), listening cues (`CUES`), thinking sounds (`THINK`), minimize bubble (`aiMini`), quick-settings strip (`qsBar`), Talk button. |
+| `convs.js` | Conversations page: every chat, Live talk and Ask thread saved on the device (IndexedDB "convs"); continue, or "Make something from this". |
+| `sched.js` | `SCHED.make`: reminders in plain words with repeats/windows, timers, check-ins; Home Scheduled card. |
+| `setup.js` | Guided first-time setup (steps: notif, ai, voice, hey, conn, sync, lock, end). Add a step when a setup-worthy feature ships. |
+| `me.js` | "Picture of me" page (`#/me`): an AI-written profile of the user from all their data; synced via Drive (`MESYNC`). |
+| `guides.js` + `howto.js` | How-to page (`#/howto`): 70+ searchable guides with live looping demos of the real app in an iframe (`index.html?demo=<id>`). **Add a guide whenever a feature ships** and keep demo selectors in sync with UI changes. |
+| `canvas.js` | "AI canvas": the AI builds a self-contained HTML page step by step, runs it in a sandboxed iframe, versions, Fix it. A version is only committed after it is test-run. |
+| `bench.js` | Workbench: infinite canvas boards; encrypted sharing via Firestore (key only in the link's #fragment). |
+| `lists.js` | Lists (checklists with deadlines), encrypted sharing, Cards widget data. |
+| `trackers.js` | Custom activity trackers and Home Insights (AI-written with refresh). |
+| `ink.js` + `ocr/` | Handwriting/drawing (pressure, palm rejection, S Pen eraser) and photo-to-text (PaddleOCR on onnxruntime-web; Tesseract fallback). See `ocr/README.md`. |
+| `kokoro.js` + `lib/phonemizer` | Natural voices (Kokoro TTS). Web uses ONNX Runtime Web; Android uses native `Kokoro.java`. |
+| `polish.js` + `polish.css` | Design layer loaded last: SF-style icons, Apple type, shadows, backgrounds, swipe decks, page gears (`GEARS`), canvas mode. |
+| `privacy.html` | Privacy policy (rewritten 2026-10-24, lists every outside service). Update it when a feature contacts a new service. |
+| `sw.js` | Service worker. Bump `CACHE` (`plotline-vX.Y.Z`) with every version. |
+| `firestore.rules`, `database.rules.json` | Firebase rules for sharing (Firebase project `plotline-510215`; Anonymous auth must stay on). |
+| `train/` | Notes and notebook for a small fine-tuned "Plot Mini" model and voice-speed measurements. |
+| `android/` | The native Java that lives in the repo (see below) plus widget layouts, orb frames and READMEs. |
+
+### Native Android
+
+In the repo (`android/src/com/munazzar/plotline/`): `Assist*`, `WakeLoop` (wake word), `Listen` (mic buttons),
+`Chime` (listening sounds), `AssistService` (background listening), `TalkActivity` (talk overlay over other apps),
+`OrbWidget`, `ThreadsWidget`, `Cards*` (Cards widget), `RepAlarm` (repeating reminders), `Kokoro` (natural voice).
+The JS bridge is `window.PlotlineAssist` (plus `window.PlotlineNative` from MainActivity).
+
+**Not in the repo:** `MainActivity`, `LocalLlm`, `Voice`, `W`, `Notify`, `AlarmReceiver` and other wrapper classes
+exist only as compiled code in `classes.dex` inside the released APK. There is no Gradle project. That is why every
+build starts from the previous APK (section 4).
+
+## 3. Features and version history
+
+Every feature below is shipped and on main. Versions with a PR number were merged; all through 1.51.1 are released
+unless noted.
+
+- **1.32–1.33.x:** core planner, Hey Plot voice assistant (smoother wake, Stop, side-button assistant, Share to Plot), Plot answers from all app data, interactive home-screen widget.
+- **1.34.0 (PR #8):** Agent page with background tasks and inbox; Google Calendar (read+write), Gmail (read-only), Drive, Notion connections; Gemma 4 option; Vista renamed Timeline, Threads renamed Thread.
+- **1.35.0 (PR #9):** UI overhaul, Halo theme, customizable Home, full-screen journal writing.
+- **1.36.0 (PR #10):** handwriting/drawing, photo-to-text, adjustable Hey Plot silence timeout.
+- **1.37.0 (PR #12):** long-press selection with bulk delete, sub-goal toggle, entire-journal view.
+- **1.37.2 (PR #14, includes #13):** "Up next" day card, photo-to-text fixes.
+- **1.38.0 (PR #15):** AI overhaul (model setup card, Live conversation mode, voice picker, minimal safety, ACTION chips).
+- **1.38.1 (#16):** real download progress, 11 listening sounds, voice gender filter. **1.38.2 (#17):** Conversations page. **1.38.3 (#18):** agent lists real emails/events. **1.38.4:** agent plans its own lookups and writes a free-form answer with "What I'd do" buttons.
+- **1.39.0 (#20):** chat/Live hand email/calendar/Drive/Notion work to the agent; foldable inbox; Halo Light default (later changed). **1.39.1 (#21)** and **1.39.2 (#22):** soothing thinking sounds; Ask routes to the agent too.
+- **1.40.0 (#23):** `AGENT.decide` acts directly and fast; web connection. **1.40.1 (#24):** user's data first, then AI knowledge, then apps, web last. **1.40.2 (#25):** minimize bubble, quick settings, silent background listening.
+- **1.41.0 (#26):** renamed to Plotlines, polish.js design layer. **1.41.1:** PaddleOCR photo-to-text. **1.41.2:** scroll and goal-open fixes.
+- **1.42.0 (#31):** custom trackers, AI insights, grouped navigation, page gears. **1.42.1 (#32):** calendar tidy, carousels, orb widget.
+- **1.43.0 (#33):** instant voice: command router, streamed speech, prompt caching, Plot Mini training notes.
+- **1.44.0 (#34):** talk overlay over the screen, swirling orb widget, Thread swipe deck, two-app-copy save merge.
+- **1.45.0 (#35):** reminders in plain words with repeats, timers, check-ins; Home Scheduled and Trends cards. **1.45.1 (#36):** new mic path (`Listen.java`) for a friend's listening bug. **1.45.2 (#37):** user's chosen sounds as defaults (thinking Bubbles, start Soft, stop Low hum). **1.45.4 (#39):** habit page day bar (lost in 1.46.0, restored in 1.46.3).
+- **1.46.0 (#40):** Picture of me. **1.46.1 (#41):** reminder repeats fixed (native `RepAlarm`). **1.46.2 (#42):** Picture of me syncs. **1.46.3 (#43):** habit day bar restored.
+- **1.47.0 (#44):** How-to page with live demos.
+- **1.48.0 (#45):** natural voices (Kokoro, free and offline). **1.48.1 (#46):** settings jump, voice download stuck at 99%, sliders fixed.
+- **1.49.0–1.49.4 (#47–#51):** AI canvas, stream resume, Thinking switch, keyboard layout, honest build status. **1.49.5 (#52):** pull-to-refresh only from the page itself. **1.49.6 (#53):** Home gear opens Settings, AI Home insights.
+- **1.50.0 (#54):** guided first-time setup (shipped inside 1.51.0).
+- **1.51.0 (#55):** Ask merged into the orb chat, separate Talk button, quick-settings strip, dark Halo default for new users.
+- **1.51.1 (#56):** security/privacy hardening (shared boards/lists sanitized, canvas CSP lock, prompt-injection rules, OAuth state check, PIN backoff, full erase) and the rewritten privacy policy.
+
+### versionCode table (for the APK)
+
+1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
+1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139. **Next: 140.**
+
+## 4. Building the APK (cloud, no Android SDK)
+
+There is no Gradle build. `dl.google.com`, `maven.google.com`, Hugging Face and GitHub release downloads are blocked
+from the cloud container. Maven Central and PyPI work (retry on HTTP 429).
+
+**Inputs you need in the new project (the old project's files do not move with you):**
+1. **The latest released APK** (1.51.1) as the base. Download `Plotline.apk` from the GitHub release v1.51.1 on a
+   device and upload it to the new project, or stage it from the PORTAL PC. Old APKs were kept under
+   `apk/<version>/Plotline.apk` in the project files.
+2. **The signing key.** The owner has a zip with `plotline-upload.jks` and a password file (alias `plotline`).
+   Upload it to the new project. The signing certificate's SHA-256 must start with `7bb13e1a`
+   (`7B:B1:3E:1A…48:99`). **An APK signed with any other key will not install over the existing app.** Delete
+   the extracted key after each build.
+
+**Web-only release (most versions):**
+1. Copy the previous APK. Replace the files in `assets/www/` with the repo's web files (`index.html`, all `.js`,
+   `polish.css`, `sw.js`, `privacy.html`, `lib/`, `ocr/`, fonts as needed). **Add any new web file** (e.g. a new
+   `.js`), or the app breaks on Android.
+2. Patch the version in the binary `AndroidManifest.xml`: versionName is UTF-16 in the string pool (same length
+   is easiest), versionCode is an int attribute. Find the bytes `08 00 00 10` followed by the old code
+   (little-endian int) and replace the code. Don't use fixed offsets (the pool moved in 1.41.0).
+3. Rebuild the zip with Python `zipfile`: drop `META-INF` signature files, keep each entry's compression, 4-byte
+   align stored entries with an extra field. Never open two writers on the same output file.
+4. Sign **v2 only** with `com.android.tools.build:apksig:2.3.0` from Maven Central via a small Java program (v1
+   signing crashes on Java 21). Run java with
+   `--add-exports java.base/sun.security.x509=ALL-UNNAMED` (also `pkcs` and `util`). Verify with `ApkVerifier`
+   and check the cert fingerprint.
+5. Bump `APP_VER` in `index.html` and `CACHE` in `sw.js` in the same PR.
+
+**When repo Java changes:** dex2jar (`de.femtopedia.dex2jar:dex-tools 2.4.38`) the APK's `classes.dex`,
+`classes2.dex`, `classes3.dex`; compile the changed `.java` with `javac --release 8` (no lambdas) against
+`org.robolectric:android-all:11-robolectric-6757853` (an API 30 android.jar) plus those jars; put the classes into
+`classes4.jar` (where `Assist*`, `WakeLoop`, `Chime` and friends live; `Cards*` are in an earlier dex, leave them)
+and convert back with Jar2Dex / `dalvik-dx 16.0.1`. Kokoro's ONNX Runtime 1.20.0 is in `classes5.dex` and
+`lib/arm64-v8a` (newer ORT AARs are Java 17 bytecode that dx can't read). Patching compiled classes in
+`classes.dex` has been done with smali/baksmali 2.5.2. Manifest or resource changes (new activities, labels) were
+done with a hand-written AXML reader/writer in Python; androguard from PyPI is handy for checks.
+
+## 5. Releasing
+
+- **Cloud sessions cannot create GitHub releases** (403, platform rule). Workarounds (release-on-tag Action, pushing
+  the APK into the repo) are blocked too. Merging PRs from the cloud with the GitHub MCP merge tool works fine.
+- **What works:** get the signed APK onto the PORTAL PC, then start a **Remote Control session** there in
+  `C:\Users\PORTAL\Claude and me` (gh is signed in as Munazzar; the shell is PowerShell) that checks the SHA-256 and
+  runs:
+  `gh release create vX.Y.Z Plotline.apk -R Munazzar/plotline --target main --latest`
+- **The asset must be named exactly `Plotline.apk`.** The in-app update banner (Android only, 6-hour cache)
+  compares the latest release tag with `APP_VER` and downloads `releases/latest/download/Plotline.apk`.
+- **Getting the APK onto the PC:** folder access to `C:\Users\PORTAL\Claude and me`, then `device_commit_files` from
+  the project files. Do this before starting RC, because a running RC session hides the folder tools. Fallback used
+  several times: a temporary commit of the APK on the work branch (`tmp-apk/Plotline.apk`) that the RC session
+  fetches with `gh api`, then remove that commit. Last resort: the user downloads it from the thread.
+- **PC safety-check quirks:** the PC's auto mode sometimes blocks `gh release create` ("Create Public Surface"),
+  inconsistently, even with an allow rule in settings. What reliably works: ask the user for a one-word reply like
+  **"Yes, publish v1.52.0"** and start (or restart) the RC session *from that message*. A relayed approval from
+  another Claude is refused. In PowerShell, wrap a `cmd.exe /c` argument in single quotes. RC can't edit
+  `.claude` settings (counts as self-modification). The RC's `gh release view` may be blocked: verify from the cloud
+  with the GitHub MCP `get_release_by_tag` (shows the asset digest).
+- **Standing approval:** the user said "You merge pr and release apk i give you go ahead. Use my pc if needed."
+  Merge and publish without extra back-and-forth, and never ask the user to run commands themselves (they find the
+  publish hurdles frustrating).
+- **Parallel work:** when several threads ship at once, versions collide. Later PRs rebase on the merged one and take
+  the next version and versionCode, so each APK carries everything.
+
+## 6. Google Cloud and Firebase setup
+
+- **Google sign-in, Drive sync and connections** use the OAuth client id in `PLOTLINE_CFG.googleClientId`
+  (index.html) from the owner's Google Cloud project. Scopes: `drive.appdata` + `userinfo.email` (sync),
+  `calendar.events` (read+write), `gmail.readonly`, `drive.metadata.readonly`.
+- In that Cloud project, the **Google Calendar API, Gmail API and Google Drive API must be enabled**, and while the
+  OAuth consent screen is in testing, **each user must be added as a test user** or sign-in fails.
+- Redirect: the web URL `https://munazzar.github.io/plotline/` (the Android app also uses it). OAuth `state` is
+  checked since 1.51.1.
+- **Firebase** project `plotline-510215` (Firestore) holds encrypted shared boards/lists and sharing keys.
+  Anonymous Authentication must stay on. Rules are in `firestore.rules` / `database.rules.json`.
+- Notion connects with a token the user pastes in the app. No keys live in the repo beyond public client config.
+- The user also runs a ~35B local model on PORTAL and reaches it from the web app via "Your AI server". Ollama needs
+  `OLLAMA_ORIGINS` to include `https://munazzar.github.io` and a bigger context (`OLLAMA_CONTEXT_LENGTH=32768`);
+  LM Studio needs CORS on.
+
+## 7. How the user wants Claude to work
+
+- **Own data first, always.** Answers come from the user's own app data first, then what the AI knows, then
+  connected apps. Go online only for live info or when nothing else can answer.
+- **AI-driven, not hardcoded.** They rejected keyword rules ("it's like API calls for every scenario"). Let the
+  model decide and plan; keep prompts light.
+- **Act, don't loop.** The assistant should do things directly and fast, and give real lists, not vague summaries.
+- **Sounds:** no low drones or hums ("gives me headache"). Soothing, thinking-style sounds.
+- **Minimal guardrails:** only child safety and extreme content (family-safe mode). No topic restrictions.
+- **Honest status.** Never claim something is done or built until it is verified. Report failures plainly.
+- **Don't break anything.** Almost every feature works right now. Cross-check existing features before and after
+  each change.
+- **Check main's features survive before building.** 1.46.0 once silently dropped 1.45.4's habit day bar by building
+  on an old `index.html`. Before a build, rebase on main and grep for a key function from each recent feature.
+  Check open and recent PRs before starting work another thread may already be doing.
+- **All assistant surfaces reachable from each other** (chat, Talk/Live, agent, conversations).
+- Features that need setup get a step in `setup.js`; new features get a guide in `guides.js`; new outside services
+  get a line in `privacy.html`.
+- Keep replies short and plain; the user skims. They test on web and Android, so check both sizes.
+
+## 8. Open and unfinished work
+
+1. **Full app walkthrough and bugs** (in progress when this was written): every page opened on phone and desktop,
+   every button clicked. Fixed so far, not yet merged: How-to missing from the More menu and desktop sidebar, page
+   titles cut off on phones, More-menu settings gaining AI & voice, Connections and Automations. Remaining: click
+   through every sheet and menu, re-test on latest main, build (versionCode 140+), PR, merge, publish. **Check
+   whether a PR from branch `claude/project-thread-*` for this landed after 1.51.1;** if not, redo it from main.
+2. **Privacy policy contact email** is still a placeholder: `privacy.html` points to GitHub issues because the
+   user's contact email isn't known. Ask the user which email to use.
+3. **Friend's app stopped listening** is blocked: 1.45.1 changed the mic path, but no phone model or Android version
+   is known. Needs details from the friend (phone, Android version, what happens on tapping the mic).
+4. **Morning news brief** was proposed but not started.
+5. Smaller loose ends: "goal open breaking on web" (1.41) never reproduced (ask for a screenshot); the talk overlay
+   and orb widget were released without a phone test; with sync on, "Sharing and invites" defaults on and publishes
+   the user's email and public key to Firestore; the agent's web connection is on by default.
+
+## 9. First steps for a new Claude
+
+1. Clone `Munazzar/plotline`, read this file, `android/README.md`, `ocr/README.md`, `train/README.md`.
+2. Ask the owner to upload the signing-key zip and the latest `Plotline.apk` into the new project.
+3. Confirm the PORTAL PC folder `C:\Users\PORTAL\Claude and me` is connected for releases.
+4. Save sections 4, 5 and 7 to project memory.
+5. Pick up the open items in section 8.
