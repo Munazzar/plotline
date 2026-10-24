@@ -3575,14 +3575,14 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.52.1';
+const APP_VER='1.53.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
 let S={v:2,goals:[],entries:[],days:[],habits:[],dead:{},settings:{...DEF_SET}};S=norm(S);
 function norm(d){const st={...DEF_SET,...(d.settings||{})};if(!THEME_IDS.includes(st.theme))st.theme=st.mode==='light'?'daylight':'night';st.layout={goals:'grid',journal:'h',goal:'cards',cal:'month',...((d.settings||{}).layout||{})};st.sync={on:false,clientId:'',webUrl:'',email:'',fileId:'',last:0,err:'',native:false,...((d.settings||{}).sync||{})};if(!CARD_IDS.includes(st.cards))st.cards='solid';
  return{v:2,dead:d.dead||{},goals:(d.goals||[]).filter(g=>g&&typeof g==='object').map(g=>({links:[],steps:[],parent:'',why:'',targetDate:'',pinned:false,status:'active',priority:2,checkin:'',checkinTime:'19:00',checkinDay:1,lastCheckin:'',...g,steps:(Array.isArray(g.steps)?g.steps:[]).filter(x=>x&&typeof x==='object').map(x=>({...x,id:x.id||uid(),title:String(x.title??''),due:typeof x.due==='string'?x.due:'',time:typeof x.time==='string'?x.time:''})),links:Array.isArray(g.links)?g.links:[],title:String(g.title||'Untitled goal'),targetDate:typeof g.targetDate==='string'?g.targetDate:'',checkin:typeof g.checkin==='string'?g.checkin:'',startDate:typeof g.startDate==='string'&&g.startDate?g.startDate:ymd(new Date(g.createdAt||Date.now()))})),entries:d.entries||[],days:(d.days||[]).filter(x=>x&&x.id&&validDate(x.date)),habits:(d.habits||[]).filter(x=>x&&x.id).map(normHabit),chapters:(d.chapters||[]).filter(x=>x&&x.id&&validDate(x.start)),shares:(d.shares||[]).filter(x=>x&&x.id),lists:(d.lists||[]).filter(x=>x&&x.id&&x.items),threads:(d.threads||[]).filter(x=>x&&x.id).map(t=>({ups:[],status:'open',link:null,...t})),ident:d.ident&&d.ident.pub&&d.ident.priv?d.ident:null,settings:st}}
-let saveT;function save(){if(TOURING)return;clearTimeout(saveT);saveT=setTimeout(()=>{stamp();DB.set('state',S).catch(()=>toast('Couldn’t save on this device'));syncNative();pushWidget();if(DIRTY)syncSoon()},200)}
+let saveT;function save(){if(TOURING)return;clearTimeout(saveT);saveT=setTimeout(()=>{stamp();try{for(const k in SYNCX)if(SYNCX[k].peek()){DIRTY=true;break}}catch(e){}DB.set('state',S).catch(()=>toast('Couldn’t save on this device'));syncNative();pushWidget();if(DIRTY)syncSoon()},200)}
 /* Two copies of the app can be open on a phone at once: the full app, and the talk over the screen (?talk=1), which
    runs while the app waits in the background. Each marks its saves (plotline.stAt: who, when). Before one saves
    after the other has, or when the app comes back, it merges what's on the device first, the same way sync merges
@@ -3607,15 +3607,55 @@ function mergeDocs(a,b){const dead={...(a.dead||{})};for(const[k,v]of Object.ent
  const cut=Date.now()-120*864e5;for(const k in dead)if(dead[k]<cut)delete dead[k];
  const pick=(xs,ys)=>{const m=new Map();(xs||[]).forEach(o=>m.set(o.id,o));(ys||[]).forEach(o=>{const c=m.get(o.id);if(!c||(o.u||0)>(c.u||0))m.set(o.id,o)});return[...m.values()].filter(o=>!(dead[o.id]>=(o.u||0)))};
  const goals=pick(a.goals,b.goals),ids=new Set(goals.map(g=>g.id));goals.forEach(g=>{g.links=(g.links||[]).filter(l=>ids.has(l))});
- return{goals,entries:pick(a.entries,b.entries),days:pick(a.days,b.days),habits:pick(a.habits,b.habits),chapters:pick(a.chapters,b.chapters),shares:pick(a.shares,b.shares),act:mergeAct(a.act,b.act),lists:pick(a.lists,b.lists),threads:mergeThreads(a.threads,b.threads,dead),benches:window.WBSYNC?WBSYNC.merge(a.benches,b.benches,dead):(b.benches||a.benches||[]),me:window.MESYNC?MESYNC.merge(a.me,b.me):(b.me||a.me||null),ident:!a.ident?b.ident||null:!b.ident?a.ident:((a.ident.c||0)<=(b.ident.c||0)?a.ident:b.ident),dead}}
+ return{goals,entries:pick(a.entries,b.entries),days:pick(a.days,b.days),habits:pick(a.habits,b.habits),chapters:pick(a.chapters,b.chapters),shares:pick(a.shares,b.shares),act:mergeAct(a.act,b.act),lists:pick(a.lists,b.lists),threads:mergeThreads(a.threads,b.threads,dead),benches:window.WBSYNC?WBSYNC.merge(a.benches,b.benches,dead):(b.benches||a.benches||[]),me:window.MESYNC?MESYNC.merge(a.me,b.me):(b.me||a.me||null),ident:!a.ident?b.ident||null:!b.ident?a.ident:((a.ident.c||0)<=(b.ident.c||0)?a.ident:b.ident),dead,...xsOf(k=>SYNCX[k].merge(a[k],b[k],dead))}}
 /* activity (steps, sleep, screen time, workouts) is read on the phone and travels in your own Drive file, so the web
    can show it. Last 120 days; per day the fuller record wins (the phone's totals only grow through the day). */
 const actTrim=L=>{const cut=fromN(dnum(ymd())-120),o={};for(const k in L||{})if(k>=cut&&L[k])o[k]=L[k];return o};
 const actScore=o=>o?(+o.s||0)+(+o.z||0)+(+o.m||0)+(o.w||[]).length+(o.a||[]).length+(o.ss||[]).length:-1;
 /* the more recently read day wins (it's the phone's latest reading); days from before 1.27 have no time, so the fuller one wins */
 function mergeAct(a,b){const o={...(a||{})};for(const[k,v]of Object.entries(b||{})){const c=o[k],tu=+(v&&v.u)||0,cu=+(c&&c.u)||0;if(tu||cu?tu>cu:actScore(v)>actScore(c))o[k]=v}return actTrim(o)}
-const docOf=x=>({app:'plotline',v:1,act:actTrim(x.act||(x.settings&&x.settings.actLog)),goals:x.goals,entries:x.entries,days:x.days||[],habits:x.habits||[],chapters:x.chapters||[],shares:x.shares||[],lists:x.lists||[],threads:x.threads||[],benches:x.benches||[],me:x.me||null,ident:x.ident||null,dead:x.dead||{}});
-const sameDoc=(a,b)=>JSON.stringify([a.act||{},a.lists||[],a.goals,a.entries,a.days||[],a.habits||[],a.chapters||[],a.shares||[],a.threads||[],a.benches||[],a.me||null,a.ident||null,a.dead])===JSON.stringify([b.act||{},b.lists||[],b.goals,b.entries,b.days||[],b.habits||[],b.chapters||[],b.shares||[],b.threads||[],b.benches||[],b.me||null,b.ident||null,b.dead]);
+/* ---- 1.53: the rest of the app syncs too ----
+   Agent tasks and reports, conversations, AI canvases and the settings that aren't about looks travel in the same
+   Drive file. A module registers a list of objects with ids (syncList): each object gets u from its content, a deleted
+   one becomes a tombstone in S.dead, and the newer copy wins. Settings (syncPref) merge key by key; a key nobody has
+   changed yet counts as older than one that has a value, so a fresh device takes the other's. Looks, PIN and app
+   lock, notifications, downloaded models and Google sign-ins stay on each device. */
+const SYNCX={},PREF={};let S_OK;window.S_LOADED=new Promise(r=>{S_OK=r});
+const sxh=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36)+'.'+s.length};
+const xsOf=f=>Object.fromEntries(Object.keys(SYNCX).map(k=>[k,f(k)]));
+function syncList(k,o){const sig=new Map(),sg=x=>{const{u,...r}=x;return sxh(JSON.stringify(r))};
+ const ready=Promise.resolve(o.load).catch(()=>{}).then(()=>o.get().forEach(x=>{if(!x.u)x.u=1;sig.set(x.id,sg(x))}));
+ SYNCX[k]={
+  get:async()=>{await ready;const t=Date.now(),seen=new Set();
+   o.get().forEach(x=>{seen.add(x.id);const s=sg(x);if(sig.get(x.id)!==s){x.u=t;sig.set(x.id,s)}});
+   for(const id of[...sig.keys()])if(!seen.has(id)){S.dead[id]=t;sig.delete(id);DIRTY=true}
+   return o.get().map(o.out||(x=>x))},
+  merge:(A,B,dead)=>{if(!A&&!B)return undefined;const m=new Map();(A||[]).forEach(x=>m.set(x.id,x));(B||[]).forEach(x=>{const c=m.get(x.id);if(!c||(x.u||0)>(c.u||0))m.set(x.id,x)});return[...m.values()].filter(x=>!(dead[x.id]>=(x.u||0)))},
+  apply:async(R,dead)=>{await ready;if(!Array.isArray(R))return;const L=o.get(),by=new Map(L.map(x=>[x.id,x])),ids=new Set(R.map(r=>r.id)),out=[];let ch=false;
+   for(const r of R){const l=by.get(r.id);if(l&&(r.u||0)<=(l.u||0)){out.push(l);continue}const x=o.inn?o.inn(r,l):{...r};x.u=r.u;out.push(x);sig.set(x.id,sg(x));ch=true}
+   /* one made here while the sync ran stays; one deleted elsewhere goes */
+   for(const l of L)if(!ids.has(l.id)){if(dead[l.id]>=(l.u||0)){sig.delete(l.id);ch=true}else out.push(l)}
+   if(ch)o.set(out)},
+  /* changed since the last sync? save() asks, so an edit starts a sync */
+  peek:()=>{const L=o.get();return L.length!==sig.size||L.some(x=>sig.get(x.id)!==sg(x))}}}
+window.syncList=syncList;
+window.syncTouch=()=>{DIRTY=true;syncSoon()};
+window.syncPref=(k,get,set,def)=>{PREF[k]={get,set,def}};
+const prefEmpty=(k,v)=>v==null||v===''||v===false||(typeof v==='object'&&!Object.keys(v).length)||!!(PREF[k].def&&JSON.stringify(v)===JSON.stringify(PREF[k].def()));
+const prefVal=k=>{let v=null;try{v=PREF[k].get()}catch(e){}return v??null};
+SYNCX.prefs={
+ get:async()=>{const U=S.settings._pu||(S.settings._pu={}),G=S.settings._ps||(S.settings._ps={}),t=Date.now(),o={};
+  for(const k in PREF){const v=prefVal(k),s=sxh(JSON.stringify(v));if(G[k]===undefined){G[k]=s;U[k]=prefEmpty(k,v)?0:1}else if(G[k]!==s){G[k]=s;U[k]=t}o[k]={v,u:U[k]||0}}return o},
+ merge:(a,b)=>{if(!a&&!b)return undefined;const o={...(a||{})};for(const k in b||{})if(!o[k]||(b[k].u||0)>(o[k].u||0))o[k]=b[k];return o},
+ apply:async m=>{if(!m)return;const U=S.settings._pu||(S.settings._pu={}),G=S.settings._ps||(S.settings._ps={});
+  for(const k in m){if(!PREF[k]||(m[k].u||0)<=(U[k]||0))continue;try{PREF[k].set(m[k].v)}catch(e){continue}U[k]=m[k].u;G[k]=sxh(JSON.stringify(prefVal(k)))}},
+ peek:()=>{const G=S.settings._ps||{};return Object.keys(PREF).some(k=>G[k]!==undefined&&G[k]!==sxh(JSON.stringify(prefVal(k))))}};
+['name','act','share','shPeople','places','aiInsAuto'].forEach(k=>syncPref(k,()=>S.settings[k],v=>{S.settings[k]=v}));
+/* your AI server travels with you: set it on the phone and the web uses it too (which on-device model doesn't) */
+syncPref('ai',()=>{const s=insSet();return{engine:s.engine,url:s.url,model:s.model,smart:!!s.smart,priv:!!s.priv}},v=>{if(v)Object.assign(insSet(),v)},()=>({engine:'local',url:API_PRE[0][1],model:API_PRE[0][2],smart:false,priv:false}));
+syncPref('aikey',()=>aiKey(),v=>{try{v?localStorage.setItem('plotline.aikey',v):localStorage.removeItem('plotline.aikey')}catch(e){}});
+const docOf=x=>({app:'plotline',v:1,act:actTrim(x.act||(x.settings&&x.settings.actLog)),goals:x.goals,entries:x.entries,days:x.days||[],habits:x.habits||[],chapters:x.chapters||[],shares:x.shares||[],lists:x.lists||[],threads:x.threads||[],benches:x.benches||[],me:x.me||null,ident:x.ident||null,dead:x.dead||{},...xsOf(k=>x[k])});
+const sameDoc=(a,b)=>JSON.stringify(xsOf(k=>a[k]??null))===JSON.stringify(xsOf(k=>b[k]??null))&&JSON.stringify([a.act||{},a.lists||[],a.goals,a.entries,a.days||[],a.habits||[],a.chapters||[],a.shares||[],a.threads||[],a.benches||[],a.me||null,a.ident||null,a.dead])===JSON.stringify([b.act||{},b.lists||[],b.goals,b.entries,b.days||[],b.habits||[],b.chapters||[],b.shares||[],b.threads||[],b.benches||[],b.me||null,b.ident||null,b.dead]);
 
 /* ---- Google auth: web = popup/redirect (implicit flow), Android = device account with browser fallback ---- */
 const cfg=()=>({clientId:(S.settings.sync.clientId||PLOTLINE_CFG.googleClientId||'').trim(),webUrl:(S.settings.sync.webUrl||PLOTLINE_CFG.webUrl||'').trim()});
@@ -3709,11 +3749,14 @@ async function syncNow(manual){if(!syncOn()||TOURING)return;if(SYNCING){SYNC_AGA
   const l0=docOf(S);l0.benches=window.WBSYNC?await WBSYNC.list():(remote&&remote.benches)||[];
   /* Picture of me lives in its own store too (me.js) */
   l0.me=window.MESYNC?await MESYNC.get():(remote&&remote.me)||null;
+  for(const k in SYNCX)l0[k]=await SYNCX[k].get();
   /* photos go out as their own Drive files (refs in the plan); mine = merged with the pictures back in, for this device */
   const local=await imgOut(l0),merged=await imgOut(remote?mergeDocs(local,remote):local),mine=await imgIn(merged);
   /* Workbench boards live in their own store, not in S */
   if(window.WBSYNC&&JSON.stringify(merged.benches||[])!==JSON.stringify(local.benches))await WBSYNC.apply(mine.benches,merged.dead);
   if(window.MESYNC&&JSON.stringify(merged.me||null)!==JSON.stringify(local.me||null))await MESYNC.apply(merged.me);
+  let xch=false;for(const k in SYNCX)if(JSON.stringify(merged[k]??null)!==JSON.stringify(local[k]??null)){try{await SYNCX[k].apply(mine[k],merged.dead);xch=true}catch(e){}}
+  if(xch){S.dead=merged.dead;if(!$('#sheet').classList.contains('on'))render(false)}
   const changedLocal=!sameDoc(merged,local);
   if(changedLocal){S.goals=mine.goals;S.entries=mine.entries;S.days=mine.days;S.habits=mine.habits.map(normHabit);S.chapters=mine.chapters||[];S.shares=mine.shares||[];S.threads=mine.threads||[];S.lists=mine.lists||[];if(mine.act&&Object.keys(mine.act).length)S.settings.actLog=mine.act;S.ident=mine.ident||S.ident||null;S.dead=merged.dead;primeSig();await DB.set('state',S).catch(()=>{});syncNative();pushWidget();if(!$('#sheet').classList.contains('on'))render(false)}
   if(!remote||!sameDoc(merged,remote)||DIRTY){S.settings.sync.fileId=await driveWrite(f&&f.id,docOf(merged))}else S.settings.sync.fileId=f.id;
@@ -4415,7 +4458,7 @@ function setSecs(){const st=S.settings;const np=('Notification'in window)?Notifi
  {k:'auto',t:'Automations',ic:'flame',sub:()=>autoSub(),html:()=>autoHTML()},
  {k:'share',t:'Sharing',ic:'habit',sub:()=>shareSub(),html:()=>shareHTML()},
  {k:'voice',t:'AI & voice',ic:'ai',sub:()=>voiceSub(),html:()=>voiceHTML()},
- {k:'data',t:'Your data',ic:'archive',sub:()=>'Backup, import, sample data',html:()=>` <section class="panel rv"><h3>Your data</h3><p class="small muted">Everything is stored on this device. Export a backup before switching devices or browsers.</p><div class="actions left">${demoCount()?`<button class="btn" data-act="demoRemove">${ic('trash')}Remove sample data</button>`:''}<button class="btn" data-act="exportData">Export backup</button><label class="btn">Import backup<input type="file" accept="application/json,.json" data-file="backup" hidden></label><label class="btn">Import MQC journal<input type="file" accept="application/json,.json" data-file="mqc" hidden></label><button class="btn danger" data-act="wipe">Erase everything</button></div></section>`}]}
+ {k:'data',t:'Your data',ic:'archive',sub:()=>'Backup, import, sample data',html:()=>` <section class="panel rv"><h3>Your data</h3><p class="small muted">Everything is stored on this device, and in your own Google Drive when sync is on. Without sync, export a backup before switching devices or browsers.</p><div class="actions left">${demoCount()?`<button class="btn" data-act="demoRemove">${ic('trash')}Remove sample data</button>`:''}<button class="btn" data-act="exportData">Export backup</button><label class="btn">Import backup<input type="file" accept="application/json,.json" data-file="backup" hidden></label><label class="btn">Import MQC journal<input type="file" accept="application/json,.json" data-file="mqc" hidden></label><button class="btn danger" data-act="wipe">Erase everything</button></div></section>`}]}
 function vSettings(id){const S2=setSecs(),sec=S2.find(x=>x.k===id);
  if(!sec)return`<header class="ph"><div><h1>Settings</h1><div class="data">Saved on this device only, so each device keeps its own</div></div></header><nav class="shub rv">${S2.map(x=>`<a class="shub-r${x.warn&&x.warn()?' warn':''}" href="#/settings/${x.k}"><span class="shub-i">${ic(x.ic)}</span><span class="shub-t"><b>${x.t}</b><small>${esc(x.sub())}</small></span>${ic('next','ico-s')}</a>`).join('')}</nav><div class="shub-f2"><div class="shub-fl"><a href="#/howto">How-to guides</a><button data-act="setupOpen">Guided setup</button><button data-act="tourGo">Take the tour</button><a href="${NATIVE?esc(cfg().webUrl||PLOTLINE_CFG.webUrl)+'privacy.html':'privacy.html'}" target="_blank" rel="noopener">Privacy policy</a></div><p class="data">Plotlines ${APP_VER}</p></div>`;
  return`<div class="crumb"><a href="#/settings" class="ibtn" data-act="navBack" aria-label="Back">${ic('back')}</a></div><header class="ph" style="margin-top:4px"><div><h1>${sec.t}</h1><div class="data">${esc(sec.sub())}</div></div></header><div class="set">${sec.html()}</div>`}
@@ -4649,7 +4692,7 @@ const ACT={navBack:()=>{if(!navBack())go("today")},
  notif:async()=>{if(NATIVE){askNotif();setTimeout(()=>render(false),1500);return}try{await Notification.requestPermission()}catch(e){}render(false)},
  setPin:()=>openSheet(`<h2>${S.settings.pinHash?'Change PIN':'Set a PIN'}</h2><p class="muted small">4 to 8 digits. Until sync arrives, a forgotten PIN can only be cleared by erasing this device’s data, so keep a backup.</p><form data-form="savePin"><div class="field"><label>New PIN</label><input name="a" type="password" inputmode="numeric" pattern="[0-9]{4,8}" required autocomplete="new-password"></div><div class="field"><label>Repeat PIN</label><input name="b" type="password" inputmode="numeric" pattern="[0-9]{4,8}" required autocomplete="new-password"></div><div class="actions"><button type="button" class="btn ghost" data-act="close">Cancel</button><button class="btn pri">Save PIN</button></div></form>`),
  removePin:()=>askConfirm('Remove PIN?','Anyone with this device will be able to open the app.','Remove PIN',()=>{S.settings.pinHash='';save();render(false);toast('PIN removed')}),
- exportData:()=>{download(`plotline-backup-${ymd()}.json`,JSON.stringify({app:'plotline',version:2,exported:new Date().toISOString(),data:S},null,1),'application/json');toast('Backup exported')},
+ exportData:()=>{download(`plotline-backup-${ymd()}.json`,JSON.stringify({app:'plotline',version:2,exported:new Date().toISOString(),data:{...S,settings:{...S.settings,pinHash:'',_ps:undefined,_pu:undefined}}},null,1),'application/json');toast('Backup exported')},
  /* 1.50.1: erasing also clears what lives beside the plan (conversations, canvases, boards, Picture of me, photo cache,
     the search index, other accounts' set-aside data) and the keys and sign-ins kept on this device. Downloaded AI models
     and voices stay: they hold nothing of yours. Then the app starts fresh. */
@@ -5400,7 +5443,7 @@ function seedDemo0(){const day=864e5;const mk=(o,done,ago)=>{const g=newGoal(o);
  try{const o=JSON.parse(localStorage.getItem('plotline.stAt')||'null');if(o)ST_SEEN=Math.max(ST_SEEN,o.t)}catch(e){}
  /* 1.9.0: notification replies no longer go to the journal; tidy away the ones earlier versions made (synced devices drop them too) */
  if(!S.settings.replyClean){S.dead=S.dead||{};S.entries=S.entries.filter(e=>{const r=e.type==='note'&&/^Reply to “/.test(e.title||'')&&!e.html&&!e.img&&!e.mood;if(r){S.dead[e.id]=Date.now();DIRTY=true}return!r});S.settings.replyClean=1;save()}
- primeSig();
+ primeSig();S_OK();
  applyTheme();buildChrome();applyFocus(false);syncNative();pushWidget();scopeSync();fbNative();if(lockActive())showLock();try{if(NATIVE&&NATIVE.setSecure&&lockSet().on&&lockSet().secure)NATIVE.setSecure(true)}catch(e){}if(typeof landHere==='function')landHere();route();if(!TALK&&S.settings.onboarded&&S.settings.tourOffered&&!S.settings.setupDone&&!navigator.webdriver)setTimeout(()=>{if(!LOCKED&&!$('#sheet').classList.contains('on'))setupFlow()},1800);applyWidgetQueue();if(TALK)talkBoot();else if(!S.settings.onboarded)welcome();else if(!S.settings.tourOffered&&!S.settings.pinHash)setTimeout(tourPrompt,1400);buildTimer();tick();setInterval(tick,20000);setInterval(paintTimer,1000);
  try{matchMedia('(prefers-color-scheme: light)').addEventListener('change',()=>{if(S.settings.matchSystem)applyTheme(true)})}catch(e){}
  if(syncOn()){if(sessionStorage.getItem('plotline.after')==='sync'){sessionStorage.removeItem('plotline.after');connectDrive()}else syncNow(false)}
@@ -5778,7 +5821,7 @@ function insEngineHTML(){const s=insSet();return`<div class="ins-eng" id="askSet
  <div class="field"><label>Answer engine</label><div class="radios sm wrap">${Object.entries(ENG_N).map(([k,n])=>`<label><input type="radio" name="insE" data-ins="engine" value="${k}" ${s.engine===k?'checked':''}><span>${n}</span></label>`).join('')}</div></div>
  ${s.engine==='local'?`<p class="small muted">An open-source model runs ${NAT_OK()?'natively on this phone with llama.cpp':'inside '+(NATIVE?'the app':'this browser')+' with llama.cpp (wllama)'}. It downloads once, then works offline. Nothing leaves this device. Smaller models answer faster; bigger ones understand more.</p><div class="field"><label>Model</label><select data-ins="llm">${LLMS.map(([k,n])=>`<option value="${k}" ${llmOf(s.llm)[0]===k?'selected':''}>${n}${NAT_OK()&&natHave(llmOf(k))||isLrtM(llmOf(k))&&(s.dl||{})[k]?' · downloaded':''}${isLrtM(llmOf(k))&&!NAT_OK()&&LRT_OK===false?' · needs a GPU':''}</option>`).join('')}</select></div>${isLrtM(llmOf(s.llm))?`<p class="small muted">${lrtOn()?'Gemma 4 runs on this device’s GPU with Google’s LiteRT-LM, the fastest way to run it.':'Gemma 4 runs on this phone’s CPU with llama.cpp.'}</p>${NAT_OK()&&LRT_OK?`<label class="sw"><span>Run Gemma on the GPU<small>Much faster answers with Google’s LiteRT-LM. Turn it off if answers come out garbled or the phone stutters.</small></span><input type="checkbox" data-ins="lgpu" ${s.lgpu?'checked':''}><i></i></label>`:''}`:''}${window.AIX?AIX.modelCard('set'):''}`:''}
  ${s.engine==='copy'?`<p class="small muted">You copy a ready-made prompt into Claude, ChatGPT, Gemini or any assistant. Plotlines itself sends nothing.</p>`:''}
- ${s.engine==='api'?`<p class="small muted">Any OpenAI-compatible server. Open-source models on your own computer with Ollama or LM Studio keep everything at home. The key stays on this device and is never synced or backed up.</p>
+ ${s.engine==='api'?`<p class="small muted">Any OpenAI-compatible server. Open-source models on your own computer with Ollama or LM Studio keep everything at home. The key stays on this device and, with sync on, in your own Drive’s hidden app folder so your other devices can use it. It’s never put in backups.</p>
   <div class="chips" style="margin:10px 0">${API_PRE.map(([n,u,m])=>`<button class="chip ${s.url===u?'on':''}" data-act="insApiPre" data-u="${u}" data-m="${m}">${n}</button>`).join('')}</div>
   <div class="field"><label for="insUrl">Server address</label><input id="insUrl" data-ins="url" value="${esc(s.url)}" placeholder="http://localhost:11434/v1" autocomplete="off" spellcheck="false"></div>
   <div class="field"><label for="insModel">Model</label><input id="insModel" data-ins="model" value="${esc(s.model)}" placeholder="llama3.2" autocomplete="off" spellcheck="false"></div>

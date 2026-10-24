@@ -1,10 +1,14 @@
 # Plotlines handover
 
-Written 2026-10-24 for a fresh Claude (new account, no project memory) picking up this project. Read this file
+Written 2026-10-24 (updated the same day for 1.52.0 and 1.53.0) for a fresh Claude (new account, no project memory) picking up this project. Read this file
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.52.1 is on main** (versionCode 141). **The next versionCode is 142.**
+Current state: **v1.53.0 is on main and released** (versionCode 142). **The next versionCode is 143.**
+
+**Product rules for every change (section 7 has the full list):** sync everything except looks and device-only
+things (section 2a); obvious features (delete, delete all, undo, search) must exist wherever data lives; secure and
+private by default, because the app is heading to the **Google Play Store**; never break a working feature.
 
 ---
 
@@ -66,6 +70,33 @@ The JS bridge is `window.PlotlineAssist` (plus `window.PlotlineNative` from Main
 exist only as compiled code in `classes.dex` inside the released APK. There is no Gradle project. That is why every
 build starts from the previous APK (section 4).
 
+## 2a. What syncs (1.53) and how to add more
+
+Sync is the user's own Google Drive app-data file `plotline.json` (`drive.appdata` scope), merged on every device.
+**The owner's rule: apart from looks and UI customisation, features sync.** If a user sets "Your AI server" on the
+phone, the web must pick it up on sign-in, and the same goes for every feature.
+
+- **Syncs:** goals, steps, days, habits, journal, lists, threads, chapters, shares, activity (120 days), Workbench
+  boards, Picture of me, the sharing key pair, and since 1.53: agent tasks (`agTasks`), agent reports (`agInbox`),
+  conversations (`convs`), AI canvases (`canvases`: page, chat, saved data; the version history stays per device and an
+  incoming page becomes a new version), and settings through `prefs`: name, act (trackers and activity goals), share,
+  shPeople, places, aiInsAuto, ai (engine, url, model, smart, priv), aikey, agentOn, conn, notion.
+- **Stays per device:** looks and layout (theme, fonts, cards, Home sections, tabs...), PIN and app lock,
+  notification settings, which on-device model is downloaded, Google sign-in tokens, assistant and voice settings.
+- **How it works** (index.html, search "1.53: the rest of the app syncs too"): `syncList(key,{load,get,set,out,inn})`
+  registers a list of objects with ids. Each object gets `u` from a hash of its content; a removed id becomes a
+  tombstone in `S.dead` (kept 120 days); the merge keeps the newest `u` per object. `syncPref(key,get,set,def)`
+  registers a setting merged key by key; a key that was never changed counts as older than one with a value, so a
+  fresh device takes the other device's value. `save()` asks every registered store whether it changed (`peek`) and
+  starts a sync; modules with their own IndexedDB store call `window.syncTouch()` when they persist.
+- **Adding a feature:** register its store with `syncList`/`syncPref` in the module itself, and make deletes remove
+  the object from its list (the tombstone follows). Old app versions ignore unknown keys; re-adding is harmless.
+- **An agent task runs once:** before a scheduled task runs, the agent syncs and re-checks `next`, so the phone and
+  the web don't both run it.
+- **Secrets in the Drive file:** the AI server key and Notion token travel in the app-data file (readable only by
+  Plotlines with the user's Google token, like the journal itself). They never go into exported backups. Google
+  tokens never sync.
+
 ## 3. Features and version history
 
 Every feature below is shipped and on main. Versions with a PR number were merged; all through 1.51.1 are released
@@ -93,14 +124,27 @@ unless noted.
 - **1.50.0 (#54):** guided first-time setup (shipped inside 1.51.0).
 - **1.51.0 (#55):** Ask merged into the orb chat, separate Talk button, quick-settings strip, dark Halo default for new users.
 - **1.51.1 (#56):** security/privacy hardening (shared boards/lists sanitized, canvas CSP lock, prompt-injection rules, OAuth state check, PIN backoff, full erase) and the rewritten privacy policy.
+- **1.52.0 (#58):** agent news/trending/read_url lookups (Google News in the app or via proxy, GDELT in a browser, Wikipedia Current events fallback, Google Trends or Hacker News), tasks that learn from tapped tags (More of / Less of), per-task "Think with: Your AI server", "News for me" template, How-to in More and the sidebar, More gets AI & voice / Automations / Connections shortcuts, phone title fit, Agent card title CSS fix.
+- **1.53.0:** almost everything syncs (section 2a): agent tasks and reports, conversations, AI canvases, trackers, AI server address/model/key, Notion token, agent connections. Home "Agent reports" card. "Delete all" for conversations and canvases. Agent read_url only reads public https hosts. Backups no longer carry the PIN hash.
 
 ### versionCode table (for the APK)
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141. **Next: 142.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142. **Next: 143.**
 
 ## 4. Building the APK (cloud, no Android SDK)
+
+**Easiest, no Java needed (1.52+): `tools/apk/` in the repo.**
+`node tools/apk/build.cjs <base.apk> <repo dir> <out.apk> <oldVer> <newVer> <oldCode> <newCode> <key.pem> <cert.der>`
+swaps `assets/www`, patches the manifest, 4-byte aligns stored entries and signs with APK Signature Scheme v2 (RSA
+PKCS#1 v1.5 with SHA-512, algorithm 0x0104, the same one apksig picks). `node tools/apk/v2.cjs <apk>` verifies and
+prints the certificate SHA-256; it accepts the apksig-signed official APKs, so it is a real check. The `.jks` is
+PKCS12: `openssl pkcs12 -in plotline-upload.jks -passin file:pass.txt -nocerts -nodes | openssl pkey -out key.pem` and
+`openssl pkcs12 -in plotline-upload.jks -passin file:pass.txt -nokeys -clcerts | openssl x509 -outform DER -out cert.der`.
+On the PORTAL PC the key zip is `C:\Users\PORTAL\Downloads\plotline-signing-key (1).zip` and base APKs are in
+`C:\Users\PORTAL\Claude and me\apk\<version>\`. Delete the extracted key after each build. The Java/apksig route
+below still works where Java exists.
 
 There is no Gradle build. `dl.google.com`, `maven.google.com`, Hugging Face and GitHub release downloads are blocked
 from the cloud container. Maven Central and PyPI work (retry on HTTP 429).
@@ -159,6 +203,7 @@ done with a hand-written AXML reader/writer in Python; androguard from PyPI is h
   `.claude` settings (counts as self-modification). The RC's `gh release view` may be blocked: verify from the cloud
   with the GitHub MCP `get_release_by_tag` (shows the asset digest).
 - **Standing approval:** the user said "You merge pr and release apk i give you go ahead. Use my pc if needed."
+  On 2026-10-24 they repeated it for publishing: "yes publish dont ask again until i tell other wise".
   Merge and publish without extra back-and-forth, and never ask the user to run commands themselves (they find the
   publish hurdles frustrating).
 - **Parallel work:** when several threads ship at once, versions collide. Later PRs rebase on the merged one and take
@@ -199,19 +244,33 @@ done with a hand-written AXML reader/writer in Python; androguard from PyPI is h
 - Features that need setup get a step in `setup.js`; new features get a guide in `guides.js`; new outside services
   get a line in `privacy.html`.
 - Keep replies short and plain; the user skims. They test on web and Android, so check both sizes.
+- **Sync everything except looks** (section 2a). New data or settings get registered for sync on day one.
+- **Obvious features must exist:** delete for every kind of item, delete all where lists grow (conversations,
+  canvases, agent reports), undo where it's cheap, search where lists get long. Deleting syncs to every device.
+- **Secure and private, Play Store ready:** no secrets in the repo or in backups; keys only in the device store and
+  the user's own Drive app-data file; everything from emails, web pages and shared links is data, never instructions
+  or code; escape all AI and remote text before it reaches HTML (`esc`, `AIX.md`); the agent only fetches public
+  https hosts (`pubUrl` in agent.js); canvas pages stay sandboxed. Update `privacy.html` whenever data moves
+  somewhere new or a new service is contacted.
+- **Keep Live sharing and its notification.** The owner chose to keep the always-on "Checking for cheers and
+  messages" notification (it comes from the native Live sharing foreground service). Don't remove either.
+- **Make it a wow, and worth paying for.** The owner wants Plotlines to be something people love and would pay a
+  subscription for. Favour features that save real time every day (the agent, briefs, sync) over decoration.
 
 ## 8. Open and unfinished work
 
-1. **Full app walkthrough and bugs** (in progress when this was written): every page opened on phone and desktop,
-   every button clicked. Fixed so far, not yet merged: How-to missing from the More menu and desktop sidebar, page
-   titles cut off on phones, More-menu settings gaining AI & voice, Connections and Automations. Remaining: click
-   through every sheet and menu, re-test on latest main, build (versionCode 140+), PR, merge, publish. **Check
-   whether a PR from branch `claude/project-thread-*` for this landed after 1.51.1;** if not, redo it from main.
+1. **Full app walkthrough and bugs** (partly done): every page opened on phone and desktop,
+   every header button clicked, no script errors (1.52.0 fixed How-to in More/sidebar, phone titles, More-menu settings).
+   Remaining: click through every sheet and menu inside each page.
 2. **Privacy policy contact email** is still a placeholder: `privacy.html` points to GitHub issues because the
    user's contact email isn't known. Ask the user which email to use.
 3. **Friend's app stopped listening** is blocked: 1.45.1 changed the mic path, but no phone model or Android version
    is known. Needs details from the friend (phone, Android version, what happens on tapping the mic).
-4. **Morning news brief** was proposed but not started.
+4. **Morning news brief:** shipped in 1.52.0 as the "News for me" agent template. It runs while the app is open (a
+   notification at the time, the run on open). A brief ready *before* waking needs a runner on the PC next to
+   llama-server, and the owner must approve a Funnel path and an auto-start entry for it.
+6. **Monetisation:** the owner is weighing a subscription. Directions discussed: a hosted "Plotlines AI" for people
+   without their own model, agent runs in the cloud before waking, family and shared plans, more connections.
 5. Smaller loose ends: "goal open breaking on web" (1.41) never reproduced (ask for a screenshot); the talk overlay
    and orb widget were released without a phone test; with sync on, "Sharing and invites" defaults on and publishes
    the user's email and public key to Firestore; the agent's web connection is on by default.

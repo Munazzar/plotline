@@ -523,13 +523,13 @@ window.HOWTO_GUIDES=[
  rel:['ai-setup']},
 
 /* ============================== Settings & more ============================== */
-{id:'sync',cat:'Settings & more',ic:'cloud',demo:1,title:'Sync with Google Drive',keys:'sync google drive backup devices phone web same data account sign in cloud',go:'settings/account',
+{id:'sync',cat:'Settings & more',ic:'cloud',demo:1,title:'Sync with Google Drive',keys:'sync google drive backup devices phone web same data account sign in cloud conversations canvas agent ai server settings',go:'settings/account',
  sum:'Keep your phone and the web in step through your own Google Drive.',
  steps:[{x:'Open Settings › You & sync.',d:[to('settings'),tap('.shub-r[href="#/settings/account"]')]},
   {x:'Tap “Connect Google Drive” and sign in.',d:[look('[data-act="syncConnect"]','',{ms:1500})]},
   {x:'Do the same on your other devices with the same Google account.',d:[W(1200)]},
   {x:'It syncs on its own. On a phone, pull down at the top of any page to sync now.',d:[W(1200)]}],
- tips:['Your plan goes to your own Drive, not to anyone else’s server.','If Google needs you to sign in again, a banner shows with one button.'],rel:['backup','use-web']},
+ tips:['Your plan goes to your own Drive, not to anyone else’s server.','What syncs: your plan, journal, lists, threads, boards, conversations, AI canvases, agent tasks and reports, trackers, and your AI server (address, model and key), so the web uses your PC’s AI the moment you sign in. Looks, PIN, notifications and downloaded models stay per device.','Delete something on one device and it goes everywhere.','If Google needs you to sign in again, a banner shows with one button.'],rel:['backup','use-web']},
 {id:'theme',cat:'Settings & more',ic:'palette',demo:1,title:'Change the theme and colours',keys:'theme dark light colours accent font text size look feel halo glass',go:'settings/look',
  sum:'Pick a theme, an accent colour, fonts and text size.',
  steps:[{x:'Open Settings › Look & feel.',d:[to('settings'),tap('.shub-r[href="#/settings/look"]')]},
