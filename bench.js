@@ -208,6 +208,22 @@ function commit(before){const b=WB.B,ch=diff(b,before);if(!ch.length)return fals
  WB.hist.push(ch);if(WB.hist.length>100)WB.hist.shift();WB.fut=[];changed();return true}
 function undo(){const ch=WB.hist.pop();if(!ch)return;applyCh(WB.B,ch,2);WB.fut.push(ch);changed()}
 function redo(){const ch=WB.fut.pop();if(!ch)return;applyCh(WB.B,ch,3);WB.hist.push(ch);changed()}
+/* 1.50.1: a board that comes from a link (or a file) is someone else's data, so only well-formed items get in: ids
+   and colours from a fixed set, numbers that are numbers, and strings only where the board keeps text (all escaped when
+   drawn). Anything else is dropped, so a crafted board can't slip markup or styles into the page. */
+const okId=k=>typeof k==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(k);
+const STRF={nodes:{text:4000},edges:{a:64,b:64,label:60},comments:{on:64,by:80,me:64,text:1000}};
+function cleanItem(k,id,v){if(!okId(id)||!v||typeof v!=='object')return null;const o={id},S_=STRF[k];
+ for(const[f,x]of Object.entries(v)){if(f==='id')continue;if(typeof x==='boolean'||typeof x==='number'&&isFinite(x))o[f]=x;else if(typeof x==='string'&&S_[f])o[f]=x.slice(0,S_[f])}
+ if(k==='nodes'){if(!TYPES[v.type]||!isFinite(+v.x)||!isFinite(+v.y))return null;o.type=v.type;o.x=+v.x;o.y=+v.y;o.w=+v.w||TYPES[v.type][1];o.h=+v.h||TYPES[v.type][2];o.color=COLORS[v.color]?v.color:'none';o.text=o.text||''}
+ if(k==='edges'&&(!okId(o.a)||!okId(o.b)))return null;
+ if(k==='comments'&&!okId(o.on))return null;
+ if(!isFinite(o.u))o.u=0;return o}
+function cleanBoard(r){const o={title:typeof r.title==='string'?r.title.slice(0,80):'',tu:+r.tu||0,dead:{},who:{}};
+ for(const k of KS){o[k]={};for(const[id,v]of Object.entries(r&&r[k]&&typeof r[k]==='object'?r[k]:{})){const c=cleanItem(k,id,v);if(c)o[k][id]=c}}
+ for(const[id,t]of Object.entries(r.dead||{}))if(okId(id)&&isFinite(t))o.dead[id]=+t;
+ for(const[id,w]of Object.entries(r.who||{}))if(okId(id)&&w&&typeof w==='object')o.who[id]={n:String(w.n||'').slice(0,40),t:+w.t||0};
+ return o}
 /* sync merge: last writer wins per item; tombstones beat older copies */
 function mergeInto(b,r){let ch=false;const dead=b.dead;
  for(const[k,v]of Object.entries(r.dead||{}))if(!(dead[k]>=v)){dead[k]=v;ch=true}
@@ -301,7 +317,7 @@ async function push(b){if(pushing){again=true;return}pushing=true;setSt('saving'
   throw new Error('Too many people saving at once, retrying')}
  catch(e){setSt('err',e.message||String(e))}finally{pushing=false;if(again){again=false;pushSoon(50)}}}
 async function pull(b,force){const d=await cget(b.cloud.doc);if(!d){b.cloud.gone=1;setSt('err','This board is no longer shared');return}
- if(!force&&d.ut===b.cloud.ut)return;const r=await decJ(b.cloud.key,d.enc);b.cloud.owner=d.owner;b.cloud.ut=d.ut;WB.lastRemote=now();
+ if(!force&&d.ut===b.cloud.ut)return;const r=cleanBoard(await decJ(b.cloud.key,d.enc)||{});b.cloud.owner=d.owner;b.cloud.ut=d.ut;WB.lastRemote=now();
  if(mergeInto(b,r)){persist();if(WB.B===b){if(WB.G||WB.edit)WB.pending=true;else draw()}}else drawWho();
  if(!b.ro&&(b.u||0)>(b.cloud.sent||0))pushSoon(300);setSt('ok')}
 /* the public view copy: a second doc under its own key, which only the owner's device may update */
@@ -825,8 +841,7 @@ Object.assign(FORM,{
  wbCom:f=>{const b=B(),on=[...WB.sel][0],t=f.text.value.trim();if(!on||!t)return;const nm=f.elements.namedItem('name');if(nm&&nm.value.trim()){S.settings.name=nm.value.trim().slice(0,40);save()}
   const before=snap(b),id=uid();b.comments[id]={id,on,by:who(),me:ME,text:t.slice(0,1000),t:now(),u:0};commit(before);panelDraw()}});
 FILE.wbImport=inp=>{const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(o.format!=='plotline-board'||typeof o.nodes!=='object')throw 0;
- const b=blank(String(o.title||'Imported board').slice(0,80));['nodes','edges','comments'].forEach(k=>{for(const[id,v]of Object.entries(o[k]||{}))if(v&&typeof v==='object'&&v.id===id)b[k][id]={...v,u:now()}});
- for(const id in b.nodes){const n=b.nodes[id];if(!TYPES[n.type]||!isFinite(n.x)||!isFinite(n.y))delete b.nodes[id];else{n.text=String(n.text||'').slice(0,4000);n.w=+n.w||TYPES[n.type][1];n.h=+n.h||TYPES[n.type][2];if(!COLORS[n.color])n.color='none'}}
+ const b=blank(String(o.title||'Imported board').slice(0,80)),c=cleanBoard(o);KS.forEach(k=>{for(const[id,v]of Object.entries(c[k]))if(o[k]&&o[k][id]&&o[k][id].id===id)b[k][id]={...v,u:now()}});
  LIST.unshift(b);persist();toast('Imported');go('bench/'+b.id)}catch(e){toast('That isn’t a Plotlines board file')}};r.readAsText(f);inp.value=''};
 
 /* ---------------- wiring into the app ---------------- */

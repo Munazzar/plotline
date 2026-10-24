@@ -60,7 +60,7 @@ function dataNow(){const D=plotData(),hab=D.habits.map(h=>h.title).slice(0,25),g
 /* ---------------- the page in its frame ---------------- */
 const J=o=>JSON.stringify(o).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
 /* runs first inside the frame: the data, a localStorage that's kept with the canvas, and errors reported back */
-function boot(c,data,live,o){return`<script>window.PLOT_DATA=${data?J(data):'null'};(function(){var S=${J(c.store||{})},live=${live?1:0},send=function(){if(live)try{parent.postMessage({cvs:${J(c.id)},store:S},'*')}catch(e){}};
+function boot(c,data,live,o){return`<script>(function(){['PlotlineNative','PlotlineAssist','PlotTalk'].forEach(function(k){try{delete window[k]}catch(e){}try{if(window[k])window[k]=undefined}catch(e){}})})();window.PLOT_DATA=${data?J(data):'null'};(function(){var S=${J(c.store||{})},live=${live?1:0},send=function(){if(live)try{parent.postMessage({cvs:${J(c.id)},store:S},'*')}catch(e){}};
 var L={getItem:function(k){k=String(k);return Object.prototype.hasOwnProperty.call(S,k)?String(S[k]):null},setItem:function(k,v){S[String(k)]=String(v);send()},removeItem:function(k){delete S[String(k)];send()},clear:function(){for(var k in S)delete S[k];send()},key:function(i){return Object.keys(S)[i]||null}};
 Object.defineProperty(L,'length',{get:function(){return Object.keys(S).length}});try{Object.defineProperty(window,'localStorage',{value:L,configurable:true})}catch(e){}
 var E=[],chk=${J(o&&o.chk||'')},post=function(m){try{parent.postMessage(m,'*')}catch(x){}};
@@ -70,7 +70,13 @@ window.addEventListener('unhandledrejection',function(e){bad('Unhandled error: '
 /* a health check once the page has settled: did it throw, and does it show anything? */
 if(chk)window.addEventListener('load',function(){setTimeout(function(){var b=document.body||document.documentElement,t=(b.innerText||'').trim().length,m=document.querySelectorAll('canvas,svg,img,video,iframe,input,button').length,v=0;
  try{var r=b.getBoundingClientRect();v=r.width*r.height}catch(x){}post({cvsChk:chk,errs:E,txt:t,media:m,area:v})},900)});})();</`+`script>`}
-function docOf(c,o={}){const h=o.html!=null?o.html:(c.html||''),b=boot(c,c.data&&(o.data!==false)?plotData():null,!o.file&&!o.chk,o);
+/* 1.50.1: a page that reads your data is kept off the network. It gets PLOT_DATA only if its code uses it, and then
+   a Content Security Policy lets it load code, styles and fonts from jsDelivr (and Google Fonts) and nothing else:
+   no fetch to other sites, no outside images, no frames, no forms. The app's Android bridges are removed from every
+   frame first, so page code can't reach them. */
+const LOCK=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src data: blob:; media-src data: blob:; connect-src data: blob: https://cdn.jsdelivr.net; worker-src blob: https://cdn.jsdelivr.net; frame-src 'none'; form-action 'none'; base-uri 'none'">`;
+const usesData=h=>/PLOT_DATA/.test(h);
+function docOf(c,o={}){const h=o.html!=null?o.html:(c.html||''),withData=!!(c.data&&o.data!==false&&usesData(h)),b=(withData?LOCK:'')+boot(c,withData?plotData():null,!o.file&&!o.chk,o);
  if(/<head[^>]*>/i.test(h))return h.replace(/<head[^>]*>/i,m=>m+b);if(/<html[^>]*>/i.test(h))return h.replace(/<html[^>]*>/i,m=>m+'<head>'+b+'</head>');return'<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+b+h}
 const SANDBOX='allow-scripts allow-forms allow-modals allow-popups allow-downloads';
 let FR_ERR=null;
@@ -111,7 +117,7 @@ THE PAGE
 - An app can remember things (its items, settings, scores) with localStorage; it is kept with the canvas.
 ${c.data?`
 THE USER'S DATA
-Only when they ask for something built from their data (a report, chart, summary, tracker...): window.PLOT_DATA is already set on the page before your script runs. Read it in your script and compute everything from it. Never type their numbers, names or entries into the page by hand, so the page stays right as their data changes. Handle empty arrays gracefully.
+Only when they ask for something built from their data (a report, chart, summary, tracker...): window.PLOT_DATA is already set on the page before your script runs. Read it in your script and compute everything from it. Never type their numbers, names or entries into the page by hand, so the page stays right as their data changes. A page that reads PLOT_DATA is kept offline to protect their data: only libraries from cdn.jsdelivr.net (and Google Fonts) load, and fetch, outside images, iframes and forms are blocked, so don't use them there. Handle empty arrays gracefully.
 ${DATA_SHAPE}
 ${dataNow()}`:`
 The user turned off "Use my data" for this canvas: window.PLOT_DATA is null. Don't build from their Plotlines data.`}

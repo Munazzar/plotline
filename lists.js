@@ -26,6 +26,15 @@ const ST=new Map(),st=L=>{let x=ST.get(L.id);if(!x){x={};ST.set(L.id,x)}return x
 const payload=L=>({k:'list',title:L.title,emoji:L.emoji,due:L.due,color:L.color||'',img:L.img||'',mu:L.mu,items:L.items});
 const linkOf=L=>`${C().webBase()}#/list/j~${L.cloud.doc}~${C().toUrl(L.cloud.key)}`;
 const ro=L=>!!(L.cloud&&!C().signedIn());
+/* 1.50.1: a shared list comes from other people, so only well-formed fields get in: item ids from a fixed alphabet,
+   dates that are dates, a colour from the app's set, a cover that is an inline picture, numbers and true/false values. */
+const okId=k=>typeof k==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(k),okDate=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)?d:'';
+function cleanList(r){if(!r||typeof r!=='object')return{};const items={};
+ for(const[id,v]of Object.entries(r.items&&typeof r.items==='object'?r.items:{})){if(!okId(id)||!v||typeof v!=='object')continue;const o={id};
+  for(const[f,x]of Object.entries(v))if(f!=='id'&&(typeof x==='boolean'||typeof x==='number'&&isFinite(x)))o[f]=x;
+  o.t=String(v.t||'').slice(0,500);o.due=okDate(v.due);if(v.dt!=null)o.dt=okDate(v.dt);items[id]=o}
+ return{k:r.k,title:String(r.title||'').slice(0,120),emoji:String(r.emoji||'').slice(0,16),due:okDate(r.due),color:AREA_IDS.includes(r.color)?r.color:'',
+  img:typeof r.img==='string'&&/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(r.img)?r.img:'',mu:+r.mu||0,items}}
 function merge(L,r){let ch=false;for(const[id,it]of Object.entries(r.items||{})){const a=L.items[id];if(!a||(it.u||0)>(a.u||0)){L.items[id]=it;ch=true}}
  if((r.mu||0)>(L.mu||0)){L.title=r.title;L.emoji=r.emoji;L.due=r.due||'';L.color=r.color||'';L.img=r.img||'';L.mu=r.mu;ch=true}return ch}
 let pT={};function pushSoon(L,d=250){clearTimeout(pT[L.id]);pT[L.id]=setTimeout(()=>push(L),d)}
@@ -34,7 +43,7 @@ async function push(L){const s=st(L);if(!L.cloud||ro(L))return;if(s.pushing){s.a
    if(r.conflict){await pull(L,true);continue}L.cloud.ut=r.ut;L.cloud.sent=now();s.pushedAt=now();save();paintSt(L,'ok');if(window.rtPing)rtPing(L.cloud.doc);return}throw new Error('Too many people saving at once, retrying')}
  catch(e){paintSt(L,'err');toast(esc(e.message||String(e)))}finally{s.pushing=0;if(s.again){s.again=0;pushSoon(L,50)}}}
 async function pull(L,force){const d=await C().cget(L.cloud.doc);if(!d){L.cloud.gone=1;save();paintSt(L,'err');return}
- if(!force&&d.ut===L.cloud.ut)return;const r=await decJ(L.cloud.key,d.enc);L.cloud.owner=d.owner;L.cloud.ut=d.ut;st(L).remote=now();
+ if(!force&&d.ut===L.cloud.ut)return;const r=cleanList(await decJ(L.cloud.key,d.enc));L.cloud.owner=d.owner;L.cloud.ut=d.ut;st(L).remote=now();
  const ch=merge(L,r);const mineNewer=Object.values(L.items).some(i=>(i.u||0)>(L.cloud.sent||0))||(L.mu||0)>(L.cloud.sent||0);
  if(ch){save();if(cur.p==='list'&&cur.id===L.id||cur.p==='lists')repaint()}
  if(mineNewer&&!ro(L))pushSoon(L,200);paintSt(L,'ok')}
@@ -76,7 +85,7 @@ function showLink(L){const url=linkOf(L);openSheet(`<div class="data">Share</div
  <div class="wb-row"><input id="lslink" readonly value="${esc(url)}" aria-label="Link"><button class="btn sm" data-act="lsCopy">${ic('copy')}Copy</button></div>
  <div class="actions"><button class="btn pri" data-act="lsSend">${ic('send')}Send…</button></div>`)}
 async function joinData(doc,k){const have=lists().find(l=>l.cloud&&l.cloud.doc===doc);if(have)return have.id;
- const d=await C().cget(doc);if(!d)throw new Error('That list isn’t shared any more');const r=await decJ(k,d.enc);if(!r||r.k!=='list')throw new Error('That link isn’t a list');
+ const d=await C().cget(doc);if(!d)throw new Error('That list isn’t shared any more');const r=cleanList(await decJ(k,d.enc));if(!r||r.k!=='list')throw new Error('That link isn’t a list');
  const L={id:uid(),title:r.title||'Shared list',emoji:r.emoji||'📝',due:r.due||'',color:r.color||'',img:r.img||'',items:r.items||{},mu:r.mu||0,u:now(),created:now(),cloud:{doc,key:k,owner:d.owner,ut:d.ut,sent:now()}};
  lists().unshift(L);save();st(L).remote=now();return L.id}
 async function join(doc,key){try{const id=await joinData(doc,C().fromUrl(key));history.replaceState(null,'','#/list/'+id);cur.id=id;render(false)}
