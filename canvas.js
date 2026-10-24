@@ -60,15 +60,28 @@ function dataNow(){const D=plotData(),hab=D.habits.map(h=>h.title).slice(0,25),g
 /* ---------------- the page in its frame ---------------- */
 const J=o=>JSON.stringify(o).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
 /* runs first inside the frame: the data, a localStorage that's kept with the canvas, and errors reported back */
-function boot(c,data,live){return`<script>window.PLOT_DATA=${data?J(data):'null'};(function(){var S=${J(c.store||{})},live=${live?1:0},send=function(){if(live)try{parent.postMessage({cvs:${J(c.id)},store:S},'*')}catch(e){}};
+function boot(c,data,live,o){return`<script>window.PLOT_DATA=${data?J(data):'null'};(function(){var S=${J(c.store||{})},live=${live?1:0},send=function(){if(live)try{parent.postMessage({cvs:${J(c.id)},store:S},'*')}catch(e){}};
 var L={getItem:function(k){k=String(k);return Object.prototype.hasOwnProperty.call(S,k)?String(S[k]):null},setItem:function(k,v){S[String(k)]=String(v);send()},removeItem:function(k){delete S[String(k)];send()},clear:function(){for(var k in S)delete S[k];send()},key:function(i){return Object.keys(S)[i]||null}};
 Object.defineProperty(L,'length',{get:function(){return Object.keys(S).length}});try{Object.defineProperty(window,'localStorage',{value:L,configurable:true})}catch(e){}
-window.addEventListener('error',function(e){if(live)try{parent.postMessage({cvs:${J(c.id)},err:String(e.message||'Script error')+(e.lineno?' (line '+e.lineno+')':'')},'*')}catch(x){}});})();</`+`script>`}
-function docOf(c,o={}){const h=c.html||'',b=boot(c,c.data&&(o.data!==false)?plotData():null,!o.file);
+var E=[],chk=${J(o&&o.chk||'')},post=function(m){try{parent.postMessage(m,'*')}catch(x){}};
+var bad=function(m){m=String(m||'Script error');if(E.length<5)E.push(m);if(live)post({cvs:${J(c.id)},err:m})};
+window.addEventListener('error',function(e){if(e.target&&e.target!==window&&(e.target.src||e.target.href))bad('Couldn’t load '+(e.target.src||e.target.href));else bad(String(e.message||'Script error')+(e.lineno?' (line '+e.lineno+')':''))},true);
+window.addEventListener('unhandledrejection',function(e){bad('Unhandled error: '+String(e.reason&&e.reason.message||e.reason))});
+/* a health check once the page has settled: did it throw, and does it show anything? */
+if(chk)window.addEventListener('load',function(){setTimeout(function(){var b=document.body||document.documentElement,t=(b.innerText||'').trim().length,m=document.querySelectorAll('canvas,svg,img,video,iframe,input,button').length,v=0;
+ try{var r=b.getBoundingClientRect();v=r.width*r.height}catch(x){}post({cvsChk:chk,errs:E,txt:t,media:m,area:v})},900)});})();</`+`script>`}
+function docOf(c,o={}){const h=o.html!=null?o.html:(c.html||''),b=boot(c,c.data&&(o.data!==false)?plotData():null,!o.file&&!o.chk,o);
  if(/<head[^>]*>/i.test(h))return h.replace(/<head[^>]*>/i,m=>m+b);if(/<html[^>]*>/i.test(h))return h.replace(/<html[^>]*>/i,m=>m+'<head>'+b+'</head>');return'<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+b+h}
 const SANDBOX='allow-scripts allow-forms allow-modals allow-popups allow-downloads';
 let FR_ERR=null;
-addEventListener('message',e=>{const d=e.data;if(!d||!d.cvs)return;const fr=[...document.querySelectorAll('iframe.cvs-fr')].find(f=>f.contentWindow===e.source);if(!fr||fr.dataset.id!==d.cvs)return;const c=get(d.cvs);if(!c)return;
+/* Before saying a version is ready, run it once in a hidden frame and see that it loads, doesn't throw, and shows something. */
+const CHK=new Map();
+function check(c,html){return new Promise(res=>{const id=uid(),f=document.createElement('iframe');let done=false;
+ const end=r=>{if(done)return;done=true;CHK.delete(id);clearTimeout(t);f.remove();res(r)};
+ CHK.set(id,d=>end({errs:d.errs||[],blank:!d.txt&&!d.media,ok:true}));const t=setTimeout(()=>end({errs:[],blank:false,ok:false,slow:true}),9000);
+ f.setAttribute('sandbox',SANDBOX);f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-10000px;top:0;width:390px;height:700px;border:0;opacity:0;pointer-events:none';
+ f.srcdoc=docOf(c,{html,chk:id});document.body.appendChild(f)})}
+addEventListener('message',e=>{const d=e.data;if(d&&d.cvsChk&&CHK.has(d.cvsChk)){CHK.get(d.cvsChk)(d);return}if(!d||!d.cvs)return;const fr=[...document.querySelectorAll('iframe.cvs-fr')].find(f=>f.contentWindow===e.source);if(!fr||fr.dataset.id!==d.cvs)return;const c=get(d.cvs);if(!c)return;
  if(d.store&&typeof d.store==='object'){c.store=d.store;persist()}
  if(d.err){FR_ERR={id:c.id,v:c.vi,x:tr(d.err,200)};errPaint()}});
 
@@ -76,7 +89,7 @@ addEventListener('message',e=>{const d=e.data;if(!d||!d.cvs)return;const fr=[...
 const SYS=c=>`You are ${nm()}'s AI canvas inside the Plotlines app. You build and change one web page at a time together with the user: reports and dashboards from their own data, small apps and tools, websites, and designs like posters, cards or slides. Work step by step: do what they ask now, keep everything else as it is, and end with one short line suggesting a next step when it helps.
 
 HOW TO ANSWER
-Start with one or two short sentences saying what you did, in plain words. Then give either:
+Give the code first, then end with one or two short sentences saying what changed, in plain words (the app checks the page runs before showing them). The code is either:
 A) the whole page, in one block:
 \`\`\`html
 <!doctype html>
@@ -104,7 +117,7 @@ ${dataNow()}`:`
 The user turned off "Use my data" for this canvas: window.PLOT_DATA is null. Don't build from their Plotlines data.`}
 ${window.AIX?AIX.safety():''}`;
 /* earlier turns, without their code: the current page is always sent in full instead */
-function history(c){return c.msgs.filter(m=>!m.err).slice(-8).map(m=>({role:m.r==='u'?'user':'assistant',content:m.r==='u'?m.x:(m.x||'(updated the page)')+(m.v!=null?'\n(page updated)':'')}))}
+function history(c){return c.msgs.filter(m=>!m.err&&m.st!=='retry'&&m.st!=='stop').slice(-8).map(m=>({role:m.r==='u'?'user':'assistant',content:m.r==='u'?m.x:(m.x||'(updated the page)')+(m.v!=null?'\n(page updated)':'')}))}
 function userMsg(c,q){const n=c.ver.length;return(c.html?`CURRENT PAGE (version ${n}):\n\`\`\`html\n${c.html}\n\`\`\`\n\n`:'There is no page yet.\n\n')+'REQUEST: '+q}
 
 /* reading the answer */
@@ -132,9 +145,10 @@ function live(raw){const s=unthink(raw),i=s.search(/```|<{5,9} ?SEARCH|<!doctype
    some of the answer has arrived, ask the model to carry on from the exact point it stopped and join the pieces,
    up to 4 times. A drop before anything arrived is tried once more. */
 const CONT='Your last reply was cut off by a dropped connection. Continue it from exactly the last character you sent: no repeats, no preamble, no new code fence, just the rest.';
-async function stream(msgs,ctl){let tries=0,cold=0;
+const MORE='Your last reply stopped before it was finished. Continue it from exactly the last character you sent: no repeats, no preamble, no new code fence, just the rest, and close any open code block.';
+async function stream(msgs,ctl,more){let tries=0,cold=0;
  for(;;){const base=RUN.out;let got='';RUN.think='';
-  const ask=base?[...msgs,{role:'assistant',content:base},{role:'user',content:CONT}]:msgs;
+  const ask=base?[...msgs,{role:'assistant',content:base},{role:'user',content:more?MORE:CONT}]:msgs;
   try{await AIX.chat(ask,t=>{if(RUN&&RUN.ctl===ctl){got+=t;RUN.out=base?join(base,got):got;livePaint()}},{max_tokens:planEngine()==='api'?16000:3000,temperature:.35,ctl,reading:'Reading the canvas…',onThink:t=>{if(RUN&&RUN.ctl===ctl){RUN.think+=t;livePaint()}}});return}
   catch(e){if(ctl.signal.aborted||planEngine()!=='api'||!/network|fetch|load|reset|abort|terminated|stream/i.test(String(e&&e.message||e)))throw e;
    if(RUN.out){if(++tries>4)throw e}else if(++cold>1)throw e;
@@ -153,34 +167,52 @@ async function wake(on){try{if(on){if(!WL&&navigator.wakeLock)WL=await navigator
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&RUN)wake(true)});
 
 let RUN=null;
-/* pick a dropped answer up where it stopped */
+/* pick a dropped or cut-off answer up where it stopped */
 function resume(c,m){const part=m.part;delete m.part;touch(c);return send(c,m.q,{retry:userMsg(c,m.q),part})}
+/* is the answer unfinished? a code block that never closed, a page without its end, or an edit block missing its end */
+function cutOff(raw){const s=unthink(raw),fences=(s.match(/```/g)||[]).length,lastS=s.lastIndexOf('<<<<<<<'),lastR=s.lastIndexOf('>>>>>>>');
+ return fences%2===1||/<!doctype html|<html[\s>]/i.test(s)&&!/<\/html>/i.test(s)||lastS>lastR}
+const CLAIM=/\b(i'?ve|i have|i)\s+(created|built|made|added|updated|changed|redesigned|rewrote|rebuilt|fixed|improved|moved|removed|replaced|applied)\b|\b(here'?s|here is) (the|your) (updated|new)\b|\bdone\b/i;
+const say=(c,m)=>{c.msgs.push({id:uid(),t:Date.now(),r:'a',...m});touch(c)};
 async function send(c,q,o={}){if(RUN)return toast('Still working on the last one');if(!window.AIX||!AIX.ready())return toast('Set up the AI first in Settings › AI & voice');
- const last=c.msgs[c.msgs.length-1];if(!o.retry&&last&&last.part&&/^\s*(continue|go on|keep going|carry on|resume)\W*$/i.test(q)){c.msgs.push({id:uid(),r:'u',x:q,t:Date.now()});return resume(c,last)}
- const blk=AIX.block(q);if(blk){c.msgs.push({id:uid(),r:'u',x:q,t:Date.now()},{id:uid(),r:'a',x:blk,t:Date.now()});touch(c);return logPaint()}
+ const last=c.msgs[c.msgs.length-1];if(!o.retry&&last&&last.part&&/^\s*(continue|go on|keep going|carry on|resume|finish( it)?)\W*$/i.test(q)){c.msgs.push({id:uid(),r:'u',x:q,t:Date.now()});return resume(c,last)}
+ const blk=AIX.block(q);if(blk){c.msgs.push({id:uid(),r:'u',x:q,t:Date.now()});say(c,{x:blk});return logPaint()}
  if(!o.retry)c.msgs.push({id:uid(),r:'u',x:q,t:Date.now()});if(c.msgs.length>MAXM)c.msgs=c.msgs.slice(-MAXM);
  if(!c.named&&!c.html&&c.msgs.filter(m=>m.r==='u').length===1)c.title=tr(q,48);
- const ctl=new AbortController();RUN={id:c.id,ctl,out:o.part||'',t:Date.now()};touch(c);if(TAB==='code')TAB='view';paint();
+ const gen=c.gen=(c.gen||0)+1,live_=()=>CS.includes(c)&&c.gen===gen;/* deleted or reset meanwhile: drop the result quietly */
+ const ctl=new AbortController();RUN={id:c.id,ctl,out:o.part||'',t:Date.now(),phase:'ask'};touch(c);if(TAB==='code')TAB='view';paint();
  const msgs=[{role:'system',content:SYS(c)},...history(c).slice(0,o.retry?undefined:-1),{role:'user',content:o.retry?o.retry:userMsg(c,q)}];
- let err='';wake(true);
- try{await stream(msgs,ctl)}
+ let err='',cuts=0;wake(true);
+ try{await stream(msgs,ctl);
+  /* ran out of room mid-page (max tokens or context): ask it to finish, twice at most */
+  while(!ctl.signal.aborted&&RUN&&RUN.out&&cutOff(RUN.out)&&cuts<2){cuts++;RUN.more=cuts;livePaint();await stream(msgs,ctl,true)}}
  catch(e){if(!ctl.signal.aborted)err=netErr(e,RUN)}
  finally{wake(false)}
- const raw=RUN?RUN.out:'';RUN=null;
- if(err){c.msgs.push({id:uid(),r:'a',x:err,err:1,t:Date.now(),...(raw.trim()?{part:raw,q}:{})});touch(c);return paint()}
- if(ctl.signal.aborted&&!raw.trim()){touch(c);return paint()}
+ const R=RUN||{},raw=R.out||'';
+ if(!live_()){RUN=null;return}
+ const done=x=>{RUN=null;say(c,x);paint()};
+ if(err)return done({x:err,err:1,...(raw.trim()?{part:raw,q}:{})});
+ if(ctl.signal.aborted)return done({x:raw.trim()?'Stopped. The page wasn’t changed.':'Stopped before the AI wrote anything. The page wasn’t changed.',st:'stop',...(raw.trim()?{part:raw,q}:{})});
+ if(!raw.trim())return done(R.think?{x:'The AI spent its whole answer thinking and didn’t write anything, so the page wasn’t changed. Try again, or turn Thinking off.',err:1}:{x:'The AI sent back an empty answer, so the page wasn’t changed. Try again.',err:1});
+ if(cutOff(raw))return done({x:`The AI’s answer was cut off before the page was finished${(raw.match(/\n/g)||[]).length>20?` (about ${raw.split('\n').length} lines in)`:''}, so the page wasn’t changed. This usually means the model ran out of room: ask for the change in smaller steps, or give your server a bigger context.`,err:1,part:raw,q});
  const P=parse(raw);let html=P.html,note=P.note;
  if(!html&&P.edits.length){html=applyEdits(c.html||'',P.edits);
   if(html==null){/* the edit didn't line up with the page: ask once for the whole page instead */
-   if(!o.retry&&!ctl.signal.aborted){c.msgs.push({id:uid(),r:'a',x:(note?note+'\n\n':'')+'That change didn’t line up with the page, so I’m writing the whole page again.',t:Date.now(),sys:1});touch(c);
+   if(!o.retry){RUN=null;say(c,{x:'The change didn’t line up with the page, so the AI is writing the whole page again.',st:'retry'});
     return send(c,q,{retry:userMsg(c,q)+'\n\nSend the whole updated page as one ```html block.'})}
-   c.msgs.push({id:uid(),r:'a',x:'I couldn’t apply that change. Try asking again, maybe in smaller steps.',err:1,t:Date.now()});touch(c);return paint()}}
- if(ctl.signal.aborted&&html&&!/<\/html>\s*$/i.test(html))html='';/* a stopped page is half a page: keep the last whole one */
- const m={id:uid(),r:'a',x:note||(html?'Done.':tr(unthink(raw),2000)||'The AI didn’t answer. Try again.'),t:Date.now()};
- if(html&&html!==c.html){commit(c,html,note||q);m.v=c.vi;FR_ERR=null}
- c.msgs.push(m);touch(c);
- if(window.AIX&&AIX.care){const care=AIX.care(q,m.x);if(care)m.x+='\n\n'+care}
- if(html&&TAB==='chat'&&!wide())TAB='view';paint();if(html&&cur.p==='canvas'&&cur.id!==c.id)toast(`“${esc(tr(c.title,40))}” is ready`)}
+   return done({x:'The AI’s change didn’t fit the page, even on a second try, so nothing was changed. Try asking in smaller steps.',err:1})}}
+ if(!html){/* a plain answer: fine for a question, but say so when it reads as if it changed something */
+  const care=window.AIX&&AIX.care?AIX.care(q,note):'';const claims=CLAIM.test(note)&&!/\?\s*$/.test(note);
+  return done({x:(note||tr(unthink(raw),2000))+(care?'\n\n'+care:''),st:claims?'none':''})}
+ if(html===c.html)return done({x:note||'',st:'same'});
+ /* a new version: run it once before calling it ready */
+ RUN.phase='check';livePaint();const H=await check(c,html);
+ if(!live_()){RUN=null;return}
+ commit(c,html,note||q);FR_ERR=null;const v=c.vi;
+ const m={x:note||'',v,st:H.errs.length?'err':H.blank?'blank':H.slow?'slow':'ok',...(H.errs.length?{chk:tr(H.errs[0],200)}:{})};
+ if(m.st==='err')FR_ERR={id:c.id,v,x:m.chk};
+ done(m);if(m.st!=='err'&&TAB==='chat'&&!wide()){TAB='view';paint()}
+ if(cur.p!=='canvas'||cur.id!==c.id)toast(m.st==='ok'?`“${esc(tr(c.title,40))}” is ready`:`“${esc(tr(c.title,40))}” needs a look`)}
 
 /* ---------------- the pages ---------------- */
 let TAB='chat',FULL=false;
@@ -196,10 +228,23 @@ function vList(){return`<header class="ph"><div><h1>AI canvas</h1><div class="da
  <div class="cvs-ideas rv">${IDEAS.map(([t,k])=>`<button class="cvs-idea" data-act="cvsIdea" data-q="${esc(t)}">${ic(KIND_IC[k],'ico-s')}<span>${esc(t)}</span></button>`).join('')}</div>
  ${CS.length?`<h4 class="cv-g">Your canvases</h4><div class="cvs-grid rv">${CS.map(c=>`<button class="cvs-card" data-act="cvsOpen" data-id="${c.id}"><span class="cvs-thumb">${c.html?ic('cvs'):ic('ai')}</span><span class="cvs-cb"><b>${esc(c.title)}</b><small>${c.ver.length?`${c.ver.length} version${c.ver.length===1?'':'s'}`:'Nothing built yet'} · ${ago(c.t1)}</small></span>${RUN&&RUN.id===c.id?'<i class="cvs-dot" title="Working"></i>':''}</button>`).join('')}</div>`:''}
  <p class="small muted me-priv">${ic('lock','ico-s')} Canvases are kept on this device. Pages run in a closed box: they can read a snapshot of your data when you allow it, and can’t change anything in the app.${planEngine()==='api'?' Your requests and the page go to the AI server you picked.':''}</p>`}
+const md_=x=>window.AIX&&AIX.md?AIX.md(x):esc(x);
+function stHTML(c,m){const V=`Version ${(m.v??0)+1}`,ok=c.ver[m.v];switch(m.st){
+ case'ok':return`<p class="cvs-s ok">${ic('check','ico-s')}${V} is ready</p>`;
+ case'slow':return`<p class="cvs-s ok">${ic('check','ico-s')}${V} is saved. It was still loading when checked, so look it over.</p>`;
+ case'blank':return`<p class="cvs-s warn">${ic('flag','ico-s')}${V} is saved, but the page shows nothing.</p>${ok?`<div class="cvs-sa"><button class="btn sm" data-act="cvsFixMsg" data-id="${c.id}" data-k="blank">Fix it</button>${m.v>0?`<button class="btn sm ghost" data-act="cvsVer" data-id="${c.id}" data-v="${m.v-1}">Go back to version ${m.v}</button>`:''}</div>`:''}`;
+ case'err':return`<p class="cvs-s warn">${ic('flag','ico-s')}${V} is saved, but it hits an error when it runs: ${esc(m.chk||'')}</p>${ok?`<div class="cvs-sa"><button class="btn sm" data-act="cvsFixMsg" data-id="${c.id}" data-k="err" data-x="${esc(m.chk||'')}">Fix it</button>${m.v>0?`<button class="btn sm ghost" data-act="cvsVer" data-id="${c.id}" data-v="${m.v-1}">Go back to version ${m.v}</button>`:''}</div>`:''}`;
+ case'same':return`<p class="cvs-s">${ic('x','ico-s')}The AI’s answer left the page exactly as it was, so there’s no new version.</p>`;
+ case'none':return`<p class="cvs-s warn">${ic('flag','ico-s')}The AI described a change but didn’t send any code, so the page wasn’t changed. Ask again, or say “send the whole page”.</p>`;
+ case'stop':case'retry':return'';}return''}
 function msgHTML(c,m){if(m.r==='u')return`<div class="cv-q"><p>${esc(m.x).replace(/\n/g,'<br>')}</p></div>`;
- return`<div class="cv-a${m.err?' cvs-err':''}"><span class="cv-av" aria-hidden="true"></span><div>${m.err?`<p class="small err">${esc(m.x)}</p>${m.part&&c.msgs[c.msgs.length-1]===m?`<button class="btn sm pri cvs-res" data-act="cvsResume" data-id="${c.id}" data-m="${m.id}">${ic('play')}Continue where it stopped</button>`:''}`:`<div class="ai-md">${window.AIX&&AIX.md?AIX.md(m.x):esc(m.x)}</div>`}${m.v!=null&&c.ver[m.v]?`<button class="cvs-vtag" data-act="cvsVer" data-id="${c.id}" data-v="${m.v}">${ic('cvs','ico-s')}Version ${m.v+1}${c.vi===m.v?' · showing':''}</button>`:''}</div></div>`}
-function runHTML(){if(!RUN)return'';const L=live(RUN.out),secs=Math.round((Date.now()-RUN.t)/1e3);
- return`<div class="cv-a cvs-run" id="cvsRun"><span class="cv-av" aria-hidden="true"></span><div>${L.note?`<div class="ai-md">${window.AIX&&AIX.md?AIX.md(L.note):esc(L.note)}</div>`:''}<p class="cvs-st"><i></i>${RUN.drops?`Reconnected ${RUN.drops===1?'once':RUN.drops+' times'} · `:''}${L.lines?(L.edit?`Making the change · ${L.lines} lines`:`Writing the page · ${L.lines} lines`):L.thinking||RUN.think&&!RUN.out?`Thinking… ${secs}s`:RUN.out?'Answering…':secs>4?'Waiting for the AI…':'Starting…'}</p></div></div>`}
+ const head=m.v!=null||m.st==='same'||m.st==='none'?stHTML(c,m):'';
+ return`<div class="cv-a${m.err?' cvs-err':''}${m.st==='retry'||m.st==='stop'?' cvs-sys':''}"><span class="cv-av" aria-hidden="true"></span><div>${m.err?`<p class="small err">${esc(m.x)}</p>`:`${head}${m.x?`<div class="ai-md">${md_(m.x)}</div>`:''}${m.v==null?'':''}`}
+ ${m.part&&c.msgs[c.msgs.length-1]===m?`<button class="btn sm pri cvs-res" data-act="cvsResume" data-id="${c.id}" data-m="${m.id}">${ic('play')}Continue where it stopped</button>`:''}${m.v!=null&&c.ver[m.v]?`<button class="cvs-vtag" data-act="cvsVer" data-id="${c.id}" data-v="${m.v}">${ic('cvs','ico-s')}Version ${m.v+1}${c.vi===m.v?' · showing':''}</button>`:''}${m.st==='ok'&&m.v===c.vi&&!wide()?`<button class="cvs-vtag" data-act="cvsTab" data-k="view">${ic('eye','ico-s')}See it</button>`:''}</div></div>`}
+function runHTML(){if(!RUN)return'';const L=live(RUN.out),secs=Math.round((Date.now()-RUN.t)/1e3),t=secs>=60?Math.floor(secs/60)+'m '+(secs%60)+'s':secs+'s';
+ const st=RUN.phase==='check'?'Checking the new version runs…':RUN.more?`The answer was cut short, asking the AI to finish it (${RUN.more} of 2)… · ${L.lines} lines`
+  :L.lines?(L.edit?`Writing the change · ${L.lines} lines`:`Writing the page · ${L.lines} lines`):L.thinking||RUN.think&&!RUN.out?'Thinking':RUN.out?'Writing its answer':secs>4?'Waiting for the AI':'Sending your request';
+ return`<div class="cv-a cvs-run" id="cvsRun"><span class="cv-av" aria-hidden="true"></span><div><p class="cvs-st"><i></i><span>${RUN.drops?`Reconnected ${RUN.drops===1?'once':RUN.drops+' times'} · `:''}${st} · ${t}</span></p><p class="small muted cvs-st2">Nothing changes on the page until it’s finished and checked.</p></div></div>`}
 function logHTML(c){const L=c.msgs.map(m=>msgHTML(c,m)).join('')+runHTML();
  return L||`<div class="cvs-empty"><span class="cvs-orb"></span><p><b>Tell ${esc(nm())} what to build.</b></p><p class="small muted">Then keep going one step at a time: “make the chart weekly”, “add a dark mode”, “put my streaks at the top”.</p></div>`}
 function frameHTML(c){if(!c.html)return`<div class="cvs-blank">${RUN&&RUN.id===c.id?`<span class="cvs-orb"></span><p class="muted">Building…</p>`:`${ic('cvs')}<p class="muted">The page shows up here.</p>`}</div>`;
@@ -239,7 +284,7 @@ document.addEventListener('input',e=>{if(e.target.id==='cvsIn')grow(e.target)});
 document.addEventListener('keydown',e=>{if(e.target.id==='cvsIn'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&wide()){e.preventDefault();e.target.form.requestSubmit()}
  if(e.key==='Escape'&&FULL){FULL=false;paint()}});
 document.addEventListener('change',e=>{const id=e.target.dataset&&e.target.dataset.cvsdata;if(!id)return;const c=get(id);if(!c)return;c.data=e.target.checked;touch(c);const f=document.querySelectorAll('iframe.cvs-fr');f.forEach(x=>x.dataset.k='');fillFrames();toast(c.data?'The page can read your data':'The page no longer gets your data')});
-setInterval(()=>{if(RUN&&cur.p==='canvas'&&cur.id===RUN.id&&!RUN.out)livePaint()},1000);
+setInterval(()=>{if(RUN&&cur.p==='canvas'&&cur.id===RUN.id)livePaint()},1000);
 
 /* On a phone the keyboard covers the bottom of the screen: while typing, hide the tab bar and fit the chat (and its box)
    into what's really visible, so the box sits right on top of the keyboard. */
@@ -262,6 +307,7 @@ Object.assign(ACT,{
  cvsOpen:d=>{TAB=get(d.id)&&get(d.id).html&&!wide()?'view':'chat';go('canvas/'+d.id)},
  cvsTab:d=>{TAB=d.k;const r=$('#cvs');if(!r)return;r.dataset.tab=TAB;r.querySelectorAll('.cvs-tabs button').forEach(b=>{const on=b.dataset.k===TAB;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});if(TAB==='code'){const c=get(cur.id),t=$('#cvsCode');if(c&&t&&!t.matches(':focus'))t.value=c.html||''}if(TAB==='chat')logPaint(true)},
  cvsStop:()=>{if(RUN)RUN.ctl.abort()},
+ cvsFixMsg:d=>{const c=get(d.id);if(!c||RUN)return;send(c,d.k==='blank'?'The page shows nothing when it runs. Please find out why and fix it.':`The page hits this error when it runs: “${d.x}”. Please fix it.`)},
  cvsThink:(d,el)=>{const s=insSet(),n={'':'off',off:'on',on:''}[s.think||''];s.think=n;save();if(el){el.classList.toggle('on',!!n);el.innerHTML=ic('ai','ico-s')+'Thinking: '+(({off:'Off',on:'On'})[n]||'Default')}toast(n==='off'?'Thinking off: answers come sooner':n==='on'?'Thinking on: slower, more careful':'Thinking: the model’s default')},
  cvsResume:d=>{const c=get(d.id),m=c&&c.msgs.find(x=>x.id===d.m);if(c&&m&&m.part&&!RUN)resume(c,m)},
  cvsW:d=>{const c=get(d.id);if(!c)return;c.w=d.w;touch(c);const w=$('.cvs-fw');if(w)w.classList.toggle('ph',c.w==='phone');document.querySelectorAll('[data-act=cvsW]').forEach(b=>b.classList.toggle('on',b.dataset.w===c.w))},
@@ -322,7 +368,7 @@ const css=document.createElement('style');css.textContent=`
 .cvs-log{flex:1;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:4px 2px 8px}
 .cvs-log .cv-q{align-self:flex-end;max-width:86%;padding:10px 14px;border-radius:18px 18px 6px 18px;background:color-mix(in srgb,var(--accent) 15%,var(--surface))}.cvs-log .cv-q p{margin:0}
 .cvs-log .cv-a{display:flex;gap:10px;align-items:flex-start}.cvs-log .cv-a>div{min-width:0;flex:1}
-html.cvs-typing .tabbar{display:none!important}html.cvs-typing .cvs-opts{display:none}html.cvs-typing .cvs-chat{min-height:0}.cvs-data span{white-space:nowrap}@media(max-width:480px){.cvs-opts .cvs-data small{display:none}}.cvs-res{margin-top:6px}.cvs-opts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cvs-opts .cvs-data{flex:1;min-width:0}.cvs-think{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 12.5px var(--f-body);cursor:pointer;white-space:nowrap}.cvs-think.on{color:var(--ink);border-color:var(--accent)}.cvs-vtag{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 12px var(--f-body);cursor:pointer}.cvs-vtag:hover{color:var(--ink);border-color:var(--accent)}
+html.cvs-typing .tabbar{display:none!important}html.cvs-typing .cvs-opts{display:none}html.cvs-typing .cvs-chat{min-height:0}.cvs-data span{white-space:nowrap}@media(max-width:480px){.cvs-opts .cvs-data small{display:none}}.cvs-res{margin-top:6px}.cvs-s{display:flex;gap:6px;align-items:flex-start;margin:2px 0 6px;font:600 13.5px/1.4 var(--f-body);color:var(--muted)}.cvs-s .ico-s{flex:none;margin-top:2px}.cvs-s.ok{color:var(--ink)}.cvs-s.ok .ico-s{color:#2fae7a}.cvs-s.warn .ico-s{color:#e0803c}.cvs-sa{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}.cvs-sys .ai-md,.cvs-sys{opacity:.75}.cvs-st2{margin:0}.cvs-st span{font-variant-numeric:tabular-nums}.cvs-opts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cvs-opts .cvs-data{flex:1;min-width:0}.cvs-think{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 12.5px var(--f-body);cursor:pointer;white-space:nowrap}.cvs-think.on{color:var(--ink);border-color:var(--accent)}.cvs-vtag{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 12px var(--f-body);cursor:pointer}.cvs-vtag:hover{color:var(--ink);border-color:var(--accent)}
 .cvs-st{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:4px 0}.cvs-st i{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:meBl 1s ease-in-out infinite}
 .cvs-empty{margin:auto;text-align:center;max-width:340px;padding:20px}.cvs-empty p{margin:6px 0}
 .cvs-orb{display:block;margin:0 auto 10px;width:44px;height:44px;border-radius:50%;background:conic-gradient(from 0deg,var(--accent),var(--c-learning,var(--accent)),var(--c-health,var(--accent)),var(--accent));animation:mmSpin 2.4s linear infinite}
