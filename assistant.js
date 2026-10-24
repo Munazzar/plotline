@@ -333,6 +333,7 @@ function actAsk(t){const l=lcs(t);if(!/^(?:how|what|did|when|which|was|were|tell
  if(sp.one){const ds=fromN(sp.a),o=L[ds],v=o?M.get(o):null,when=spDay(sp.a);
   if(v==null)return{say:`I don’t have ${M.k==='s'?'step':M.k==='z'?'sleep':M.k==='m'?'screen time':M.k==='x'?'workout':M.k==='dm'?'distance':'calorie'} data for ${when.replace(/^on /,'')}.`,chips:[['Open activity','activity']]};
   const goal=M.k==='s'?+((S.settings.act||{}).goal)||8000:0;
+  if(M.k==='m'){const sh=window.scrHours&&scrHours(ds);return{say:`${cap(when)} you had ${M.say(v)}.`+(sh?' Here it is hour by hour.':''),chips:[['Screen time by hour','screen/'+ds]]}}
   return{say:`${cap(when)} you ${M.k==='z'?'got':M.k==='m'?'had':M.k==='x'?'did':M.k==='s'?'walked':'logged'} ${M.say(v)}${goal?v>=goal?', past your goal of '+goal.toLocaleString()+'.':', '+(goal-v).toLocaleString()+' short of your '+goal.toLocaleString()+' goal.':'.'}`,chips:[['Open that day','activity']]}}
  const vals=[];for(let n=sp.a;n<=sp.b;n++){const o=L[fromN(n)];const v=o?M.get(o):null;if(v!=null)vals.push([n,v])}
  if(!vals.length)return{say:`I don’t have that for ${sp.lab}.`};
@@ -371,7 +372,7 @@ function askDays(q){const out=[],tn=dnum(ymd()),sp=pastSpan(q);
  return out}
 /* one day, across the whole app */
 function daySummary(ds){const L=[],o=((S.settings&&S.settings.actLog)||{})[ds],n=dnum(ds),tn=dnum(ymd());
- if(o){const w=typeof wkMin==='function'?wkMin(o):+o.x;const b=[+o.s>0&&`${(+o.s).toLocaleString()} steps`,+o.dm>0&&`${(o.dm/1000).toFixed(1)} km`,+o.z>0&&`slept ${spMin(o.z)}`,w>0&&`exercise ${spMin(w)}`,o.m!=null&&`screen time ${spMin(o.m)}`].filter(Boolean);if(b.length)L.push('activity: '+b.join(', '))}
+ if(o){const w=typeof wkMin==='function'?wkMin(o):+o.x;const b=[+o.s>0&&`${(+o.s).toLocaleString()} steps`,+o.dm>0&&`${(o.dm/1000).toFixed(1)} km`,+o.z>0&&`slept ${spMin(o.z)}`,w>0&&`exercise ${spMin(w)}`,o.m!=null&&`screen time ${spMin(o.m)}`].filter(Boolean);if(b.length)L.push('activity: '+b.join(', '));const sh=window.scrHours&&scrHours(ds);if(sh)L.push(sh)}
  if(n<=tn){const dn=[],ms=[];S.habits.forEach(h=>{if(h.status!=='active'||h.kind==='quit')return;try{if(hDone(h,ds))dn.push(h.title);else if(hDue(h,ds)&&!(h.skip||{})[ds]&&n<tn)ms.push(h.title)}catch(e){}});if(dn.length)L.push('habits done: '+dn.join(', '));if(ms.length)L.push('habits missed: '+ms.join(', '))}
  const D=S.days.filter(x=>x.date===ds).sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));if(D.length)L.push('plan: '+D.map(x=>`${x.time?x.time+' ':''}${x.title}${x.done?' (done)':n<tn?' (not done)':''}${x.remind!=null&&x.remind!==''?' (reminder)':''}`).join('; '));
  const st=[];S.goals.forEach(g=>(g.steps||[]).forEach(x=>{if(x.done&&x.doneAt&&tsDay(x.doneAt)===ds)st.push(`${x.title} (goal ${g.title})`);else if(!x.done&&x.due===ds)st.push(`${x.title} due (goal ${g.title})`)}));if(st.length)L.push('goal steps: '+st.join('; '));

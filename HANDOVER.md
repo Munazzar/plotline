@@ -4,7 +4,7 @@ Written 2026-10-24 (updated the same day for 1.52.0 and 1.53.0) for a fresh Clau
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.53.0 is on main and released** (versionCode 142). **The next versionCode is 143.**
+Current state: **v1.54.0 is on main and released** (versionCode 143). **The next versionCode is 144.**
 
 **Product rules for every change (section 7 has the full list):** sync everything except looks and device-only
 things (section 2a); obvious features (delete, delete all, undo, search) must exist wherever data lives; secure and
@@ -29,7 +29,7 @@ private by default, because the app is heading to the **Google Play Store**; nev
 
 Plain HTML/JS, no build step, no framework. Every file is loaded by `index.html` with a `<script src>` tag, in this
 order: `bench.js, lists.js, assistant.js, agent.js, ai.js, convs.js, me.js, canvas.js, ink.js, kokoro.js, polish.js,
-trackers.js, sched.js, guides.js, howto.js, setup.js`. Later scripts patch or wrap functions defined earlier, so
+trackers.js, screen.js, sched.js, guides.js, howto.js, setup.js`. Later scripts patch or wrap functions defined earlier, so
 **order matters** and a later file often overrides an earlier one by reusing the same function name.
 
 Run locally: `npx http-server -p 8765 -c-1` in the repo root (see `.claude/launch.json`). Test with headless
@@ -50,6 +50,7 @@ Playwright at 390 px (phone) and 1280 px (desktop).
 | `bench.js` | Workbench: infinite canvas boards; encrypted sharing via Firestore (key only in the link's #fragment). |
 | `lists.js` | Lists (checklists with deadlines), encrypted sharing, Cards widget data. |
 | `trackers.js` | Custom activity trackers and Home Insights (AI-written with refresh). |
+| `screen.js` | Screen time hour by hour (`#/screen`): reads `PlotlineAssist.usageHours`, stores `actLog()[day].hu/.un`, Day/Week/Month/All charts, legend, skip, limits, habits, `scrHours` for the AI. |
 | `ink.js` + `ocr/` | Handwriting/drawing (pressure, palm rejection, S Pen eraser) and photo-to-text (PaddleOCR on onnxruntime-web; Tesseract fallback). See `ocr/README.md`. |
 | `kokoro.js` + `lib/phonemizer` | Natural voices (Kokoro TTS). Web uses ONNX Runtime Web; Android uses native `Kokoro.java`. |
 | `polish.js` + `polish.css` | Design layer loaded last: SF-style icons, Apple type, shadows, backgrounds, swipe decks, page gears (`GEARS`), canvas mode. |
@@ -126,12 +127,13 @@ unless noted.
 - **1.51.1 (#56):** security/privacy hardening (shared boards/lists sanitized, canvas CSP lock, prompt-injection rules, OAuth state check, PIN backoff, full erase) and the rewritten privacy policy.
 - **1.52.0 (#58):** agent news/trending/read_url lookups (Google News in the app or via proxy, GDELT in a browser, Wikipedia Current events fallback, Google Trends or Hacker News), tasks that learn from tapped tags (More of / Less of), per-task "Think with: Your AI server", "News for me" template, How-to in More and the sidebar, More gets AI & voice / Automations / Connections shortcuts, phone title fit, Agent card title CSS fix.
 - **1.53.0:** almost everything syncs (section 2a): agent tasks and reports, conversations, AI canvases, trackers, AI server address/model/key, Notion token, agent connections. Home "Agent reports" card. "Delete all" for conversations and canvases. Agent read_url only reads public https hosts. Backups no longer carry the PIN hash.
+- **1.54.0:** Screen time hour by hour (`screen.js`, `#/screen`): Day / Week / Month / All, hourly bars stacked by app (faded when light), a day-by-hour map, a typical day, a legend that hides apps, skip (not counted), daily limits with a nudge, habits that check themselves off, phone-habit tips; the assistant gets the hours (`scrHours`). Native: `UsageHours.java` + `PlotlineAssist.usageHours(days)`; `PlotlineAssist.http` now also does plain GETs to public https hosts (news/trends/RSS on Android). Settings in `S.settings.act.scx` (`act.scr` is the old daily screen-time goal: don't reuse it).
 
 ### versionCode table (for the APK)
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142. **Next: 143.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143. **Next: 144.**
 
 ## 4. Building the APK (cloud, no Android SDK)
 
@@ -173,7 +175,9 @@ from the cloud container. Maven Central and PyPI work (retry on HTTP 429).
    and check the cert fingerprint.
 5. Bump `APP_VER` in `index.html` and `CACHE` in `sw.js` in the same PR.
 
-**When repo Java changes:** dex2jar (`de.femtopedia.dex2jar:dex-tools 2.4.38`) the APK's `classes.dex`,
+**When repo Java changes, on the PORTAL PC (1.54 route, no dex2jar round trip of other classes):** download Temurin JDK 21, `org.robolectric:android-all:11-robolectric-6757853`, `com.jakewharton.android.repackaged:dalvik-dx:16.0.1` and dex2jar 2.4.38 (GitHub ThexXTURBOXx/dex2jar, it bundles `d2j-baksmali`/`d2j-smali`) into the scratch folder (ask the owner first). Then: dex2jar every `classes*.dex` only to use as a compile classpath; `javac --release 8` the changed classes (`Assist.java`, `UsageHours.java`) against android-all plus those jars and diff `javap -p` with the released class so nothing is lost; `BaksmaliCmd` classes4.dex, delete the replaced classes' `.smali` (`Assist.smali`, `Assist$*.smali`), `SmaliCmd` it back to classes4.dex; `dx --dex --min-sdk-version=26` the new classes into a new **classes6.dex**; then `node tools/apk/build.cjs ... classes4.dex=<new4> classes6.dex=<bridge>`. The next native change should replace classes6.dex the same way.
+
+**Older route (cloud):** dex2jar (`de.femtopedia.dex2jar:dex-tools 2.4.38`) the APK's `classes.dex`,
 `classes2.dex`, `classes3.dex`; compile the changed `.java` with `javac --release 8` (no lambdas) against
 `org.robolectric:android-all:11-robolectric-6757853` (an API 30 android.jar) plus those jars; put the classes into
 `classes4.jar` (where `Assist*`, `WakeLoop`, `Chime` and friends live; `Cards*` are in an earlier dex, leave them)
@@ -208,6 +212,14 @@ done with a hand-written AXML reader/writer in Python; androguard from PyPI is h
   publish hurdles frustrating).
 - **Parallel work:** when several threads ship at once, versions collide. Later PRs rebase on the merged one and take
   the next version and versionCode, so each APK carries everything.
+
+## 5a. Google Play readiness (the owner is a solo developer)
+
+Everything new must be approvable on Play without company paperwork. Known items before submitting:
+- **Usage access (PACKAGE_USAGE_STATS):** allowed for screen-time features. Show the in-app explanation before sending the user to Android's setting (done on the Screen time page). Declare it in the Data safety form (app activity, on device, optional sync to the user's Drive).
+- **Needs Play declarations or justification:** ACCESS_BACKGROUND_LOCATION (places auto-check-off: needs the location declaration and a short video, or drop background and use foreground only), USE_FULL_SCREEN_INTENT (only allowed for alarms/calls: the assistant's lock-screen use may be refused; consider removing), SYSTEM_ALERT_WINDOW (talk overlay: explain), REQUEST_IGNORE_BATTERY_OPTIMIZATIONS (restricted: needs a core-function reason or remove), foreground service types (microphone, dataSync: each needs the FGS declaration with a video), SCHEDULE_EXACT_ALARM (reminders: OK for alarm/reminder apps), BIND_VOICE_INTERACTION (assistant role: OK if it is a real assistant).
+- **Never add QUERY_ALL_PACKAGES** (restricted). App names come from apps that have a launcher icon, which needs no special permission.
+- Play needs an AAB signed by Play App Signing and a target SDK within a year of the latest. The current wrapper has no Gradle project; publishing on Play will need a real Android project (or a bundle built from the APK with bundletool), a privacy policy URL (`privacy.html` on GitHub Pages works) and a contact email (still a placeholder).
 
 ## 6. Google Cloud and Firebase setup
 

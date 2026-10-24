@@ -284,9 +284,28 @@ public class Assist {
         } catch (Exception e) { return "{}"; }
     }
 
-    /* http(id, {url, method, headers, body}): a request for a connector whose server doesn't allow browser pages (Notion).
-       Only https and only the hosts below; the answer comes back as window.__http(id, status, body). */
+    /* usageHours(days): screen time per app for each hour of the last few days (UsageHours), "{"perm":false}" without
+       usage access. 1.54. */
+    @JavascriptInterface
+    public String usageHours(int days) { return UsageHours.json(c, days); }
+
+    /* http(id, {url, method, headers, body}): a request for a connector whose server doesn't allow browser pages (Notion),
+       or (1.54) a plain read of a public page or feed for the agent (news, trends, RSS). Only https. Requests with a body
+       or headers go only to the hosts below; a plain GET goes to any public address, never this phone, the home network
+       or a private (Tailscale) one, and doesn't follow redirects. The answer comes back as window.__http(id, status, body). */
     static final String[] HTTP_HOSTS = {"api.notion.com"};
+
+    static boolean publicHost(String host) {
+        try {
+            for (java.net.InetAddress a : java.net.InetAddress.getAllByName(host)) {
+                if (a.isLoopbackAddress() || a.isSiteLocalAddress() || a.isLinkLocalAddress() || a.isAnyLocalAddress() || a.isMulticastAddress()) return false;
+                byte[] b = a.getAddress();
+                if (b.length == 4 && (b[0] & 0xff) == 100 && (b[1] & 0xc0) == 64) return false;
+                if (b.length == 16 && (b[0] & 0xfe) == 0xfc) return false;
+            }
+            return true;
+        } catch (Exception e) { return false; }
+    }
 
     @JavascriptInterface
     public void http(final String id, final String json) {
@@ -295,10 +314,14 @@ public class Assist {
             try {
                 JSONObject o = new JSONObject(json);
                 java.net.URL u = new java.net.URL(o.getString("url"));
-                boolean ok = "https".equals(u.getProtocol());
-                if (ok) { ok = false; for (String h : HTTP_HOSTS) if (h.equals(u.getHost())) ok = true; }
-                if (!ok) throw new Exception("host not allowed");
+                boolean ok = "https".equals(u.getProtocol()), listed = false;
+                if (ok) for (String h : HTTP_HOSTS) if (h.equals(u.getHost())) listed = true;
+                JSONObject hd0 = o.optJSONObject("headers");
+                boolean plain = "GET".equals(o.optString("method", "GET")) && o.optString("body", "").length() == 0
+                    && (hd0 == null || !(hd0.has("Authorization") || hd0.has("Cookie"))) && u.getUserInfo() == null;
+                if (!ok || !(listed || (plain && publicHost(u.getHost())))) throw new Exception("host not allowed");
                 java.net.HttpURLConnection h = (java.net.HttpURLConnection) u.openConnection();
+                if (!listed) h.setInstanceFollowRedirects(false);
                 h.setConnectTimeout(15000); h.setReadTimeout(30000);
                 h.setRequestMethod(o.optString("method", "GET"));
                 JSONObject hd = o.optJSONObject("headers");
