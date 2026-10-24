@@ -197,6 +197,7 @@ html[data-bgp=image] body::after{background:var(--bgimg) center/cover no-repeat}
 .tk-busy{display:flex;align-items:center;gap:8px}.tk-busy svg{width:16px;height:16px;animation:tkp 1.2s ease-in-out infinite}@keyframes tkp{50%{opacity:.35}}
 .tk-wk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:6px 0 4px;text-align:center}.tk-wk small{display:block;font:600 10.5px var(--f-mono);color:var(--muted)}.tk-wk b{font-size:12.5px;font-weight:600}
 .ai-ins-f{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--muted);padding:2px 6px}
+.ins-hr{display:inline-flex;align-items:center;gap:10px}.ins-hr .ai-sgr{align-self:center}
 .hin.ai-ins{border-color:color-mix(in srgb,var(--accent) 30%,var(--line))!important}
 /* ---------- grouped navigation ---------- */
 .nav-sep{display:block;width:28px;height:1px;margin:6px auto;background:var(--line-2);flex:none}

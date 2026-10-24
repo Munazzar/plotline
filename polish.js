@@ -217,7 +217,7 @@ buildFloater=function(){let f=$('#fnav');if(!S.settings.focus){f&&f.remove();ret
 buildFloater();addEventListener('hashchange',()=>setTimeout(()=>{if(S.settings.focus)buildFloater()},0));
 
 /* ---------- the gear on each page opens the settings for that page, scrolled to the right panel ---------- */
-const GEARS={today:['look','Home page'],habits:['notif','Reminders'],habit:['notif','Reminders'],day:['notif','Reminders'],cal:['notif','Reminders'],goals:['notif','Reminders'],goal:['notif','Reminders'],
+const GEARS={habits:['notif','Reminders'],habit:['notif','Reminders'],day:['notif','Reminders'],cal:['notif','Reminders'],goals:['notif','Reminders'],goal:['notif','Reminders'],
  journal:['privacy','Privacy'],threads:['data','Your data'],thread:['data','Your data'],activity:['auto','Automations'],lists:['share','Sharing'],list:['share','Sharing'],
  ask:['voice','Assistant'],ai:['voice','Assistant'],chats:['voice','Assistant'],me:['voice','Assistant'],agent:['agent','Connections'],bench:['look','Theme'],road:['look','Theme'],map:['look','Theme']};
 let GEAR_H='';
