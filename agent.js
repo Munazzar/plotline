@@ -341,7 +341,7 @@ const reach=c=>{const g=c.filter(k=>k!=='web').map(k=>CN[k][0]);return[g.length?
 function chipsOf(it){return it.sugs.filter(s=>!s.st).map(s=>({id:s.id,t:SUGN[s.type]+': '+tr((s.target?s.target+': ':'')+s.text,60),fn:async()=>{try{const r=await apply(s,true);toast(esc((r&&r.say)||'Done'));return r}catch(e){toast('Couldn’t do that: '+esc(e.message||e));throw e}}}))}
 function sayOf(it){const t=firstLine(it.summary).replace(/\[([^\]]+)\]\([^)]*\)/g,'$1');const n=it.sugs.filter(s=>!s.st).length;
  return tr(t,240)+(n?` I’ve put ${n===1?'a suggestion':n+' suggestions'} on screen.`:'')}
-window.AGENT={plot:()=>plotLines(false),connected:()=>CONNS(),names:()=>CONNS().map(k=>CN[k][0]),busy:()=>BUSY,
+window.AGENT={plot:()=>plotLines(false),connHTML:()=>connHTML(),connected:()=>CONNS(),names:()=>CONNS().map(k=>CN[k][0]),busy:()=>BUSY,
  /* the lines added to the assistant's and Live's instructions */
  sys:()=>{const c=CONNS();if(!c.length)return`If they ask about their email, calendar, Google Drive, Notion or anything online (weather, places), tell them you can do that once they connect it on the Agent page (More › Agent).`;
   return`YOUR AGENT: you have an agent that can look things up ${reach(c)}. Always answer from their own data first (their goals, habits, journal, lists, threads and notes given to you), then from what you know. Only when the answer needs something that isn't in their data and that you can't answer yourself${c.some(k=>k!=='web')?' (like their email, calendar, files or Notion pages)':''}${c.includes('web')?', or live information that changes (the weather now, what’s open now)':''}, don't guess and don't say you can't: reply with only this one line and nothing else:
