@@ -73,7 +73,7 @@ addEventListener('message',e=>{const d=e.data;if(!d||!d.cvs)return;const fr=[...
  if(d.err){FR_ERR={id:c.id,v:c.vi,x:tr(d.err,200)};errPaint()}});
 
 /* ---------------- talking to the AI ---------------- */
-const SYS=c=>`You are ${nm()}'s Canvas inside the Plotlines app. You build and change one web page at a time together with the user: reports and dashboards from their own data, small apps and tools, websites, and designs like posters, cards or slides. Work step by step: do what they ask now, keep everything else as it is, and end with one short line suggesting a next step when it helps.
+const SYS=c=>`You are ${nm()}'s AI canvas inside the Plotlines app. You build and change one web page at a time together with the user: reports and dashboards from their own data, small apps and tools, websites, and designs like posters, cards or slides. Work step by step: do what they ask now, keep everything else as it is, and end with one short line suggesting a next step when it helps.
 
 HOW TO ANSWER
 Start with one or two short sentences saying what you did, in plain words. Then give either:
@@ -188,9 +188,9 @@ const wide=()=>matchMedia('(min-width:900px)').matches;
 const ago=t=>{const m=Math.round((Date.now()-t)/6e4);return m<2?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':new Date(t).toLocaleDateString([],{month:'short',day:'numeric'})};
 const IDEAS=[['A report on my habits this month','report'],['A dashboard of my goals and their steps','report'],['My moods and journal over time, as charts','report'],['A focus timer app with a task list','app'],['A landing page for my side project','site'],['A poster of my goals for this year','design']];
 const KIND_IC={report:'ai',app:'checklist',site:'ext',design:'pen'};
-function engineHint(){if(!window.AIX||!AIX.ready())return`<div class="panel rv cvs-setup">${window.AIX?AIX.modelCard('canvas'):''}<p class="small muted">Canvas needs an AI. It works best with a big model on your own AI server: pick “Your AI server” in Settings › AI &amp; voice and point it at Ollama or LM Studio.</p><div class="actions left"><a class="btn sm" href="#/settings">Open settings</a></div></div>`;
+function engineHint(){if(!window.AIX||!AIX.ready())return`<div class="panel rv cvs-setup">${window.AIX?AIX.modelCard('canvas'):''}<p class="small muted">AI canvas needs an AI. It works best with a big model on your own AI server: pick “Your AI server” in Settings › AI &amp; voice and point it at Ollama or LM Studio.</p><div class="actions left"><a class="btn sm" href="#/settings">Open settings</a></div></div>`;
  return planEngine()==='api'?'':`<p class="small muted cvs-hint">${ic('ai','ico-s')} You’re on a small on-device model, so pages will be simple. For real apps and reports, use a big model on your own AI server (Settings › AI &amp; voice › Your AI server).</p>`}
-function vList(){return`<header class="ph"><div><h1>Canvas</h1><div class="data">${CS.length?`${CS.length} saved on this device`:`Build reports, apps, sites and designs with ${esc(nm())}`}</div></div><div class="ph-r"><button class="ibtn" data-act="cvsNew" aria-label="New canvas" title="New canvas">${ic('plus')}</button>${gear()}</div></header>
+function vList(){return`<header class="ph"><div><h1>AI canvas</h1><div class="data">${CS.length?`${CS.length} saved on this device`:`Build reports, apps, sites and designs with ${esc(nm())}`}</div></div><div class="ph-r"><button class="ibtn" data-act="cvsNew" aria-label="New canvas" title="New canvas">${ic('plus')}</button>${gear()}</div></header>
  ${engineHint()}
  <form class="cvs-start rv" data-form="cvsStart" autocomplete="off"><div class="field"><textarea id="cvsFirst" name="q" rows="3" maxlength="4000" placeholder="What should we build? “A report of my habits this month”, “a budget app”, “a website for my bakery”…" aria-label="What should we build?"></textarea></div><div class="actions left"><button class="btn pri">${ic('ai')}Start building</button></div></form>
  <div class="cvs-ideas rv">${IDEAS.map(([t,k])=>`<button class="cvs-idea" data-act="cvsIdea" data-q="${esc(t)}">${ic(KIND_IC[k],'ico-s')}<span>${esc(t)}</span></button>`).join('')}</div>
@@ -205,7 +205,7 @@ function logHTML(c){const L=c.msgs.map(m=>msgHTML(c,m)).join('')+runHTML();
 function frameHTML(c){if(!c.html)return`<div class="cvs-blank">${RUN&&RUN.id===c.id?`<span class="cvs-orb"></span><p class="muted">Building…</p>`:`${ic('cvs')}<p class="muted">The page shows up here.</p>`}</div>`;
  return`<div class="cvs-fw ${c.w==='phone'?'ph':''}"><iframe class="cvs-fr" data-id="${c.id}" sandbox="${SANDBOX}" title="${esc(c.title)}" referrerpolicy="no-referrer"></iframe></div>`}
 function errHTML(c){return FR_ERR&&FR_ERR.id===c.id&&FR_ERR.v===c.vi?`<div class="cvs-ferr"><span>${ic('flag','ico-s')}The page hit an error: ${esc(FR_ERR.x)}</span><button class="btn sm" data-act="cvsFix" data-id="${c.id}">Fix it</button></div>`:''}
-function vEdit(id){const c=get(id);if(!c)return`<header class="ph"><div><a class="link" href="#/canvas">${ic('back','ico-s')} Canvas</a><h1>Not found</h1></div></header><p class="muted">This canvas was deleted or is on another device.</p>`;
+function vEdit(id){const c=get(id);if(!c)return`<header class="ph"><div><a class="link" href="#/canvas">${ic('back','ico-s')} AI canvas</a><h1>Not found</h1></div></header><p class="muted">This canvas was deleted or is on another device.</p>`;
  const n=c.ver.length,busy=RUN&&RUN.id===c.id;
  return`<div class="cvs" data-tab="${TAB}" id="cvs" data-id="${c.id}">
  <div class="crumb cvs-top"><a href="#/canvas" class="ibtn" data-act="navBack" aria-label="Back">${ic('back')}</a><button class="cvs-ti" data-act="cvsRename" data-id="${c.id}" title="Rename"><b>${esc(c.title)}</b><small id="cvsVl">${n?`Version ${(c.vi??n-1)+1} of ${n}`:'New canvas'}</small></button>
@@ -240,6 +240,18 @@ document.addEventListener('keydown',e=>{if(e.target.id==='cvsIn'&&e.key==='Enter
  if(e.key==='Escape'&&FULL){FULL=false;paint()}});
 document.addEventListener('change',e=>{const id=e.target.dataset&&e.target.dataset.cvsdata;if(!id)return;const c=get(id);if(!c)return;c.data=e.target.checked;touch(c);const f=document.querySelectorAll('iframe.cvs-fr');f.forEach(x=>x.dataset.k='');fillFrames();toast(c.data?'The page can read your data':'The page no longer gets your data')});
 setInterval(()=>{if(RUN&&cur.p==='canvas'&&cur.id===RUN.id&&!RUN.out)livePaint()},1000);
+
+/* On a phone the keyboard covers the bottom of the screen: while typing, hide the tab bar and fit the chat (and its box)
+   into what's really visible, so the box sits right on top of the keyboard. */
+function fitChat(){const ch=$('.cvs-chat'),vv=window.visualViewport,on=document.documentElement.classList.contains('cvs-typing');if(!ch)return;
+ if(!on||!vv||wide()){ch.style.height='';return}const top=ch.getBoundingClientRect().top,h=Math.round(vv.offsetTop+vv.height-top-8);
+ ch.style.height=Math.max(150,h)+'px';const L=$('#cvsLog');if(L)L.scrollTop=L.scrollHeight}
+document.addEventListener('focusin',e=>{if(e.target.id!=='cvsIn'||wide())return;document.documentElement.classList.add('cvs-typing');
+ /* bring the top of the chat into view first, then size it once the keyboard is up */
+ setTimeout(()=>{const ch=$('.cvs-chat');if(ch){const y=ch.getBoundingClientRect().top;if(y<0||y>innerHeight*.5)window.scrollBy(0,y-70)}fitChat()},60);setTimeout(fitChat,350);setTimeout(fitChat,700)});
+document.addEventListener('focusout',e=>{if(e.target.id!=='cvsIn')return;setTimeout(()=>{if(document.activeElement&&document.activeElement.id==='cvsIn')return;
+ document.documentElement.classList.remove('cvs-typing');fitChat()},120)});
+if(window.visualViewport){visualViewport.addEventListener('resize',fitChat);visualViewport.addEventListener('scroll',fitChat)}
 
 /* ---------------- actions ---------------- */
 function startWith(q){q=String(q||'').trim();if(!q)return;const c=make();TAB='chat';go('canvas/'+c.id);setTimeout(()=>send(c,q),60)}
@@ -310,7 +322,7 @@ const css=document.createElement('style');css.textContent=`
 .cvs-log{flex:1;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:4px 2px 8px}
 .cvs-log .cv-q{align-self:flex-end;max-width:86%;padding:10px 14px;border-radius:18px 18px 6px 18px;background:color-mix(in srgb,var(--accent) 15%,var(--surface))}.cvs-log .cv-q p{margin:0}
 .cvs-log .cv-a{display:flex;gap:10px;align-items:flex-start}.cvs-log .cv-a>div{min-width:0;flex:1}
-.cvs-res{margin-top:6px}.cvs-opts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cvs-opts .cvs-data{flex:1;min-width:0}.cvs-think{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 12.5px var(--f-body);cursor:pointer;white-space:nowrap}.cvs-think.on{color:var(--ink);border-color:var(--accent)}.cvs-vtag{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 12px var(--f-body);cursor:pointer}.cvs-vtag:hover{color:var(--ink);border-color:var(--accent)}
+html.cvs-typing .tabbar{display:none!important}html.cvs-typing .cvs-opts{display:none}html.cvs-typing .cvs-chat{min-height:0}.cvs-data span{white-space:nowrap}@media(max-width:480px){.cvs-opts .cvs-data small{display:none}}.cvs-res{margin-top:6px}.cvs-opts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cvs-opts .cvs-data{flex:1;min-width:0}.cvs-think{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 12.5px var(--f-body);cursor:pointer;white-space:nowrap}.cvs-think.on{color:var(--ink);border-color:var(--accent)}.cvs-vtag{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 12px var(--f-body);cursor:pointer}.cvs-vtag:hover{color:var(--ink);border-color:var(--accent)}
 .cvs-st{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:4px 0}.cvs-st i{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:meBl 1s ease-in-out infinite}
 .cvs-empty{margin:auto;text-align:center;max-width:340px;padding:20px}.cvs-empty p{margin:6px 0}
 .cvs-orb{display:block;margin:0 auto 10px;width:44px;height:44px;border-radius:50%;background:conic-gradient(from 0deg,var(--accent),var(--c-learning,var(--accent)),var(--c-health,var(--accent)),var(--accent));animation:mmSpin 2.4s linear infinite}
