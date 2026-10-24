@@ -88,7 +88,7 @@ function sheetDay(t){const ds=today(),v=val(t.id,ds);
 
 /* ---------- AI help ---------- */
 const aiOn=()=>window.AIX&&AIX.ready&&AIX.ready();
-async function ask(sys,user){let out='';await AIX.chat([{role:'system',content:sys},{role:'user',content:user}],t=>{out+=t},{});return out}
+async function ask(sys,user,o){let out='';await AIX.chat([{role:'system',content:sys},{role:'user',content:user}],t=>{out+=t},o||{});return out}
 const jsonOf=s=>{const m=String(s).match(/\[[\s\S]*\]/);if(!m)return null;try{return JSON.parse(m[0])}catch(e){return null}};
 function localSug(){const txt=[...S.goals.filter(g=>g.status==='active').map(g=>g.title),...S.habits.map(h=>h.title)].join(' ').toLowerCase(),have=new Set(trk().map(t=>t.n.toLowerCase()));
  const KW=[[/run|marathon|10k|fit|health|weight/,'Strength'],[/stress|calm|mind|anx|sleep/,'Meditation'],[/read|book/,'Reading'],[/bike|cycl/,'Cycling'],[/swim/,'Swimming'],[/french|ielts|language|english|spanish|study|exam/,'Language practice'],[/pray|faith|quran|bible/,'Prayer'],[/water|hydrat/,'Water'],[/guitar|piano|music|instrument/,'Practice an instrument'],[/flex|back|stretch|posture/,'Stretching'],[/yoga/,'Yoga'],[/dog/,'Dog walk']];
@@ -149,7 +149,7 @@ window.TRK={list:trk,val,fmt:fmtV,man,setVal};
 /* ---------- Insights, read by your AI ----------
    A compact digest of the last two weeks goes to whichever AI is set up (on-device by default); it writes three
    specific insights. Kept for the day in S.settings.aiIns; the rule-based insights stay underneath. */
-let INS_BUSY=false;
+let INS_BUSY=false,INS_FAIL=0;
 function digest(){const td=today(),tn=dnum(td),A=actLog(),L=[];const av=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
  L.push(`Today is ${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}.${S.settings.name?' Name: '+S.settings.name+'.':''}`);
  S.habits.filter(h=>h.status==='active'&&h.kind!=='quit').slice(0,12).forEach(h=>{let due=0,dn=0;for(let k=tn-7;k<tn;k++){const ds=fromN(k);if(hDue(h,ds)){due++;if(hDone(h,ds))dn++}}L.push(`Habit [habit:${h.id}] "${h.title}": kept ${dn}/${due} of the last 7 days, streak ${typeof hStreak==='function'?hStreak(h):'?'}, ${hDone(h,td)?'done today':'not done today'}.`)});
@@ -160,24 +160,33 @@ function digest(){const td=today(),tn=dnum(td),A=actLog(),L=[];const av=a=>a.len
  const dd=S.days.filter(x=>x.date===td);if(dd.length)L.push(`Today's goals: ${dd.filter(x=>x.done).length} of ${dd.length} done.`);
  S.entries.filter(e=>e.type==='note'&&!e.private&&e.t>Date.now()-14*864e5).sort((a,b)=>b.t-a.t).slice(0,5).forEach(e=>L.push(`Journal ${ymd(new Date(e.t))}${e.mood?' '+e.mood:''}: ${String((e.title||'')+' '+(e.text||'')).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,220)}`));
  return L.join('\n')}
-async function insRun(){if(INS_BUSY||!aiOn())return;INS_BUSY=true;S.settings.aiInsAuto=1;if(cur.p==='today')render(false);
- try{const raw=await ask('You are Plot, a warm, sharp coach inside a goals, habits and journal app. From the person’s data, write exactly 3 insights they would not easily notice themselves: connect habits, goals, sleep, steps, trackers and what they wrote. Each must cite a concrete number or detail from the data and end with one small doable action. No medical or financial advice, no guilt. Reply with only a JSON array of 3 objects: {"e":"one emoji","t":"the insight, at most 32 words","link":"habit:<id>" or "goal:<id>" from the data, or "","q":"a follow-up question the person might ask you"}.',digest());
+/* fresh: the Refresh button, so it asks for new ones that don't repeat what's showing */
+async function insRun(fresh){if(INS_BUSY||!aiOn())return;INS_BUSY=true;S.settings.aiInsAuto=1;if(cur.p==='today')render(false);
+ const C0=S.settings.aiIns,prev=fresh&&C0&&C0.L?C0.L.map(x=>'- '+x.t).join('\n'):'',hints=(typeof RULE_INS==='function'?RULE_INS():[]).map(x=>'- '+x.t).join('\n');
+ try{const raw=await ask('You are Plot, a warm, sharp coach inside a goals, habits and journal app. From the person’s data, write exactly 3 insights they would not easily notice themselves: connect habits, goals, sleep, steps, trackers and what they wrote. Each must cite a concrete number or detail from the data and end with one small doable action. No medical or financial advice, no guilt. Reply with only a JSON array of 3 objects: {"e":"one emoji","t":"the insight, at most 32 words","link":"habit:<id>" or "goal:<id>" from the data, or "","q":"a follow-up question the person might ask you"}.',
+  digest()+(hints?`\n\nPatterns the app already spotted (use them if they help):\n${hints}`:'')+(prev?`\n\nThey just saw these, so write 3 different ones with a fresh angle:\n${prev}`:''),fresh?{temperature:.9}:{});
   const L=(jsonOf(raw)||[]).filter(x=>x&&x.t).slice(0,3).map(x=>({e:String(x.e||'✨').slice(0,4),t:String(x.t).slice(0,240),link:/^(habit|goal):[\w-]+$/.test(x.link||'')?x.link:'',q:String(x.q||'').slice(0,240)}));
-  if(L.length){S.settings.aiIns={d:today(),L,at:Date.now()};save()}else toast('Plot couldn’t read your week just now')}
- catch(e){toast('Plot couldn’t read your week: '+esc(String(e.message||e).slice(0,80)))}
+  if(L.length){S.settings.aiIns={d:today(),L,at:Date.now()};save()}else INS_FAIL=Date.now(),toast('Plot couldn’t read your week just now')}
+ catch(e){INS_FAIL=Date.now();toast('Plot couldn’t read your week: '+esc(String(e.message||e).slice(0,80)))}
  finally{INS_BUSY=false;if(cur.p==='today')render(false)}}
 function aiInsHTML(){const C=S.settings.aiIns,fresh=C&&C.d===today()&&C.L&&C.L.length;
  if(!aiOn())return`<div class="hin ai-ins-off"><span class="hin-e">✨</span><div class="hin-b"><p>Turn on on-device AI and Plot will read your habits, goals, activity and journal each day and point out what you’d miss.</p><div class="hin-a"><a class="btn sm" href="#/settings/voice">Set up AI</a></div></div></div>`;
  if(INS_BUSY)return`<div class="hin ai-ins"><span class="hin-e">✨</span><div class="hin-b"><p class="tk-busy">${ic('ai')}Plot is reading your last two weeks…</p></div></div>`;
- if(!fresh){if(S.settings.aiInsAuto)setTimeout(insRun,1200);return`<div class="hin ai-ins"><span class="hin-e">✨</span><div class="hin-b"><p>Let Plot read your last two weeks and tell you what stands out. It runs ${NATIVE?'on this phone':'with your AI'}; nothing leaves ${NATIVE?'the phone':'your setup'}.</p><div class="hin-a"><button class="btn sm" data-act="aiInsRun">${ic('ai')}Get Plot’s read</button></div></div></div>`}
+ if(!fresh){if(Date.now()-INS_FAIL>6e5&&!INS_BUSY)if(S.settings.aiInsAuto||(typeof planEngine==='function'&&planEngine()==='api'))setTimeout(()=>insRun(),1200);return`<div class="hin ai-ins"><span class="hin-e">✨</span><div class="hin-b"><p>Let Plot read your last two weeks and tell you what stands out. It runs ${NATIVE?'on this phone':'with your AI'}; nothing leaves ${NATIVE?'the phone':'your setup'}.</p><div class="hin-a"><button class="btn sm" data-act="aiInsRun">${ic('ai')}Get Plot’s read</button></div></div></div>`}
  const btn=l=>{const[k,id]=l.split(':');return k==='habit'&&H(id)?`<button class="btn sm" data-act="openHabit" data-id="${id}">Open habit</button>`:k==='goal'&&G(id)?`<button class="btn sm" data-act="open" data-id="${id}">Open goal</button>`:''};
- return C.L.map(x=>`<div class="hin ai-ins"><span class="hin-e">${esc(x.e)}</span><div class="hin-b"><p>${esc(x.t)}</p><div class="hin-a">${x.link?btn(x.link):''}${x.q?`<button class="btn sm ghost" data-act="askQ" data-q="${esc(x.q)}">${ic('ai')}Ask about this</button>`:''}</div></div></div>`).join('')+`<div class="ai-ins-f"><span>✨ Plot’s read · ${esc(tShort?tShort(C.at):'')}</span><button class="link" data-act="aiInsRun">Refresh</button></div>`}
-ACT.aiInsRun=()=>insRun();
+ return C.L.map(x=>`<div class="hin ai-ins"><span class="hin-e">${esc(x.e)}</span><div class="hin-b"><p>${esc(x.t)}</p><div class="hin-a">${x.link?btn(x.link):''}${x.q?`<button class="btn sm ghost" data-act="askQ" data-q="${esc(x.q)}">${ic('ai')}Ask about this</button>`:''}</div></div></div>`).join('')+`<div class="ai-ins-f"><span>✨ Plot’s read · ${esc(tShort?tShort(C.at):'')}</span><button class="link" data-act="aiInsRun">New ones</button></div>`}
+ACT.aiInsRun=()=>insRun(!!(S.settings.aiIns&&S.settings.aiIns.L));
 /* tracker insight next to the rule-based ones */
 {const _hi=homeInsights;homeInsights=function(){const L=_hi.apply(this,arguments),tn=dnum(today());
  trk().filter(t=>t.g).forEach(t=>{let hit=0;for(let k=tn-7;k<tn;k++)if(val(t.id,fromN(k))>=t.g)hit++;if(hit>=5)L.push({p:5,e:t.e||'⭐',t:`${t.n}: goal met ${hit} of the last 7 days. That’s a habit forming.`,q:`I hit my ${t.n} goal ${hit} of the last 7 days. Should I make it a habit, and how would I keep it going?`});else if(hit<=1&&val(t.id,fromN(tn-1))+val(t.id,today())===0)L.push({p:2,e:t.e||'⭐',t:`${t.n} has been quiet lately (${hit} of 7 days at goal).`,q:`I haven’t done much ${t.n} lately. What’s a tiny version I could do today?`})});
  return L.sort((a,b)=>b.p-a.p).slice(0,3)}}
-{const _hh=homeInsightsHTML;homeInsightsHTML=function(){const r=_hh.apply(this,arguments),ai=aiInsHTML();
- if(!r)return`<section class="rv"><div class="st-h"><h3>Insights</h3><button class="link" data-act="askGo">Ask AI</button></div><div class="hins">${ai}</div></section>`;
- return r.replace('<div class="hins">','<div class="hins">'+ai)}}
+/* Home: with an AI set up, its read leads and the rule-based patterns only fill in until it has one (they also feed
+   the AI as hints). The refresh button in the header asks the AI for a fresh set. */
+const RULE_INS=homeInsights;
+{const _hh=homeInsightsHTML;homeInsightsHTML=function(){const on=aiOn(),C=S.settings.aiIns,have=on&&C&&C.d===today()&&C.L&&C.L.length;
+ const r=have?'':_hh.apply(this,arguments),ai=aiInsHTML();
+ const rb=on?`<button class="ibtn sm ai-sgr${INS_BUSY?' spin':''}" data-act="aiInsRun" aria-label="New insights from AI" title="New insights from AI" ${INS_BUSY?'disabled':''}>${ic('renew')}</button>`:'';
+ const head=`<div class="st-h"><h3>Insights</h3><span class="ins-hr">${rb}<button class="link" data-act="askGo">Ask AI</button></span></div>`;
+ if(!r)return`<section class="rv">${head}<div class="hins">${ai}</div></section>`;
+ return r.replace(/<div class="st-h">[\s\S]*?<\/div>/,head).replace('<div class="hins">','<div class="hins">'+ai)}}
 })();
