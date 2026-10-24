@@ -1,7 +1,8 @@
 /* Conversations: every chat with the assistant, every talk in conversation mode and every Ask thread is kept as its own
    conversation. The Conversations page lists them (search, Chats / Talks / Ask), opens one to read it through, continues
    it in chat or out loud, and turns it into things in the plan (goals, habits, routines, lists, a journal entry,
-   reminders) with the AI. Stored on this device only (IndexedDB key "convs"), never synced, up to 300 conversations. */
+   reminders) with the AI. Stored on this device (IndexedDB key "convs", up to 300) and, with sync on, in your own Drive
+   file so every device has them (1.53). Deleting one deletes it everywhere. */
 (()=>{
 'use strict';
 const nm=()=>(window.PLOT_ASSIST&&PLOT_ASSIST.aname)?PLOT_ASSIST.aname():'Plot';
@@ -12,8 +13,9 @@ Object.assign(IC,{hist:'<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/><pa
 
 /* ---------------- the store ---------------- */
 let CV=[],saveT=0;
-DB.get('convs').then(v=>{if(Array.isArray(v))CV=[...CV,...v.filter(c=>c&&c.id&&!CV.some(x=>x.id===c.id))].sort((a,b)=>b.t1-a.t1);if(cur.p==='chats')render(false)}).catch(()=>{});
-const persist=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{DB.set('convs',CV.slice(0,300)).catch(()=>{})},400)};
+const CVL=DB.get('convs').then(v=>{if(Array.isArray(v))CV=[...CV,...v.filter(c=>c&&c.id&&!CV.some(x=>x.id===c.id))].sort((a,b)=>b.t1-a.t1);if(cur.p==='chats')render(false)}).catch(()=>{});
+const persist=quiet=>{clearTimeout(saveT);saveT=setTimeout(()=>{DB.set('convs',CV.slice(0,300)).catch(()=>{})},400);if(!quiet&&window.syncTouch)syncTouch()};
+if(window.syncList)syncList('convs',{load:CVL,get:()=>CV,set:x=>{CV=x.sort((a,b)=>b.t1-a.t1);persist(1);if(cur.p==='chats'&&!document.activeElement?.matches('input,textarea'))render(false)}});
 const KIND={chat:['Chat','chat'],talk:['Talk','live'],ask:['Ask','ai']};
 function sync(id,k,turns){turns=(turns||[]).filter(t=>t&&t.q&&String(t.a||'').trim());if(!turns.length)return id||null;
  let c=id&&CV.find(x=>x.id===id);if(!c){c={id:id||uid(),k:KIND[k]?k:'chat',t0:turns[0].t||Date.now(),t1:Date.now(),title:'',turns:[]};CV.unshift(c)}
@@ -46,9 +48,9 @@ function listHTML(){const L=hits();if(!CV.length)return`<div class="empty rv"><h
   o+=`<button class="cv-i" data-act="convOpen" data-id="${c.id}"><span class="cv-ic k-${c.k}">${ic(K[1])}</span><span class="cv-b"><b>${esc(c.title||'Conversation')}</b><small>${esc(tr(last?last.a:'',110))}</small><em>${K[0]} · ${when(c.t1)} · ${c.turns.length} message${c.turns.length===1?'':'s'}</em></span></button>`});return o}
 function listPaint(){const l=$('#cvList');if(l)l.innerHTML=listHTML()}
 function vChats(id){if(id)return vChat(id);
- return`<header class="ph"><div><h1>Conversations</h1><div class="data">${CV.length?`${CV.length} saved on this device`:'Chats and talks with '+esc(nm())}</div></div><div class="ph-r"><button class="ibtn" data-act="convNewTalk" aria-label="Start talking" title="Start talking">${ic('live')}</button><button class="ibtn" data-act="convNewChat" aria-label="New chat" title="New chat">${ic('plus')}</button>${gear()}</div></header>
+ return`<header class="ph"><div><h1>Conversations</h1><div class="data">${CV.length?`${CV.length} saved`:'Chats and talks with '+esc(nm())}</div></div><div class="ph-r"><button class="ibtn" data-act="convNewTalk" aria-label="Start talking" title="Start talking">${ic('live')}</button><button class="ibtn" data-act="convNewChat" aria-label="New chat" title="New chat">${ic('plus')}</button>${gear()}</div></header>
  ${CV.length?`<div class="cv-tools rv"><label class="cv-s">${ic('search','ico-s')}<input id="cvQ" type="search" placeholder="Search conversations" value="${esc(CF.q)}" aria-label="Search conversations"></label>
- <div class="chips cv-k">${[['','All'],['chat','Chats'],['talk','Talks'],['ask','Ask']].map(([k,n])=>`<button class="chip ${CF.k===k?'on':''}" data-act="convKind" data-k="${k}">${n}</button>`).join('')}</div></div>`:''}
+ <div class="chips cv-k">${[['','All'],['chat','Chats'],['talk','Talks'],['ask','Ask']].map(([k,n])=>`<button class="chip ${CF.k===k?'on':''}" data-act="convKind" data-k="${k}">${n}</button>`).join('')}<button class="chip cv-da" data-act="convDelAll">${ic('trash')}Delete all</button></div></div>`:''}
  <div class="cv-l rv" id="cvList">${listHTML()}</div>`}
 function vChat(id){const c=get(id);if(!c)return`<header class="ph"><div><a class="link" href="#/chats">${ic('back','ico-s')} Conversations</a><h1>Not found</h1></div></header><p class="muted">This conversation was deleted or is on another device.</p>`;
  const K=KIND[c.k]||KIND.chat;
@@ -105,7 +107,8 @@ Object.assign(ACT,{
   removeTurn(c.id,d.t);try{if(window.PLOT_ASSIST&&PLOT_ASSIST.current&&PLOT_ASSIST.current()===c.id)PLOT_ASSIST.dropTurn(d.t)}catch(e){}
   if(last)go('chats');else render(false);
   toast('Message removed',()=>{let k=get(c.id);if(!k){k=c;CV.unshift(c)}k.turns.splice(Math.min(i,k.turns.length),0,t);k.sig='';persist();if(last)go('chats/'+c.id);else render(false)})},
- convDel:d=>{const c=get(d.id);if(!c)return;askConfirm('Delete this conversation?','It’s removed from this device. Anything you made from it stays in your plan.','Delete',()=>{CV=CV.filter(x=>x!==c);persist();closeSheet();if(cur.p==='chats'&&cur.id)go('chats');else render(false);toast('Conversation deleted')})}
+ convDelAll:()=>askConfirm('Delete every conversation?','They’re removed from all your devices. Anything you made from them stays in your plan.','Delete all',()=>{CV=[];persist();render(false);toast('All conversations deleted')}),
+ convDel:d=>{const c=get(d.id);if(!c)return;askConfirm('Delete this conversation?','It’s removed from all your devices. Anything you made from it stays in your plan.','Delete',()=>{CV=CV.filter(x=>x!==c);persist();closeSheet();if(cur.p==='chats'&&cur.id)go('chats');else render(false);toast('Conversation deleted')})}
 });
 Object.assign(FORM,{convName:(f,e)=>{const id=(f.dataset||{}).id||f.getAttribute('data-id'),c=get(id),t=tr(new FormData(f).get('t'),80);if(c&&t){c.title=t;c.named=1;persist()}closeSheet();render(false)}});
 /* the Ask page gets a history button next to New chat */
@@ -114,7 +117,7 @@ if(typeof vAsk==='function'){const _v=vAsk;vAsk=function(){return _v.apply(this,
 const css=document.createElement('style');css.textContent=`
 .cv-tools{display:flex;flex-direction:column;gap:10px;margin:4px 0 14px}
 .cv-s{display:flex;align-items:center;gap:8px;padding:0 14px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}.cv-s input{flex:1;min-width:0;border:0;background:none;color:var(--text);font:500 15px var(--f-body);outline:none;height:100%}
-.cv-k{margin:0}
+.cv-k{margin:0}.cv-da{margin-left:auto;color:var(--muted)}
 .cv-g{margin:18px 4px 8px;font:700 12px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .cv-i{display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;padding:12px 14px;margin:0 0 8px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer;transition:transform .2s}.cv-i:active{transform:scale(.98)}
 .cv-ic{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;flex:none;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}.cv-ic svg{width:18px;height:18px}.cv-ic.k-talk{background:color-mix(in srgb,var(--c-learning,var(--accent)) 20%,transparent);color:var(--c-learning,var(--accent))}

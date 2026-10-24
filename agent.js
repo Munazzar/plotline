@@ -16,8 +16,8 @@
    A task can think with "Your AI server" (a big model on the user's own PC) while chat uses something else.
    When it runs: tasks run while Plotlines is open (checked every minute and when you come back to the app). A task
    that comes due while the app is closed shows a notification at its time; opening Plotlines runs it.
-   Everything here (tasks, inbox, connections) is a setting of this device: it isn't synced, so each device's agent
-   has its own. */
+   Tasks, reports, connections and the Notion token sync between your devices through your own Drive file (1.53);
+   Google sign-ins stay per device. */
 (()=>{
 'use strict';
 Object.assign(IC,{agent:'<path d="M12 3v2.5"/><circle cx="12" cy="2.6" r=".9"/><rect x="4.5" y="6" width="15" height="11.5" rx="4"/><path d="M9.2 11.2v.6M14.8 11.2v.6M9.5 14.5c1.6 1 3.4 1 5 0M2.5 11v3M21.5 11v3M9 17.5V21M15 17.5V21"/>',plug:'<path d="M9 2v5M15 2v5M6.5 7h11v3.5a5.5 5.5 0 0 1-11 0z"/><path d="M12 16v6"/>'});
@@ -28,6 +28,13 @@ const CDEF={gcal:false,gmail:false,gdrive:false,notion:false,web:true,proxy:''};
 const cset=()=>S.settings.conn=Object.assign({},CDEF,S.settings.conn||{});
 const NOTK='plotline.notion';
 const notionKey=()=>{try{return localStorage.getItem(NOTK)||''}catch(e){return''}};
+/* 1.53: tasks, reports, connections and the Notion token follow you to your other devices (index.html syncList/syncPref).
+   Google sign-ins stay per device: a connection that's on asks this device to sign in when it's first used. */
+if(window.syncList){syncList('agTasks',{load:window.S_LOADED,get:()=>ag().tasks,set:x=>{ag().tasks=x;save()}});
+ syncList('agInbox',{load:window.S_LOADED,get:()=>ag().inbox,set:x=>{ag().inbox=x.sort((a,b)=>b.t-a.t).slice(0,40);save()}});
+ syncPref('agentOn',()=>ag().on!==false,v=>{ag().on=v!==false});
+ syncPref('conn',()=>cset(),v=>{if(v)S.settings.conn=v},()=>CDEF);
+ syncPref('notion',()=>notionKey(),v=>{try{v?localStorage.setItem(NOTK,v):localStorage.removeItem(NOTK)}catch(e){}});}
 
 /* ---------------- connections ---------------- */
 const SC={gcal:'https://www.googleapis.com/auth/calendar.events',gmail:'https://www.googleapis.com/auth/gmail.readonly',gdrive:'https://www.googleapis.com/auth/drive.metadata.readonly'};
@@ -82,7 +89,7 @@ async function lookup(x,raw,small){const k=x.tool,n=Math.max(1,Math.min(+x.max||
  if(k==='web_search')return webFacts(x.query||'');
  if(k==='news')return news(x.query||'',x.sources,x.days);
  if(k==='trending')return trending(x.where);
- if(k==='read_url'){if(!/^https?:\/\/[^\s]+$/i.test(x.url||''))return'read_url: give a full https link';return`read_url ${x.url}:\n`+pageText(await tget(x.url),small?2500:6000)}
+ if(k==='read_url'){if(!pubUrl(x.url))return'read_url: only public https links can be read';return`read_url ${x.url}:\n`+pageText(await tget(x.url),small?2500:6000)}
  return`${k}: not available`}
 const HTTPCB={};
 /* ---------------- the web: weather, places and quick facts, from free public services (no account, no key) ----------------
@@ -117,6 +124,9 @@ async function webFacts(q){const out=[];
 async function tget(url){if(NA&&NA.http)return new Promise((res,rej)=>{const id='h'+uid();const t=setTimeout(()=>{delete HTTPCB[id];rej(new Error('no answer'))},20000);HTTPCB[id]=(st,b)=>{clearTimeout(t);delete HTTPCB[id];st>=200&&st<300?res(String(b||'')):rej(new Error('status '+st))};NA.http(id,JSON.stringify({url,method:'GET',headers:{},body:''}))});
  const go=async u=>{const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),20000);try{const r=await fetch(u,{signal:ctl.signal});if(!r.ok)throw new Error('status '+r.status);return await r.text()}finally{clearTimeout(t)}},px=cset().proxy.trim();
  try{return await go(url)}catch(e){if(!px)throw new Error('this site only answers the Android app, or a browser with a proxy (Agent › Connections)');return go(px.replace(/\/+$/,'')+'/'+url)}}
+/* the agent reads public pages only: never this device, the home network, a private Tailscale name or a bare number */
+const pubUrl=u=>{let h;try{const p=new URL(String(u||''));if(p.protocol!=='https:'||p.username||p.password)return false;h=p.hostname.toLowerCase().replace(/^\[|\]$/g,'')}catch(e){return false}
+ return!(/^localhost$|\.(local|localhost|internal|lan|home|ts\.net)$/.test(h)||/^(127|10|0)\.|^192\.168\.|^169\.254\.|^172\.(1[6-9]|2\d|3[01])\.|^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(h)||/^(::1?$|f[cd]|fe80)/.test(h)||/^[\d.]+$/.test(h)&&!/^\d+\.\d+\.\d+\.\d+$/.test(h))};
 const canFeed=()=>!!(NA&&NA.http||cset().proxy.trim());
 function pageText(s,n){s=String(s||'');
  if(/<(rss|feed|rdf:RDF)[\s>]/i.test(s.slice(0,1500))){const x=new DOMParser().parseFromString(s,'text/xml'),g=(e,k)=>((e.querySelector(k)||{}).textContent||'').trim();
@@ -247,12 +257,21 @@ function nextAt(t,from){const k=t.when||'daily';if(k==='manual')return 0;if(k===
 const whenTxt=t=>{const k=t.when||'daily',at=fmtTime(t.at||'08:00');return k==='daily'?'Every day at '+at:k==='weekdays'?'Weekdays at '+at:k==='weekly'?`${DOW[+(t.dow||0)]}s at ${at}`:(WHEN.find(x=>x[0]===k)||[0,''])[1]};
 async function due(){if(BUSY||!ag().on||typeof S==='undefined')return;const A=ag(),t0=now();
  for(const t of A.tasks){if(!t.on||(t.when||'daily')==='manual')continue;if(!t.next)t.next=t.when==='open'?t0:nextAt(t,t.created||t0);
-  if(t.next<=t0){if(engOf(t)!=='api'&&!aiOk())return;if((typeof IN!=='undefined'&&IN.busy)||(window.AS_BUSY))return;await runTask(t,false);return}}}
+  if(t.next<=t0){if(engOf(t)!=='api'&&!aiOk())return;if((typeof IN!=='undefined'&&IN.busy)||(window.AS_BUSY))return;
+   /* with sync on, catch up first: another device may have run it already */
+   if(typeof syncOn==='function'&&syncOn()){try{await syncNow(false)}catch(e){}const t2=ag().tasks.find(x=>x.id===t.id);if(!t2||!t2.on||!t2.next||t2.next>now()||BUSY)return;await runTask(t2,false);return}
+   await runTask(t,false);return}}}
 window.agentAlarms=(n,L)=>{if(!ag().on)return;ag().tasks.forEach(t=>{if(!t.on||!['daily','weekdays','weekly'].includes(t.when))return;const at=t.next&&t.next>n?t.next:nextAt(t,n);L.push({at,title:'Plot · '+t.title,body:'Open Plotlines and I’ll run it',k:'agent',id:t.id})})};
 setInterval(()=>{if(!document.hidden)due()},60e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(due,2500)});
 window.addEventListener('app-resume',()=>setTimeout(due,2500));
 setTimeout(due,6000);
+
+/* ---------------- Home: the latest reports, one tap to read them ---------------- */
+function homeAgHTML(){const I=ag().inbox;if(!I.length)return'';const n=I.filter(i=>!i.seen).length;
+ return`<section class="rv hagent"><div class="st-h"><h3>Agent reports${n?` <span class="ag-n">${n} new</span>`:''}</h3><a class="link" href="#/agent">All</a></div><div class="panel ag-hl">${I.slice(0,3).map(it=>`<button class="ag-hr${it.seen?'':' new'}" data-act="agHome" data-i="${it.id}"><span class="ag-hi">${ic('agent')}</span><span class="ag-hb2"><b>${esc(it.title)}</b><small>${esc(dd(it.t))} · ${esc(tm(it.t))}</small><em>${esc(tr(firstLine(it.summary),120))}</em></span></button>`).join('')}</div></section>`}
+if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){let a='';try{a=homeAgHTML()}catch(e){}return _ht()+a}}
+if(typeof HOME_ORDER!=='undefined'&&!HOME_ORDER.includes('agent')){HOME_ORDER.splice(HOME_ORDER.indexOf('sched')+1,0,'agent');HOME_NAME.agent=['Agent reports','The latest results from your agent tasks'];const _hk=homeKey;homeKey=function(n){return n.classList&&n.classList.contains('hagent')?'agent':_hk(n)}}
 
 /* ---------------- ready-made tasks ---------------- */
 const TPL=[
@@ -310,7 +329,7 @@ function tasksHTML(){const T=ag().tasks;
 function connHTML(){const c=cset(),nk=notionKey();
  const row=k=>{const on=connOn(k);return`<div class="ag-c"><span><b>${CN[k][0]}</b><small>${CN[k][1]}</small></span>${on?`<button class="btn sm ghost" data-act="agDisc" data-k="${k}">Disconnect</button>`:`<button class="btn sm" data-act="agConn" data-k="${k}">Connect</button>`}</div>`};
  return`<section class="panel rv" id="agConn"><h3>Connections</h3><p class="small muted">What the agent may read. Google uses the same sign-in as Drive sync and asks for the extra permission when you connect. What they read goes only to the AI you picked; web lookups send just the words or link of the lookup to public services.</p>${['gcal','gmail','gdrive','notion','web'].map(row).join('')}
-  ${c.notion||nk?`<div class="field"><label>Notion integration token</label><input type="password" data-agk="notion" value="${esc(nk)}" placeholder="ntn_…" autocomplete="off"><small class="muted">Make one at notion.so/my-integrations, then share the pages you want with it. The token stays on this device.</small></div>`:''}${NA&&NA.http||!(c.notion||nk||connOn('web'))?'':`<div class="field"><label>Proxy for a browser</label><input data-agk="proxy" value="${esc(c.proxy)}" placeholder="https://your-proxy.example" autocomplete="off" spellcheck="false"><small class="muted">Notion, RSS feeds, Google News and Google trends don’t answer web pages directly. Without a proxy the web app reads news from GDELT and trends from Hacker News. The Android app doesn’t need this.</small></div>`}</section>`}
+  ${c.notion||nk?`<div class="field"><label>Notion integration token</label><input type="password" data-agk="notion" value="${esc(nk)}" placeholder="ntn_…" autocomplete="off"><small class="muted">Make one at notion.so/my-integrations, then share the pages you want with it. The token stays on this device and, with sync on, in your own Drive’s hidden app folder.</small></div>`:''}${NA&&NA.http||!(c.notion||nk||connOn('web'))?'':`<div class="field"><label>Proxy for a browser</label><input data-agk="proxy" value="${esc(c.proxy)}" placeholder="https://your-proxy.example" autocomplete="off" spellcheck="false"><small class="muted">Notion, RSS feeds, Google News and Google trends don’t answer web pages directly. Without a proxy the web app reads news from GDELT and trends from Hacker News. The Android app doesn’t need this.</small></div>`}</section>`}
 function aiMark(){const s=insSet(),m=aiModel();if(m&&planEngine()!=='api'){s.dl={...(s.dl||{}),[m[0]]:1};save()}}
 function vAgent(){const A=ag(),e=planEngine(),picked=aiPicked(),ready=picked;const m=aiModel(),dl=picked&&!aiOk()&&e!=='api'&&m;const unseen=A.inbox.filter(i=>!i.seen).length;
  if(unseen)setTimeout(()=>{A.inbox.forEach(i=>i.seen=true);save()},1500);
@@ -361,6 +380,7 @@ Object.assign(ACT,{
  agNo:d=>{const[it,s]=findIt(d);if(!s)return;s.st='no';save();render(false)},
  agAll:async d=>{const it=ag().inbox.find(x=>x.id===d.i);if(!it)return;let n=0;for(const s of it.sugs)if(!s.st){try{await apply(s,true);n++}catch(e){}}toast(`Done ${n} of them`);render(false)},
  agFold:d=>{INB_OPEN.set(d.i,d.o!=='1');render(false)},
+ agHome:d=>{INB_OPEN.set(d.i,true);go('agent');setTimeout(()=>{const b=document.querySelector(`[data-act=agFold][data-i="${d.i}"]`);if(b)b.closest('.ag-it').scrollIntoView({block:'start'})},450)},
  agMin:()=>{const A=ag();A.min=!A.min;save();render(false)},
  agMore:()=>{INB_N+=10;render(false)},agLess:()=>{INB_N=3;render(false)},
  agItX:d=>{const A=ag(),it=A.inbox.find(x=>x.id===d.i);if(!it)return;const at=A.inbox.indexOf(it);A.inbox.splice(at,1);save();render(false);
@@ -436,7 +456,7 @@ const css=document.createElement('style');css.textContent=`
 .ag-x{grid-column:1;min-width:0;overflow-wrap:anywhere;font-size:14.5px;line-height:1.4}.ag-b{display:flex;gap:4px}.ag-b .ibtn:last-child svg{transform:rotate(45deg)}.ag-ok{color:var(--accent)}
 .ag-tl{display:flex;flex-direction:column;gap:10px}.ag-t.off{opacity:.55}.ag-t p{margin:6px 0}
 .ag-c{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent)}.ag-c span{display:flex;flex-direction:column}.ag-c small{color:var(--muted);font-size:12px}
-.ag-tune{margin:12px 0 4px}.ag-tune .chips{margin-top:6px}.ag-tune .chip.less{background:transparent;color:var(--muted);border:1px dashed currentColor;text-decoration:line-through}.ag-src{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}.ag-src .chip{position:relative;color:var(--muted)}.ag-src .chip input{position:absolute;opacity:0;pointer-events:none}.ag-src .chip::before{content:'';width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;box-sizing:border-box}.ag-src .chip:has(input:checked){color:var(--text);background:color-mix(in srgb,var(--accent) 14%,var(--surface));border-color:color-mix(in srgb,var(--accent) 55%,transparent)}.ag-src .chip:has(input:checked)::before{background:var(--accent);border-color:var(--accent)}.ag-src .chip:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}.ag-src .chip.dim{opacity:.45}
+.hagent .ag-hl{display:flex;flex-direction:column;padding:4px}.ag-hr{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:10px 12px;border:0;background:none;color:inherit;font:inherit;width:100%;border-radius:14px;cursor:pointer}.ag-hr+.ag-hr{border-top:1px solid var(--line);border-radius:0}.ag-hb2{display:flex;flex-direction:column;gap:2px;min-width:0}.ag-hb2 small{color:var(--muted);font-size:12px}.ag-hb2 em{font-style:normal;color:var(--muted);font-size:13.5px;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.ag-hr.new b::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:middle}.ag-tune{margin:12px 0 4px}.ag-tune .chips{margin-top:6px}.ag-tune .chip.less{background:transparent;color:var(--muted);border:1px dashed currentColor;text-decoration:line-through}.ag-src{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}.ag-src .chip{position:relative;color:var(--muted)}.ag-src .chip input{position:absolute;opacity:0;pointer-events:none}.ag-src .chip::before{content:'';width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;box-sizing:border-box}.ag-src .chip:has(input:checked){color:var(--text);background:color-mix(in srgb,var(--accent) 14%,var(--surface));border-color:color-mix(in srgb,var(--accent) 55%,transparent)}.ag-src .chip:has(input:checked)::before{background:var(--accent);border-color:var(--accent)}.ag-src .chip:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}.ag-src .chip.dim{opacity:.45}
 .ag-home{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;margin-bottom:12px}.ag-home span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}.ag-home small{color:var(--muted);font-size:12px}
 .ag-hi{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
 .sw.ag-sw{margin:0;padding:0;border:0}

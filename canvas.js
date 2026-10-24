@@ -21,7 +21,12 @@ Object.assign(IC,{cvs:'<rect x="3" y="4" width="18" height="14" rx="2.5"/><path 
 /* ---------------- the store ---------------- */
 let CS=[],saveT=0;
 const LOADED=DB.get('canvases').then(v=>{if(Array.isArray(v))CS=[...CS,...v.filter(c=>c&&c.id&&!CS.some(x=>x.id===c.id))].sort((a,b)=>b.t1-a.t1);if(cur.p==='canvas')render(false)}).catch(()=>{});
-const persist=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{DB.set('canvases',CS).catch(()=>toast('Couldn’t save the canvas on this device'))},300)};
+const persist=quiet=>{clearTimeout(saveT);saveT=setTimeout(()=>{DB.set('canvases',CS).catch(()=>toast('Couldn’t save the canvas on this device'))},300);if(!quiet&&window.syncTouch)syncTouch()};
+/* 1.53: canvases sync through your own Drive file: the page, its chat and its saved data; the version history stays on
+   each device, and a page that arrives from another device becomes a new version here */
+if(window.syncList)syncList('canvases',{load:LOADED,get:()=>CS,set:x=>{CS=x.sort((a,b)=>b.t1-a.t1);persist(1);if(cur.p==='canvas'&&!document.activeElement?.matches('input,textarea'))render(false)},
+ out:c=>{const{ver,vi,...r}=c;return r},
+ inn:(r,l)=>{const ver=[...(l&&l.ver||[])];if(r.html&&(!ver.length||ver[ver.length-1].html!==r.html)){ver.push({t:r.t1||Date.now(),html:r.html,note:'From your other device',by:'sync'});if(ver.length>MAXV)ver.splice(0,ver.length-MAXV)}return{...r,ver,vi:ver.length-1}}});
 const get=id=>CS.find(c=>c.id===id)||null;
 function make(title){const c={id:uid(),title:title||'Untitled canvas',named:!!title,t0:Date.now(),t1:Date.now(),html:'',ver:[],msgs:[],store:{},data:true,w:'full'};CS.unshift(c);persist();return c}
 const touch=c=>{c.t1=Date.now();CS=[c,...CS.filter(x=>x!==c)];persist()};
@@ -228,12 +233,12 @@ const IDEAS=[['A report on my habits this month','report'],['A dashboard of my g
 const KIND_IC={report:'ai',app:'checklist',site:'ext',design:'pen'};
 function engineHint(){if(!window.AIX||!AIX.ready())return`<div class="panel rv cvs-setup">${window.AIX?AIX.modelCard('canvas'):''}<p class="small muted">AI canvas needs an AI. It works best with a big model on your own AI server: pick “Your AI server” in Settings › AI &amp; voice and point it at Ollama or LM Studio.</p><div class="actions left"><a class="btn sm" href="#/settings">Open settings</a></div></div>`;
  return planEngine()==='api'?'':`<p class="small muted cvs-hint">${ic('ai','ico-s')} You’re on a small on-device model, so pages will be simple. For real apps and reports, use a big model on your own AI server (Settings › AI &amp; voice › Your AI server).</p>`}
-function vList(){return`<header class="ph"><div><h1>AI canvas</h1><div class="data">${CS.length?`${CS.length} saved on this device`:`Build reports, apps, sites and designs with ${esc(nm())}`}</div></div><div class="ph-r"><button class="ibtn" data-act="cvsNew" aria-label="New canvas" title="New canvas">${ic('plus')}</button>${gear()}</div></header>
+function vList(){return`<header class="ph"><div><h1>AI canvas</h1><div class="data">${CS.length?`${CS.length} saved`:`Build reports, apps, sites and designs with ${esc(nm())}`}</div></div><div class="ph-r"><button class="ibtn" data-act="cvsNew" aria-label="New canvas" title="New canvas">${ic('plus')}</button>${gear()}</div></header>
  ${engineHint()}
  <form class="cvs-start rv" data-form="cvsStart" autocomplete="off"><div class="field"><textarea id="cvsFirst" name="q" rows="3" maxlength="4000" placeholder="What should we build? “A report of my habits this month”, “a budget app”, “a website for my bakery”…" aria-label="What should we build?"></textarea></div><div class="actions left"><button class="btn pri">${ic('ai')}Start building</button></div></form>
  <div class="cvs-ideas rv">${IDEAS.map(([t,k])=>`<button class="cvs-idea" data-act="cvsIdea" data-q="${esc(t)}">${ic(KIND_IC[k],'ico-s')}<span>${esc(t)}</span></button>`).join('')}</div>
- ${CS.length?`<h4 class="cv-g">Your canvases</h4><div class="cvs-grid rv">${CS.map(c=>`<button class="cvs-card" data-act="cvsOpen" data-id="${c.id}"><span class="cvs-thumb">${c.html?ic('cvs'):ic('ai')}</span><span class="cvs-cb"><b>${esc(c.title)}</b><small>${c.ver.length?`${c.ver.length} version${c.ver.length===1?'':'s'}`:'Nothing built yet'} · ${ago(c.t1)}</small></span>${RUN&&RUN.id===c.id?'<i class="cvs-dot" title="Working"></i>':''}</button>`).join('')}</div>`:''}
- <p class="small muted me-priv">${ic('lock','ico-s')} Canvases are kept on this device. Pages run in a closed box: they can read a snapshot of your data when you allow it, and can’t change anything in the app.${planEngine()==='api'?' Your requests and the page go to the AI server you picked.':''}</p>`}
+ ${CS.length?`<h4 class="cv-g cvs-gh">Your canvases<button class="link" data-act="cvsDelAll">Delete all</button></h4><div class="cvs-grid rv">${CS.map(c=>`<button class="cvs-card" data-act="cvsOpen" data-id="${c.id}"><span class="cvs-thumb">${c.html?ic('cvs'):ic('ai')}</span><span class="cvs-cb"><b>${esc(c.title)}</b><small>${c.ver.length?`${c.ver.length} version${c.ver.length===1?'':'s'}`:'Nothing built yet'} · ${ago(c.t1)}</small></span>${RUN&&RUN.id===c.id?'<i class="cvs-dot" title="Working"></i>':''}</button>`).join('')}</div>`:''}
+ <p class="small muted me-priv">${ic('lock','ico-s')} Canvases are kept on this device and, with sync on, in your own Google Drive. Pages run in a closed box: they can read a snapshot of your data when you allow it, and can’t change anything in the app.${planEngine()==='api'?' Your requests and the page go to the AI server you picked.':''}</p>`}
 const md_=x=>window.AIX&&AIX.md?AIX.md(x):esc(x);
 function stHTML(c,m){const V=`Version ${(m.v??0)+1}`,ok=c.ver[m.v];switch(m.st){
  case'ok':return`<p class="cvs-s ok">${ic('check','ico-s')}${V} is ready</p>`;
@@ -335,7 +340,8 @@ Object.assign(ACT,{
   download((c.title.replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-')||'canvas')+'.html',docOf(c,{file:true,data:withData}),'text/html');toast(withData?'Saved, with a snapshot of the data it uses':'Saved')},
  cvsDup:d=>{const c=get(d.id);if(!c)return;const n={...JSON.parse(JSON.stringify(c)),id:uid(),title:tr(c.title,70)+' copy',named:true,t0:Date.now()};CS.unshift(n);touch(n);closeSheet();go('canvas/'+n.id);toast('Copy made')},
  cvsReset:d=>{const c=get(d.id);if(!c)return;askConfirm('Reset this canvas?','The page, the chat, every version and anything its app saved are cleared. The name stays.','Reset',()=>{if(RUN&&RUN.id===c.id)RUN.ctl.abort();Object.assign(c,{html:'',ver:[],vi:undefined,msgs:[],store:{}});FR_ERR=null;TAB='chat';touch(c);closeSheet();paint();toast('Canvas reset')})},
- cvsDel:d=>{const c=get(d.id);if(!c)return;askConfirm('Delete this canvas?','The page, its versions and its chat are deleted from this device.','Delete',()=>{if(RUN&&RUN.id===c.id)RUN.ctl.abort();const i=CS.indexOf(c);CS=CS.filter(x=>x!==c);persist();closeSheet();if(cur.p==='canvas'&&cur.id===c.id)go('canvas');else render(false);
+ cvsDelAll:()=>askConfirm('Delete every canvas?','Every page, its versions and its chat are deleted from all your devices.','Delete all',()=>{if(RUN)try{RUN.ctl.abort()}catch(e){}CS=[];persist();render(false);toast('All canvases deleted')}),
+ cvsDel:d=>{const c=get(d.id);if(!c)return;askConfirm('Delete this canvas?','The page, its versions and its chat are deleted from all your devices.','Delete',()=>{if(RUN&&RUN.id===c.id)RUN.ctl.abort();const i=CS.indexOf(c);CS=CS.filter(x=>x!==c);persist();closeSheet();if(cur.p==='canvas'&&cur.id===c.id)go('canvas');else render(false);
   toast('Canvas deleted',()=>{CS.splice(Math.max(0,i),0,c);persist();if(cur.p==='canvas')render(false)})})},
  cvsCodeSave:d=>{const c=get(d.id),t=$('#cvsCode');if(!c||!t)return;const v=t.value;if(v===c.html)return toast('No changes');commit(c,v,'Your edit','you');FR_ERR=null;c.msgs.push({id:uid(),r:'a',x:'You edited the code by hand.',v:c.vi,t:Date.now()});ACT.cvsTab({k:wide()?'chat':'view'});fillFrames();logPaint(true);const vl=$('#cvsVl');if(vl)vl.textContent=`Version ${c.vi+1} of ${c.ver.length}`;toast('Applied')},
  cvsCopy:async d=>{const c=get(d.id);if(!c)return;toast(await copyText(c.html||'')?'Code copied':'Copy failed')}
@@ -354,6 +360,7 @@ const css=document.createElement('style');css.textContent=`
 .cvs-ideas{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
 .cvs-idea{display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 13.5px var(--f-body);cursor:pointer;text-align:left}
 .cvs-idea:hover,.cvs-idea:focus-visible{border-color:var(--accent)}.cvs-idea .ico-s{color:var(--accent);flex:none}
+.cvs-gh{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.cvs-gh .link{font-size:13px}
 .cvs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:12px}
 .cvs-card{position:relative;display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;cursor:pointer;min-width:0}
 .cvs-card:hover,.cvs-card:focus-visible{border-color:var(--accent)}
