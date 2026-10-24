@@ -768,9 +768,9 @@ html{font-synthesis-weight:none}
 .agenda{display:flex;flex-direction:column;gap:10px}
 .ag{display:grid;grid-template-columns:70px minmax(0,1fr);gap:14px;padding:14px;border-radius:22px;background:var(--surface);border:1px solid var(--line);scroll-margin-top:24px;transition:border-color .3s,box-shadow .3s}
 .ag.pk{border-color:var(--line-2);box-shadow:0 0 0 1px var(--line-2)}
-.ag-h{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:4px 0 0 4px}
-.ag-h b{font:800 36px/.9 var(--f-display)}
-.ag.now .ag-h b{color:var(--accent)}
+.ag>.ag-h{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:4px 0 0 4px}
+.ag>.ag-h b{font:800 36px/.9 var(--f-display)}
+.ag.now>.ag-h b{color:var(--accent)}
 .ag-w{font-weight:600;font-size:13px}
 .ag-i{display:flex;flex-direction:column;gap:2px;min-width:0}
 .agr{display:flex;align-items:flex-start;gap:12px;padding:9px 10px;border-radius:14px;cursor:pointer;transition:background-color .25s}
@@ -790,7 +790,7 @@ html{font-synthesis-weight:none}
 @media(max-width:700px){
  .cd{min-height:56px;align-items:center;padding:6px 2px;border-radius:14px}.cd-chips{display:none}.cd-dots{display:flex}.cal-m,.cal-dow{gap:4px}
  .cal-w{grid-template-columns:minmax(0,1fr);gap:6px}.cw{flex-direction:row;min-height:0;align-items:flex-start;padding:8px 10px}.cw-h{width:46px;flex:none}.cw-i{flex:1;padding-top:2px}.cw-e{text-align:left;padding-top:12px}
- .ag{grid-template-columns:minmax(0,1fr);gap:4px;padding:12px}.ag-h{flex-direction:row;align-items:baseline;gap:10px;padding:2px 10px}.ag-h b{font-size:26px}.ag-h .data{margin-left:auto}
+ .ag{grid-template-columns:minmax(0,1fr);gap:4px;padding:12px}.ag>.ag-h{flex-direction:row;align-items:baseline;gap:10px;padding:2px 10px}.ag>.ag-h b{font-size:26px}.ag>.ag-h .data{margin-left:auto}
  .cal-nav .btn{padding-inline:14px}
 }
 
@@ -3575,7 +3575,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.51.1';
+const APP_VER='1.52.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -8329,7 +8329,7 @@ function cutSec(o,m){const i=o.indexOf(m);if(i<0)return o;const j=o.indexOf('</s
    More is a sheet: every page you haven't pinned as a big tile (one tap), search at the top (it doesn't grab the
    keyboard), your bar's pages, and settings shortcuts. Edit pins and orders pages in place. Tap More again, the
    close button, the scrim or Back to close it. */
-const PG=[['today','Home','home','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['activity','Activity','flame','Steps, sleep, screen time, workouts'],['journal','Journal','journal','Moments and history'],['vista','Timeline','map','Goal paths and life map'],['ask','Ask','ai','Insights and AI planning'],['threads','Thread','thread','Running logs for ideas and projects'],['agent','Agent','agent','Tasks it runs for you, with your calendar, email and more'],['lists','Lists','checklist','Checklists, packing and shopping lists you can share'],['chats','Conversations','hist','Your chats and talks with the assistant'],['me','Picture of me','me','Who you are, written by the AI from everything you add'],['canvas','AI canvas','cvs','Build reports, apps, sites and designs with the AI'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='vista'||p[0]==='bench'||p[0]==='lists'||p[0]==='agent'||p[0]==='chats'||p[0]==='me'||p[0]==='canvas'||VIEWS[p[0]]);
+const PG=[['today','Home','home','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['activity','Activity','flame','Steps, sleep, screen time, workouts'],['journal','Journal','journal','Moments and history'],['vista','Timeline','map','Goal paths and life map'],['ask','Ask','ai','Insights and AI planning'],['threads','Thread','thread','Running logs for ideas and projects'],['agent','Agent','agent','Tasks it runs for you, with your calendar, email and more'],['lists','Lists','checklist','Checklists, packing and shopping lists you can share'],['chats','Conversations','hist','Your chats and talks with the assistant'],['me','Picture of me','me','Who you are, written by the AI from everything you add'],['canvas','AI canvas','cvs','Build reports, apps, sites and designs with the AI'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['howto','How-to','howto','Short guides with live demos of every feature'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='howto'||p[0]==='vista'||p[0]==='bench'||p[0]==='lists'||p[0]==='agent'||p[0]==='chats'||p[0]==='me'||p[0]==='canvas'||VIEWS[p[0]]);
 /* phone home: every page in one row you swipe (pages not in the bar first); the next tile peeks in, so it reads as scrollable. Desktop has the rail, so it's hidden there. */
 /* most used first: writing and lists, then asking, then the rest */
 const FEAT_RANK=['journal','lists','ask','threads','agent','activity','cal','goals','habits','chats','vista','bench'],featR=k=>{const i=FEAT_RANK.indexOf(k);return i<0?99:i};
@@ -8349,7 +8349,7 @@ function tbPaint(){const tb=$('#tabbar');if(tb){tb.innerHTML=tbHTML();navMark()}
 /* the desktop rail lists every page (the phone bar has 5 + More) */
 const railHTML=()=>`<div class="navs"><span class="nav-ind"></span>${PG.filter(p=>p[0]!=='settings').map(([k,l,i])=>`<a class="nav" href="#/${k}" data-nav="${k}">${ic(i)}<span>${l}</span></a>`).join('')}</div>`;
 {const _b=buildChrome;buildChrome=function(){_b();const r=$('#rail'),n=r&&r.querySelector('.navs');if(n)n.outerHTML=railHTML();tabMigrate();tbPaint()}}
-const MSET=[['account','Sync','rep'],['look','Look & feel','cards'],['notif','Notifications','bell'],['privacy','Privacy','lock'],['share','Sharing','link'],['data','Your data','down']];
+const MSET=[['account','Sync','rep'],['voice','AI & voice','ai'],['look','Look & feel','cards'],['notif','Notifications','bell'],['auto','Automations','zap'],['privacy','Privacy','lock'],['share','Sharing','link'],['data','Your data','down']];
 let MEDIT=false;
 function moreHTML(){const t=tabs6(),un=PG.filter(p=>!t.includes(p[0])),pg=k=>PG.find(x=>x[0]===k);
  const tile=(p,ed)=>{const on=t.includes(p[0]);return ed?`<button class="mo-t ed${on?' on':''}" data-act="tabPin" data-k="${p[0]}" aria-pressed="${on}"><span class="mo-i">${ic(p[2])}</span><b>${p[1]}</b><em>${on?'In bar':'Add'}</em></button>`
@@ -8359,11 +8359,11 @@ function moreHTML(){const t=tabs6(),un=PG.filter(p=>!t.includes(p[0])),pg=k=>PG.
  <div class="mo-body">${MEDIT?`<p class="small muted mo-tip">Tap a page to add it to the bar or take it out (${TMIN} to ${TMAX}). Use the arrows to change the order.</p><div class="mo-grid">${PG.map(p=>tile(p,1)).join('')}</div>`
   :un.length?`<div class="mo-grid">${un.map(p=>tile(p,0)).join('')}</div>`:`<p class="small muted mo-tip">Every page is in your bar.</p>`}
  <div class="mo-sec data">In your bar</div><div class="mo-bar">${t.map((k,i)=>`<span class="mo-pin"><button class="mo-pb" data-act="${MEDIT?'tabPin':'moGo'}" data-k="${k}" data-r="${k}">${ic(pg(k)[2])}${pg(k)[1]}${MEDIT?'<i>−</i>':''}</button>${MEDIT&&i>0?`<button class="ibtn sm" data-act="tabUp" data-k="${k}" aria-label="Move ${pg(k)[1]} left">${ic('back')}</button>`:''}</span>`).join('')}</div>
- ${MEDIT?'':`<div class="mo-sec data">Settings</div><div class="mo-set">${MSET.map(([k,n,i])=>`<button class="chip" data-act="moGo" data-r="settings/${k}">${ic(i)}${n}</button>`).join('')}</div>`}</div>`}
+ ${MEDIT?'':`<div class="mo-sec data">Settings</div><div class="mo-set">${MSET.map(([k,n,i])=>`<button class="chip" data-act="moGo" data-r="settings/${k}">${ic(i)}${n}</button>`).join('')}<button class="chip" data-act="moConn">${ic('plug')}Connections</button></div>`}</div>`}
 function morePaint(){const sh=$('#sheet');if(!moreOpen())return;const y=sh.scrollTop,q=$('#fndq'),v=q?q.value:'';sh.innerHTML='<div class="grab"></div>'+moreHTML();sh.scrollTop=y;const q2=$('#fndq');if(v&&q2){q2.value=v;q2.dispatchEvent(new Event('input',{bubbles:true}))}}
 Object.assign(ACT,{
  navMore:()=>{if(moreOpen()){closeSheet();return}MEDIT=false;openSheet(moreHTML());navMark()},
- moGo:d=>{closeSheet();go(d.r)},
+ moGo:d=>{closeSheet();go(d.r)},moConn:()=>{closeSheet();go('agent');setTimeout(()=>{const e=document.getElementById('agConn');if(e)e.scrollIntoView({block:'start'})},450)},
  moEdit:()=>{MEDIT=!MEDIT;morePaint()},
  tabPin:d=>{let t=tabs6();if(t.includes(d.k)){if(t.length<=TMIN)return toast(`Keep at least ${TMIN} pages in the bar`);t=t.filter(x=>x!==d.k)}else{if(t.length>=TMAX)return toast(`The bar holds ${TMAX} pages plus More. Take one out first`);t.push(d.k)}S.settings.tabs=t;save();tbPaint();if(moreOpen())morePaint();else render(false)},
  tabUp:d=>{const t=tabs6(),i=t.indexOf(d.k);if(i<1)return;[t[i-1],t[i]]=[t[i],t[i-1]];S.settings.tabs=t;save();tbPaint();if(moreOpen())morePaint();else render(false)}});

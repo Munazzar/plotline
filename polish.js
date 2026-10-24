@@ -228,7 +228,8 @@ function gearScroll(){if(!GEAR_H||cur.p!=='settings')return;const h=[...document
 
 /* ---------- after each page paint ---------- */
 let MO=null;
-function afterPaint(){canvasMark();udkInit();gearScroll()}
+/* titles fit again once this layer has added its header buttons (index.html fits them before), so none is cut off on a phone */
+function afterPaint(){canvasMark();udkInit();gearScroll();if(typeof fitH1==='function')fitH1()}
 function boot(){const v=$('#view');if(v&&!MO){MO=new MutationObserver(()=>afterPaint());MO.observe(v,{childList:true})}afterPaint();
  try{applyTheme()}catch(e){}
  if(document.querySelector('#rail .nav')){buildChrome();if(typeof navMark==='function')navMark()}}
