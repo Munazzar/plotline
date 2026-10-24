@@ -14,7 +14,7 @@
 (()=>{
 'use strict';
 const NA=!window.PLOT_DEMO&&window.PlotlineAssist||null;
-const ADEF={name:'Plot',wake:false,bg:false,speak:'voice',btn:true,fast:true};
+const ADEF={name:'Plot',wake:false,bg:false,speak:'voice',btn:true,talk:true,fast:true};
 /* instant mode (Settings › AI & voice): commands and simple lookups are answered on the phone without the AI, questions skip
    the extra AI routing call, spoken answers get a short prompt, and speech starts with the first sentence */
 const fastOn=()=>aset().fast!==false;
@@ -31,7 +31,7 @@ const nst=()=>{if(!NA||!NA.state)return{};try{return JSON.parse(NA.state())}catc
 const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
 const lcs=s=>String(s||'').toLowerCase();
 
-Object.assign(IC,{orb:'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.2c1.2-2.6 2.3-2.6 3.5 0s2.3 2.6 3.5 0"/>',kb:'<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/>'});
+Object.assign(IC,{speak:'<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',orb:'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.2c1.2-2.6 2.3-2.6 3.5 0s2.3 2.6 3.5 0"/>',kb:'<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/>'});
 
 /* ---------------- words ---------------- */
 const SW=new Set('a an the and or to of in on at for with about my me i im i\'m you your it its is are was were be been do did does done have has had when what which who how last time ever please can could would will should just that this these those there then than from by into up out so some any much many'.split(' '));
@@ -417,20 +417,20 @@ function asCtx(q,r,hint,big,small){const now=new Date(),tn=dnum(ymd()),lq=lcs(q)
  return parts.join('\n')+`\nQUESTION\n${q}`}
 async function aiAnswer(q,onP,hint){if(!aiReady())return null;const e=planEngine(),loc=e!=='api'&&e!=='native',X=window.AIX,spoken=AS.spoken,pr=insSet().profile;
  const quick=spoken&&fastOn();
- const r=(AS.rag&&AS.rag.q===q&&await AS.rag.p)||await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);const prompt=asCtx(q,r,hint,!loc&&e==='api',quick&&e!=='api');tmMark('ctx');
+ const r=(AS.rag&&AS.rag.q===q&&await AS.rag.p)||await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);AS.srcs=r&&r.srcs||null;const prompt=asCtx(q,r,hint,!loc&&e==='api',quick&&e!=='api');tmMark('ctx');
  /* spoken, instant mode: a short system prompt that never changes between turns (the engine keeps it prefilled), a small
     slice of their data, and short answers */
  const sys=quick?`You are ${aname()}, the voice assistant in Plotlines, the user's app for goals, habits, a journal, lists, threads and reminders. Your answer is read aloud: one to three short, natural sentences, no lists, no markdown, no note numbers. For questions about their life, use the data given, and if it isn't there, say what you do know. For anything else, just answer it well.${window.AGENT&&AGENT.connected().length?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nABOUT THEM\n'+tr(pr.text,500):''}${X?'\n\n'+X.safety():''}`:`You are ${aname()}, the assistant inside the Plotlines app: a personal assistant that knows the user's own data and can talk about anything. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. ${spoken?'Your answer is read aloud: one to three short, natural sentences. No lists, no markdown, no note numbers like [2].':'Answer clearly and briefly: a few sentences, or a few short bullets when that really helps. No note numbers like [2].'} When the question is about their life, use the data given (dates, activity numbers, plans, threads, lists and notes); if the app looked something up, use that answer, and if the data doesn't have it, say what you do know. For anything else (the world, ideas, advice, writing, feelings), just answer it well.${window.AGENT?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nWHAT YOU KNOW ABOUT THEM\n'+pr.text:''}${X?'\n\n'+X.ACT_SYS+'\n\n'+X.safety():''}`;
  const hist=[];AS.turns.filter(t=>!t.wait&&t.a&&!t.sys).slice(quick?-2:-3).forEach(t=>hist.push({role:'user',content:t.q},{role:'assistant',content:quick?tr(t.a,240):t.a}));
  const msgs=[{role:'system',content:sys},...hist,{role:'user',content:prompt}];if(TM)TM.pc=msgs.reduce((a,m)=>a+m.content.length,0);
- let out='';const on=x=>{tmMark('tok');out+=x;sqFeed(out);onP&&onP('')};const opts={max_tokens:quick?180:spoken?260:(loc?450:700),reading:'Thinking…',temperature:.5};
+ let out='';const on=x=>{tmMark('tok');out+=x;sqFeed(out);liveFeed(out);onP&&onP('')};const opts={max_tokens:quick?180:spoken?260:(loc?450:700),reading:'Thinking…',temperature:.5};
  if(e==='api')await apiChat(msgs,on,AS.ctl.signal,opts);else if(e==='native')await natChat(msgs,on,onP,()=>{out=''},opts);else await localChat(msgs,on,onP,0,()=>{out=''},false,opts);
  out=out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'');
- const ag=window.AGENT&&AGENT.parse(out);if(ag)return{agent:ag};
+ const ag=window.AGENT&&AGENT.parse(out);if(ag){AS.srcs=null;return{agent:ag}}
  if(X){const P=X.parseActs(out);out=P.clean;AS.acts=X.keepActs(P.acts)}
  out=(spoken?out.replace(/[*#_`]/g,''):out.replace(/\*\*|__|`|^#+\s*/gm,'')).trim();
  if(X){const c=X.care(q,out);if(c)out+=' '+c}
- return out||null}
+ if(out)AS.wrote=true;return out||null}
 async function llmIntent(t){const e=typeof planEngine==='function'?planEngine():'',fast=e!=='api'&&isLrtM(llmOf(insSet().llm));if(e!=='api'&&e!=='native'&&!fast||!aiReady())return null;
  const schema={type:'object',properties:{action:{enum:['journal','new_thread','thread_update','reminder','new_list','list_add','today_goal','habit_done','agent_task','agent_now','question']},text:{type:'string'},target:{type:'string'},when:{type:'string'}},required:['action','text'],additionalProperties:false};
  const msgs=[{role:'system',content:'You turn one spoken or typed request to a personal journal and habits app into JSON. Requests can be phrased any way, misspelled ("jounel", "liost", "thred") or misheard ("general entry" means journal entry). Reply with JSON only. The text field holds only what should be saved: never the command words ("make a journal entry", "add to my list", "that says"), never the target name.'},{role:'user',content:`Request: "${t}"\n\nactions: journal (save text to today's journal), new_thread (start a thread; text is its title), thread_update (target is the thread name; text is the update), reminder (when is the time words like "tomorrow at 5pm"), new_list (text is the list name; target is its items separated by commas, or empty), list_add (target is the list name; text is the items), today_goal, habit_done (text is the habit), agent_task (only for something to repeat on a schedule or keep an eye on, like "every morning summarise my emails"; text is the task), agent_now (something to look up or do right now in their email, calendar, Google Drive or Notion, like "check if Sam replied" or "put lunch with Ana on my calendar Friday"; text is the whole request), question (anything asked).`}];
@@ -491,12 +491,14 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
  if(!text){listen();return}
  if(AS.busy){toast('Still working on the last one');return}
  if(AS.turns.length&&AS.last&&Date.now()-AS.last>CV_GAP)convFresh('chat');
- asOpen();wakePause(true);$('#asIn')?.setAttribute('placeholder','Ask or tell me something…');const turn={q:text,a:'',chips:[],t:Date.now(),id:uid(),wait:true};AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.spoken=!!o.spoken;AS.busy=true;AS.ctl=new AbortController();paint(true);if(AS.spoken)window.asHum(true);
- let r=null;AS.acts=null;tmBegin(text,o);sqStop();
+ asOpen();wakePause(true);$('#asIn')?.setAttribute('placeholder','Ask or tell me something…');const turn={q:o.show||text,a:'',chips:[],t:Date.now(),id:uid(),wait:true};AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.spoken=!!o.spoken;AS.busy=true;AS.ctl=new AbortController();paint(true);if(AS.spoken)window.asHum(true);
+ let r=null;AS.acts=null;AS.srcs=null;AS.wrote=false;AS.liveT=turn;tmBegin(text,o);sqStop();
  /* spoken answers from the AI start talking at the first full sentence */
  if(fastOn()&&(aset().speak==='always'||aset().speak==='voice'&&AS.spoken))sqStart();
  try{const aw=AS.await;AS.await=null;const blk=window.AIX&&AIX.block(text);if(blk)r={say:blk};
-  if(aw)r=answerAwait(aw,text);
+  /* a question from Ask's suggestions, Home insights or "Ask about this": straight to the AI with their notes (a suggestion reads a wider slice) */
+  if(!r&&o.ask&&aiReady()){const P=o.pre;if(P)AS.rag={q:text,p:ragRetrieve(text+' '+(P.kw||''),{win:P.win||0,goal:'',all:P.all,kinds:P.kinds,broad:true},null).catch(()=>null)};status('Searching your notes…');const a=await aiAnswer(text,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});r=a?{say:a}:{say:'Sorry, I couldn’t answer that right now.'}}
+  if(aw&&!r)r=answerAwait(aw,text);
   if(!r){const p=parse(text);if(p)r=exec(p,text)}
   if(!r&&fastOn()&&aiReady())r=quickAsk(text);
   if(!r&&!aiReady())r=localAsk(text);
@@ -508,16 +510,16 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
    if(cmd&&!/^(?:can|could|would|will) you (?:tell|show|explain|remind me (?:what|when|how))/i.test(st)){status('Working it out…');const p=await llmIntent(st);if(p&&p.k)r=exec(p,text)}
    if(!r){const L=localAsk(text);if(L&&(L.ask||L.await))r=L;
     else{status('Thinking…');const a=await aiAnswer(text,status,L&&!L.miss?L.say:'').catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
-     r=a?{say:a,chips:L&&L.chips||[['Ask more','?'+text]]}:L&&!L.miss?L:{say:'Sorry, I couldn’t answer that right now.',chips:[['Open in Ask','?'+text]]}}}}
-  if(r&&r.ask){const q=r.ask;status('Thinking…');const a=await aiAnswer(q,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});r=a?{say:a}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'To ask about things, open Ask once to set up the AI.',chips:[['Open in Ask','?'+q]]}}
+     r=a?{say:a,chips:L&&L.chips||[]}:L&&!L.miss?L:{say:'Sorry, I couldn’t answer that right now.',chips:[['Try again','?'+text]]}}}}
+  if(r&&r.ask){const q=r.ask;status('Thinking…');const a=await aiAnswer(q,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});r=a?{say:a}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'To answer questions like that I need an AI. Set one up once (it can run privately on this device) and I’ll answer from your notes.',chips:aiChips(q)}}
   if(r&&r.miss){const miss=r.miss;r=null;status('Thinking…');const a=await aiAnswer(text,status).catch(()=>null);r=a?{say:a}:{say:`I couldn't find anything about ${quote(miss)} in your journal, threads, lists or habits.`}}
   if(!r&&!dec&&!QRX.test(strip(text))&&/^(?:add|put|write|log|create|start|make|set|remind|schedule|note|save|mark|record|jot|track|new)\b/i.test(strip(text))){status('Working it out…');const p=await llmIntent(strip(text));if(p&&p.k)r=exec(p,text)}
   if(!r){status('Thinking…');const a=await aiAnswer(text,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
-   r=a?{say:a,chips:[['Ask more','?'+text]]}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'I can add things and look up when you last did something. For other questions, open this in Ask once to set up the AI, and after that I’ll answer from your notes too.',chips:[['Open in Ask','?'+text]]}}
+   r=a?{say:a}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'I can add things and look up when you last did something. For other questions, set up an AI once (it can run privately on this device), and after that I’ll answer from your notes too.',chips:aiReady()?[['Try again','?'+text]]:aiChips(text)}}
   if(r&&r.say&&r.say.agent)r={agent:r.say.agent};
   if(r&&r.agent)r=await agentRun(r.agent,r.web);}
  catch(e){r={say:e&&e.name==='AbortError'?'Stopped.':'Something went wrong: '+(e&&e.message||e)}}
- status('');window.asHum(false);turn.wait=false;turn.a=r.say||'';turn.chips=(r.chips||[]).map(c=>({t:c[0],r:c[1],fn:c[2]}));if(r.undo){AS.undo[turn.id]=r.undo;turn.chips.unshift({t:'Undo',undo:1})}
+ status('');window.asHum(false);AS.liveT=null;turn.wait=false;turn.live='';turn.a=r.say||'';if(AS.srcs&&AS.srcs.length&&turn.a)turn.srcs=AS.srcs;if(AS.wrote&&turn.a&&!r.chips?.some?.(c=>c[1]==='agent'))turn.ai=1;AS.srcs=null;AS.wrote=false;turn.chips=(r.chips||[]).map(c=>({t:c[0],r:c[1],fn:c[2]}));if(r.undo){AS.undo[turn.id]=r.undo;turn.chips.unshift({t:'Undo',undo:1})}
  if(AS.acts&&AS.acts.length&&window.AIX){const A=AS.acts;AS.acts=null;turn.chips.unshift(...A.map(a=>{const c={t:'+ '+AIX.actLabel(a),act:1};c.fn=()=>{let x;try{x=AIX.doAct(a)}catch(e){return toast('Couldn’t add that')}c.t='✓ '+AIX.actLabel(a);c.fn=()=>x&&x.go&&(asClose(),setTimeout(()=>go(x.go),380));paint();toast(esc((x&&x.say)||'Added'))};return c}))}
  AS.await=r.await||null;AS.busy=false;AS.ctl=null;paint(true);pushWidget2();
  const talk=!r.quiet&&(aset().speak==='always'||aset().speak==='voice'&&AS.spoken);AS.after=(r.listen||AS.await)&&AS.spoken?'listen':null;
@@ -614,9 +616,9 @@ let THTRY=null;function thinkTry(){thinkStop(THTRY);const h=THTRY=thinkPlay(thin
 window.asCue=k=>{if(aset().cues===false)return;cuePlay(cueOf(k));try{navigator.vibrate&&navigator.vibrate(k==='start'?[18]:[10,60,10])}catch(e){}};
 
 /* ---------------- the sheet ---------------- */
-function headSub(){if(AS.busy)return AS.prog||'Thinking…';if(AS.listening)return'Listening…';if(SPK)return'Speaking…';const a=aset();if(NA&&(a.wake||a.bg)){const w=AS.wst||'';return w==='err'?'Can’t hear the wake word right now':w==='perm'?'Allow the microphone for the wake word':w==='unavailable'?'The wake word needs online speech allowed':w==='lang'?'The phone’s on-device speech can’t do your language yet. Allow online speech in Settings › Voice':`Say “${wakeWord()}” anytime`}return'Talk or type'}
+function headSub(){if(AS.busy)return AS.prog||'Thinking…';if(AS.listening)return'Listening…';if(SPK)return'Speaking…';const a=aset();if(NA&&(a.wake||a.bg)){const w=AS.wst||'';return w==='err'?'Can’t hear the wake word right now':w==='perm'?'Allow the microphone for the wake word':w==='unavailable'?'The wake word needs online speech allowed':w==='lang'?'The phone’s on-device speech can’t do your language yet. Allow online speech in Settings › Voice':`Say “${wakeWord()}” anytime`}return'Ask or tell me anything'}
 function asOpen(){AS.open=true;if(AS.min){AS.min=false;miniPaint()}let el=$('#asv');if(el){el.classList.remove('min');el.classList.add('on')}else{el=document.createElement('div');el.id='asv';el.className='aov asv';
- el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="as-stop" data-act="asStop" aria-label="Stop talking">■ Stop</button><button class="ibtn sm" data-act="liveOpen" aria-label="Talk out loud" title="Talk out loud">${ic('live')}</button><button class="ibtn sm" data-act="convGo" aria-label="Conversation history" title="History">${ic('hist')}</button><button class="ibtn sm" data-act="asClear" aria-label="New conversation" title="New conversation">${ic('plus')}</button><button class="ibtn sm" data-act="asSet" aria-label="Assistant settings" title="Settings">${ic('settings')}</button><button class="ibtn sm" data-act="asMin" aria-label="Minimize" title="Minimize">${ic('minz')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="submit" class="as-send" aria-label="Send" title="Send">${ic('up')}</button><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form>${window.AIX?AIX.note('as-note'):''}</div></section>`;
+ el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="as-stop" data-act="asStop" aria-label="Stop talking">■ Stop</button><button class="ibtn sm" data-act="liveOpen" aria-label="Talk out loud" title="Talk out loud">${ic('live')}</button><button class="ibtn sm" data-act="convGo" aria-label="Conversation history" title="History">${ic('hist')}</button><button class="ibtn sm" data-act="asClear" aria-label="New conversation" title="New conversation">${ic('plus')}</button><button class="ibtn sm" data-act="asSet" aria-label="Assistant settings" title="Settings">${ic('settings')}</button><button class="ibtn sm" data-act="asMin" aria-label="Minimize" title="Minimize">${ic('minz')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="as-qs" role="toolbar" aria-label="Quick settings"></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="submit" class="as-send" aria-label="Send" title="Send">${ic('up')}</button><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form>${window.AIX?AIX.note('as-note'):''}</div></section>`;
  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'))}
  document.documentElement.classList.add('aov-on');paint(true);return el}
 function asClose(){AS.open=false;if(AS.min){AS.min=false;miniPaint()}$('#asv')?.classList.remove('min');if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);hush();const el=$('#asv');document.documentElement.classList.remove('aov-on');if(!el)return;el.classList.remove('on');setTimeout(()=>{if(!AS.open)el.remove()},360);wakePause(false)}
@@ -635,10 +637,51 @@ function ansHTML(a){if(window.AIX&&AIX.md)return`<div class="ai-md">${AIX.md(a)}
  for(const raw of L){const l=raw.trim();const m=/^(?:[*\-•]|\d+[.)])\s+(.*)$/.exec(l);if(m){if(!ul){o+='<ul>';ul=true}o+=`<li>${inl(m[1])}</li>`;continue}if(ul){o+='</ul>';ul=false}if(l)o+=`<p>${inl(l)}</p>`}
  if(ul)o+='</ul>';return o||'<p></p>'}
 function chipHTML(t,c,i){return c.undo?`<button class="btn sm ghost" data-act="asUndo" data-id="${t.id}">Undo</button>`:`<button class="btn sm ghost" data-act="asChip" data-id="${t.id}" data-i="${i}">${esc(c.t)}</button>`}
+/* ---------------- Ask and the chat are one ----------------
+   The Ask page, its suggestions, Home insights and "Ask about this" all open this one conversation. The orb opens it over
+   the page you're on; the Ask tab opens it full height. Talk out loud (Live) stays its own button. */
+/* the answer so far, while the AI is still writing it */
+function liveText(t){const v=String(t&&t.live||'').replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'').replace(/^\s*AGENT\s*:.*$/gim,'');const sh=(window.AIX?AIX.hideActs(v):v).trim();return!sh||/^\{|^A(?:G(?:E(?:N(?:T)?)?)?)?$/i.test(sh)?'':sh}
+let LVF=0;
+function liveFeed(raw){const t=AS.liveT;if(!t||!t.wait)return;t.live=raw;if(LVF)return;LVF=requestAnimationFrame(()=>{LVF=0;const el=$('#asv'),sh=liveText(t);if(!el||!t.wait||!sh)return;const w=el.querySelectorAll('.as-a.wait'),a=w[w.length-1];if(!a)return;const b=el.querySelector('.as-b'),near=b.scrollHeight-b.scrollTop-b.clientHeight<160;a.classList.add('live');a.querySelector('.as-ab').innerHTML=ansHTML(sh);if(near)b.scrollTop=b.scrollHeight})}
+/* under a written answer: copy it, keep it in the journal, see the notes it used */
+function actsHTML(t){if(!t.a||!t.ai&&!t.srcs)return'';const n=t.srcs?t.srcs.length:0;
+ return`<div class="as-acts"><button class="as-ac" data-act="asCopy" data-id="${t.id}">${ic('copy')}Copy</button><button class="as-ac" data-act="asSave" data-id="${t.id}">${ic('journal')}Save to journal</button>${n?`<button class="as-ac" data-act="asSrcs" data-id="${t.id}">${ic('search')}${n} note${n===1?'':'s'}</button>`:''}</div>`}
+/* Ask's ready-made questions (weekly reflection, mood patterns…) */
+function preHTML(){if(typeof INS_PRE==='undefined')return'';return`<div class="ask-sugs as-pre"><div class="as-pre-h">Ask about your life</div>${INS_PRE.map(p=>`<button class="ask-sug" data-act="asPre" data-k="${p.k}"><b>${esc(p.n)}</b><small>${esc(p.d)}</small></button>`).join('')}</div>`}
+/* no AI yet: set one up, or take the question (with their notes) to any AI */
+function aiChips(q){const c=[['Set up the AI','',()=>window.aiQuick?aiQuick():go('settings/voice')]];
+ if(insSet().engine==='copy')c.push(['Copy it as a prompt for any AI','',async()=>{const r=await ragRetrieve(q,{win:0,goal:'',broad:true},null).catch(()=>null);toast(await copyText(asCtx(q,r))?'Copied. Paste it into any AI':'Copy failed. Try again')}]);return c}
+/* quick settings, right in the chat; the rest are one tap away under More */
+function qsBar(){const a=aset(),ready=aiReady(),lbl=typeof askEngineLabel==='function'?askEngineLabel().split(' · ')[0]:'AI';
+ return`<label class="as-qc" title="Read replies out loud">${ic('speak')}<select data-assist="speak" aria-label="Read replies out loud">${[['voice','Read aloud when I talk'],['always','Always read aloud'],['never','Never read aloud']].map(([k,n])=>`<option value="${k}" ${(a.speak||'voice')===k?'selected':''}>${n}</option>`).join('')}</select></label>`+
+ `<button class="as-qc${ready?'':' warn'}" data-act="asQsModel" title="AI model">${ic('ai')}<span>${ready?esc(lbl):'Set up the AI'}</span></button>`+
+ (NA?`<label class="as-qc tg${a.wake?' on':''}" title="Wake word"><input type="checkbox" data-assist="wake" ${a.wake?'checked':''}>${ic('mic')}<span>“${esc(wakeWord())}” ${a.wake?'on':'off'}</span></label>`:'')+
+ `<label class="as-qc tg${a.fast!==false?' on':''}" title="Instant mode"><input type="checkbox" data-assist="fast" ${a.fast!==false?'checked':''}><span>⚡ Instant ${a.fast!==false?'on':'off'}</span></label>`+
+ `<button class="as-qc" data-act="asSet" title="All assistant settings">${ic('tune')}<span>More</span></button>`}
+function qsPaint(){const q=$('#asv .as-qs');if(q)q.innerHTML=qsBar()}
+document.addEventListener('change',e=>{if(e.target&&e.target.closest&&e.target.closest('.as-qs'))setTimeout(qsPaint,60)});
+function openAsk(){asOpen();$('#asv')?.classList.add('full');asWarm()}
+Object.assign(ACT,{
+ asCopy:async d=>{const t=AS.turns.find(x=>x.id===d.id);if(!t)return;toast(await copyText(String(t.a).replace(/\*\*/g,''))?'Copied':'Copy failed')},
+ asSave:d=>{const t=AS.turns.find(x=>x.id===d.id);if(!t||!t.a)return;const html=cleanHTML(mdLite(t.a,0));S.entries.push({id:uid(),t:Date.now(),type:'note',goalId:null,title:'Insight · '+trunc(t.q,60),text:htmlText(html),html,mood:'',private:false,sid:null,img:null});save();toast('Saved to your journal')},
+ asSrcs:d=>{const t=AS.turns.find(x=>x.id===d.id);if(!t||!t.srcs)return;AS.srcT=t;openSheet(`<h2>Notes used</h2><p class="small muted">From your own data, on this device.</p><ol class="ins-src-l">${t.srcs.map((x,i)=>`<li><button class="ins-si" data-act="asSrc" data-i="${i}"><span class="n">${i+1}</span><span class="t"><b>${esc(trunc(x.label||'',70))}</b><small>${esc(({entry:'Journal',goal:'Goal',habit:'Habit',day:'Day plan'})[x.kind]||'')}${(x.kind==='entry'||x.kind==='day')&&x.date?' · '+fmtDate(x.date):''}</small></span></button></li>`).join('')}</ol><div class="actions"><button class="btn" data-act="close">Done</button></div>`)},
+ asSrc:d=>{const x=AS.srcT&&AS.srcT.srcs[+d.i];if(!x)return;closeSheet();asClose();setTimeout(()=>{if(x.kind==='entry'){if(S.entries.some(e=>e.id===x.ref))ACT.viewEntry({id:x.ref})}else if(x.kind==='goal')go('goal/'+x.ref);else if(x.kind==='habit')go('habit/'+x.ref);else if(x.kind==='day'){CAL.d=x.ref;S.settings.layout.cal='day';go('cal')}},380)},
+ asPre:d=>{const p=typeof INS_PRE!=='undefined'&&INS_PRE.find(x=>x.k===d.k);if(p)run(p.q,{ask:1,pre:p,show:p.n})},
+ asQsModel:()=>window.aiQuick?aiQuick():go('settings/voice'),
+ askGo:()=>{asOpen();asWarm();setTimeout(()=>$('#asIn')?.focus(),300)},
+ askOpen:()=>{openAsk();setTimeout(()=>$('#asIn')?.focus(),300)}});
+/* everything that used to open the Ask page or its overlay asks here instead */
+askWith=function(q){if(AS.busy)return toast('Still working on the last one');run(q,{ask:1})};
+{const _go=go;go=function(h){if(h==='ask'||h==='insights'){if(typeof closeSheet==='function'&&$('#sheet')?.classList.contains('on'))closeSheet();openAsk();return}return _go.apply(this,arguments)}}
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href="#/ask"],a[href="#/insights"]');if(!a||e.defaultPrevented||e.ctrlKey||e.metaKey)return;e.preventDefault();e.stopPropagation();go('ask')},true);
+/* an old link, the start page or Back landing on #/ask: show Home under the chat */
+/* (set once every script has loaded, since Conversations wraps the Ask page too) */
+{const f=()=>{VIEWS.ask=function(){setTimeout(()=>{if(cur.p!=='ask')return;history.replaceState(null,'','#/today');route();openAsk()},0);return VIEWS.today.apply(this,arguments)}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',f);else f()}
 function paint(scroll){const el=$('#asv');if(!el)return;paintHead();const b=el.querySelector('.as-b');
- b.innerHTML=AS.turns.length?AS.turns.map(t=>`<div class="as-t"><div class="as-qr">${t.wait?'':`<button class="as-tx" data-act="asDel" data-id="${t.id}" aria-label="Remove this message and its answer" title="Remove">${ic('x')}</button>`}<p class="as-q">${esc(t.q)}</p></div><div class="as-a${t.wait?' wait':''}"><span class="as-dot" aria-hidden="true"></span><div class="as-ab">${t.wait?'<p><i></i><i></i><i></i></p>':ansHTML(t.a)}${t.chips&&t.chips.length?`<div class="as-ch">${t.chips.map((c,i)=>chipHTML(t,c,i)).join('')}</div>`:''}</div></div></div>`).join(''):
- `<div class="as-empty"><button class="as-big" data-act="asMic" aria-label="Talk"><i></i></button><p><b>Hi, I’m ${esc(aname())}.</b> Tap and talk${NA&&(aset().wake||aset().bg)?`, or say “${esc(wakeWord())}”`:''}. Ask me anything.</p><div class="as-go"><button class="btn sm pri" data-act="liveOpen">${ic('live')}Talk out loud</button><a class="btn sm" href="#/agent">${ic('agent')}Agent</a></div>${NA&&!aset().wake&&!aset().bg?`<button class="btn sm" data-act="asWakeOn" style="margin:4px 0 6px">Turn on “${esc(wakeWord())}”</button>`:''}${window.AIX&&AIX.sugs?(setTimeout(()=>AIX.sugAuto('chat'),0),AIX.sugs('chat','asTry')):`<div class="as-sugs">${['Add “had a great workout” to my journal','When did I last change my oil?','Remind me to call mom at 6pm','What do I have today?'].map(s=>`<button class="as-sug" data-act="asTry" data-q="${esc(s.replace(/[“”]/g,''))}">${esc(s)}</button>`).join('')}</div>`}</div>`;
- if(scroll)b.scrollTop=b.scrollHeight;convSync()}
+ b.innerHTML=AS.turns.length?AS.turns.map(t=>`<div class="as-t"><div class="as-qr">${t.wait?'':`<button class="as-tx" data-act="asDel" data-id="${t.id}" aria-label="Remove this message and its answer" title="Remove">${ic('x')}</button>`}<p class="as-q">${esc(t.q)}</p></div><div class="as-a${t.wait?' wait':''}${t.wait&&liveText(t)?' live':''}"><span class="as-dot" aria-hidden="true"></span><div class="as-ab">${t.wait?(liveText(t)?ansHTML(liveText(t)):'<p><i></i><i></i><i></i></p>'):ansHTML(t.a)}${t.chips&&t.chips.length?`<div class="as-ch">${t.chips.map((c,i)=>chipHTML(t,c,i)).join('')}</div>`:''}${t.wait?'':actsHTML(t)}</div></div></div>`).join(''):
+ `<div class="as-empty"><button class="as-big" data-act="asMic" aria-label="Talk"><i></i></button><p><b>Hi, I’m ${esc(aname())}.</b> Tap and talk${NA&&(aset().wake||aset().bg)?`, or say “${esc(wakeWord())}”`:''}. Ask me anything.</p><div class="as-go"><button class="btn sm pri" data-act="liveOpen">${ic('live')}Talk out loud</button><a class="btn sm" href="#/agent">${ic('agent')}Agent</a><button class="btn sm" data-act="aiStart">${ic('ai')}Plan with AI</button></div>${window.AIX&&AIX.modelCard&&insSet().engine!=='api'&&!AIX.ready()?`<div class="as-mc">${AIX.modelCard('chat')}</div>`:''}${NA&&!aset().wake&&!aset().bg?`<button class="btn sm" data-act="asWakeOn" style="margin:4px 0 6px">Turn on “${esc(wakeWord())}”</button>`:''}${window.AIX&&AIX.sugs?(setTimeout(()=>AIX.sugAuto('chat'),0),AIX.sugs('chat','asTry')):`<div class="as-sugs">${['Add “had a great workout” to my journal','When did I last change my oil?','Remind me to call mom at 6pm','What do I have today?'].map(s=>`<button class="as-sug" data-act="asTry" data-q="${esc(s.replace(/[“”]/g,''))}">${esc(s)}</button>`).join('')}</div>`}${preHTML()}</div>`;
+ qsPaint();if(scroll)b.scrollTop=b.scrollHeight;convSync()}
 Object.assign(ACT,{
  asOpen:()=>{asOpen();asWarm();setTimeout(()=>{if(!AS.turns.length&&NA&&typeof voiceAvail==='function'&&voiceAvail())listen();else $('#asIn')?.focus()},300)},
  asClose:()=>asClose(),asMin:()=>asMin(),asBack:()=>asOpen(),asSet:()=>{if(window.aiQuick)aiQuick();else go('settings/voice')},
@@ -649,7 +692,7 @@ Object.assign(ACT,{
   toast('Message removed',()=>{AS.turns.splice(Math.min(i,AS.turns.length),0,t);if(!AS.cid)AS.cid=cid;paint();convSync()})},
  asClear:()=>{convFresh('chat');hush();paint();pushWidget2()},
  asUndo:d=>{const f=AS.undo[d.id];if(!f)return;delete AS.undo[d.id];try{f()}catch(e){}const t=AS.turns.find(x=>x.id===d.id);if(t){t.chips=t.chips.filter(c=>!c.undo);t.a+=' (undone)'}paint();pushWidget2();toast('Undone')},
- asChip:d=>{const t=AS.turns.find(x=>x.id===d.id),c=t&&t.chips[+d.i];if(!c)return;if(c.fn)return c.fn(c);const r=c.r||'';if(r[0]==='?'){asClose();askWith(r.slice(1));return}asClose();setTimeout(()=>window.__route(r.replace(/^~/,'')),380)}});
+ asChip:d=>{const t=AS.turns.find(x=>x.id===d.id),c=t&&t.chips[+d.i];if(!c)return;if(c.fn)return c.fn(c);const r=c.r||'';if(r[0]==='?'){if(!aiReady())return window.aiQuick?aiQuick():go('settings/voice');run(r.slice(1),{ask:1});return}asClose();setTimeout(()=>window.__route(r.replace(/^~/,'')),380)}});
 Object.assign(FORM,{asSend:f=>{const i=f.querySelector('input'),v=i.value.trim();if(!v)return listen();i.value='';sendState();run(v,{spoken:false})}});
 function sendState(){const i=$('#asIn'),r=$('#asv .as-row');if(i&&r)r.classList.toggle('typed',!!i.value.trim()&&!AS.listening)}
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='asIn')sendState()});
@@ -663,7 +706,7 @@ window.addEventListener('hashchange',()=>{if(AS.open&&!AS.min)asClose()});
 {const _r=window.__route;window.__route=r=>{if(/^assistant/.test(r||'')){if(/-bg$/.test(r))AS.bg=true;asOpen();const k=r.split('-')[1];setTimeout(()=>{if(k==='share'){if(shareIn())return;}takePending();if(k==='listen')listen();else if(k==='type')$('#asIn')?.focus()},450);return}return _r&&_r(r)}}
 
 /* the orb in every page's top bar */
-{const _g=gear;gear=function(){return(aset().btn?`<button class="ibtn as-btn" data-act="asOpen" aria-label="Talk to ${esc(aname())}" title="Talk to ${esc(aname())}"><span class="as-av"><i></i></span></button>`:'')+_g()}}
+{const _g=gear;gear=function(){return(aset().talk!==false&&window.liveOpen?`<button class="ibtn lv-btn" data-act="liveOpen" aria-label="Talk out loud with ${esc(aname())}" title="Talk out loud">${ic('live')}</button>`:'')+(aset().btn?`<button class="ibtn as-btn" data-act="asOpen" aria-label="Ask ${esc(aname())}" title="Ask ${esc(aname())}"><span class="as-av"><i></i></span></button>`:'')+_g()}}
 
 /* the home-screen widget gets the last exchange */
 function pushWidget2(){if(!NA||!NA.widget)return;const L=AS.turns.filter(t=>!t.wait).slice(-2).map(t=>({q:t.q,a:t.a,t:t.t}));try{NA.widget(JSON.stringify({name:aname(),wake:NA&&(aset().wake||aset().bg)?wakeWord():'',turns:L}))}catch(e){}}
@@ -684,7 +727,8 @@ ${a.cues!==false?`<div class="as-cues">${[['cueStart','When I start listening','
  <div class="field"><label>Read replies out loud</label><select data-assist="speak">${[['voice','When I talk to it'],['always','Always'],['never','Never']].map(([k,n])=>`<option value="${k}" ${a.speak===k?'selected':''}>${n}</option>`).join('')}</select></div>
  ${NA&&NA.openAssistSettings?`<div class="rm-snz mute" style="margin-top:10px">${ic('bell')}<div><b>${st.assistRole?`${esc(aname())} is your phone’s assistant`:`Use ${esc(aname())} as your phone’s assistant`}</b><small>${st.assistRole?'Press and hold the side button to talk to it from anywhere.':'Pick Plotlines as the digital assistant app, then press and hold the side button to talk from anywhere. On Samsung: Settings › Advanced features › Side button › Press and hold › Digital assistant. This replaces Gemini on that button.'} You can also share text from any app to Plotlines, or select text and tap Send to Plotlines.</small></div><button class="btn sm" data-act="asRole">${st.assistRole?'Change':'Set up'}</button></div>`:''}
  ${row('fast','Instant mode','Commands and simple lookups (“add milk to groceries”, “log 2 glasses of water”, “how many steps today”) are done on the phone at once, without the AI. Questions skip an extra AI step, spoken answers stay short, and I start talking at the first sentence.',a.fast!==false)}
- ${row('btn','Assistant button in the top bar','The orb next to search and settings',a.btn)}
+ ${row('btn','Ask button in the top bar','The orb next to search and settings opens the chat',a.btn)}
+ ${row('talk','Talk button in the top bar','Starts a spoken conversation straight away',a.talk!==false)}
  <details class="as-sd"><summary>Speed of my last answers</summary>${speedHTML()}</details>
  <div class="actions left"><button class="btn sm pri" data-act="asOpen">Try it</button></div></section>`}
 {const _vh=voiceHTML;voiceHTML=function(){return _vh()+assistHTML()}}
@@ -702,7 +746,7 @@ Object.assign(ACT,{asSpdClear:()=>{try{localStorage.removeItem(TM_KEY)}catch(e){
 function rerender(){try{render(false)}catch(e){}}
 function bgCheck(){if(nst().bgOff&&aset().bg){S.settings.assist={...aset(),bg:false};save();rerender()}}
 /* a talk over the screen that closed early can't leave the wake word paused */
-setTimeout(()=>{if(!document.documentElement.classList.contains('talk')&&!AS.open&&!document.getElementById('live')&&!(VC&&VC.el))wakePause(false);bgCheck();wakeSync();pushWidget2();takePending();if(NA&&(aset().wake||aset().bg))setTimeout(asWarm,4000)},1200);
+setTimeout(()=>{if(cur.p==='ask'&&!document.documentElement.classList.contains('talk')){history.replaceState(null,'','#/today');route();openAsk()}if(!document.documentElement.classList.contains('talk')&&!AS.open&&!document.getElementById('live')&&!(VC&&VC.el))wakePause(false);bgCheck();wakeSync();pushWidget2();takePending();if(NA&&(aset().wake||aset().bg))setTimeout(asWarm,4000)},1200);
 window.addEventListener('app-resume',()=>{setTimeout(()=>{bgCheck();wakeSync();takePending()},300)});
 window.PLOT_ASSIST={quickHTML,run,asCtx,parse,parseWhen,localAsk,aname,ctx:asCtx,
  /* for the live conversation (ai.js) */
@@ -773,6 +817,20 @@ const css=document.createElement('style');css.textContent=`
 .ai-mx{flex:none;width:32px;height:32px;border-radius:50%;border:0;background:color-mix(in srgb,var(--text) 8%,transparent);color:var(--muted);display:grid;place-items:center;cursor:pointer}.ai-mx svg{width:14px;height:14px}
 .ai-mini[data-st=lis] .as-av,.ai-mini[data-st=spk] .as-av{animation:asPulse 1.4s ease-in-out infinite}.ai-mini[data-st=busy] .as-av i{animation:asPulse 1.4s ease-in-out infinite}.ai-mini[data-st=lis] .as-av i{transform:scale(.55)}
 @media(max-width:400px){.asv .aov-h{gap:4px;padding-left:14px;padding-right:10px}.asv .aov-h .ibtn.sm{width:33px;height:33px;border-radius:11px}.asv .aov-h .ibtn.sm svg{width:16px;height:16px}.asv .aov-t{gap:8px}}
+.as-qs{display:flex;gap:6px;overflow-x:auto;padding:0 14px 10px 18px;scrollbar-width:none;flex:none;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}.as-qs::-webkit-scrollbar{display:none}
+.as-qc{position:relative;flex:none;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:16px;border:1px solid var(--line-2);background:var(--surface);color:var(--text);font:600 12.5px var(--f-body);cursor:pointer;white-space:nowrap;margin:0}
+.as-qc:last-child{margin-right:28px}.as-qc svg{width:15px;height:15px;flex:none;color:var(--muted)}
+.as-qc select{appearance:none;-webkit-appearance:none;background:none!important;border:0!important;padding:0!important;margin:0;color:inherit;font:inherit;height:auto;min-height:0;box-shadow:none!important;cursor:pointer;width:auto;outline:none}
+.as-qc input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;margin:0}
+.as-qc.tg.on{border-color:color-mix(in srgb,var(--accent) 55%,transparent);background:color-mix(in srgb,var(--accent) 14%,var(--surface))}.as-qc.tg.on svg{color:var(--accent)}
+.as-qc.warn{border-color:var(--accent);color:var(--accent)}.as-qc.warn svg{color:var(--accent)}
+.as-qc:focus-within,.as-qc:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:1px}
+.as-acts{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}.as-ac{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border:0;border-radius:15px;background:transparent;color:var(--muted);font:600 12.5px var(--f-body);cursor:pointer}.as-ac svg{width:14px;height:14px}.as-ac:hover,.as-ac:focus-visible{background:color-mix(in srgb,var(--text) 7%,transparent);color:var(--text)}
+.as-pre{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));gap:8px;width:100%;margin-top:18px;text-align:left}.as-pre-h{grid-column:1/-1;font:700 12px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.as-mc{width:100%;margin-top:14px;text-align:left}
+.asv.full .aov-s{height:calc(100vh - var(--sat,0px) - 12px);max-height:none}
+.as-a.live .as-dot{animation:asPulse 1.4s ease-in-out infinite}
+.lv-btn svg{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.as-big,.asv .as-av,.as-av::before,.ai-mini .as-av{animation:none!important}}`;
 document.head.appendChild(css);
 })();
