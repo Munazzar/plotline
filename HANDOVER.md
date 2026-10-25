@@ -4,7 +4,7 @@ Written 2026-10-24 (updated the same day for 1.52.0 and 1.53.0) for a fresh Clau
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.54.0 is on main and released** (versionCode 143). **The next versionCode is 144.**
+Current state: **v1.55.0 is on main and released** (versionCode 144). **The next versionCode is 145.**
 
 **Product rules for every change (section 7 has the full list):** sync everything except looks and device-only
 things (section 2a); obvious features (delete, delete all, undo, search) must exist wherever data lives; secure and
@@ -29,7 +29,7 @@ private by default, because the app is heading to the **Google Play Store**; nev
 
 Plain HTML/JS, no build step, no framework. Every file is loaded by `index.html` with a `<script src>` tag, in this
 order: `bench.js, lists.js, assistant.js, agent.js, ai.js, convs.js, me.js, canvas.js, ink.js, kokoro.js, polish.js,
-trackers.js, screen.js, sched.js, guides.js, howto.js, setup.js`. Later scripts patch or wrap functions defined earlier, so
+trackers.js, screen.js, moves.js, sched.js, guides.js, howto.js, setup.js`. Later scripts patch or wrap functions defined earlier, so
 **order matters** and a later file often overrides an earlier one by reusing the same function name.
 
 Run locally: `npx http-server -p 8765 -c-1` in the repo root (see `.claude/launch.json`). Test with headless
@@ -51,6 +51,7 @@ Playwright at 390 px (phone) and 1280 px (desktop).
 | `lists.js` | Lists (checklists with deadlines), encrypted sharing, Cards widget data. |
 | `trackers.js` | Custom activity trackers and Home Insights (AI-written with refresh). |
 | `screen.js` | Screen time hour by hour (`#/screen`): reads `PlotlineAssist.usageHours`, stores `actLog()[day].hu/.un`, Day/Week/Month/All charts, legend, skip, limits, habits, `scrHours` for the AI. |
+| `moves.js` | Activity in detail (`#/moves`): steps, workouts, sleep and places by day/week/month/all, day timeline, `actDetail` for the AI. |
 | `ink.js` + `ocr/` | Handwriting/drawing (pressure, palm rejection, S Pen eraser) and photo-to-text (PaddleOCR on onnxruntime-web; Tesseract fallback). See `ocr/README.md`. |
 | `kokoro.js` + `lib/phonemizer` | Natural voices (Kokoro TTS). Web uses ONNX Runtime Web; Android uses native `Kokoro.java`. |
 | `polish.js` + `polish.css` | Design layer loaded last: SF-style icons, Apple type, shadows, backgrounds, swipe decks, page gears (`GEARS`), canvas mode. |
@@ -128,12 +129,13 @@ unless noted.
 - **1.52.0 (#58):** agent news/trending/read_url lookups (Google News in the app or via proxy, GDELT in a browser, Wikipedia Current events fallback, Google Trends or Hacker News), tasks that learn from tapped tags (More of / Less of), per-task "Think with: Your AI server", "News for me" template, How-to in More and the sidebar, More gets AI & voice / Automations / Connections shortcuts, phone title fit, Agent card title CSS fix.
 - **1.53.0:** almost everything syncs (section 2a): agent tasks and reports, conversations, AI canvases, trackers, AI server address/model/key, Notion token, agent connections. Home "Agent reports" card. "Delete all" for conversations and canvases. Agent read_url only reads public https hosts. Backups no longer carry the PIN hash.
 - **1.54.0:** Screen time hour by hour (`screen.js`, `#/screen`): Day / Week / Month / All, hourly bars stacked by app (faded when light), a day-by-hour map, a typical day, a legend that hides apps, skip (not counted), daily limits with a nudge, habits that check themselves off, phone-habit tips; the assistant gets the hours (`scrHours`). Native: `UsageHours.java` + `PlotlineAssist.usageHours(days)`; `PlotlineAssist.http` now also does plain GETs to public https hosts (news/trends/RSS on Android). Settings in `S.settings.act.scx` (`act.scr` is the old daily screen-time goal: don't reuse it).
+- **1.55.0:** Activity in detail (`moves.js`, `#/moves/<day>`): a 24-hour day line (sleep, workouts, steps, screen time), steps by hour against the goal and a typical day, workouts by type with start/end and usual start hour, a sleep schedule (bedtime to wake per night, green when the goal is met, bedtime spread), minutes at places. Charts reuse `SCREEN.bars`. `actDetail(ds)` feeds the assistant. Places have minutes only: the phone (compiled MainActivity geofencing) doesn't record arrival/leave times.
 
 ### versionCode table (for the APK)
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143. **Next: 144.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144. **Next: 145.**
 
 ## 4. Building the APK (cloud, no Android SDK)
 

@@ -57,15 +57,16 @@ const tot=m=>Object.entries(m).reduce((s,[k,v])=>s+v,0);
 /* ---------------- charts ---------------- */
 const hLab=h=>h===0?'12a':h===12?'12p':h<12?h+'a':(h-12)+'p';
 const hName=h=>new Date(2000,0,1,h).toLocaleTimeString([],{hour:'numeric'});
-function stack(m,G){const s={};for(const[k,v]of Object.entries(m)){const kk=keyOf(k,G);if(!shown(kk))continue;s[kk]=(s[kk]||0)+v}return[...G.top,'other'].filter(k=>s[k]).map(k=>[k,s[k]])}
+function stack(m,G){const s={};for(const[k,v]of Object.entries(m)){const kk=keyOf(k,G);if(!G.raw&&!shown(kk))continue;s[kk]=(s[kk]||0)+v}return[...G.top,'other'].filter(k=>s[k]).map(k=>[k,s[k]])}
 const colOf=(k,G)=>k==='other'?OTHER:G.col[k];
-/* bars of stacked minutes, drawn with HTML so labels stay crisp at any width; light hours fade (o.fade) */
-function barsSVG(cols,G,o){const sums=cols.map(c=>stack(c.m,G)),mx0=Math.max(o.min||1,...sums.map(S2=>S2.reduce((a,x)=>a+x[1],0)));
- const step=mx0>240?120:mx0>120?60:mx0>60?30:mx0>20?10:5,mx=Math.ceil(mx0/step)*step,gl=[];for(let v=step;v<=mx;v+=step)gl.push(v);
- const fl=v=>v>=60?(v%60?(v/60).toFixed(1):v/60)+'h':v+'m';
- const grid=gl.map(v=>`<i class="sc-g" style="bottom:${v/mx*100}%"><b>${fl(v)}</b></i>`).join('');
+/* bars of stacked values (minutes unless o.fmt says otherwise), drawn with HTML so labels stay crisp at any width;
+   light ones fade (o.fade); o.goal draws a dashed goal line. Activity in detail (moves.js) uses it too. */
+function barsSVG(cols,G,o){const sums=cols.map(c=>stack(c.m,G)),mx0=Math.max(o.min||1,o.goal||0,...sums.map(S2=>S2.reduce((a,x)=>a+x[1],0)));
+ const F=o.fmt||fmtMin,step=o.fmt?(p=>[1,2,2.5,5,10].map(x=>x*p).find(x=>mx0/x<=4))(Math.pow(10,Math.floor(Math.log10(mx0/4)||0))):mx0>240?120:mx0>120?60:mx0>60?30:mx0>20?10:5,mx=Math.ceil(mx0/step)*step,gl=[];for(let v=step;v<=mx;v+=step)gl.push(v);
+ const fl=o.axis||(v=>v>=60?(v%60?(v/60).toFixed(1):v/60)+'h':v+'m');
+ const grid=gl.map(v=>`<i class="sc-g" style="bottom:${v/mx*100}%"><b>${fl(v)}</b></i>`).join('')+(o.goal?`<i class="sc-g goal" style="bottom:${o.goal/mx*100}%"></i>`:'');
  const bars=cols.map((c,i)=>{const S2=sums[i],t=S2.reduce((a,x)=>a+x[1],0),op=o.fade?Math.max(.3,Math.min(1,t/Math.max(mx0*.5,1))):1;
-  return`<div class="sc-c${c.sel?' sel':''}${o.act?'':' na'}"${o.act?` data-act="${o.act}" data-v="${c.v}" role="button" tabindex="0"`:''} aria-label="${esc(c.aria)}: ${t?fmtMin(t):'none'}" title="${esc(c.aria)}: ${t?fmtMin(t):'none'}"><div class="sc-st" style="height:${t/mx*100}%;opacity:${op}">${S2.map(([k,v])=>`<span style="flex:${v};background:${colOf(k,G)}"></span>`).join('')}</div><small>${c.lab||''}</small></div>`}).join('');
+  return`<div class="sc-c${c.sel?' sel':''}${o.act?'':' na'}${o.goal&&t>=o.goal?' ok':''}"${o.act?` data-act="${o.act}" data-v="${c.v}" role="button" tabindex="0"`:''} aria-label="${esc(c.aria)}: ${t?F(t):'none'}" title="${esc(c.aria)}: ${t?F(t):'none'}"><div class="sc-st" style="height:${t/mx*100}%;opacity:${op}">${S2.map(([k,v])=>`<span style="flex:${v};background:${colOf(k,G)}"></span>`).join('')}</div><small>${c.lab||''}</small></div>`}).join('');
  return`<div class="sc-bw" style="--h:${o.h||150}px"><div class="sc-ax">${grid}</div><div class="sc-bs${cols.length>40?' thin':''}">${bars}</div></div>`}
 /* a day-by-hour grid: darker = more minutes in that hour */
 function heatSVG(A,G){const rows=A.days,mx=Math.max(1,...rows.flatMap(d=>d.hrs?d.hrs.map(m=>tot(Object.fromEntries(stack(m,G)))):[0])),hd=Array.from({length:24},(_,h)=>`<small>${h%3===0?hLab(h):''}</small>`).join('');
@@ -168,7 +169,7 @@ if(NATIVE)setTimeout(()=>pull(true),4000);
 /* the assistant and the agent read the hours too: "what times did I use my phone yesterday" */
 window.scrHours=ds=>{const D=dayData(ds);if(!D.hrs)return'';const parts=[];D.hrs.forEach((m,h)=>{const L=Object.entries(fold(m)).sort((x,y)=>y[1]-x[1]),t=L.reduce((a,x)=>a+x[1],0);if(t>=1)parts.push(`${hName(h)} ${Math.round(t)}m (${L.slice(0,3).map(([k,v])=>`${lab(k)} ${Math.round(v)}m`).join(', ')})`)});
  return parts.length?'screen time by hour (the app shows this as a chart in Screen time): '+parts.join('; '):''};
-window.SCREEN={pull,dayData,lab};
+window.SCREEN={pull,dayData,lab,bars:barsSVG,hName,hLab,PAL};
 
 /* links in: the Activity page's screen tile and a day's activity */
 {const _va=VIEWS.activity;if(_va)VIEWS.activity=function(){const h=_va.apply(this,arguments),a=h.indexOf('id="act-screen"'),e=a<0?-1:h.indexOf('</section>',a);
@@ -189,7 +190,7 @@ const css=document.createElement('style');css.textContent=`
 .sc-lg i{width:10px;height:10px;border-radius:3px;flex:none}.sc-lg.off{opacity:.45;text-decoration:line-through}.sc-lg.off i{background:transparent!important;border:1.5px solid var(--muted)}.sc-lg.only{border-color:var(--accent)}
 .sc-ch{padding:14px 12px 8px;margin-bottom:12px}.sc-cht{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 4px 8px;flex-wrap:wrap}.sc-cht small{font-size:12px}
 .sc-bw{position:relative;height:var(--h);margin:4px 2px 0 30px}
-.sc-ax{position:absolute;inset:0 0 18px 0;pointer-events:none}.sc-g{position:absolute;left:0;right:0;border-top:1px dashed var(--line)}.sc-g b{position:absolute;right:100%;margin-right:6px;transform:translateY(-50%);font:500 10.5px var(--f-body);color:var(--muted);white-space:nowrap}
+.sc-ax{position:absolute;inset:0 0 18px 0;pointer-events:none}.sc-g.goal{border-top:1.5px dashed var(--accent);z-index:1}.sc-g{position:absolute;left:0;right:0;border-top:1px dashed var(--line)}.sc-g b{position:absolute;right:100%;margin-right:6px;transform:translateY(-50%);font:500 10.5px var(--f-body);color:var(--muted);white-space:nowrap}
 .sc-bs{position:absolute;inset:0;display:flex;gap:3px;align-items:stretch}.sc-bs.thin{gap:1px}
 .sc-c{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer;outline:none;border-radius:6px}.sc-c.na{cursor:default}
 .sc-c:focus-visible{box-shadow:0 0 0 2px var(--accent)}
