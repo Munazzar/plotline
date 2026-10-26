@@ -116,7 +116,7 @@ document.addEventListener('input',e=>{if(e.target.id!=='bkRange')return;const p=
 document.addEventListener('change',e=>{if(e.target.id!=='bkRange')return;const b=$b('#bkBub');if(b)b.textContent='';jump(e.target.value)});
 addEventListener('resize',()=>{if(!B.open||B.busy)return;const sp=wide();if(sp!==B.sp){B.sp=sp;B.i=clampI(B.i);document.getElementById('book').classList.toggle('sp',sp);paint()}});
 /* the Book button on the Journal page */
-{const _vj=VIEWS.journal;VIEWS.journal=function(){const o=_vj.apply(this,arguments);return o.replace('<div class="jw-more rv">',`<div class="jw-more rv"><button class="chip jw-mode bk-chip" data-act="bkOpen">${ic('book')}Read as a book</button>`).replace('<div class="ph-r">',`<div class="ph-r"><button class="btn bk-open" data-act="bkOpen" aria-label="Open the journal as a book" title="Read it as a book">${ic('book')}<span>Book</span></button>`)}}
+{const _vj=VIEWS.journal;VIEWS.journal=function(){const o=_vj.apply(this,arguments);return o.replace('<label class="ibtn sm jdate"',`<button class="ibtn sm bk-ib" data-act="bkOpen" aria-label="Read as a book" title="Read as a book">${ic('book')}</button><label class="ibtn sm jdate"`).replace('<div class="jw-more rv">',`<div class="jw-more rv"><button class="chip jw-mode bk-chip" data-act="bkOpen">${ic('book')}Read as a book</button>`).replace('<div class="ph-r">',`<div class="ph-r"><button class="btn bk-open" data-act="bkOpen" aria-label="Open the journal as a book" title="Read it as a book">${ic('book')}<span>Book</span></button>`)}}
 if(typeof booted!=='undefined'&&booted&&cur.p==='journal')render(false);
 window.BOOK={open,close,state:()=>({open:B.open,i:B.i,n:B.P.length,sp:B.sp})};
 
