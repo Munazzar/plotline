@@ -3575,7 +3575,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.55.0';
+const APP_VER='1.55.1';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -8563,7 +8563,11 @@ function axBars(id,D,key,o){const n=D.length,x0=0,bw=(AW-x0)/n,ch=AH-APT-APB,val
  return`<div class="axc-w"><svg class="axc" viewBox="0 0 ${AW} ${AH}" role="group" aria-label="${esc(o.aria)}">${defs}<line class="axbase" x1="0" x2="${AW}" y1="${APT+ch+.5}" y2="${APT+ch+.5}"/><rect class="axsel" x="0" y="${APT-8}" width="${bw.toFixed(2)}" height="${ch+12}" rx="${Math.min(9,bw/2).toFixed(1)}"/>${B}${vl}${axLabels(D,x0,bw,AH-6)}</svg>${kk}</div>`}
 /* steps by hour: Health Connect's hourly counts, or (when they're missing or well short of the day's total) the
    phone counter's running totals saved each time Plotlines read it, spread over the hours between readings */
-function hrOf(o){const hr=Array.isArray(o.hr)?o.hr.map(Number):null,hs=hr?hr.reduce((a,b)=>a+(b||0),0):0;if(hr&&hs>0&&hs>=(+o.s||0)*.8)return o.hr;
+/* 1.55.1: a step app that gives Health Connect one record for the whole day (Samsung Health does) comes back spread
+   evenly over the hours, which isn't when you walked: half the day or more at the same count is treated as no hourly data */
+function flatHr(hr){const nz=(hr||[]).map(Number).filter(v=>v>0);if(nz.length<12)return false;const mx=Math.max(...nz),mn=Math.min(...nz);return mx-mn<=Math.max(2,mx*.06)}
+window.flatHr=flatHr;
+window.hrOf=hrOf;function hrOf(o){const hr0=Array.isArray(o.hr)?o.hr.map(Number):null,hr=hr0&&!flatHr(hr0)?hr0:null,hs=hr?hr.reduce((a,b)=>a+(b||0),0):0;if(hr&&hs>0&&hs>=(+o.s||0)*.8)return o.hr;
  const sp=o.sp,ks=sp?Object.keys(sp).map(Number).sort((a,b)=>a-b):[];if(!ks.length)return hs>0?o.hr:null;const out=Array(24).fill(0);let ph=Math.min(7,ks[0]),pv=0;
  ks.forEach(h=>{const v=+sp[h],d=Math.max(0,v-pv),from=Math.min(ph,h),n=h-from+1;for(let i=from;i<=h;i++)out[i]+=d/n;ph=h+1;pv=Math.max(pv,v)});
  return out.some(v=>v>0)?out.map(Math.round):null}
