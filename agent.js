@@ -207,7 +207,7 @@ async function runTask(t,manual,o={}){if(!manual&&!runLock(t))return;if(BUSY){t.
   const T=src.filter(k=>TOOLS[k]&&connOn(k)).flatMap(k=>TOOLS[k]),names=T.map(x=>x[0]);
   step('Reading your plan…');const plot=plotLines(big).map(x=>'- '+x).join('\n');
   const who=String((S.settings.assist||{}).name||'Plot').slice(0,24),today=d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-  const SUGS=`"suggestions" are 0 to 6 things the app can do for them, grounded in what you found: today (a goal for today; text is the goal), reminder (text, date YYYY-MM-DD, time HH:MM), journal (text to save), list_add (target is a list name, text the items), thread_update (target is a note name, text the update), new_thread (text is its title), calendar_event (text is the title, date, time), goal (a new goal), habit (something to do regularly). Don't suggest what's already in the plan.`;
+  const SUGS=`"suggestions" are 0 to 6 things the app can do for them, grounded in what you found: today (a goal for today; text is the goal), reminder (text, date YYYY-MM-DD, time HH:MM), journal (text to save), list_add (target is a list name, text the items), thread_update (target is a note name, text the update), new_thread (text is its title), calendar_event (text is the title, date, time), goal (a new goal), habit (something to do regularly). Don't suggest what's already in the plan. Put suggestions only in the "suggestions" array, never as a list in the summary: the app shows them as one-tap buttons.`;
   const ANS=`"summary" is your answer, written freely in Markdown on an open canvas: build whatever layout fits the request best, using ## headings, - bullet lists, 1. numbered lists, **bold**, and tables (| col | col | with a |---| row) when comparing or listing things with several details. Answer the task fully and specifically, with the real names, subjects, dates and numbers from what you found. If you list things, list every one. Don't pad, and never invent anything that isn't in the data.
 How a great answer reads: open with one bold line that gives the takeaway (e.g. "**5 unread today, 2 need a reply.**"). Then the details, grouped so they're easy to scan (by what needs action, by person, by day: whatever fits), with what's urgent or important called out in bold. End with a short "## What I'd do" list of 1 to 3 concrete next steps, and offer those same steps as suggestions so they're one tap away. Sound like a sharp, friendly assistant, not a report. When you mention an article or page, link it as [title](url) with the link from the data.
 "tags" are up to 10 short labels (1 to 3 words) for the topics, sources and kinds of things your answer covers, e.g. "AI", "Reuters", "cricket", "newsletters". The user taps them to get more or less of each next time.`;
@@ -234,7 +234,7 @@ How a great answer reads: open with one bold line that gives the takeaway (e.g. 
   if(!String(j.summary||'').trim()&&!(j.suggestions||[]).length)throw new Error('The AI gave an empty answer. Try again, or pick another model in Settings › AI & voice.');
   const sugs=(Array.isArray(j.suggestions)?j.suggestions:[]).filter(x=>x&&SUGT.includes(x.type)&&String(x.text||'').trim()).slice(0,6).map(x=>({id:uid(),type:x.type,text:tr(x.text,200),target:tr(x.target||'',60),date:/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')?x.date:'',time:/^\d{2}:\d{2}$/.test(x.time||'')?x.time:'',st:''}));
   const item={id:uid(),t:now(),task:t.id,title:t.title,from:o.quiet?'chat':'',summary:String(j.summary||'').trim().slice(0,9000),data:g.raw,sugs,tags:(Array.isArray(j.tags)?j.tags:[]).map(x=>tr(x,30)).filter(Boolean).slice(0,12),errs:g.errs,seen:false};
-  if(t.mode==='do')for(const s of sugs)if(s.type!=='calendar_event'){try{await apply(s,true)}catch(e){}}
+  liftSugs(item);if(t.mode==='do')for(const s of item.sugs)if(s.type!=='calendar_event'){try{await apply(s,true)}catch(e){}}
   A.inbox.unshift(item);A.inbox=A.inbox.slice(0,40);t.last=now();t.err='';save();
   if(!manual&&document.hidden&&typeof notify==='function')notify('Plot · '+t.title,tr(item.summary,140));
   return item}
@@ -337,12 +337,27 @@ const sumHTML2=t=>window.AIX&&AIX.md?`<div class="ai-md">${AIX.md(t)}</div>`:sum
 /* the inbox stays out of the way: newest result open, older ones folded to a line, three at a time, and the whole
    section can be minimized so Tasks don't drift down the page as results pile up */
 let INB_N=3;const INB_OPEN=new Map();
+/* 1.58: when the AI writes its suggestions into the answer ("- **reminder**: "Pay the bill", 2026-10-28, 09:00")
+   instead of the suggestions list, they're lifted out of the text and become one-tap buttons */
+const SUGA={list:'list_add',add_to_list:'list_add',thread:'new_thread',note:'new_thread',new_note:'new_thread',note_update:'thread_update',event:'calendar_event',calendar:'calendar_event',goal_today:'today'};
+function sugsFromText(sum){sum=String(sum||'');const L=sum.split('\n'),h=L.findIndex(l=>/^\s*(?:#{1,4}\s*)?\**\s*suggestions\s*\**\s*:?\s*\**\s*$/i.test(l));if(h<0)return null;
+ const out=[];let e=h+1;
+ for(;e<L.length;e++){const l=L[e];if(!l.trim())continue;if(/^\s*#{1,4}\s/.test(l))break;
+  const m=/^\s*(?:[-*•]|\d+[.)])\s*\**\s*([a-z_ ]+?)\s*\**\s*:\s*\**\s*(.+)$/i.exec(l);if(!m)break;
+  let ty=m[1].trim().toLowerCase().replace(/\s+/g,'_');ty=SUGA[ty]||ty;if(!SUGT.includes(ty))continue;const r=m[2];
+  const lab=k=>{const x=new RegExp(k+'\\s*:\\s*["“]([^"”]+)["”]','i').exec(r);return x?x[1]:''};const qs=[...r.matchAll(/["“]([^"”]+)["”]/g)].map(x=>x[1]);
+  const text=lab('text')||(lab('target')?qs.find(q=>q!==lab('target')):qs[0])||r.replace(/\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}:\d{2}\b|,/g,' ').replace(/\*\*/g,'').trim();
+  const d=/\b(\d{4}-\d{2}-\d{2})\b/.exec(r),t=/\b(\d{2}:\d{2})\b/.exec(r);if(!String(text).trim())continue;
+  out.push({id:uid(),type:ty,text:tr(text,200),target:tr(lab('target'),60),date:d?d[1]:'',time:t?t[1]:'',st:''})}
+ if(!out.length)return null;return{summary:[...L.slice(0,h),...L.slice(e)].join('\n').replace(/\n{3,}/g,'\n\n').trim(),sugs:out.slice(0,6)}}
+const liftSugs=it=>{if(!it||it.lifted)return false;it.lifted=1;const r=sugsFromText(it.summary);if(!r)return false;const have=new Set((it.sugs||[]).map(x=>x.type+'|'+String(x.text).toLowerCase()));
+ it.summary=r.summary;it.sugs=[...(it.sugs||[]),...r.sugs.filter(x=>!have.has(x.type+'|'+String(x.text).toLowerCase()))].slice(0,8);return true};
 const firstLine=t=>String(t||'').split('\n').map(x=>x.replace(/^#+\s*|\*\*|__|`/g,'').replace(/^[-*•]\s+|^\d+[.)]\s+/,'').trim()).find(Boolean)||'';
 /* tags under a result: tap once for more of it next time, again for less, again to forget */
 const tuneOf=(t,g)=>{const lc=String(g).toLowerCase(),has=L=>(L||[]).some(x=>x.toLowerCase()===lc);return has(t.more)?'more':has(t.less)?'less':''};
 function tuneHTML(it){const t=ag().tasks.find(x=>x.id===it.task);if(!t||!(it.tags||[]).length)return'';
  return`<div class="ag-tune"><small class="muted">Next time, more <b>+</b> or less <b>−</b> of these? Tap to choose.</small><div class="chips">${it.tags.map(g=>{const k=tuneOf(t,g);return`<button class="chip${k==='more'?' on more':k?' less':''}" data-act="agTag" data-i="${it.id}" data-g="${esc(g)}" aria-label="${esc(g)}: ${k?k+' of this':'no preference'}">${k==='more'?'+ ':k==='less'?'− ':''}${esc(g)}</button>`}).join('')}</div></div>`}
-function itemHTML(it,i){const open=INB_OPEN.has(it.id)?INB_OPEN.get(it.id):i===0,left=it.sugs.filter(s=>!s.st).length;
+function itemHTML(it,i){if(liftSugs(it))setTimeout(save,0);const open=INB_OPEN.has(it.id)?INB_OPEN.get(it.id):i===0,left=it.sugs.filter(s=>!s.st).length;
  return`<article class="panel ag-it${it.seen?'':' new'}${open?'':' shut'}"><div class="ag-h"><button class="ag-ht" data-act="agFold" data-i="${it.id}" data-o="${open?1:0}" aria-expanded="${open}"><b>${esc(it.title)}</b><small class="muted">${esc(dd(it.t))} · ${esc(tm(it.t))}${it.from==='chat'?' · from chat':''}${!open&&left?` · ${left} suggestion${left===1?'':'s'}`:''}</small>${open?'':`<span class="ag-1">${esc(tr(firstLine(it.summary),120))}</span>`}</button><span class="ag-hb"><button class="ibtn sm" data-act="agChat" data-i="${it.id}" aria-label="Continue in chat" title="Continue in chat">${ic('chat')}</button><button class="ibtn sm" data-act="agItX" data-i="${it.id}" aria-label="Remove this result" title="Remove">${ic('x')}</button></span></div>
  ${open?`${it.summary?sumHTML2(it.summary):''}${dataHTML(it.data,it.summary)}${tuneHTML(it)}
   ${it.sugs.length?`<ul class="ag-s">${it.sugs.map(s=>`<li class="${s.st}"><span class="ag-k">${SUGN[s.type]}</span><span class="ag-x">${sugLine(s)}</span>${s.st==='done'?`<span class="ag-ok">${ic('check')}</span>`:s.st==='no'?'<span class="muted small">Skipped</span>':`<span class="ag-b"><button class="ibtn sm" data-act="agYes" data-i="${it.id}" data-s="${s.id}" aria-label="Do it" title="Do it">${ic('check')}</button><button class="ibtn sm" data-act="agNo" data-i="${it.id}" data-s="${s.id}" aria-label="Skip" title="Skip">${ic('plus')}</button></span>`}</li>`).join('')}</ul>${left>1?`<div class="actions left"><button class="btn sm" data-act="agAll" data-i="${it.id}">Do all</button></div>`:''}`:''}
