@@ -14,8 +14,40 @@
 'use strict';
 Object.assign(IC,{book:'<path d="M12 6.2C10.1 4.8 7.4 4.2 4 4.4v13.7c3.4-.2 6.1.4 8 1.8 1.9-1.4 4.6-2 8-1.8V4.4c-3.4-.2-6.1.4-8 1.8z"/><path d="M12 6.2v13.7"/>',ixl:'<path d="M4 6h16M4 12h16M4 18h10"/>'});
 const B={open:false,P:[],i:0,busy:false,ix:false,focus:'',sp:false};
-const wide=()=>innerWidth>=900;
+const wide=()=>innerWidth>=900&&S.settings.book?.spread!==false;
 const dayOf=t=>ymd(new Date(t));
+/* ---------------- look and feel (1.59.3): the book's own settings, kept on this device like the rest of the looks ---------------- */
+const BDEF={paper:'auto',lines:'none',grain:true,font:'serif',size:18,lh:'normal',cover:'leather',turn:'curl',speed:'normal',sound:false,spread:true,moments:true,drop:true,open:'today',last:''};
+const BS=()=>S.settings.book=Object.assign({},BDEF,S.settings.book||{});
+const PAPERS=[['auto','Auto'],['cream','Cream'],['white','White'],['sepia','Sepia'],['grey','Stone'],['dark','Night'],['black','Black']];
+const COVERS=[['leather','Leather','#5a3a2a'],['navy','Navy','#1f2d4a'],['forest','Forest','#24392c'],['wine','Wine','#4d1f2a'],['ink','Black','#1b1a1a'],['sand','Sand','#9a7b55'],['accent','Theme colour','']];
+const FONTS=[['serif','Book'],['sans','Clean'],['mono','Typewriter'],['hand','Handwritten']];
+const FONT_CSS={serif:"'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif",sans:'var(--f-body)',mono:"'Courier Prime','Courier New',Courier,ui-monospace,monospace",hand:"'Segoe Print','Bradley Hand','Snell Roundhand','Comic Neue','Comic Sans MS',cursive"};
+const SPEED={slow:1.45,normal:1,fast:.62};
+function bkCls(){const s=BS(),dark=s.paper==='auto'?paperDark():s.paper==='dark'||s.paper==='black';return`bk${B.sp?' sp':''}${dark?' dk':''} pp-${s.paper} ln-${s.lines}${s.grain?'':' nograin'}${s.drop?'':' nodrop'}`}
+function bkApply(){const el=document.getElementById('book');if(!el)return;const s=BS(),open=el.classList.contains('in');el.className=bkCls()+(open?' in':'');
+ const cv=COVERS.find(c=>c[0]===s.cover)||COVERS[0];el.style.setProperty('--board',cv[2]||'color-mix(in srgb,var(--accent) 55%,#1a1410)');
+ el.style.setProperty('--bkf',FONT_CSS[s.font]||FONT_CSS.serif);el.style.setProperty('--bks',(+s.size||18)+'px');el.style.setProperty('--bkl',{tight:1.5,normal:1.72,airy:1.95}[s.lh]||1.72)}
+const seg=(k,L,v)=>`<div class="bk-sg" role="radiogroup">${L.map(([x,n])=>`<button class="${String(v)===String(x)?'on':''}" role="radio" aria-checked="${String(v)===String(x)}" data-act="bkSetV" data-k="${k}" data-v="${x}">${n}</button>`).join('')}</div>`;
+const tog=(k,n,v)=>`<label class="bk-tg"><span>${n}</span><input type="checkbox" data-bkset="${k}" ${v?'checked':''}><i></i></label>`;
+function setPaint(){const el=$b('#bkSet');if(!el)return;const s=BS();
+ el.innerHTML=`<div class="bk-ixh"><b>Look &amp; feel</b><button class="bk-ib" data-act="bkSet" aria-label="Close">${ic('x')}</button></div>
+ <h4>Paper</h4><div class="bk-sw">${PAPERS.map(([k,n])=>`<button class="bk-swp p-${k}${s.paper===k?' on':''}" data-act="bkSetV" data-k="paper" data-v="${k}" aria-label="${n}" title="${n}"><i></i><span>${n}</span></button>`).join('')}</div>
+ <h4>Page</h4>${seg('lines',[['none','Blank'],['lined','Lined'],['dots','Dotted']],s.lines)}${tog('grain','Paper grain',s.grain)}
+ <h4>Writing</h4>${seg('font',FONTS,s.font)}
+ <div class="bk-rg"><span>Text size</span><input type="range" min="14" max="26" step="1" value="${s.size}" data-bkset="size" aria-label="Text size"><b>${s.size}</b></div>
+ ${seg('lh',[['tight','Compact'],['normal','Normal'],['airy','Airy']],s.lh)}${tog('drop','Large first letter',s.drop)}${tog('moments','Show steps and goals',s.moments)}
+ <h4>Cover</h4><div class="bk-sw">${COVERS.map(([k,n,c])=>`<button class="bk-swc${s.cover===k?' on':''}" style="--c:${c||'var(--accent)'}" data-act="bkSetV" data-k="cover" data-v="${k}" aria-label="${n}" title="${n}"><i></i><span>${n}</span></button>`).join('')}</div>
+ <h4>Turning pages</h4>${seg('turn',[['curl','Paper curl'],['slide','Slide'],['fade','Fade']],s.turn)}${seg('speed',[['slow','Slow'],['normal','Normal'],['fast','Fast']],s.speed)}${tog('sound','Page sound',s.sound)}
+ <h4>Layout</h4>${tog('spread','Two pages on wide screens',s.spread)}${seg('open',[['today','Open on today'],['last','Open where I left off']],s.open)}
+ <button class="bk-reset" data-act="bkSetReset">Back to the defaults</button>`}
+function setChange(k,v){const s=BS();if(k==='size')v=Math.max(14,Math.min(26,+v||18));s[k]=v;S.settings.book=s;save();
+ if(k==='spread'){const sp=wide();if(sp!==B.sp){B.sp=sp;B.i=clampI(B.i)}}
+ bkApply();if(['moments','spread'].includes(k))paint();if(k!=='size')setPaint();else{const b=$b('.bk-rg b');if(b)b.textContent=v}}
+/* a soft page sound: a short burst of filtered noise, made on the device (no files) */
+let AC=null;function rustle(){if(!BS().sound)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const d=.32,n=Math.floor(AC.sampleRate*d),buf=AC.createBuffer(1,n,AC.sampleRate),x=buf.getChannelData(0);for(let k=0;k<n;k++){const t=k/n;x[k]=(Math.random()*2-1)*Math.pow(Math.sin(Math.PI*t),1.6)*(.6+.4*Math.random())}
+ const src=AC.createBufferSource(),bp=AC.createBiquadFilter(),g=AC.createGain();src.buffer=buf;bp.type='bandpass';bp.frequency.value=2600;bp.Q.value=.7;g.gain.value=.16;src.connect(bp).connect(g).connect(AC.destination);src.start()}catch(e){}}
+
 /* the pages: a cover, one page per day that has entries (oldest first), and today's page to write on */
 function pages(){const D={};S.entries.filter(e=>e&&e.type!=='token').forEach(e=>{(D[dayOf(e.t)]=D[dayOf(e.t)]||[]).push(e)});
  const td=ymd();if(!D[td])D[td]=[];
@@ -30,17 +62,17 @@ function pageHTML(p,n){if(!p)return`<div class="bk-pc bk-blank"></div>`;
  const w=p.E.filter(e=>e.type==='note'),m=p.E.filter(e=>e.type!=='note'),today=p.d===ymd(),D=dt(p.d);
  return`<div class="bk-pc"><div class="bk-run">${esc(D.toLocaleDateString(undefined,{month:'long',year:'numeric'}))}</div>
  <header class="bk-ph"><div class="bk-dn">${D.getDate()}</div><div class="bk-dw"><b>${esc(D.toLocaleDateString(undefined,{weekday:'long'}))}</b><span>${today?'Today':esc(D.toLocaleDateString(undefined,{month:'long',day:'numeric'}))}</span></div></header>
- <div class="bk-body">${w.map((e,k)=>(k?'<div class="bk-orn" aria-hidden="true">⁂</div>':'')+entryHTMLb(e,k===0)).join('')}${m.length?`<ul class="bk-mos">${m.map(e=>entryHTMLb(e)).join('')}</ul>`:''}${!p.E.length?`<p class="bk-empty">${today?'A fresh page for today.':'Nothing was written this day.'}</p>`:''}
+ <div class="bk-body">${w.map((e,k)=>(k?'<div class="bk-orn" aria-hidden="true">⁂</div>':'')+entryHTMLb(e,k===0)).join('')}${m.length&&BS().moments!==false?`<ul class="bk-mos">${m.map(e=>entryHTMLb(e)).join('')}</ul>`:''}${!p.E.length?`<p class="bk-empty">${today?'A fresh page for today.':'Nothing was written this day.'}</p>`:''}
  <button class="bk-add" data-act="bkWrite" data-d="${p.d}">${ic('edit')}<span>${w.length?'Add to this day':today?'Write today’s page':'Write on this page'}</span></button></div>
  <footer class="bk-pn">${n}</footer></div>`}
 /* which pages are on screen: one (phone) or a left/right spread starting at an even index */
 const step=()=>B.sp?2:1;
 const clampI=i=>{const L=B.P.length;i=Math.max(0,Math.min(i,L-1));return B.sp?i-(i%2):i};
-function shell(){return`<div id="book" class="bk${B.sp?' sp':''}${paperDark()?' dk':''}" role="dialog" aria-modal="true" aria-label="Journal book">
- <div class="bk-top"><button class="bk-ib" data-act="bkClose" aria-label="Close the book" title="Close (Esc)">${ic('x')}</button><div class="bk-tt" id="bkCount" aria-live="polite"></div><button class="bk-ib" data-act="bkIx" aria-label="Contents" title="Contents" aria-expanded="false">${ic('ixl')}</button><button class="bk-ib bk-wr" data-act="bkWrite" data-d="${ymd()}" aria-label="Write today" title="Write today">${ic('edit')}</button></div>
+function shell(){return`<div id="book" class="${bkCls()}" role="dialog" aria-modal="true" aria-label="Journal book">
+ <div class="bk-top"><button class="bk-ib" data-act="bkClose" aria-label="Close the book" title="Close (Esc)">${ic('x')}</button><div class="bk-tt" id="bkCount" aria-live="polite"></div><button class="bk-ib bk-aa" data-act="bkSet" aria-label="Look and feel" title="Look and feel" aria-expanded="false">Aa</button><button class="bk-ib" data-act="bkIx" aria-label="Contents" title="Contents" aria-expanded="false">${ic('ixl')}</button><button class="bk-ib bk-wr" data-act="bkWrite" data-d="${ymd()}" aria-label="Write today" title="Write today">${ic('edit')}</button></div>
  <div class="bk-stage" id="bkStage"><div class="bk-book" id="bkBook"><i class="bk-edge l" aria-hidden="true"></i><i class="bk-edge r" aria-hidden="true"></i><div class="bk-pg bk-l" id="bkL"></div><div class="bk-pg bk-r" id="bkR"></div></div></div>
  <div class="bk-bot"><button class="bk-ib" data-act="bkPrev" aria-label="Previous page">${ic('back')}</button><div class="bk-scr"><input type="range" id="bkRange" min="0" aria-label="Go to a page"><span class="bk-bub" id="bkBub"></span></div><button class="bk-ib bk-nx" data-act="bkNext" aria-label="Next page">${ic('back')}</button></div>
- <aside class="bk-ix" id="bkIx" aria-label="Contents" hidden></aside></div>`}
+ <aside class="bk-ix" id="bkIx" aria-label="Contents" hidden></aside><aside class="bk-ix bk-set" id="bkSet" aria-label="Look and feel" hidden></aside></div>`}
 /* the paper follows the theme: warm cream in light themes, warm charcoal in dark ones */
 function paperDark(){const c=getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g)||[255,255,255];return(.299*c[0]+.587*c[1]+.114*c[2])<128}
 const $b=s=>document.querySelector('#book '+s);
@@ -51,6 +83,7 @@ function paint(){const L=$b('#bkL'),R=$b('#bkR');if(!R)return;const i=B.i;
  const pv=$b('[data-act=bkPrev]'),nx=$b('[data-act=bkNext]');if(pv)pv.disabled=i<=0;if(nx)nx.disabled=i+step()>=B.P.length;
  /* the page edges: thicker on the side you have read */
  const n=B.P.length,el=$b('.bk-edge.l'),er=$b('.bk-edge.r'),th=k=>Math.round(Math.min(9,2+k*.35));if(el)el.style.setProperty('--t',th(i)+'px');if(er)er.style.setProperty('--t',th(n-1-i-(B.sp?1:0))+'px');
+ {const pp=B.P[B.sp&&B.P[i+1]?i+1:i],st=BS();if(pp&&pp.d&&st.last!==pp.d){st.last=pp.d;save()}}
  if(B.ix)ixPaint()}
 function ixPaint(){const el=$b('#bkIx');if(!el)return;const G0={};B.P.forEach((p,k)=>{if(p.k!=='day')return;const m=p.d.slice(0,7);(G0[m]=G0[m]||[]).push([p,k])});
  el.innerHTML=`<div class="bk-ixh"><b>Contents</b><button class="bk-ib" data-act="bkIx" aria-label="Close contents">${ic('x')}</button></div><button class="bk-ixr${B.i===0?' on':''}" data-act="bkGo" data-i="0"><span class="bk-ixd">✦</span><span class="bk-ixt"><b>Cover</b></span></button>`+Object.keys(G0).reverse().map(m=>`<div class="bk-ixm">${esc(new Date(m+'-15T12:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}))}</div>`+G0[m].slice().reverse().map(([p,k])=>{const w=p.E.find(e=>e.type==='note'),on=k===B.i||(B.sp&&k===B.i+1);
@@ -108,13 +141,15 @@ function foldTo(Pin){const t=T;if(!t)return;const{W,H,cy,mir}=t;let P=reach(Pin,
  t.cast.style.clipPath=poly(fold.map(css));t.cast.style.opacity=1;
  t.cast.style.background=`linear-gradient(${deg}deg,rgba(0,0,0,0) ${dF-1}px,rgba(0,0,0,${(.5*k+.1).toFixed(2)}) ${dF}px,rgba(0,0,0,0) ${dF+Math.max(30,Math.min(90,half*.6))}px)`;
  t.front.style.setProperty('--fs',(k*.18).toFixed(3))}
-function turnEnd(done){if(!T)return;const t=T;T=null;[t.front,t.cast,t.flapW].forEach(x=>x&&x.remove());if(done)B.i=t.ni;B.busy=false;paint()}
+function turnEnd(done){if(!T)return;const t=T;T=null;[t.front,t.cast,t.flapW].forEach(x=>x&&x.remove());if(done){B.i=t.ni;rustle()}B.busy=false;paint()}
 /* finish (or undo) the turn: the corner travels in a slight arc, the way a hand lifts a page */
 function animTo(target,ms,cb){const t=T;if(!t)return cb&&cb();const a=t.P.slice(),t0=performance.now(),ease=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,lift=(t.cy?-1:1)*t.H*.16;let fin=false;
  const end=()=>{if(fin)return;fin=true;if(T===t){foldTo(target);cb&&cb()}};
  const tick=now=>{if(fin||T!==t)return;const k=Math.min(1,(now-t0)/ms),e=ease(k);foldTo([a[0]+(target[0]-a[0])*e,a[1]+(target[1]-a[1])*e+lift*Math.sin(Math.PI*e)*Math.min(1,Math.abs(target[0]-a[0])/t.W)]);if(k<1)requestAnimationFrame(tick);else end()};
  requestAnimationFrame(tick);setTimeout(end,ms+150)}
-function turn(dir){if(B.busy)return;if(reduced()){const ni=clampI(B.i+dir*step());if(ni===B.i)return;B.i=ni;fade();return}if(!turnStart(dir))return;try{vib()}catch(e){}animTo(P1(T),B.sp?880:760,()=>turnEnd(true))}
+function turn(dir){if(B.busy)return;const st=BS().turn;if(st==='slide'&&!reduced()){slide(dir);return}if(reduced()||st==='fade'){const ni=clampI(B.i+dir*step());if(ni===B.i)return;B.i=ni;fade();rustle();return}if(!turnStart(dir))return;try{vib()}catch(e){}animTo(P1(T),Math.round((B.sp?880:760)*(SPEED[BS().speed]||1)),()=>turnEnd(true))}
+/* slide: the next page comes in from the side it's turned to */
+function slide(dir){const ni=clampI(B.i+dir*step());if(ni===B.i)return;B.i=ni;paint();rustle();const bk=$b('#bkBook');if(!bk)return;bk.style.animationDuration=Math.round(380*(SPEED[BS().speed]||1))+'ms';bk.classList.remove('bk-sln','bk-slp');void bk.offsetWidth;bk.classList.add(dir>0?'bk-sln':'bk-slp')}
 function fade(){const bk=$b('#bkBook');paint();if(bk){bk.classList.remove('bk-fade');void bk.offsetWidth;bk.classList.add('bk-fade')}}
 function jump(k){k=clampI(+k);if(k===B.i)return;B.i=k;fade()}
 
@@ -124,37 +159,43 @@ function onDown(e){if(!B.open||B.busy||e.button>0||e.target.closest('button,a,in
 function frameXY(e){const t=T,pg=t.mir?$b('#bkL'):$b('#bkR'),r=pg.getBoundingClientRect();let x=e.clientX-r.left,y=e.clientY-r.top;if(t.mir)x=r.width-x;return[x,y]}
 function onMove(e){if(!D||e.pointerId!==D.id)return;const dx=e.clientX-D.x,dy=e.clientY-D.y,now=performance.now();
  if(!D.on){if(Math.abs(dx)<9||Math.abs(dx)<Math.abs(dy)*1.25){if(Math.abs(dy)>14)D=null;return}const dir=dx<0?1:-1,pg=(B.sp&&dir<0)?$b('#bkL'):$b('#bkR'),r=pg.getBoundingClientRect();
-  if(!turnStart(dir,D.y-r.top)){D=null;return}D.on=true;D.dir=dir;D.o=frameXY({clientX:D.x,clientY:D.y});D.p0=T.P.slice();try{$b("#bkBook").setPointerCapture(e.pointerId)}catch(_){}}
+  if(BS().turn!=='curl'){D.sw=dir;return}if(!turnStart(dir,D.y-r.top)){D=null;return}D.on=true;D.dir=dir;D.o=frameXY({clientX:D.x,clientY:D.y});D.p0=T.P.slice();try{$b("#bkBook").setPointerCapture(e.pointerId)}catch(_){}}
  e.preventDefault();D.vx=(e.clientX-D.lx)/Math.max(1,now-D.lt);D.lx=e.clientX;D.lt=now;
  const f=frameXY(e),t=T,k=(!t.mir&&t.dir<0&&!B.sp)?2:1;/* a phone page coming back from the left travels twice as far as the finger */
  const P=[D.p0[0]+(f[0]-D.o[0])*k,D.p0[1]+(f[1]-D.o[1])*.9];cancelAnimationFrame(RAF);RAF=requestAnimationFrame(()=>foldTo(P))}
 function onUp(e){if(!D||(e.pointerId!==D.id&&e.type!=='pointercancel'))return;const d=D;D=null;
- if(!d.on){if(e.type==='pointerup'&&Math.abs(e.clientX-d.x)<8&&Math.abs(e.clientY-d.y)<8&&!getSelection().toString()){const bk=$b('#bkBook').getBoundingClientRect(),x=(e.clientX-bk.left)/bk.width;if(x>.85)turn(1);else if(x<.15)turn(-1)}return}
+ if(!d.on){if(d.sw&&e.type==='pointerup'&&Math.abs(e.clientX-d.x)>40){turn(d.sw);return}if(e.type==='pointerup'&&Math.abs(e.clientX-d.x)<8&&Math.abs(e.clientY-d.y)<8&&!getSelection().toString()){const bk=$b('#bkBook').getBoundingClientRect(),x=(e.clientX-bk.left)/bk.width;if(x>.85)turn(1);else if(x<.15)turn(-1)}return}
  cancelAnimationFrame(RAF);const t=T;if(!t)return;const a=P0(t),z=P1(t),prog=Math.abs(t.P[0]-a[0])/Math.abs(z[0]-a[0]),fl=d.vx*(t.dir>0?-1:1)*(t.mir?-1:1);
- const go=prog>.25||fl>.5;animTo(go?z:a,Math.round((go?1-prog:prog)*620+180),()=>turnEnd(go))}
+ const go=prog>.25||fl>.5;animTo(go?z:a,Math.round(((go?1-prog:prog)*620+180)*(SPEED[BS().speed]||1)),()=>turnEnd(go))}
 
 /* ---------------- open, close, write ---------------- */
-function open(atDay){B.P=pages();B.sp=wide();let i=B.P.length-1;if(atDay){const k=B.P.findIndex(p=>p.d===atDay);if(k>=0)i=k}B.i=clampI(i);B.ix=false;
- let el=document.getElementById('book');if(el)el.remove();document.body.insertAdjacentHTML('beforeend',shell());el=document.getElementById('book');B.open=true;
+function open(atDay){B.P=pages();B.sp=wide();B.set=false;if(!atDay&&BS().open==='last'&&BS().last)atDay=BS().last;let i=B.P.length-1;if(atDay){const k=B.P.findIndex(p=>p.d===atDay);if(k>=0)i=k}B.i=clampI(i);B.ix=false;
+ let el=document.getElementById('book');if(el)el.remove();document.body.insertAdjacentHTML('beforeend',shell());el=document.getElementById('book');B.open=true;bkApply();
  document.documentElement.classList.add('bk-on');try{history.pushState({book:1},'')}catch(e){}paint();requestAnimationFrame(()=>el.classList.add('in'))}
 function close(fromPop){const el=document.getElementById('book');if(!el)return;B.open=false;T=null;B.busy=false;document.documentElement.classList.remove('bk-on');el.classList.remove('in');setTimeout(()=>el.remove(),300);
  if(!fromPop&&history.state&&history.state.book){BKB=1;try{history.back()}catch(e){BKB=0}}if(cur.p==='journal'||cur.p==='threads')render(false)}
 let BKB=0;
 addEventListener('popstate',e=>{if(BKB){BKB=0;return}if(B.open&&!(e.state&&e.state.book)&&!$('#sheet').classList.contains('on')){close(true)}});
-{const _b=window.__back;window.__back=function(){if(B.open&&!$('#sheet').classList.contains('on')){if(B.ix){B.ix=false;ixShow();return true}close();return true}return _b.apply(this,arguments)}}
+{const _b=window.__back;window.__back=function(){if(B.open&&!$('#sheet').classList.contains('on')){if(B.set){B.set=false;setShow();return true}if(B.ix){B.ix=false;ixShow();return true}close();return true}return _b.apply(this,arguments)}}
 /* after writing or editing, the book comes back on that day */
 {const _cs=closeSheet;closeSheet=function(){const r=_cs.apply(this,arguments);if(B.open){setTimeout(()=>{if(!B.open)return;const d=B.focus||(B.P[B.i]&&B.P[B.i].d);B.P=pages();const k=B.P.findIndex(p=>p.d===d);B.i=clampI(k>=0?k:B.i);paint()},420)}return r}}
+function setShow(){const el=$b('#bkSet'),b=$b('.bk-top [data-act=bkSet]');if(!el)return;el.hidden=!B.set;if(b)b.setAttribute('aria-expanded',B.set);if(B.set){B.ix=false;ixShow();setPaint()}}
 function ixShow(){const el=$b('#bkIx'),b=$b('.bk-top [data-act=bkIx]');if(!el)return;el.hidden=!B.ix;if(b)b.setAttribute('aria-expanded',B.ix);if(B.ix)ixPaint()}
 Object.assign(ACT,{
  bkOpen:d=>open(d&&d.d),
  bkClose:()=>close(),
  bkNext:()=>turn(1),bkPrev:()=>turn(-1),
- bkIx:()=>{B.ix=!B.ix;ixShow()},
+ bkIx:()=>{B.ix=!B.ix;if(B.ix&&B.set){B.set=false;setShow()}ixShow()},
+ bkSet:()=>{B.set=!B.set;setShow()},
+ bkSetV:d=>setChange(d.k,d.v),
+ bkSetReset:()=>{const last=BS().last;S.settings.book={...BDEF,last};save();const sp=wide();if(sp!==B.sp){B.sp=sp;B.i=clampI(B.i)}bkApply();paint();setPaint()},
  bkGo:d=>{if(!wide()){B.ix=false;ixShow()}jump(d.i)},
  bkWrite:d=>{B.focus=d.d||ymd();writeSheet(null,null,B.focus)},
  bkEdit:d=>{const e=S.entries.find(x=>x.id===d.id);if(!e)return;B.focus=dayOf(e.t);writeSheet(e)}});
 document.addEventListener('pointerdown',onDown);document.addEventListener('pointermove',onMove,{passive:false});document.addEventListener('pointerup',onUp);document.addEventListener('pointercancel',onUp);
-document.addEventListener('keydown',e=>{if(!B.open||$('#sheet').classList.contains('on')||e.target.matches('input,textarea,[contenteditable]'))return;if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();turn(1)}else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();turn(-1)}else if(e.key==='Escape'){e.preventDefault();if(B.ix){B.ix=false;ixShow()}else close()}});
+document.addEventListener('keydown',e=>{if(!B.open||$('#sheet').classList.contains('on')||e.target.matches('input,textarea,[contenteditable]'))return;if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();turn(1)}else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();turn(-1)}else if(e.key==='Escape'){e.preventDefault();if(B.set){B.set=false;setShow()}else if(B.ix){B.ix=false;ixShow()}else close()}});
+document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.bkset;if(!k||!B.open)return;setChange(k,e.target.type==='checkbox'?e.target.checked:e.target.value)});
+document.addEventListener('input',e=>{if(e.target.dataset&&e.target.dataset.bkset==='size'&&B.open)setChange('size',e.target.value)});
 document.addEventListener('input',e=>{if(e.target.id!=='bkRange')return;const p=B.P[+e.target.value],b=$b('#bkBub');if(b)b.textContent=p?(p.k==='cover'?'Cover':dt(p.d).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})):''});
 document.addEventListener('change',e=>{if(e.target.id!=='bkRange')return;const b=$b('#bkBub');if(b)b.textContent='';jump(e.target.value)});
 addEventListener('resize',()=>{if(!B.open||B.busy)return;const sp=wide();if(sp!==B.sp){B.sp=sp;B.i=clampI(B.i);document.getElementById('book').classList.toggle('sp',sp)}paint()});
@@ -171,6 +212,15 @@ html.bk-on{overflow:hidden}
  position:fixed;inset:0;z-index:56;display:flex;flex-direction:column;background:var(--desk);color:var(--ink);opacity:0;transition:opacity .3s ease;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);-webkit-tap-highlight-color:transparent}
 .bk.dk{--pp:#25221e;--pp2:#1f1c19;--ink:#ece4d6;--ink2:#a2967f;--rule:rgba(236,220,190,.12);--acc:#d9b27c;--desk:radial-gradient(130% 100% at 50% 35%,#2e2a26 0,#191715 62%,#0d0c0b 100%);--board:#3a281f}
 .bk.in{opacity:1}
+.bk{--grain:${GRAIN};--bkf:'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif;--bks:18px;--bkl:1.72}.bk.nograin{--grain:linear-gradient(transparent,transparent)}
+.bk.pp-cream{--pp:#f7f1e4;--pp2:#efe6d3;--ink:#2b261f;--ink2:#7c705e;--rule:rgba(90,70,40,.16);--acc:#8a5a2b}
+.bk.pp-white{--pp:#fdfdfb;--pp2:#efefec;--ink:#1d1f24;--ink2:#6c707a;--rule:rgba(30,40,60,.13);--acc:#3d5a98}
+.bk.pp-sepia{--pp:#eedfc0;--pp2:#e1cfa9;--ink:#3a2a17;--ink2:#7b6343;--rule:rgba(110,70,20,.2);--acc:#8b4a17}
+.bk.pp-grey{--pp:#e8e7e3;--pp2:#dad8d2;--ink:#232323;--ink2:#6d6a64;--rule:rgba(0,0,0,.13);--acc:#4f566b}
+.bk.pp-black{--pp:#0d0d0d;--pp2:#151515;--ink:#e7e2d9;--ink2:#8e8679;--rule:rgba(255,240,210,.1);--acc:#d9b27c;--desk:#000}
+.bk.ln-lined .bk-pc:not(.bk-cover){background-image:repeating-linear-gradient(transparent 0 calc(var(--bks) * var(--bkl) - 1px),var(--rule) calc(var(--bks) * var(--bkl) - 1px) calc(var(--bks) * var(--bkl)));background-attachment:local;background-position:0 calc(var(--bks) * .32)}
+.bk.ln-dots .bk-pc:not(.bk-cover){background-image:radial-gradient(var(--rule) 1.1px,transparent 1.5px);background-size:22px 22px;background-attachment:local}
+.bk.nodrop .bk-e.first .bk-x>:first-child::first-letter{float:none;font-size:inherit;line-height:inherit;padding:0;color:inherit;font-weight:inherit}
 .bk-top{display:flex;align-items:center;gap:6px;padding:8px 10px 4px;position:relative;z-index:6}
 .bk-ib{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:50%;border:0;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink);cursor:pointer;transition:background .2s,transform .15s}.bk-ib:active{transform:scale(.92)}.bk-ib:disabled{opacity:.3;cursor:default}.bk-ib svg{width:19px;height:19px}
 .bk-wr{background:var(--acc);color:var(--pp)}
@@ -184,22 +234,24 @@ html.bk-on{overflow:hidden}
 /* the stack of page edges at the outer sides */
 .bk-edge{position:absolute;top:3px;bottom:3px;width:var(--t,3px);z-index:0;background:repeating-linear-gradient(90deg,var(--pp2) 0 1px,color-mix(in srgb,var(--pp2) 70%,#000) 1px 1.6px);border-radius:2px;transition:width .3s}
 .bk-edge.r{right:calc(-1 * var(--t,3px))}.bk-edge.l{left:calc(-1 * var(--t,3px));display:none}.bk.sp .bk-edge.l{display:block}
-.bk-pg{position:relative;min-width:0;min-height:0;grid-row:1;overflow:hidden;background-color:var(--pp);background-image:${GRAIN},linear-gradient(90deg,rgba(0,0,0,.07),rgba(0,0,0,0) 7%,rgba(0,0,0,0) 93%,rgba(0,0,0,.03));border-radius:3px 8px 8px 3px;z-index:1}
-.bk-pg.bk-l{display:none}.bk.sp .bk-pg.bk-l{display:block;grid-column:1;border-radius:8px 2px 2px 8px;background-image:${GRAIN},linear-gradient(270deg,rgba(0,0,0,.16),rgba(0,0,0,.05) 5%,rgba(0,0,0,0) 12%)}
-.bk.sp .bk-pg.bk-r{grid-column:2;border-radius:2px 8px 8px 2px;background-image:${GRAIN},linear-gradient(90deg,rgba(0,0,0,.16),rgba(0,0,0,.05) 5%,rgba(0,0,0,0) 12%)}
-.bk:not(.sp) .bk-pg.bk-r{background-image:${GRAIN},linear-gradient(90deg,rgba(0,0,0,.14),rgba(0,0,0,.04) 4%,rgba(0,0,0,0) 9%)}
+.bk-pg{position:relative;min-width:0;min-height:0;grid-row:1;overflow:hidden;background-color:var(--pp);background-image:var(--grain),linear-gradient(90deg,rgba(0,0,0,.07),rgba(0,0,0,0) 7%,rgba(0,0,0,0) 93%,rgba(0,0,0,.03));border-radius:3px 8px 8px 3px;z-index:1}
+.bk-pg.bk-l{display:none}.bk.sp .bk-pg.bk-l{display:block;grid-column:1;border-radius:8px 2px 2px 8px;background-image:var(--grain),linear-gradient(270deg,rgba(0,0,0,.16),rgba(0,0,0,.05) 5%,rgba(0,0,0,0) 12%)}
+.bk.sp .bk-pg.bk-r{grid-column:2;border-radius:2px 8px 8px 2px;background-image:var(--grain),linear-gradient(90deg,rgba(0,0,0,.16),rgba(0,0,0,.05) 5%,rgba(0,0,0,0) 12%)}
+.bk:not(.sp) .bk-pg.bk-r{background-image:var(--grain),linear-gradient(90deg,rgba(0,0,0,.14),rgba(0,0,0,.04) 4%,rgba(0,0,0,0) 9%)}
 /* turning layers */
 .bk-lay{position:absolute;z-index:3;pointer-events:none}
-.bk-lay.bk-pg{display:block!important;grid-column:auto}
+.bk-lay.bk-pg{display:block!important}
+/* turning layers are placed against the whole book, never inside a grid column (that shifted them a page to the right) */
+.bk .bk-lay{grid-column:1/-1!important;grid-row:1!important}
 .bk-front::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,var(--fs,0));pointer-events:none}
 .bk-cast{z-index:2}
 .bk-flapw{z-index:4;transform-origin:0 0;will-change:transform,filter}
-.bk-flap{position:absolute;inset:0;display:block!important;border-radius:3px 8px 8px 3px;background-image:${GRAIN}}
+.bk-flap{position:absolute;inset:0;display:block!important;border-radius:3px 8px 8px 3px;background-image:var(--grain)}
 .bk-back{position:absolute;left:0;top:0;transform:matrix(-1,0,0,1,0,0);transform-origin:50% 50%}
 .bk-paperback{inset:0;background:linear-gradient(90deg,var(--pp2),var(--pp))}
 .bk-gloss{position:absolute;inset:0;pointer-events:none}
 /* the page itself */
-.bk-pc{height:100%;overflow-y:auto;overscroll-behavior:contain;padding:28px 30px 54px 38px;scrollbar-width:none;outline:0;font-family:'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif;position:relative}
+.bk-pc{height:100%;overflow-y:auto;overscroll-behavior:contain;padding:28px 30px 54px 38px;scrollbar-width:none;outline:0;font-family:var(--bkf);position:relative}
 .bk-pc::-webkit-scrollbar{display:none}
 .bk.sp .bk-l .bk-pc,.bk-flap.bk-l .bk-pc,.bk-lay.bk-l .bk-pc{padding:28px 38px 54px 30px}
 .bk-run{text-align:center;font:600 10.5px/1 var(--f-body);letter-spacing:.22em;text-transform:uppercase;color:var(--ink2);margin-bottom:18px}
@@ -211,7 +263,7 @@ html.bk-on{overflow:hidden}
 .bk-mood{font-size:13px;color:var(--ink2)}.bk-mood i{font-style:italic}
 .bk-ed{margin-left:auto;width:32px;height:32px;display:grid;place-items:center;border-radius:50%;border:0;background:none;color:var(--ink2);cursor:pointer;opacity:.75}.bk-ed:hover{opacity:1;background:color-mix(in srgb,var(--ink) 8%,transparent)}.bk-ed svg{width:15px;height:15px}
 .bk-e h3{font:600 21px/1.3 inherit;font-family:inherit;margin:0 0 8px;overflow-wrap:anywhere}
-.bk-x{font-size:18px;line-height:1.72;overflow-wrap:anywhere;hyphens:auto}.bk-x p{margin:0 0 .7em}.bk-x img{max-width:100%;height:auto;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.18)}.bk-x ul,.bk-x ol{padding-left:22px;margin:0 0 .7em}.bk-x mark{background:color-mix(in srgb,var(--acc) 26%,transparent);color:inherit;border-radius:2px}
+.bk-x{font-size:var(--bks);line-height:var(--bkl);overflow-wrap:anywhere;hyphens:auto}.bk-x p{margin:0 0 .7em}.bk-x img{max-width:100%;height:auto;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.18)}.bk-x ul,.bk-x ol{padding-left:22px;margin:0 0 .7em}.bk-x mark{background:color-mix(in srgb,var(--acc) 26%,transparent);color:inherit;border-radius:2px}
 .bk-e.first .bk-x>:first-child::first-letter{float:left;font-size:3.4em;line-height:.82;padding:6px 8px 0 0;color:var(--acc);font-weight:500}
 .bk-img{display:block;max-width:100%;max-height:44vh;border-radius:4px;margin:6px auto 12px;box-shadow:0 3px 12px rgba(0,0,0,.22);transform:rotate(-.6deg)}
 .bk-g{margin-top:2px;font-style:italic;font-size:14px;color:var(--ink2)}
@@ -222,7 +274,7 @@ html.bk-on{overflow:hidden}
 .bk-add{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:8px 2px;border:0;border-bottom:1px solid color-mix(in srgb,var(--acc) 45%,transparent);background:none;color:var(--acc);font:italic 16px 'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;cursor:pointer}.bk-add svg{width:15px;height:15px}
 .bk-pn{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:13px;color:var(--ink2);pointer-events:none;font-variant-numeric:oldstyle-nums}
 /* the cover: leather with a gold-foil title */
-.bk-cover{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:34px;background:radial-gradient(120% 90% at 30% 20%,color-mix(in srgb,var(--board) 70%,#fff 14%),var(--board) 55%,color-mix(in srgb,var(--board) 70%,#000)),${GRAIN};color:#f1e3c0}
+.bk-cover{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:34px;background:radial-gradient(120% 90% at 30% 20%,color-mix(in srgb,var(--board) 70%,#fff 14%),var(--board) 55%,color-mix(in srgb,var(--board) 70%,#000)),var(--grain);color:#f1e3c0}
 .bk-cvf{width:min(100%,360px);padding:42px 24px;border:1px solid rgba(232,200,130,.5);outline:1px solid rgba(232,200,130,.25);outline-offset:6px;border-radius:4px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
 .bk-cover h2{margin:0;font:500 clamp(40px,11vw,58px)/1 'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;letter-spacing:.06em;background:linear-gradient(180deg,#fbeab5 0%,#d8ad55 48%,#f6dd94 62%,#b88a36 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 0 rgba(0,0,0,.45))}
 .bk-cvn{font-style:italic;font-size:18px;color:#ecd9a8}.bk-cvy{font:600 11px var(--f-body);letter-spacing:.3em;color:#d8b874}.bk-cvo{color:#d8b874;font-size:14px}
@@ -237,7 +289,7 @@ html.bk-on{overflow:hidden}
 .bk-scr input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-7.5px;border-radius:50%;background:var(--acc);box-shadow:0 1px 4px rgba(0,0,0,.35)}
 .bk-scr input::-moz-range-track{height:3px;border-radius:3px;background:color-mix(in srgb,var(--ink) 18%,transparent)}.bk-scr input::-moz-range-thumb{width:18px;height:18px;border:0;border-radius:50%;background:var(--acc)}
 .bk-bub{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;padding:4px 10px;border-radius:999px;background:var(--pp);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.25);font:13px 'Iowan Old Style',Palatino,Georgia,serif}.bk-bub:empty{display:none}
-.bk-ix{position:absolute;top:0;bottom:0;right:0;width:min(360px,90vw);z-index:8;overflow-y:auto;overscroll-behavior:contain;background-color:var(--pp);background-image:${GRAIN};color:var(--ink);box-shadow:-30px 0 50px -20px rgba(0,0,0,.55);padding:max(12px,env(safe-area-inset-top)) 12px calc(16px + env(safe-area-inset-bottom));font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;animation:bkIx .32s cubic-bezier(.2,.8,.2,1)}
+.bk-ix{position:absolute;top:0;bottom:0;right:0;width:min(360px,90vw);z-index:8;overflow-y:auto;overscroll-behavior:contain;background-color:var(--pp);background-image:var(--grain);color:var(--ink);box-shadow:-30px 0 50px -20px rgba(0,0,0,.55);padding:max(12px,env(safe-area-inset-top)) 12px calc(16px + env(safe-area-inset-bottom));font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;animation:bkIx .32s cubic-bezier(.2,.8,.2,1)}
 @keyframes bkIx{from{transform:translateX(30px);opacity:0}}
 .bk-ixh{display:flex;align-items:center;justify-content:space-between;padding:6px 4px 12px;position:sticky;top:-12px;background:var(--pp);z-index:1}.bk-ixh b{font-size:22px;font-weight:600}
 .bk-ixm{margin:18px 8px 8px;font:600 10.5px var(--f-body);letter-spacing:.2em;text-transform:uppercase;color:var(--ink2)}
@@ -245,6 +297,22 @@ html.bk-on{overflow:hidden}
 .bk-ixd{width:34px;flex:none;text-align:center;font-size:22px;color:var(--acc)}
 .bk-ixt{flex:1;min-width:0;display:flex;flex-direction:column}.bk-ixt b{font-size:16px;font-weight:600}.bk-ixt small{color:var(--ink2);font-size:14px;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bk-ixp{color:var(--ink2);font-size:13px;font-variant-numeric:oldstyle-nums}
+.bk-sln{animation:bkSlN .38s cubic-bezier(.2,.8,.2,1)}.bk-slp{animation:bkSlP .38s cubic-bezier(.2,.8,.2,1)}
+@keyframes bkSlN{from{transform:translateX(46px);opacity:.15}}@keyframes bkSlP{from{transform:translateX(-46px);opacity:.15}}
+.bk-aa{font:600 16px 'Iowan Old Style',Palatino,Georgia,serif}
+.bk-set h4{margin:18px 6px 8px;font:600 10.5px var(--f-body);letter-spacing:.2em;text-transform:uppercase;color:var(--ink2)}
+.bk-sg{display:flex;flex-wrap:wrap;gap:4px;padding:4px;margin:0 2px 8px;border-radius:12px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.bk-sg button{flex:1 1 auto;min-width:0;padding:8px 10px;border:0;border-radius:9px;background:none;color:var(--ink);font:500 14px var(--f-body);cursor:pointer}.bk-sg button.on{background:var(--pp);box-shadow:0 1px 4px rgba(0,0,0,.2);font-weight:700}
+.bk-tg{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 6px;font:15px var(--f-body);cursor:pointer}.bk-tg input{position:absolute;opacity:0;pointer-events:none}
+.bk-tg i{width:42px;height:25px;flex:none;border-radius:999px;background:color-mix(in srgb,var(--ink) 18%,transparent);position:relative;transition:background .2s}.bk-tg i::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.bk-tg input:checked+i{background:var(--acc)}.bk-tg input:checked+i::after{transform:translateX(17px)}.bk-tg input:focus-visible+i{outline:2px solid var(--acc);outline-offset:2px}
+.bk-sw{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 2px 6px}
+.bk-sw button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 2px;border:0;border-radius:12px;background:none;color:var(--ink);font:12px var(--f-body);cursor:pointer;min-width:0}.bk-sw span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-sw i{width:40px;height:40px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.2)}.bk-sw button.on i{box-shadow:0 0 0 2px var(--pp),0 0 0 4px var(--acc)}
+.p-auto i{background:linear-gradient(135deg,#f7f1e4 50%,#25221e 50%)}.p-cream i{background:#f7f1e4}.p-white i{background:#fdfdfb}.p-sepia i{background:#eedfc0}.p-grey i{background:#e8e7e3}.p-dark i{background:#25221e}.p-black i{background:#0d0d0d}
+.bk-swc i{background:linear-gradient(160deg,color-mix(in srgb,var(--c) 80%,#fff 15%),var(--c))}
+.bk-rg{display:flex;align-items:center;gap:12px;padding:8px 6px;font:15px var(--f-body)}.bk-rg input{flex:1;accent-color:var(--acc)}.bk-rg b{width:2em;text-align:right;font-variant-numeric:tabular-nums}
+.bk-reset{display:block;margin:18px auto 6px;padding:10px 16px;border:0;border-radius:12px;background:none;color:var(--ink2);font:14px var(--f-body);text-decoration:underline;cursor:pointer}
 .bk-fade{animation:bkFade .35s ease}@keyframes bkFade{from{opacity:.25;transform:scale(.995)}to{opacity:1;transform:none}}
 .bk-tab{display:inline-flex;align-items:center;gap:6px}.bk-tab svg{width:16px;height:16px}
 @media(max-width:560px){.bk-pc{padding:24px 22px 50px 28px}.bk-x{font-size:17px}.bk-dn{font-size:50px}.bk-stage{padding:6px 12px 8px}}
