@@ -292,8 +292,7 @@ Everything new must be approvable on Play without company paperwork. Known items
 1. **Full app walkthrough and bugs** (partly done): every page opened on phone and desktop,
    every header button clicked, no script errors (1.52.0 fixed How-to in More/sidebar, phone titles, More-menu settings).
    Remaining: click through every sheet and menu inside each page.
-2. **Privacy policy contact email** is still a placeholder: `privacy.html` points to GitHub issues because the
-   user's contact email isn't known. Ask the user which email to use.
+2. **Privacy policy contact email:** done (2026-10-26): mdmunazzar@gmail.com, in privacy.html section 15.
 3. **Friend's app stopped listening** is blocked: 1.45.1 changed the mic path, but no phone model or Android version
    is known. Needs details from the friend (phone, Android version, what happens on tapping the mic).
 4. **Morning news brief:** shipped in 1.52.0 as the "News for me" agent template. It runs while the app is open (a
