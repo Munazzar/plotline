@@ -6,7 +6,7 @@
    - Home: Up next is a deck of cards. Swipe left for the next step, right for the previous one.
    - Habits: check off today, skip or add a comment straight from the habit, no long press.
    - Calendar: one chip per item (no doubles), habit icons on each day (faded when partly done), week text fits.
-   - Canvas: goals, journal and threads open edge to edge, full screen, on phones too. */
+   - Canvas: goals, journal and notes open edge to edge, full screen, on phones too. */
 (()=>{
 const R=document.documentElement,td=()=>ymd();
 
@@ -42,7 +42,7 @@ Object.assign(IC,{
  unfull:'<path d="M9 4v3.4A1.6 1.6 0 0 1 7.4 9H4M20 9h-3.4A1.6 1.6 0 0 1 15 7.4V4M15 20v-3.4a1.6 1.6 0 0 1 1.6-1.6H20M4 15h3.4A1.6 1.6 0 0 1 9 16.6V20"/>',
  print:'<path d="M7 8.4V4.2a.8.8 0 0 1 .8-.8h8.4a.8.8 0 0 1 .8.8v4.2"/><path d="M7 17.2H5.4a2 2 0 0 1-2-2v-4.8a2 2 0 0 1 2-2h13.2a2 2 0 0 1 2 2v4.8a2 2 0 0 1-2 2H17"/><rect x="7" y="13.6" width="10" height="7" rx=".8"/>',
  share:'<path d="M12 14.6V3.6M8.2 7.2 12 3.4l3.8 3.8"/><path d="M8.4 10.2H7a2 2 0 0 0-2 2v6.4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.4a2 2 0 0 0-2-2h-1.4"/>',
- thread:'<path d="M8.2 3.6h10.2a2 2 0 0 1 2 2v10.2"/><path d="M4 8.2a2 2 0 0 1 2-2h9.6a2 2 0 0 1 2 2v7.4l-4.8 4.8H6a2 2 0 0 1-2-2z"/><path d="M17.6 15.6h-3a1.8 1.8 0 0 0-1.8 1.8v3"/><path d="M7.4 10.6h6.8M7.4 13.8h4"/>',/* a stack of sticky notes: quick notes and chains of thought */
+ note:'<path d="M8.2 3.6h10.2a2 2 0 0 1 2 2v10.2"/><path d="M4 8.2a2 2 0 0 1 2-2h9.6a2 2 0 0 1 2 2v7.4l-4.8 4.8H6a2 2 0 0 1-2-2z"/><path d="M17.6 15.6h-3a1.8 1.8 0 0 0-1.8 1.8v3"/><path d="M7.4 10.6h6.8M7.4 13.8h4"/>',/* a stack of sticky notes: quick notes and chains of thought */
  pin:'<path d="M9.4 3.6h5.2M10.2 3.6v5.2l-3.3 3.6v1.8h10.2v-1.8l-3.3-3.6V3.6M12 14.2v6.2"/>',
  link:'<path d="M10.2 13.8a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.1 1.1"/><path d="M13.8 10.2a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.1-1.1"/>',
  lock:'<rect x="5" y="10.6" width="14" height="10" rx="2.4"/><path d="M8.2 10.6V7.4a3.8 3.8 0 0 1 7.6 0v3.2"/>',
@@ -124,7 +124,7 @@ function snapFix(o){const t=td();
  const a=sh.querySelector('.actions');if(a&&!sh.querySelector('.hds-open')&&!(cur.p==='habit'&&cur.id===h.id))a.insertAdjacentHTML('beforebegin',`<button class="link small hds-open" data-act="hdsOpen" data-id="${h.id}">Open ${esc(h.title)}</button>`)}}
 ACT.hdsOpen=d=>{closeSheet();go('habit/'+d.id)};
 
-/* ---------- Home: Up next as swipe cards (the Thread page uses the same deck, with its own place: DKI by data-k) ---------- */
+/* ---------- Home: Up next as swipe cards (the Note page uses the same deck, with its own place: DKI by data-k) ---------- */
 let UDI=0;const DKI={};const dk=t=>t.dataset.k||'up',dkI=t=>dk(t)==='up'?UDI:(DKI[dk(t)]||0),dkSet=(t,i)=>{if(dk(t)==='up')UDI=i;else DKI[dk(t)]=i};
 function deckCard(g,s,i,n){return`<article class="now tint udk-c${haloOn(g,i===0)?' halo':''}" style="${cvar(g)}" data-i="${i}"><div class="data">${i?'Coming up':'Up next'} · ${esc(g.title)}</div><h2>${esc(s.title)}</h2><div class="data">${dueText(s)||'No date set'}${hasRem(s)?' · reminder on':''}</div><div class="now-a"><button class="btn ink" data-act="toggleStep" data-g="${g.id}" data-s="${s.id}">${ic('check')}Mark done</button><button class="btn inkline" data-act="timerPick" data-g="${g.id}" data-s="${s.id}">${ic('timer')}Focus</button><button class="btn inkline" data-act="open" data-id="${g.id}">Open goal</button></div></article>`}
 function deckHTML(){const nx=active().map(g=>({g,s:nextStep(g)})).filter(x=>x.s).sort(urgency).slice(0,8),n=nx.length;if(!n)return'';UDI=Math.min(UDI,n-1);
@@ -159,7 +159,7 @@ const WIDE=matchMedia('(min-width:1180px)');
 const hSide=n=>{const c=n.classList,h=((n.querySelector(':scope>.st-h h3')||{}).textContent||'').trim().toLowerCase();
  if(n.tagName==='HEADER'||c.contains('demob')||c.contains('sh-today')||c.contains('hft')||c.contains('hcust'))return'full';
  if(c.contains('lv-home')||n.querySelector(':scope>.now')||n.id==='actCard'||c.contains('aip')||(n.dataset&&n.dataset.act==='weekly')||/^(today|insight|coming|pinned|thread)/.test(h))return'r';return'l'};
-/* more to see on a big screen: a stat strip, the week ahead, goals in motion, and recent journal, lists and threads */
+/* more to see on a big screen: a stat strip, the week ahead, goals in motion, and recent journal, lists and notes */
 const W7=864e5*7,hwLink=(href,t)=>`<a class="link" href="${href}">${t}</a>`;
 function hwStats(){const now=Date.now(),wk=S.entries.filter(e=>e.type==='step'&&e.t>now-W7).length,late=active().flatMap(g=>g.steps).filter(s=>!s.done&&s.due&&daysUntil(s.due)<0).length;
  let due=0,dn=0;for(let k=0;k<7;k++){const ds=addDays(-k);S.habits.forEach(h=>{if(hDue(h,ds)){due++;if(hDone(h,ds))dn++}})}
@@ -180,7 +180,7 @@ function hwLists(){const L=(typeof lists==='function'?lists():S.lists||[]).filte
  return`<section class="rv"><div class="st-h"><h3>Lists</h3>${hwLink('#/lists','All lists')}</div><div class="hw-box">${L.map(l=>{const it=Object.values(l.items).filter(x=>x&&!x.del),d=it.filter(x=>x.done).length;
   return`<a class="hw-r" href="#/list/${l.id}"><span class="hw-rt">${esc(l.emoji||'📝')} ${esc(l.title)}</span><small>${d} of ${it.length}</small></a>`}).join('')}</div></section>`}
 function hwThreads(){const T=(S.threads||[]).filter(t=>t.status!=='done').sort((a,b)=>(b.u||0)-(a.u||0)).slice(0,3);if(!T.length)return'';
- return`<section class="rv"><div class="st-h"><h3>Threads</h3>${hwLink('#/threads','All threads')}</div><div class="hw-box">${T.map(t=>{const u=(t.ups||[]).slice().sort((a,b)=>b.t-a.t)[0];
+ return`<section class="rv"><div class="st-h"><h3>Notes</h3>${hwLink('#/threads','All notes')}</div><div class="hw-box">${T.map(t=>{const u=(t.ups||[]).slice().sort((a,b)=>b.t-a.t)[0];
   return`<a class="hw-r" href="#/thread/${t.id}"><span class="hw-rt"><b>${esc(t.title)}</b>${u?`<span class="ell">${esc(trunc(String(u.x||'').replace(/<[^>]+>/g,' '),80))}</span>`:''}</span><small>${(t.ups||[]).length}</small></a>`}).join('')}</div></section>`}
 {const _vt=vToday;vToday=function(){const o=_vt.apply(this,arguments);if(!WIDE.matches)return o;
  const t=document.createElement('template');t.innerHTML=o;const N=[...t.content.children],top=[],L=[],Rt=[],end=[];
@@ -191,7 +191,7 @@ function hwThreads(){const T=(S.threads||[]).filter(t=>t.status!=='done').sort((
  return top.map(n=>n.outerHTML).join('')+st.map(n=>n.outerHTML).join('')+`<div class="hgrid">${col('hcol-a',L)}${col('hcol-b',Rt)}</div>`+end.map(n=>n.outerHTML).join('')};VIEWS.today=vToday}
 WIDE.addEventListener('change',()=>{if(cur.p==='today')render(false)});
 
-/* ---------- canvas: goals, journal and threads edge to edge ---------- */
+/* ---------- canvas: goals, journal and notes edge to edge ---------- */
 const CANVAS=['goal','journal','threads','thread','list','habit'];
 const canvasPg=()=>CANVAS.includes(cur.p);
 function canvasMark(){R.toggleAttribute('data-canvas',canvasPg());R.dataset.pgx=cur.p}
@@ -200,7 +200,7 @@ function canvasMark(){R.toggleAttribute('data-canvas',canvasPg());R.dataset.pgx=
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&S.settings.focus&&canvasPg()){S.settings.focus=false;save();applyFocus(true)}});
 
 /* ---------- navigation: pages grouped by what they're for, the same on the rail and the full-screen bar ---------- */
-const NAVG=[['Today',['today','cal']],['Plan',['goals','habits','lists','activity']],['Capture',['journal','threads','vista','bench']],['AI',['ask','agent','canvas','chats','me']]];
+const NAVG=[['Today',['today','cal']],['Plan',['goals','habits','lists','bills','activity']],['Capture',['journal','threads','vista','bench']],['AI',['ask','agent','canvas','chats','me']]];
 const NAV_ORD=NAVG.flatMap(g=>g[1]);
 /* the page list (key, name, icon) is index.html's own; read it off the rail it builds */
 let PAGES=[];
@@ -211,7 +211,7 @@ const navGroups=()=>{const rest=PAGES.filter(p=>p[0]!=='settings'&&!NAV_ORD.incl
  if(typeof navMark==='function')navMark();if(S.settings.focus&&typeof buildFloater==='function')buildFloater()}}
 /* full screen: a slim bar with the page you're on (tap for every page, grouped), search, and a clear way out */
 buildFloater=function(){let f=$('#fnav');if(!S.settings.focus){f&&f.remove();return}if(!f){f=document.createElement('div');f.id='fnav';document.body.appendChild(f)}
- const on=(({goal:'goals',habit:'habits',ai:'ask',road:'vista',map:'vista',thread:'threads',list:'lists',day:'cal'})[cur.p]||cur.p),cp=PAGES.find(p=>p[0]===on)||(on==='settings'?['settings','Settings',ic('settings')]:PAGES[0]||['today','Home',ic('home')]);let n=0;
+ const on=(({goal:'goals',habit:'habits',ai:'ask',road:'vista',map:'vista',thread:'threads',list:'lists',bill:'bills',day:'cal'})[cur.p]||cur.p),cp=PAGES.find(p=>p[0]===on)||(on==='settings'?['settings','Settings',ic('settings')]:PAGES[0]||['today','Home',ic('home')]);let n=0;
  f.innerHTML=`<div class="fn-bar"><button class="fn-t" data-act="fnavToggle" aria-expanded="false" aria-label="Pages">${cp[2]}<span>${esc(cp[1])}</span>${ic('next','fn-m')}</button><button class="fn-b" data-act="findOpen" aria-label="Find anything" title="Find anything">${ic('search')}</button><button class="fn-b" data-act="focusMode" aria-label="Exit full screen" title="Exit full screen (F)">${ic('unfull')}</button></div>
  <div class="fn-p" role="menu">${navGroups().map(([gn,L])=>`<div class="fn-g" style="--n:${n++}">${esc(gn)}</div>`+L.map(([k,l,svg])=>`<a href="#/${k}" class="fn-i${k===on?' on':''}" role="menuitem" style="--n:${n++}" data-act="fnavGo">${svg}<span>${esc(l)}</span></a>`).join('')).join('')}<a href="#/settings" class="fn-i fn-s${on==='settings'?' on':''}" role="menuitem" style="--n:${n++}" data-act="fnavGo">${ic('settings')}<span>Settings</span></a></div>`};
 buildFloater();addEventListener('hashchange',()=>setTimeout(()=>{if(S.settings.focus)buildFloater()},0));

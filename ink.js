@@ -1,8 +1,8 @@
 /* ================= Ink (1.36): handwriting, sketching and text from photos =================
-   One drawing surface for the journal and threads.
+   One drawing surface for the journal and notes.
    - Strokes are kept as vectors (open a sketch again and keep drawing) plus a flat picture, so a sketch shows anywhere
      (cards, print, sync) without this file. Sketches sit in an entry's text as <img data-sk="id"> (see skHydrate in
-     index.html) and on thread updates as u.sk.
+     index.html) and on note updates as u.sk.
    - Built for a stylus. Apple Pencil and S Pen pressure and tilt shape the line (tilt a pencil to shade), every
      coalesced sample is used and predicted samples are drawn ahead to hide latency. Palm rejection: once a pen has been
      seen on this device, fingers scroll and zoom instead of drawing, and wide contacts (a resting palm) never draw.
@@ -555,7 +555,7 @@ async function scan(T,file,mode){if(!file){file=await pickImage();if(!file)retur
 async function photoSketch(ph){const i=await loadImg(ph),h=Math.round(W*i.height/i.width),c=document.createElement('canvas'),f=Math.min(1,1400/W);c.width=Math.round(W*f);c.height=Math.round(h*f);c.getContext('2d').drawImage(i,0,0,c.width,c.height);
  return{id:hid(),v:1,w:W,h,pp:'light',bg:'plain',s:[],ph,img:c.toDataURL('image/jpeg',.84)}}
 
-/* ================= where ink lands: the journal writing sheet and thread forms ================= */
+/* ================= where ink lands: the journal writing sheet and note forms ================= */
 let WRR=null;
 document.addEventListener('selectionchange',()=>{const ed=document.getElementById('wrEd'),s=getSelection();if(ed&&s.rangeCount&&ed.contains(s.anchorNode))WRR=s.getRangeAt(0).cloneRange()});
 function wrIns(html){const ed=document.getElementById('wrEd');if(!ed)return;ed.focus({preventScroll:true});const s=getSelection();s.removeAllRanges();
@@ -563,7 +563,7 @@ function wrIns(html){const ed=document.getElementById('wrEd');if(!ed)return;ed.f
  document.execCommand('insertHTML',false,html);WRR=s.rangeCount?s.getRangeAt(0).cloneRange():null;if(typeof wrSoon==='function')wrSoon()}
 const skTag=sk=>`<img data-sk="${sk.id}" class="sk-img" src="${sk.img}" alt="${sk.s&&sk.s.length?'Sketch':'Photo'}" draggable="false">`;
 const WRT={html:h=>wrIns(cleanHTML(h)),sketch:sk=>{SKC[sk.id]=sk;wrIns(skTag(sk)+'<p><br></p>')}};
-/* thread updates keep light text markers (**bold**, ==highlight==, "- ", "[ ] "), so HTML is turned into those */
+/* note updates keep light text markers (**bold**, ==highlight==, "- ", "[ ] "), so HTML is turned into those */
 function marks(html){const t=document.createElement('template');t.innerHTML=html;const out=[];
  const inl=n=>[...n.childNodes].map(c=>{if(c.nodeType===3)return c.nodeValue.replace(/\s+/g,' ');if(c.nodeType!==1)return'';const g=c.tagName,i=inl(c);if(g==='BR')return'\n';if(!i.trim())return i;const w=g==='B'||g==='STRONG'?'**':g==='I'||g==='EM'?'*':g==='U'?'__':g==='MARK'?'==':'';return w?w+i.trim()+w+(/\s$/.test(i)?' ':''):i}).join('');
  const blk=(n,dep)=>[...n.childNodes].forEach(c=>{if(c.nodeType===3){if(c.nodeValue.trim())out.push(c.nodeValue.trim());return}if(c.nodeType!==1)return;const g=c.tagName;
@@ -590,12 +590,12 @@ document.addEventListener('click',e=>{const im=e.target.closest&&e.target.closes
   pad({sk,done:n=>{SKC[id]=n;document.querySelectorAll(`#wrEd img[data-sk="${id}"]`).forEach(x=>{x.src=n.img});wrSoon()},text:(h,n)=>{if(n){SKC[id]=n;document.querySelectorAll(`#wrEd img[data-sk="${id}"]`).forEach(x=>{x.src=n.img})}wrIns(cleanHTML(h))},remove:()=>{document.querySelectorAll(`#wrEd img[data-sk="${id}"]`).forEach(x=>x.remove());wrSoon()}});return}
  if(!im.dataset.act)view(im.getAttribute('src'))});
 function view(src){if(!src)return;const o=overlay('ink-view',`<div class="ink-top"><button class="ink-ib" data-k="x" aria-label="Close">${ic('inkx')}</button></div><div class="ink-vb"><img src="${src}" alt=""></div>`);o.el.addEventListener('click',e=>{if(e.target.closest('[data-k=x]')||e.target.classList.contains('ink-vb'))o.close()})}
-/* paste or drop a picture into the journal or a thread: read its text, insert it or draw on it */
+/* paste or drop a picture into the journal or a note: read its text, insert it or draw on it */
 function imgFile(dt){const f=[...(dt&&dt.files||[])].find(x=>/^image\//.test(x.type));if(f)return f;const it=[...(dt&&dt.items||[])].find(x=>x.kind==='file'&&/^image\//.test(x.type));return it?it.getAsFile():null}
 document.addEventListener('paste',e=>{const t=e.target.closest&&e.target.closest('#wrEd,textarea[data-fmt]');if(!t)return;const f=imgFile(e.clipboardData);if(!f)return;e.preventDefault();e.stopImmediatePropagation();scan(targetOf(t),f)},true);
 document.addEventListener('dragover',e=>{if(e.target.closest&&e.target.closest('#wrEd,textarea[data-fmt]'))e.preventDefault()});
 document.addEventListener('drop',e=>{const t=e.target.closest&&e.target.closest('#wrEd,textarea[data-fmt]');if(!t)return;const f=imgFile(e.dataTransfer);if(!f)return;e.preventDefault();scan(targetOf(t),f)},true);
-/* editing a thread update: its sketches come along in the form's tray */
+/* editing a note update: its sketches come along in the form's tray */
 {const _u=ACT.thrUpEdit;ACT.thrUpEdit=function(d){const r=_u.apply(this,arguments);const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u),f=document.querySelector('#sheet form[data-form=thrUpEdit]');if(f&&u){f._sk=(u.sk||[]).slice();tray(f)}return r}}
 window.inkPad=pad;window.inkScan=scan;window.inkTest={pack,unpack,snapShape,linesToHTML,marks,binarize,ocrCanvas,tessRead,paddleRead,inkCanvas,conf:()=>OCRCONF};
 })();

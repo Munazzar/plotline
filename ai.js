@@ -5,7 +5,7 @@
      that can kill many people), care when someone may be in danger, and an optional family-safe mode for children.
      Every chat surface says that this is AI and can make mistakes.
    - Actions: any answer can offer to turn what was said into a goal, habit, routine, list, journal entry, reminder,
-     goal for today or thread ("ACTION: habit | Read 10 pages"). They show as chips, and in a conversation "yes" does them.
+     goal for today or note ("ACTION: habit | Read 10 pages"). They show as chips, and in a conversation "yes" does them.
    - Voices: every voice the phone's text-to-speech has (or the browser's), with speed, pitch and a few styles.
    - Live: a full-screen voice conversation with Plot. It listens with room to pause and think, answers out loud,
      then listens again, until you end it. Open it from the assistant, Ask, Home, a long press on the orb, or by
@@ -35,10 +35,10 @@ const noteHTML=cls=>`<p class="ai-note ${cls||''}">${ic('ai','ico-s')}<span>${NO
 
 /* ---------------- things the AI can offer to make ----------------
    The model ends a reply with lines like "ACTION: habit | Read 10 pages before bed". Each becomes a chip. */
-const AK={goal:'Goal',habit:'Habit',routine:'Routine',list:'List',journal:'Journal',reminder:'Reminder',today:'Today',thread:'Thread'};
+const AK={goal:'Goal',habit:'Habit',routine:'Routine',list:'List',journal:'Journal',reminder:'Reminder',today:'Today',thread:'Note'};
 const ACT_SYS=`When something the user says could become part of their plan in Plotlines, offer it, and add one line at the very end of your reply in exactly this form:
 ACTION: habit | Read 10 pages before bed
-Types: goal (something to achieve), habit (something to do regularly), routine (a short sequence; add | and the steps separated by commas), list (add | and the items separated by commas), journal (the text to save in today's journal), reminder (add | and when, like "tomorrow at 9am"), today (a goal for today), thread (something to keep track of over time). At most two ACTION lines, only when they would really help, and never for things already in their plan.`;
+Types: goal (something to achieve), habit (something to do regularly), routine (a short sequence; add | and the steps separated by commas), list (add | and the items separated by commas), journal (the text to save in today's journal), reminder (add | and when, like "tomorrow at 9am"), today (a goal for today), note (something to keep track of over time). At most two ACTION lines, only when they would really help, and never for things already in their plan.`;
 const ACT_RX=/^[ \t>*-]*ACTION\s*:\s*([a-z_ ]+?)\s*\|\s*([^|\n]+?)(?:\s*\|\s*([^\n]*?))?\s*$/gim;
 function parseActs(text,max=3){const acts=[];const clean=String(text||'').replace(ACT_RX,(m,k,a,b)=>{k=k.toLowerCase().replace(/\s+/g,'');if(k==='todo'||k==='todaygoal')k='today';if(AK[k]&&a.trim()&&acts.length<max)acts.push({id:uid(),k,t:tr(a,120),x:tr(b||'',300),st:''});return''}).replace(/\n{3,}/g,'\n\n').trim();return{clean,acts}}
 /* the half-written "ACTI…" line at the end of a streaming answer stays hidden */
@@ -213,7 +213,7 @@ Object.assign(ACT,{qsHear:()=>hear(vpick().voice),qsAll:()=>{if(LV.open)lvMin();
 
 /* ---------------- Live: a voice conversation ---------------- */
 const LV={open:false,st:'idle',hist:[],pend:[],muted:false,gen:0,ctl:null,you:'',ai:'',typing:false};
-const LV_SYS=()=>{const s=insSet(),pr=s.profile&&s.profile.text,name=S.settings.name;return`You are ${nm()}, ${name?name+'’s':'the user’s'} friendly, curious companion inside Plotlines, their app for goals, habits, routines, a journal, lists and threads. You are in a live voice conversation, so talk like a real person: warm, natural, one to three short sentences, no lists, no markdown, no emojis. Ask a short follow-up question when it keeps the conversation going, and give people room to think. Talk about anything they bring up: their day, feelings, ideas, plans, questions about the world, advice. Use the DATA about them when it helps, and never invent facts about them.${pr?`\n\nWHAT YOU KNOW ABOUT THEM\n${pr}`:''}\n\n${ACT_SYS} When you offer something on your own, ask in your spoken sentence, like "Want me to make that a habit?". When they ask you to make something, it's already been done for them.${window.AGENT?'\n\n'+AGENT.sys():''}\n\n${aiSafety()}`};
+const LV_SYS=()=>{const s=insSet(),pr=s.profile&&s.profile.text,name=S.settings.name;return`You are ${nm()}, ${name?name+'’s':'the user’s'} friendly, curious companion inside Plotlines, their app for goals, habits, routines, a journal, lists and notes. You are in a live voice conversation, so talk like a real person: warm, natural, one to three short sentences, no lists, no markdown, no emojis. Ask a short follow-up question when it keeps the conversation going, and give people room to think. Talk about anything they bring up: their day, feelings, ideas, plans, questions about the world, advice. Use the DATA about them when it helps, and never invent facts about them.${pr?`\n\nWHAT YOU KNOW ABOUT THEM\n${pr}`:''}\n\n${ACT_SYS} When you offer something on your own, ask in your spoken sentence, like "Want me to make that a habit?". When they ask you to make something, it's already been done for them.${window.AGENT?'\n\n'+AGENT.sys():''}\n\n${aiSafety()}`};
 const BYE=/^(?:ok(?:ay)?\s*,?\s*)?(?:bye|goodbye|good bye|see you|see ya|talk (?:to you )?later|that'?s all|that'?s it|i'?m done|we'?re done|end (?:the )?(?:conversation|chat|call)|stop (?:talking|listening|the conversation)|goodnight|good night)\b/i;
 const YES=/^(?:yes|yeah|yep|yup|sure|ok(?:ay)?|please|please do|do it|go ahead|add (?:it|them|that|those|both)|sounds good|let'?s do it|absolutely|of course|definitely)\b/i;
 const NO=/^(?:no|nope|nah|not now|no thanks|don'?t|skip it|never ?mind)\b/i;
@@ -337,7 +337,7 @@ async function sugMake(k){if(SUGB[k])return SUGB[k];if(!aiReady()||MM.busy)throw
  return SUGB[k]=(async()=>{const d=new Date(),part=d.getHours()<12?'morning':d.getHours()<17?'afternoon':'evening',
   plot=(window.AGENT&&AGENT.plot?AGENT.plot():[]).map(x=>'- '+x).join('\n')||'(their plan is still empty)',conn=window.AGENT?AGENT.names():[],prev=sugGet(k);
   const what=k==='agent'?`things the user could ask their agent to do right now. The agent can read ${conn.length?conn.join(', ')+' and ':''}their Plotlines plan, then answer and suggest goals, reminders and notes.${conn.length?'':' Nothing else is connected yet, so keep to their plan.'} Each one is a clear task, like "Find emails from this week I haven’t replied to".`
-   :`things the user could say to ${nm()}, their assistant in the Plotlines app (goals, habits, journal, lists, threads, reminders${conn.length?', and '+conn.join(', ')+' through its agent':''}). Mix it up: one that adds or logs something, one question about their own plan or data, one that asks for an idea, advice or a plan, and one wildcard.`;
+   :`things the user could say to ${nm()}, their assistant in the Plotlines app (goals, habits, journal, lists, notes, reminders${conn.length?', and '+conn.join(', ')+' through its agent':''}). Mix it up: one that adds or logs something, one question about their own plan or data, one that asks for an idea, advice or a plan, and one wildcard.`;
   const msgs=[{role:'system',content:`You write short suggestions for buttons in an app. Reply with exactly 4 lines and nothing else: each line one suggestion, under 60 characters, written as the user would say it (first person), no numbering, no quotes, no emojis.`},
    {role:'user',content:`It’s ${d.toLocaleDateString(undefined,{weekday:'long'})} ${part}. Suggest ${what} Make them specific to this plan and the time of day, and different from these: ${prev.join(' / ')}.\n\nTHEIR PLAN\n${plot}`}];
   let out='';await aiChat(msgs,x=>{out+=x},{max_tokens:200,temperature:.9});

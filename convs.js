@@ -1,4 +1,4 @@
-/* Conversations: every chat with the assistant, every talk in conversation mode and every Ask thread is kept as its own
+/* Conversations: every chat with the assistant, every talk in conversation mode and every Ask question is kept as its own
    conversation. The Conversations page lists them (search, Chats / Talks / Ask), opens one to read it through, continues
    it in chat or out loud, and turns it into things in the plan (goals, habits, routines, lists, a journal entry,
    reminders) with the AI. Stored on this device (IndexedDB key "convs", up to 300) and, with sync on, in your own Drive
@@ -31,7 +31,7 @@ function removeTurn(id,tid){const c=get(id);if(!c)return;c.turns=c.turns.filter(
 function pull(){DB.get('convs').then(v=>{if(!Array.isArray(v))return;let ch=0;v.forEach(c=>{if(!c||!c.id)return;const i=CV.findIndex(x=>x.id===c.id);if(i<0){CV.push(c);ch=1}else if((c.t1||0)>(CV[i].t1||0)){CV[i]=c;ch=1}});if(ch){CV.sort((a,b)=>b.t1-a.t1);if(cur.p==='chats')render(false)}}).catch(()=>{})}
 window.CONV={sync,get,list:()=>CV.slice(),removeTurn,pull};
 
-/* Ask threads are conversations too: save each one once an answer finishes */
+/* Ask questions are conversations too: save each one once an answer finishes */
 if(typeof insRun==='function'){const _r=insRun;insRun=async function(){const R=IN.res;try{return await _r.apply(this,arguments)}finally{try{
  if(R&&R.turns)R.cid=sync(R.cid,'ask',R.turns.filter(t=>t.done&&!t.err&&!t.off).map((t,i)=>({id:'a'+i,q:t.q,a:t.a})))}catch(e){}}}}
 
@@ -42,7 +42,7 @@ const when=t=>{const d=new Date(t),n=new Date(),day=Math.floor((new Date(n.toDat
 const grp=t=>{const d=new Date(t),n=new Date(),day=Math.floor((new Date(n.toDateString())-new Date(d.toDateString()))/864e5);
  return day<=0?'Today':day===1?'Yesterday':day<7?'This week':d.toLocaleDateString([],{month:'long',year:d.getFullYear()===n.getFullYear()?undefined:'numeric'})};
 function hits(){const q=CF.q.trim().toLowerCase();return CV.filter(c=>(!CF.k||c.k===CF.k)&&(!q||c.title.toLowerCase().includes(q)||c.turns.some(t=>t.q.toLowerCase().includes(q)||t.a.toLowerCase().includes(q))))}
-function listHTML(){const L=hits();if(!CV.length)return`<div class="empty rv"><h3>No conversations yet</h3><p class="muted">Chats with ${esc(nm())}, talks out loud and Ask threads show up here, so you can read them again, carry on, or turn them into goals, habits and lists.</p><div class="actions"><button class="btn pri" data-act="convNewTalk">${ic('live')}Start talking</button><button class="btn" data-act="convNewChat">${ic('chat')}Start a chat</button></div></div>`;
+function listHTML(){const L=hits();if(!CV.length)return`<div class="empty rv"><h3>No conversations yet</h3><p class="muted">Chats with ${esc(nm())}, talks out loud and Ask questions show up here, so you can read them again, carry on, or turn them into goals, habits and lists.</p><div class="actions"><button class="btn pri" data-act="convNewTalk">${ic('live')}Start talking</button><button class="btn" data-act="convNewChat">${ic('chat')}Start a chat</button></div></div>`;
  if(!L.length)return`<p class="muted cv-none">Nothing matches${CF.q?` “${esc(CF.q)}”`:''}.</p>`;
  let g='',o='';L.forEach(c=>{const h=grp(c.t1);if(h!==g){g=h;o+=`<h4 class="cv-g">${esc(h)}</h4>`}const last=c.turns[c.turns.length-1],K=KIND[c.k]||KIND.chat;
   o+=`<button class="cv-i" data-act="convOpen" data-id="${c.id}"><span class="cv-ic k-${c.k}">${ic(K[1])}</span><span class="cv-b"><b>${esc(c.title||'Conversation')}</b><small>${esc(tr(last?last.a:'',110))}</small><em>${K[0]} · ${when(c.t1)} · ${c.turns.length} message${c.turns.length===1?'':'s'}</em></span></button>`});return o}

@@ -55,12 +55,12 @@ const DATA_SHAPE=`window.PLOT_DATA = {
             history: [{date, due: bool, done: bool, value: number, skipped: bool}] (last 120 days, only days that were due or had a value), slips: [date] (quit habits)}],
   journal: [{date, time: "HH:MM", title, text, mood}] (newest first),
   plans: [{date, time, title, done}] (reminders and goals for a day, last 90 days to 60 days ahead),
-  threads: [{title, status, updates: [{date, text}]}],
+  notes: [{title, status, updates: [{date, text}]}],
   lists: [{title, items: [{text, done}]}],
   activity: [{date, steps, sleepMinutes, screenMinutes, workouts: [string]}] (last 60 days, may be empty)
 }  (dates are "YYYY-MM-DD" strings)`;
 function dataNow(){const D=plotData(),hab=D.habits.map(h=>h.title).slice(0,25),gl=D.goals.filter(g=>g.status!=='done').map(g=>g.title).slice(0,20);
- return`Right now: ${D.goals.length} goals${gl.length?' ('+gl.join('; ')+')':''}; ${D.habits.length} habits${hab.length?' ('+hab.join('; ')+')':''}; ${D.journal.length} journal entries; ${D.plans.length} plans; ${D.threads.length} threads; ${D.lists.length} lists; ${D.activity.length} days of phone activity.`}
+ return`Right now: ${D.goals.length} goals${gl.length?' ('+gl.join('; ')+')':''}; ${D.habits.length} habits${hab.length?' ('+hab.join('; ')+')':''}; ${D.journal.length} journal entries; ${D.plans.length} plans; ${D.threads.length} notes; ${D.lists.length} lists; ${D.activity.length} days of phone activity.`}
 
 /* ---------------- the page in its frame ---------------- */
 const J=o=>JSON.stringify(o).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
@@ -271,7 +271,7 @@ function vEdit(id){const c=get(id);if(!c)return`<header class="ph"><div><a class
   <section class="cvs-chat"><div class="cvs-log" id="cvsLog">${logHTML(c)}</div>${engineHint()}
    <form class="cvs-in" data-form="cvsSend" data-id="${c.id}" autocomplete="off"><textarea id="cvsIn" name="q" rows="1" maxlength="6000" placeholder="${c.html?'What should change?':'What should we build?'}" aria-label="Message"></textarea>
    ${busy?`<button type="button" class="btn sm cvs-go" data-act="cvsStop" aria-label="Stop">${ic('stop')}</button>`:`<button class="btn pri sm cvs-go" aria-label="Send">${ic('send')}</button>`}</form>
-   <div class="cvs-opts"><label class="cvs-data"><input type="checkbox" data-cvsdata="${c.id}" ${c.data?'checked':''}><span>Use my data</span><small>goals, habits, journal, plans, threads, lists</small></label>
+   <div class="cvs-opts"><label class="cvs-data"><input type="checkbox" data-cvsdata="${c.id}" ${c.data?'checked':''}><span>Use my data</span><small>goals, habits, journal, plans, notes, lists</small></label>
    ${planEngine()==='api'?`<button type="button" class="cvs-think${insSet().think?' on':''}" data-act="cvsThink" title="Thinking: model default, off (faster) or on (deeper)">${ic('ai','ico-s')}Thinking: ${({off:'Off',on:'On'})[insSet().think]||'Default'}</button>`:''}</div></section>
   <section class="cvs-view"><div class="cvs-bar"><div class="seg-s">${[['full','desk','Full width'],['phone','phone','Phone size']].map(([k,i,t])=>`<button class="ibtn sm ${(c.w||'full')===k?'on':''}" data-act="cvsW" data-id="${c.id}" data-w="${k}" aria-label="${t}" title="${t}">${ic(i)}</button>`).join('')}</div>
    <span class="cvs-sp"></span><button class="ibtn sm" data-act="cvsReload" data-id="${c.id}" aria-label="Run again" title="Run again" ${c.html?'':'disabled'}>${ic('reset')}</button><button class="ibtn sm" data-act="cvsFull" data-id="${c.id}" aria-label="Full screen" title="Full screen" ${c.html?'':'disabled'}>${ic('full')}</button></div>

@@ -4,7 +4,7 @@ Written 2026-10-24 (updated the same day for 1.52.0 and 1.53.0) for a fresh Clau
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.57.0 is on main and released** (versionCode 148). **The next versionCode is 149.**
+Current state: **v1.58.0 is on main and released** (versionCode 149). **The next versionCode is 150.**
 
 **Product rules for every change (section 7 has the full list):** sync everything except looks and device-only
 things (section 2a); obvious features (delete, delete all, undo, search) must exist wherever data lives; secure and
@@ -29,7 +29,7 @@ private by default, because the app is heading to the **Google Play Store**; nev
 
 Plain HTML/JS, no build step, no framework. Every file is loaded by `index.html` with a `<script src>` tag, in this
 order: `bench.js, lists.js, assistant.js, agent.js, ai.js, convs.js, me.js, canvas.js, ink.js, kokoro.js, polish.js,
-trackers.js, screen.js, moves.js, sched.js, guides.js, howto.js, setup.js`. Later scripts patch or wrap functions defined earlier, so
+trackers.js, screen.js, moves.js, sched.js, guides.js, howto.js, setup.js, notes.js, bills.js`. Later scripts patch or wrap functions defined earlier, so
 **order matters** and a later file often overrides an earlier one by reusing the same function name.
 
 Run locally: `npx http-server -p 8765 -c-1` in the repo root (see `.claude/launch.json`). Test with headless
@@ -55,6 +55,8 @@ Playwright at 390 px (phone) and 1280 px (desktop).
 | `ink.js` + `ocr/` | Handwriting/drawing (pressure, palm rejection, S Pen eraser) and photo-to-text (PaddleOCR on onnxruntime-web; Tesseract fallback). See `ocr/README.md`. |
 | `kokoro.js` + `lib/phonemizer` | Natural voices (Kokoro TTS). Web uses ONNX Runtime Web; Android uses native `Kokoro.java`. |
 | `polish.js` + `polish.css` | Design layer loaded last: SF-style icons, Apple type, shadows, backgrounds, swipe decks, page gears (`GEARS`), canvas mode. |
+| `notes.js` | Notes (1.58: Thread renamed Notes in the UI only; data, routes and `thr*` names unchanged, `#/notes` aliases `#/threads`): quick-note box, templates, title from the first line, pin (`t.pin`), colour (`t.col`), labels (`t.tags`), search across notes, sort, duplicate, archive (= old status "done"), delete with undo, tickable checklists, voice typing, reminder, AI tools (summarise, tidy, to-dos, keep writing, ask). |
+| `bills.js` | Bills (`#/bills`, `#/bill/<id>`): snap/pick a photo (PaddleOCR on device, or a Workbench vision AI), paste text, or read Gmail (`AGENT.mailSearch/mailRead`); the AI fills a strict JSON template (kind `not_a_bill` rejects junk; nothing guessed, nulls show "not read"); review sheet; totals check; due/paid, reminders, CSV, delete all. IndexedDB "bills" + `syncList("bills")`; photos per device ("billimg:<id>"). Ask: app-computed exact totals + bill index + BM25 top matches, answers cite `[bill:ID]`. Bills also feed `ragDocs`/`insOverview`. |
 | `privacy.html` | Privacy policy (rewritten 2026-10-24, lists every outside service). Update it when a feature contacts a new service. |
 | `sw.js` | Service worker. Bump `CACHE` (`plotline-vX.Y.Z`) with every version. |
 | `firestore.rules`, `database.rules.json` | Firebase rules for sharing (Firebase project `plotline-510215`; Anonymous auth must stay on). |
@@ -135,11 +137,13 @@ unless noted.
 - **1.56.1: no estimates anywhere (owner's rule).** `hrOf` returns only measured hours: real Health Connect hours, else the phone's counted hours (`hs`), with `null` (shown striped, "not recorded") before counting began (`hsFrom`/`hsAt`, from `StepHours` `from`). The old spreading of app-open readings (`sp`) and the steps-based "about X km" distance are gone; distance shows only when measured.
 - **1.57.0: agent tasks run by themselves, app closed, no taps.** `BgAgent.java` (a dataSync foreground service, added to the binary manifest with `tools/apk/manifest.cjs` by copying the LiveShare `<service>`; check with aapt2) is started by an alarm at each task's time: exact when "Alarms & reminders" is allowed, else `setAndAllowWhileIdle` when Plotlines ignores battery optimisation (both let an alarm start a foreground service). It loads `https://appassets.androidplatform.net/index.html?bg=agent` in an invisible WebView (same origin, same data), and agent.js's runner does every due task, posts each result (`PlotlineBg.done`), syncs and stops (`PlotlineBg.finish`), 8 min max. Thinking: Your AI server as usual, or the on-device model via `PlotlineBg.llm` -> `LocalLlm.ensure/complete` (the phone's llama-server, as AI notification replies use) with the model the app passes in `PlotlineAssist.bgModel`. The app schedules with `PlotlineAssist.bgAgent([{at}])` from `agentAlarms` and drops the "Open Plotlines and I'll run it" reminder for tasks that will run by themselves. New do-it-itself templates: Plan my day, Write my day, Get tomorrow ready. Also: the in-app dropdown picker (`.selp`) sits above every sheet (it opened behind Plot settings).
 
+- **1.58.0:** Bills (`bills.js`), Thread renamed Notes with note-taking features (`notes.js`), Settings › Updates with a Check for updates button (index.html, "1.58: Settings › Updates"). Voice commands accept "note" as well as "thread". Agent suggestions the AI writes into its answer text (a "Suggestions" list) are lifted out into one-tap buttons (`sugsFromText`/`liftSugs` in agent.js), also for older reports.
+
 ### versionCode table (for the APK)
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148. **Next: 149.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148, 1.58.0=149. **Next: 150.**
 
 ## 4. Building the APK (cloud, no Android SDK)
 
