@@ -264,7 +264,7 @@ async function reset(){CAP.classList.add('hide');P.classList.remove('on');ring(n
  const st=S.settings;S=norm({settings:{name:st.name,theme:st.theme,onboarded:true,tourOffered:true,toured:true,setupDone:true,demoHide:true}});seedDemo();seedMore();
  if(guide.seed)try{guide.seed()}catch(e){console.warn('[howto] seed',e)}
  try{primeSig()}catch(e){}scrollTo(0,0);go(guide.start||'today');await new Promise(r=>setTimeout(r,700))}
-/* a few things the sample data doesn't have: a thread, a list and an AI that answers from a script */
+/* a few things the sample data doesn't have: a note, a list and an AI that answers from a script */
 function seedMore(){
  try{const ins=insSet();ins.engine='api';ins.url='https://demo.plotlines.invalid/v1';ins.model='demo'}catch(e){}
  }

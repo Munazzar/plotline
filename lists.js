@@ -193,7 +193,7 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset)return;
  else if(t.dataset.lstitle){const L=LBY(t.dataset.lstitle);if(!L||ro(L))return;L.title=t.value.slice(0,80)||'List';L.mu=now();clearTimeout(st(L).sv);st(L).sv=setTimeout(()=>{save();if(L.cloud)pushSoon(L)},500)}});
 document.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t&&t.dataset&&(t.dataset.lsedit||t.dataset.lstitle)){e.preventDefault();t.blur()}});
 /* ---------------- home-screen "Cards" widget ----------------
-   The Android Cards widget shows lists, goals or threads as swipeable cards (or one of them as a full list) and
+   The Android Cards widget shows lists, goals or notes as swipeable cards (or one of them as a full list) and
    lets you tick, add, edit, pin, move, delete and set reminders right there. widgetCards() is its data (sent with
    the rest of the widget payload); taps are queued natively as {k:'wi',src,id,i,op,...} and applied here by
    cardsFromQueue() the next time the app opens. Reminders set from the widget are armed on the phone at once and

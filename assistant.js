@@ -1,6 +1,6 @@
 /* ================= Hey Plot: the voice assistant =================
    Say "Hey Plot" (or tap the orb in the top bar) and ask in your own words:
-   - do things: add to today's journal, start a thread or add to one, set a reminder, add to a list,
+   - do things: add to today's journal, start a note or add to one, set a reminder, add to a list,
      add a goal for today, mark a habit done, open a page, rename the assistant;
    - ask things: "when did I last change my oil?", "what's on my groceries list?", "what do I have today?".
      Facts like these are looked up in your own data on the phone, with no AI needed. Anything more open goes to
@@ -38,8 +38,8 @@ const SW=new Set('a an the and or to of in on at for with about my me i im i\'m 
 const stem=w=>w.length>3?w.replace(/(ing|ings|ed|es|s|e)$/,''):w;
 const toks=s=>(lcs(s).match(/[\p{L}\p{N}]+/gu)||[]).filter(w=>!SW.has(w)).map(stem).filter(w=>w.length>1);
 function lev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(!m||!n)return m||n;let p=[...Array(n+1).keys()];for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
-/* best match for a spoken name among titles (lists, threads, habits) */
-function pick(arr,name,get){const q=lcs(name).replace(/^(my|the)\s+/,'').replace(/\s+(list|thread|habit)$/,'').trim();if(!q)return null;const qt=toks(q);let best=null,bs=0;
+/* best match for a spoken name among titles (lists, notes, habits) */
+function pick(arr,name,get){const q=lcs(name).replace(/^(my|the)\s+/,'').replace(/\s+(list|thread|note|habit)$/,'').trim();if(!q)return null;const qt=toks(q);let best=null,bs=0;
  arr.forEach(o=>{const t=lcs(get(o)).trim();if(!t)return;let s=0;if(t===q)s=10;else if(t.replace(/[^\p{L}\p{N} ]/gu,'').trim()===q)s=9;else if(t.includes(q)||q.includes(t))s=6;else{const tt=toks(t);const hit=qt.filter(w=>tt.some(x=>x===w||(w.length>3&&lev(x,w)<=1))).length;if(hit)s=4*hit/Math.max(qt.length,tt.length)}if(s>bs){bs=s;best=o}});
  return bs>=2?best:null}
 const relDay=t=>{const n=dnum(ymd())-dnum(ymd(new Date(t)));if(n<=0)return'today';if(n===1)return'yesterday';if(n<14)return n+' days ago';if(n<60)return Math.round(n/7)+' weeks ago';if(n<730)return Math.round(n/30.4)+' months ago';return Math.round(n/365)+' years ago'};
@@ -80,9 +80,9 @@ function addJournal(text){text=cap(clean(text));const t=today();
  save();rerender();const eid=e.id;
  return{say:`Added to today's journal: ${quote(text)}`,undo:()=>{const x=S.entries.find(y=>y.id===eid);if(!x)return;if(id){x.text=prev.text;x.html=prev.html}else S.entries=S.entries.filter(y=>y.id!==eid);save();rerender()},chips:[['Open journal','journal']]}}
 function newThread(title,first){title=cap(clean(title)).slice(0,80);const now=Date.now(),t={id:uid(),title,link:null,status:'open',created:now,u:now,ups:[]};if(first)t.ups.push({id:uid(),t:now,k:'note',x:cap(clean(first)),u:now});threads().push(t);save();rerender();
- return{say:`Started a new thread, ${quote(title)}${first?', with your first update':''}.`,undo:()=>{S.threads=threads().filter(x=>x.id!==t.id);save();rerender()},chips:[['Open thread','thread/'+t.id]]}}
+ return{say:`Started a new note, ${quote(title)}${first?', with your first update':''}.`,undo:()=>{S.threads=threads().filter(x=>x.id!==t.id);save();rerender()},chips:[['Open note','thread/'+t.id]]}}
 function addToThread(th,x){x=cap(clean(x));const now=Date.now(),u={id:uid(),t:now,k:'note',x,u:now};th.ups.push(u);if(th.status==='done')th.status='open';th.u=now;save();rerender();
- return{say:`Added to your ${th.title} thread: ${quote(x)}`,undo:()=>{th.ups=th.ups.filter(y=>y.id!==u.id);save();rerender()},chips:[['Open thread','thread/'+th.id]]}}
+ return{say:`Added to your ${th.title} note: ${quote(x)}`,undo:()=>{th.ups=th.ups.filter(y=>y.id!==u.id);save();rerender()},chips:[['Open note','thread/'+th.id]]}}
 function addToList(L,items){const its=items.map(x=>cap(clean(x))).filter(Boolean);if(!its.length)return null;const ids=[];
  its.forEach(t=>{const i=uid();ids.push(i);cardsFromQueue({src:'list',id:L.id,i,op:'add',t})});save();rerender();
  const n=its.length;return{say:`Added ${n===1?quote(its[0]):n+' items'} to your ${L.title} list.`,undo:()=>{ids.forEach(i=>cardsFromQueue({src:'list',id:L.id,i,op:'del'}));save();rerender()},chips:[['Open list','list/'+L.id]]}}
@@ -118,14 +118,14 @@ function snooze(x){const now=Date.now(),R=S.days.filter(d=>!d.done&&d.time&&d.re
  if(!w){const t=new Date(now+10*6e4);w={date:ymd(t),time:pad2(t.getHours())+':'+pad2(t.getMinutes())}}
  const it=o.d,prev={date:it.date,time:it.time};it.date=w.date;it.time=w.time;save();try{syncNative()}catch(e){}rerender();
  return{say:`Snoozed ${quote(it.title)} until ${atTxt(w.date,w.time)}.`,undo:()=>{it.date=prev.date;it.time=prev.time;save();try{syncNative()}catch(e){}rerender()}}}
-const PAGES={trackers:'activity',today:'today',home:'today',goals:'goals',habits:'habits',journal:'journal',thread:'threads',threads:'threads',lists:'lists',calendar:'cal',settings:'settings',ask:'ask',insights:'ask',activity:'activity',timeline:'road',vista:'road',map:'map',agent:'agent'};
+const PAGES={trackers:'activity',today:'today',home:'today',goals:'goals',habits:'habits',journal:'journal',thread:'threads',threads:'threads',lists:'lists',bills:'bills',receipts:'bills',notes:'threads',note:'threads',calendar:'cal',settings:'settings',ask:'ask',insights:'ask',activity:'activity',timeline:'road',vista:'road',map:'map',agent:'agent'};
 
-/* "add X to Y": Y can be a list, a thread, the journal or today */
+/* "add X to Y": Y can be a list, a note, the journal or today */
 function addTo(what,where){const w=lcs(where).replace(/^(?:my|the)\s+/,'').trim();
  if(/^(?:today'?s\s+)?journal(?:\s+(?:entry\s+)?(?:for\s+)?today)?$|^(?:my\s+)?diary$/.test(w))return addJournal(what);
  if(/^(?:today'?s\s+goals?|goals?\s+for\s+today|today|my\s+day|today'?s\s+list|to-?dos?\s+for\s+today)$/.test(w))return addToday(what);
- const isThr=/\sthread$/.test(w),isList=/\slist$/.test(w)||/^(?:shopping|grocery|groceries|packing|to-?do)/.test(w);
- if(!isList){const th=pick(threads().filter(t=>t.status!=='archived'),w,t=>t.title||t.name);if(th)return addToThread(th,what);if(isThr)return{say:`I couldn't find a thread called ${quote(where.replace(/\s*thread$/i,''))}. Should I start it?`,chips:[['Start it','',()=>run(`new thread ${where.replace(/\s*thread$/i,'')}`)]],await:{k:'yesno',yes:()=>newThread(where.replace(/\s*thread$/i,''),what)}}}
+ const isThr=/\s(?:thread|note)$/.test(w),isList=/\slist$/.test(w)||/^(?:shopping|grocery|groceries|packing|to-?do)/.test(w);
+ if(!isList){const th=pick(threads().filter(t=>t.status!=='archived'),w,t=>t.title||t.name);if(th)return addToThread(th,what);if(isThr)return{say:`I couldn't find a note called ${quote(where.replace(/\s*(?:thread|note)$/i,''))}. Should I start it?`,chips:[['Start it','',()=>run(`new note ${where.replace(/\s*(?:thread|note)$/i,'')}`)]],await:{k:'yesno',yes:()=>newThread(where.replace(/\s*(?:thread|note)$/i,''),what)}}}
  const L=pick(S.lists||[],w,l=>l.title);if(L)return addToList(L,splitItems(what));
  if(isList)return{say:`I couldn't find a list called ${quote(where.replace(/\s*list$/i,''))}.`,chips:[['Open lists','lists']]};
  return null}
@@ -150,7 +150,7 @@ const VERB='(?:add|put|write|save|log|note(?:\\s+down)?|jot(?:\\s+down)?|record|
 const DET='(?:(?:a|an|the|my|new|today\'?s|another|one|quick|fresh|brand\\s+new)\\s+)*';
 const RX_J1=new RegExp(`^(?:${VERB}\\s+)?(?:(?:in|into|to|on)\\s+)?${DET}(?:journal|diary)(?:\\s+(?:entry|entries|note|post|page|log))?(?:\\s+for\\s+today|\\s+today(?=$|\\s*[:,\\-–—]))?(?=$|[\\s:,\\-–—])\\s*(.*)$`,'i');
 const RX_J2=new RegExp(`^(?:${VERB}\\s+)${DET}(?:entry|diary\\s+note)(?:\\s+(?:in|into|to|on)\\s+(?:my\\s+|the\\s+)?(?:journal|diary))?(?:\\s+for\\s+today|\\s+today(?=$|\\s*[:,\\-–—]))?(?=$|[\\s:,\\-–—])\\s*(.*)$`,'i');
-const RX_T=new RegExp(`^(?:(?:${VERB}|add)\\s+${DET}|${DET}new\\s+)thread(?=$|[\\s:,\\-–—])\\s*(?:(?:called|named|titled|about|for|on|regarding)\\s+)?[:,\\-–—]?\\s*(.*)$`,'i');
+const RX_T=new RegExp(`^(?:(?:${VERB}|add)\\s+${DET}|${DET}new\\s+)(?:thread|note)(?=$|[\\s:,\\-–—])\\s*(?:(?:called|named|titled|about|for|on|regarding)\\s+)?[:,\\-–—]?\\s*(.*)$`,'i');
 const RX_L=new RegExp(`^(?:${VERB}|add)\\s+${DET}(?:(.{1,40}?)\\s+)?(?:list|checklist)(?=$|[\\s:,\\-–—])\\s*(?:(?:called|named|titled|for|of)\\s+(.*?))?\\s*(?:(?::|,|-|–|—|\\bwith\\b|\\bcontaining\\b|\\bincluding\\b|\\bthat\\s+has\\b|\\bhaving\\b)\\s*(.*))?$`,'i');
 function newList(title,items){title=cap(clean(title).replace(/^(?:a|an|the|my)\s+/i,'')).slice(0,60)||'New list';const now=Date.now(),L={id:uid(),title,emoji:/groc|shop|food/i.test(title)?'🛒':/pack|trip|travel/i.test(title)?'🎒':/to-?do|task/i.test(title)?'✅':'📝',due:'',items:{},u:now,mu:now,created:now,cloud:null};
  (items||[]).map(x=>cap(clean(x))).filter(Boolean).forEach((x,i)=>{const id=uid();L.items[id]={id,t:x,done:false,due:'',o:i,u:now}});(S.lists||(S.lists=[])).unshift(L);save();rerender();const n=Object.keys(L.items).length;
@@ -177,10 +177,10 @@ function parse(raw){const t=strip(normCmd(raw)),l=lcs(t);let m;if(!t)return null
  if((m=/^(?:add|put|write|save|log|note|jot(?:\s+down)?|record)\s+(.+?)\s+(?:to|in|into|on)\s+(?:my\s+)?(?:today'?s\s+)?(?:journal|diary)(?:\s+(?:entry\s+)?for\s+today)?$/i.exec(t)))return{k:'journal',x:m[1]};
  if((m=/^(?:journal|dear diary|diary|journal entry|new journal entry)\s*[:,\-]?\s*(.*)$/i.exec(t)))return{k:'journal',x:m[1]};
  if((m=/^(?:make a note|take a note|note down|write down|note)\s+(?:that\s+)?(.+)$/i.exec(t)))return{k:'journal',x:m[1]};
- /* threads */
+ /* notes */
  if((m=RX_T.exec(t))&&!/^add\s+(?!a\s|an\s|new\s)/i.test(t)){const p=m[1].split(/\s*(?::|\s+(?:with|saying)\s+(?:the\s+)?(?:first\s+)?(?:update|note)?\s*)\s*/i);return{k:'thrnew',title:p[0]||'',x:p.slice(1).join(' ')}}
- if((m=/^(?:add|start|create|make|open|begin)\s+(?:a\s+)?new\s+thread\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))||(m=/^(?:start|create|make|begin)\s+(?:a\s+)?thread\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))||(m=/^new\s+thread\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))){const p=m[1].split(/\s*(?::|\s+(?:with|saying)\s+(?:the\s+)?(?:first\s+)?(?:update|note)?\s*)\s*/i);return{k:'thrnew',title:p[0]||'',x:p.slice(1).join(' ')}}
- if((m=/^update\s+(?:my\s+|the\s+)?(.+?)\s+thread\s*(?:with|:|,|saying)\s*(.+)$/i.exec(t)))return{k:'add',x:m[2],to:m[1]+' thread'};
+ if((m=/^(?:add|start|create|make|open|begin)\s+(?:a\s+)?new\s+(?:thread|note)\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))||(m=/^(?:start|create|make|begin)\s+(?:a\s+)?(?:thread|note)\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))||(m=/^new\s+(?:thread|note)\s*(?:called|named|titled|about|for|on)?\s*[:,\-]?\s*(.*)$/i.exec(t))){const p=m[1].split(/\s*(?::|\s+(?:with|saying)\s+(?:the\s+)?(?:first\s+)?(?:update|note)?\s*)\s*/i);return{k:'thrnew',title:p[0]||'',x:p.slice(1).join(' ')}}
+ if((m=/^update\s+(?:my\s+|the\s+)?(.+?)\s+(?:thread|note)\s*(?:with|:|,|saying)\s*(.+)$/i.exec(t)))return{k:'add',x:m[2],to:m[1]+' note'};
  /* trackers and snoozing */
  if((m=RX_TRK.exec(t))){const T=trkPick(m[3]);if(T)return{k:'trk',id:T.id,n:num(m[1]),u:m[2]||''}}
  if((m=RX_TRK2.exec(t))){const T=trkPick(m[1]);if(T)return{k:'trk',id:T.id,n:num(m[2]),u:m[3]}}
@@ -189,7 +189,7 @@ function parse(raw){const t=strip(normCmd(raw)),l=lcs(t);let m;if(!t)return null
  if((m=/^(?:remind me|set (?:a |an |me a )?(?:reminder|alarm)|create (?:a )?reminder|add (?:a )?reminder|reminder|don'?t let me forget)\b\s*(.*)$/i.exec(t))){/* a repeat the quick reader understands is done here, at once; other repeat wording goes to the AI */if(aiReady()&&window.SCHED){const w=SCHED.words(m[1]);if(!(w.every||w.repeat||w.days||w.times)&&/\b(?:every|each|until|till|between|times|hourly|daily|weekly|other)\b/i.test(m[1]))return null}return{k:'remind',x:m[1]}}
  /* agent tasks: "every morning summarise my emails", "each Friday look at my calendar and plan the weekend" */
  /* a schedule for the agent, unless it's a habit, routine or reminder they're making ("a habit to read every night") */
- if(!/\b(?:habits?|routines?|goals?|lists?|remind(?:er)?s?|journal|thread)\b/i.test(t)&&/\b(?:every|each)\s+(?:day|morning|afternoon|evening|night|weekday|week|hour|\d+\s+hours|other\s+day|(?:mon|tues|wednes|thurs|fri|satur|sun)day)\b/i.test(t)&&/\b(?:summari[sz]e|check|look|review|brief|tell|go through|scan|watch|plan|suggest|find|read|see|give|send|catch me up|keep an eye)\b/i.test(t))return{k:'agent',x:t};
+ if(!/\b(?:habits?|routines?|goals?|lists?|remind(?:er)?s?|journal|thread|notes?)\b/i.test(t)&&/\b(?:every|each)\s+(?:day|morning|afternoon|evening|night|weekday|week|hour|\d+\s+hours|other\s+day|(?:mon|tues|wednes|thurs|fri|satur|sun)day)\b/i.test(t)&&/\b(?:summari[sz]e|check|look|review|brief|tell|go through|scan|watch|plan|suggest|find|read|see|give|send|catch me up|keep an eye)\b/i.test(t))return{k:'agent',x:t};
  if((m=/^(?:keep an eye on|watch|monitor)\s+(.+)$/i.exec(t)))return{k:'agent',x:t};
  /* done */
  if((m=/^(?:mark|log|check(?:\s+off)?|tick(?:\s+off)?)\s+(?:my\s+)?(.+?)\s+(?:as\s+)?(?:done|complete|completed|finished)(?:\s+for\s+today)?$/i.exec(t))||(m=/^i\s+(?:just\s+)?(?:did|finished|completed|done)\s+(?:my\s+)?(.+?)(?:\s+today)?$/i.exec(t)))return{k:'done',x:m[1]};
@@ -226,12 +226,12 @@ function exec(p,raw){const A=aset();switch(p.k){
  case'whoami':return{say:`I'm ${aname()}, your assistant in Plotlines. You can rename me in Settings or by saying “call yourself” and a new name.`};
  case'time':return{say:`It's ${new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}.`};
  case'date':return{say:`It's ${longDate(Date.now())}.`};
- case'help':return{say:`Try “add went for a long walk to my journal”, “start a thread called car maintenance”, “remind me to call mom at 6pm”, “add milk and eggs to my groceries list”, “mark reading done”, or ask “when did I last change my oil?”`};
+ case'help':return{say:`Try “add went for a long walk to my journal”, “start a note called car maintenance”, “remind me to call mom at 6pm”, “add milk and eggs to my groceries list”, “mark reading done”, or ask “when did I last change my oil?”`};
  case'name':{const n=clean(p.v).replace(/[^\p{L}\p{N} '\-]/gu,'').slice(0,24);if(!n)return{say:'What should I be called?'};const old=aname();S.settings.assist={...A,name:cap(n)};save();wakeSync();paintHead();return{say:`Okay, call me ${aname()}. Say “Hey ${aname()}” from now on.`,undo:()=>{S.settings.assist={...aset(),name:old};save();wakeSync();paintHead()}}}
- case'open':setTimeout(()=>{go(p.r)},500);return{say:`Opening ${({cal:'your calendar',road:'your timeline',map:'your life map',threads:'your threads'})[p.r]||p.r}.`};
+ case'open':setTimeout(()=>{go(p.r)},500);return{say:`Opening ${({cal:'your calendar',road:'your timeline',map:'your life map',threads:'your notes'})[p.r]||p.r}.`};
  case'journal':return p.x?addJournal(p.x):{say:'What should I add to today’s journal?',listen:true,await:{k:'journal'}};
  case'listnew':if(!p.title&&!p.items.length)return{say:'What should I call the new list?',listen:true,await:{k:'listnew'}};return newList(p.title||'New list',p.items);
- case'thrnew':if(!p.title)return{say:'What should I call the new thread?',listen:true,await:{k:'thrnew'}};return newThread(p.title,p.x);
+ case'thrnew':if(!p.title)return{say:'What should I call the new note?',listen:true,await:{k:'thrnew'}};return newThread(p.title,p.x);
  case'today':return p.x?addToday(p.x):{say:'What’s the goal for today?',listen:true,await:{k:'today'}};
  case'done':return markDone(p.x);
  case'trk':return trkLog(p.id,p.n,p.u);
@@ -259,7 +259,7 @@ function answerAwait(a,t){const x=clean(t);if(/^(?:cancel|stop|never ?mind|no|no
 function shareTo(text,x){const l=lcs(x),first=text.split(/\n/)[0].slice(0,80);
  if(/\b(?:ask|explain|summari[sz]e|what|why|who|how|tell me|meaning)\b/.test(l)&&!/\b(?:add|put|save)\b/.test(l))return{ask:(/^ask(?: about it)?$/.test(l)?'Tell me about this':x)+':\n\n'+text};
  if(/\bremind/.test(l)){const w=parseWhen(x);if(w.found)return addReminder(first,w);return{say:'Sure. When should I remind you?',listen:true,await:{k:'remwhen',title:first}}}
- if(/\b(?:new|start|create|make)\b.*\bthread\b|^thread$/.test(l)){const m=x.match(/\b(?:called|named|titled)\s+(.+)$/i);return m?newThread(m[1],text):newThread(first,text===first?'':text)}
+ if(/\b(?:new|start|create|make)\b.*\b(?:thread|note)\b|^(?:thread|note)$/.test(l)){const m=x.match(/\b(?:called|named|titled)\s+(.+)$/i);return m?newThread(m[1],text):newThread(first,text===first?'':text)}
  if(/\b(?:journal|diary)\b/.test(l))return addJournal(text);
  if(/^(?:today|(?:to\s+)?(?:my\s+)?today'?s\s+goals?|goals?\s+for\s+today|my day)$/.test(l.replace(/^(?:(?:add|put|save)\s+(?:it|this)\s+)?(?:to|on|in|for)\s+/,'')))return addToday(first);
  const m=l.match(/\b(?:to|in|on|into)\s+(.+)$/)||l.match(/^(.+)$/);
@@ -268,14 +268,14 @@ function shareTo(text,x){const l=lcs(x),first=text.split(/\n/)[0].slice(0,80);
 function shareIn(){if(!NA||!NA.takeShare)return false;let t='';try{t=NA.takeShare()||''}catch(e){}t=t.trim();if(!t)return false;
  const turn={q:'Shared: '+(t.length>220?t.slice(0,220)+'…':t),a:'Where should this go?',t:Date.now(),id:uid(),chips:[]};
  const go=q=>()=>{if(!AS.busy){AS.await={k:'share',text:t};run(q)}};
- turn.chips=[{t:'Add to journal',fn:go('Add it to my journal')},{t:'Start a thread',fn:go('Start a new thread')},{t:'Add to today',fn:go('Add it to today')},{t:'Ask about it',fn:go('Ask about it')}];
- AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.await={k:'share',text:t};paint(true);$('#asIn')?.setAttribute('placeholder','Say where, like “my car thread”');return true}
+ turn.chips=[{t:'Add to journal',fn:go('Add it to my journal')},{t:'Start a note',fn:go('Start a new note')},{t:'Add to today',fn:go('Add it to today')},{t:'Ask about it',fn:go('Ask about it')}];
+ AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.await={k:'share',text:t};paint(true);$('#asIn')?.setAttribute('placeholder','Say where, like “my car note”');return true}
 
 /* ---------------- asking things ---------------- */
 /* everything with a date and some words, to answer "when did I last…" without an AI */
 function facts(){const out=[],th=threads();
  S.entries.forEach(e=>{if(e.type==='token'||!e.text&&!e.title)return;const g=e.goalId&&G(e.goalId);out.push({t:e.t,x:(e.title?e.title+'. ':'')+(e.text||''),ctx:g?g.title:'',src:e.type==='note'?(e.private?'a private journal entry':'your journal'):g?`your goal ${g.title}`:'your log',priv:!!e.private,r:e.type==='note'?'journal':g?'goal/'+g.id:''})});
- th.forEach(t=>(t.ups||[]).forEach(u=>{if(!u.del&&u.x)out.push({t:u.t,x:u.x,ctx:t.title||'',src:`your ${t.title} thread`,r:'thread/'+t.id})}));
+ th.forEach(t=>(t.ups||[]).forEach(u=>{if(!u.del&&u.x)out.push({t:u.t,x:u.x,ctx:t.title||'',src:`your ${t.title} note`,r:'thread/'+t.id})}));
  (S.lists||[]).forEach(L=>Object.values(L.items||{}).forEach(i=>{if(i.del||!i.done)return;const t=i.dt?new Date(i.dt+'T12:00').getTime():i.u;out.push({t,x:i.t,ctx:L.title,src:`your ${L.title} list`,r:'list/'+L.id})}));
  S.days.forEach(d=>{if(d.done)out.push({t:d.doneAt||new Date(d.date+'T12:00').getTime(),x:d.title,ctx:'',src:'your goals for the day',r:'day/'+d.date})});
  S.goals.forEach(g=>(g.steps||[]).forEach(s=>{if(s.done&&s.doneAt)out.push({t:s.doneAt,x:s.title,ctx:g.title,src:`your goal ${g.title}`,r:'goal/'+g.id})}));
@@ -354,7 +354,7 @@ function localAsk(q){const t=strip(q);let m;
  if((m=/^what did i (?:write|journal|say)\s+(?:in my journal\s+)?(today|yesterday)?/i.exec(t)))return journalRead(m[1]&&lcs(m[1]));
  return null}
 function aiReady(){const e=typeof planEngine==='function'?planEngine():'';if(!e)return false;if(e!=='api'&&typeof isLrtM==='function'&&isLrtM(llmOf(insSet().llm))&&(e==='wasm'||lrtOn()))return!!(insSet().dl||{})[llmOf(insSet().llm)[0]];if(e==='wasm'){const s=insSet(),m=llmOf(s.llm);return!!(s.dl||{})[m[0]]}if(e==='native'){const m=llmOf(insSet().llm);return typeof natHave!=='function'||natHave(m)}return true}
-/* what the assistant's AI gets to see: the date, recent activity day by day, today's plan, threads, lists, and the notes that match */
+/* what the assistant's AI gets to see: the date, recent activity day by day, today's plan, notes, lists, and the notes that match */
 function actLines(n){const L=(S.settings&&S.settings.actLog)||{},tn=dnum(ymd()),out=[];
  for(let k=tn;k>tn-n;k--){const ds=fromN(k),o=L[ds];if(!o)continue;const[y,mo,d]=ds.split('-').map(Number);const w=typeof wkMin==='function'?wkMin(o):+o.x;
   const b=[+o.s>0&&`${(+o.s).toLocaleString()} steps`,+o.dm>0&&`${(o.dm/1000).toFixed(1)} km`,+o.z>0&&`slept ${spMin(o.z)}`,w>0&&`exercise ${spMin(w)}`,o.m!=null&&`screen time ${spMin(o.m)}`,(o.w||[]).length&&`workouts: ${(o.w||[]).map(x=>x?((typeof ACT_EX!=='undefined'&&ACT_EX[x.k])||'workout')+(x.m?' '+spMin(x.m):''):'').filter(Boolean).join(', ')}`].filter(Boolean);
@@ -397,7 +397,7 @@ function asCtx(q,r,hint,big,small){const now=new Date(),tn=dnum(ymd()),lq=lcs(q)
  const sec=[];const add=(title,lines,score)=>{lines=lines.filter(Boolean);if(lines.length)sec.push({title,lines,score})};
  if(hint)add('LOOKED UP BY THE APP (exact, trust this)',[hint],100);
  add('THE DAYS ASKED ABOUT',days.map(daySummary),days.length?90:0);
- add('MENTIONED BY NAME',[...N.h.map(h=>habitLine(h,1)),...N.g.map(g=>goalLine(g,1)),...N.t.map(t=>{const U=thrUps(t).slice(0,8);return`- thread ${t.title} (${t.status||'open'}): ${U.map(u=>tsDay(u.t)+' '+tr(u.x,140)).join(' · ')||'no updates'}`}),...N.l.map(l=>{const I=Object.values(l.items||{}).filter(x=>!x.del);return`- list ${l.title}: to do: ${I.filter(x=>!x.done).map(x=>x.t).join(', ')||'nothing'}; done: ${I.filter(x=>x.done).length}`})],85);
+ add('MENTIONED BY NAME',[...N.h.map(h=>habitLine(h,1)),...N.g.map(g=>goalLine(g,1)),...N.t.map(t=>{const U=thrUps(t).slice(0,8);return`- note ${t.title} (${t.status||'open'}): ${U.map(u=>tsDay(u.t)+' '+tr(u.x,140)).join(' · ')||'no updates'}`}),...N.l.map(l=>{const I=Object.values(l.items||{}).filter(x=>!x.del);return`- list ${l.title}: to do: ${I.filter(x=>!x.done).map(x=>x.t).join(', ')||'nothing'}; done: ${I.filter(x=>x.done).length}`})],85);
  const kw=(rx,b)=>rx.test(lq)?b:0;
  add('TODAY',[daySummary(ymd())],kw(/\btoday|tonight|now|so far|left|agenda|plate\b/,70)+20);
  add('HABITS',S.habits.filter(h=>h.status==='active').map(h=>habitLine(h,0)),kw(/habit|streak|routine|did i|have i|miss|skip|quit|every ?day|consisten|daily/,60)+12);
@@ -421,7 +421,7 @@ async function aiAnswer(q,onP,hint){if(!aiReady())return null;const e=planEngine
  const r=(AS.rag&&AS.rag.q===q&&await AS.rag.p)||await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},onP);AS.srcs=r&&r.srcs||null;const prompt=asCtx(q,r,hint,!loc&&e==='api',quick&&e!=='api');tmMark('ctx');
  /* spoken, instant mode: a short system prompt that never changes between turns (the engine keeps it prefilled), a small
     slice of their data, and short answers */
- const sys=quick?`You are ${aname()}, the voice assistant in Plotlines, the user's app for goals, habits, a journal, lists, threads and reminders. Your answer is read aloud: one to three short, natural sentences, no lists, no markdown, no note numbers. For questions about their life, use the data given, and if it isn't there, say what you do know. For anything else, just answer it well.${window.AGENT&&AGENT.connected().length?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nABOUT THEM\n'+tr(pr.text,500):''}${X?'\n\n'+X.safety():''}`:`You are ${aname()}, the assistant inside the Plotlines app: a personal assistant that knows the user's own data and can talk about anything. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. ${spoken?'Your answer is read aloud: one to three short, natural sentences. No lists, no markdown, no note numbers like [2].':'Answer clearly and briefly: a few sentences, or a few short bullets when that really helps. No note numbers like [2].'} When the question is about their life, use the data given (dates, activity numbers, plans, threads, lists and notes); if the app looked something up, use that answer, and if the data doesn't have it, say what you do know. For anything else (the world, ideas, advice, writing, feelings), just answer it well.${window.AGENT?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nWHAT YOU KNOW ABOUT THEM\n'+pr.text:''}${X?'\n\n'+X.ACT_SYS+'\n\n'+X.safety():''}`;
+ const sys=quick?`You are ${aname()}, the voice assistant in Plotlines, the user's app for goals, habits, a journal, lists, notes and reminders. Your answer is read aloud: one to three short, natural sentences, no lists, no markdown, no note numbers. For questions about their life, use the data given, and if it isn't there, say what you do know. For anything else, just answer it well.${window.AGENT&&AGENT.connected().length?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nABOUT THEM\n'+tr(pr.text,500):''}${X?'\n\n'+X.safety():''}`:`You are ${aname()}, the assistant inside the Plotlines app: a personal assistant that knows the user's own data and can talk about anything. Work out what they mean, even when it's phrased loosely or misheard by speech recognition. ${spoken?'Your answer is read aloud: one to three short, natural sentences. No lists, no markdown, no note numbers like [2].':'Answer clearly and briefly: a few sentences, or a few short bullets when that really helps. No note numbers like [2].'} When the question is about their life, use the data given (dates, activity numbers, plans, notes, lists and notes); if the app looked something up, use that answer, and if the data doesn't have it, say what you do know. For anything else (the world, ideas, advice, writing, feelings), just answer it well.${window.AGENT?'\n\n'+AGENT.sys():''}${pr&&pr.text?'\n\nWHAT YOU KNOW ABOUT THEM\n'+pr.text:''}${X?'\n\n'+X.ACT_SYS+'\n\n'+X.safety():''}`;
  const hist=[];AS.turns.filter(t=>!t.wait&&t.a&&!t.sys).slice(quick?-2:-3).forEach(t=>hist.push({role:'user',content:t.q},{role:'assistant',content:quick?tr(t.a,240):t.a}));
  const msgs=[{role:'system',content:sys},...hist,{role:'user',content:prompt}];if(TM)TM.pc=msgs.reduce((a,m)=>a+m.content.length,0);
  let out='';const on=x=>{tmMark('tok');out+=x;sqFeed(out);liveFeed(out);onP&&onP('')};const opts={max_tokens:quick?180:spoken?260:(loc?450:700),reading:'Thinking…',temperature:.5};
@@ -434,10 +434,10 @@ async function aiAnswer(q,onP,hint){if(!aiReady())return null;const e=planEngine
  if(out)AS.wrote=true;return out||null}
 async function llmIntent(t){const e=typeof planEngine==='function'?planEngine():'',fast=e!=='api'&&isLrtM(llmOf(insSet().llm));if(e!=='api'&&e!=='native'&&!fast||!aiReady())return null;
  const schema={type:'object',properties:{action:{enum:['journal','new_thread','thread_update','reminder','new_list','list_add','today_goal','habit_done','agent_task','agent_now','question']},text:{type:'string'},target:{type:'string'},when:{type:'string'}},required:['action','text'],additionalProperties:false};
- const msgs=[{role:'system',content:'You turn one spoken or typed request to a personal journal and habits app into JSON. Requests can be phrased any way, misspelled ("jounel", "liost", "thred") or misheard ("general entry" means journal entry). Reply with JSON only. The text field holds only what should be saved: never the command words ("make a journal entry", "add to my list", "that says"), never the target name.'},{role:'user',content:`Request: "${t}"\n\nactions: journal (save text to today's journal), new_thread (start a thread; text is its title), thread_update (target is the thread name; text is the update), reminder (when is the time words like "tomorrow at 5pm"), new_list (text is the list name; target is its items separated by commas, or empty), list_add (target is the list name; text is the items), today_goal, habit_done (text is the habit), agent_task (only for something to repeat on a schedule or keep an eye on, like "every morning summarise my emails"; text is the task), agent_now (something to look up or do right now in their email, calendar, Google Drive or Notion, like "check if Sam replied" or "put lunch with Ana on my calendar Friday"; text is the whole request), question (anything asked).`}];
+ const msgs=[{role:'system',content:'You turn one spoken or typed request to a personal journal and habits app into JSON. Requests can be phrased any way, misspelled ("jounel", "liost", "thred") or misheard ("general entry" means journal entry). Reply with JSON only. The text field holds only what should be saved: never the command words ("make a journal entry", "add to my list", "that says"), never the target name.'},{role:'user',content:`Request: "${t}"\n\nactions: journal (save text to today's journal), new_thread (start a note; text is its title), thread_update (target is the note name; text is the update), reminder (when is the time words like "tomorrow at 5pm"), new_list (text is the list name; target is its items separated by commas, or empty), list_add (target is the list name; text is the items), today_goal, habit_done (text is the habit), agent_task (only for something to repeat on a schedule or keep an eye on, like "every morning summarise my emails"; text is the task), agent_now (something to look up or do right now in their email, calendar, Google Drive or Notion, like "check if Sam replied" or "put lunch with Ana on my calendar Friday"; text is the whole request), question (anything asked).`}];
  let out='';try{if(e==='api')await apiChat(msgs,x=>{out+=x},AS.ctl.signal,{schema,max_tokens:160,temperature:0});else if(e==='wasm')await localChat(msgs,x=>{out+=x},null,0,null,false,{schema,max_tokens:160,temperature:0});else await natChat(msgs,x=>{out+=x},null,null,{schema,max_tokens:160,temperature:0});const j=JSON.parse(out.slice(out.indexOf('{'),out.lastIndexOf('}')+1));
   const x=String(j.text||''),tg=String(j.target||''),w=String(j.when||'');
-  return{journal:{k:'journal',x:body(x)},new_thread:{k:'thrnew',title:x},thread_update:{k:'add',x,to:tg+' thread'},reminder:{k:'remind',x:x+(w?' '+w:'')},list_add:{k:'add',x,to:tg+' list'},new_list:{k:'listnew',title:x,items:tg?splitItems(tg):[]},today_goal:{k:'today',x},habit_done:{k:'done',x},agent_task:{k:'agent',x},agent_now:window.AGENT&&AGENT.connected().length?{k:'agentNow',x:t}:null}[j.action]||null}catch(err){return null}}
+  return{journal:{k:'journal',x:body(x)},new_thread:{k:'thrnew',title:x},thread_update:{k:'add',x,to:tg+' note'},reminder:{k:'remind',x:x+(w?' '+w:'')},list_add:{k:'add',x,to:tg+' list'},new_list:{k:'listnew',title:x,items:tg?splitItems(tg):[]},today_goal:{k:'today',x},habit_done:{k:'done',x},agent_task:{k:'agent',x},agent_now:window.AGENT&&AGENT.connected().length?{k:'agentNow',x:t}:null}[j.action]||null}catch(err){return null}}
 
 /* ---------------- speed ----------------
    The instant path: a request the parser fully understands, or a simple lookup in their own data, is answered here in a few
@@ -513,7 +513,7 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
     else{status('Thinking…');const a=await aiAnswer(text,status,L&&!L.miss?L.say:'').catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
      r=a?{say:a,chips:L&&L.chips||[]}:L&&!L.miss?L:{say:'Sorry, I couldn’t answer that right now.',chips:[['Try again','?'+text]]}}}}
   if(r&&r.ask){const q=r.ask;status('Thinking…');const a=await aiAnswer(q,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});r=a?{say:a}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'To answer questions like that I need an AI. Set one up once (it can run privately on this device) and I’ll answer from your notes.',chips:aiChips(q)}}
-  if(r&&r.miss){const miss=r.miss;r=null;status('Thinking…');const a=await aiAnswer(text,status).catch(()=>null);r=a?{say:a}:{say:`I couldn't find anything about ${quote(miss)} in your journal, threads, lists or habits.`}}
+  if(r&&r.miss){const miss=r.miss;r=null;status('Thinking…');const a=await aiAnswer(text,status).catch(()=>null);r=a?{say:a}:{say:`I couldn't find anything about ${quote(miss)} in your journal, notes, lists or habits.`}}
   if(!r&&!dec&&!QRX.test(strip(text))&&/^(?:add|put|write|log|create|start|make|set|remind|schedule|note|save|mark|record|jot|track|new)\b/i.test(strip(text))){status('Working it out…');const p=await llmIntent(strip(text));if(p&&p.k)r=exec(p,text)}
   if(!r){status('Thinking…');const a=await aiAnswer(text,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
    r=a?{say:a}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'I can add things and look up when you last did something. For other questions, set up an AI once (it can run privately on this device), and after that I’ll answer from your notes too.',chips:aiReady()?[['Try again','?'+text]]:aiChips(text)}}
@@ -715,7 +715,7 @@ function pushWidget2(){if(!NA||!NA.widget)return;const L=AS.turns.filter(t=>!t.w
 /* ---------------- settings: AI & voice ---------------- */
 function assistHTML(){const a=aset(),st=nst(),v=vset();
  const row=(k,t,sub,on,dis)=>`<label class="sw"><span>${t}<small>${sub}</small></span><input type="checkbox" data-assist="${k}" ${on?'checked':''} ${dis?'disabled':''}><i></i></label>`;
- return`<section class="panel rv" id="assistPanel"><h3>Hey ${esc(aname())}</h3><p class="small muted">Your voice assistant. Ask it to add to today’s journal, start or update a thread, set a reminder, add to a list or mark a habit done, or ask things like “when did I last change my oil?”.</p>
+ return`<section class="panel rv" id="assistPanel"><h3>Hey ${esc(aname())}</h3><p class="small muted">Your voice assistant. Ask it to add to today’s journal, start or update a note, set a reminder, add to a list or mark a habit done, or ask things like “when did I last change my oil?”.</p>
  <div class="field"><label>Assistant’s name</label><input data-assist="name" maxlength="24" value="${esc(aname())}" placeholder="Plot"><small class="muted">You’ll say “Hey ${esc(aname())}”.</small></div>
  ${NA?row('wake',`Listen for “${esc(wakeWord())}” while Plotlines is open`,'The phone’s speech recognizer listens in short rounds while the app is on screen',a.wake)+
  row('bg','Keep listening in the background',`Hands-free, even with the phone locked: say it and it answers out loud. Android needs a small silent notification while it listens, and it uses more battery.${st.onDevice===false&&!v.cloud?' This phone has no on-device speech, so it needs online speech allowed.':''}`,a.bg)+

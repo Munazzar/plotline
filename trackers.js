@@ -5,7 +5,7 @@
      rules) picks the best one for the activity. What you log by hand adds on top of the automatic number.
    - Hand-logged values live next to the phone's numbers: actLog()[day].cu[id], so they sync the same way.
    - AI help (on-device or your own AI server, whatever is set up): suggests trackers from your goals and habits, and
-     reads today's journal, thread notes and day goals to propose values. Nothing is saved until you tap it.
+     reads today's journal, notes and day goals to propose values. Nothing is saved until you tap it.
      Without an AI it falls back to plain matching ("yoga 30 min" in a journal entry). */
 (()=>{
 const trk=()=>{const a=S.settings.act||(S.settings.act={});return a.trk||(a.trk=[])};
@@ -114,7 +114,7 @@ function todayText(){const ds=today(),d0=new Date(ds+'T00:00').getTime(),strip=x
  const W=((actLog()[ds]||{}).w||[]).map(w=>'Workout: '+(typeof wkName==='function'?wkName(w):'')+' '+(w.m||0)+' min');
  return[...J,...T,...D,...W].join('\n').slice(0,4000)}
 async function fillToday(){const T=trk();if(!T.length)return;const txt=todayText();
- openSheet(`<div class="data">Fill in today</div><h2 style="margin-top:6px">From what you wrote today</h2><div id="tkFill"><p class="small muted tk-busy">${ic('ai')}${aiOn()?'Reading today’s journal, threads and goals…':'Looking through today’s journal, threads and goals…'}</p></div>`);
+ openSheet(`<div class="data">Fill in today</div><h2 style="margin-top:6px">From what you wrote today</h2><div id="tkFill"><p class="small muted tk-busy">${ic('ai')}${aiOn()?'Reading today’s journal, notes and goals…':'Looking through today’s journal, notes and goals…'}</p></div>`);
  let L=null;if(!txt.trim()){$('#tkFill').innerHTML=`<p class="small muted">Nothing written today yet. Add a journal entry like “30 min yoga, read 15 pages” and try again, or tap + on a tracker.</p><div class="actions"><button class="btn pri" data-act="close">OK</button></div>`;return}
  if(aiOn()){try{L=jsonOf(await ask('You read a person’s notes from today and fill in their activity trackers. Only use amounts the notes clearly state. Reply with only a JSON array of {"id":tracker id,"v":number in the tracker’s unit}. Empty array if nothing matches.',`Trackers:\n${T.map(t=>`${t.id}: ${t.n} (${t.u})`).join('\n')}\n\nToday’s notes:\n${txt}`))}catch(e){L=null}}
  if(!Array.isArray(L))L=localFill(txt);L=L.filter(x=>x&&TK(x.id)&&+x.v>0).map(x=>({id:x.id,v:+x.v}));FILL=L;

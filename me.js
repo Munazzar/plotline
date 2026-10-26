@@ -1,4 +1,4 @@
-/* Picture of me: the AI reads everything in the app (goals, habits, journal, moods, reminders and plans, threads, lists,
+/* Picture of me: the AI reads everything in the app (goals, habits, journal, moods, reminders and plans, notes, lists,
    life chapters, phone activity, every conversation with the assistant and the agent's tasks and results) and writes a
    detailed picture of the user: who they are, what they are working towards, their rhythms, how they have been feeling,
    what keeps coming up, their strengths, where they get stuck, and what to try next. The AI picks the sections; the app
@@ -78,8 +78,8 @@ function digest(max){const td=ymd(),tn=dnum(td),priv=insSet().priv,f=Math.max(.2
  let o=parts.join('');if(o.length>max)o=o.slice(0,max-1)+'…';return o}
 
 /* ---------------- writing it ---------------- */
-const SYS=small=>`You are ${nm()}, the assistant inside Plotlines, the user's app for goals, habits, a journal, reminders, lists and threads. From everything below, write a detailed, honest and warm picture of who this person is, speaking to them as "you".
-- Use only what the data shows. Be specific: name their real goals, habits, threads, times and numbers. When something is a guess, say "it looks like".
+const SYS=small=>`You are ${nm()}, the assistant inside Plotlines, the user's app for goals, habits, a journal, reminders, lists and notes. From everything below, write a detailed, honest and warm picture of who this person is, speaking to them as "you".
+- Use only what the data shows. Be specific: name their real goals, habits, notes, times and numbers. When something is a guess, say "it looks like".
 - Look across everything for patterns: moods next to habits and sleep, what they plan versus what they do, what they keep asking ${nm()} about, the days and times they are at their best.
 - What the user told you about themselves is always true and beats anything else.
 - Be kind about struggles. Never diagnose or label them.
@@ -120,7 +120,7 @@ function vMe(){const ready=window.AIX&&AIX.ready(),has=!!ME.text,st=stale(),sn=s
  return`<header class="ph"><div><h1>Picture of me</h1><div class="data">${has?`Updated ${ago(ME.t)}`:`Written by ${esc(nm())} from everything you add`}</div></div><div class="ph-r">${has&&!BUSY?`<button class="ibtn" data-act="meMore" aria-label="More">${ic('more')}</button>`:''}${gear()}</div></header>
  ${stats()}
  ${!ready?`<div class="rv">${window.AIX?AIX.modelCard('me'):''}<p class="small muted">${esc(nm())} needs the AI to write your picture. Your stats above come straight from your data.</p></div>`:''}
- ${BUSY?`<div class="me-busy rv"><span class="me-orb"></span><div><b>${has?'Updating your picture':'Getting to know you'}</b><small>Reading your goals, habits, journal, reminders, threads and conversations</small></div><button class="btn sm ghost" data-act="meStop">Stop</button></div><div id="meLive"></div>`:''}
+ ${BUSY?`<div class="me-busy rv"><span class="me-orb"></span><div><b>${has?'Updating your picture':'Getting to know you'}</b><small>Reading your goals, habits, journal, reminders, notes and conversations</small></div><button class="btn sm ghost" data-act="meStop">Stop</button></div><div id="meLive"></div>`:''}
  ${ERR&&!BUSY?`<div class="panel rv"><p class="small err">${esc(ERR)}</p><div class="actions left"><button class="btn sm pri" data-act="meGo">Try again</button></div></div>`:''}
  ${!BUSY&&st&&ready?`<div class="me-new rv"><span>${sn?`New since then: ${esc(sn)}.`:'Your data has changed since this was written.'}</span><button class="btn sm pri" data-act="meGo">${ic('ai')}Update</button></div>`:''}
  ${!BUSY&&has?`<div class="rv">${picHTML({head:ME.head,secs:ME.secs})}</div>`:''}
