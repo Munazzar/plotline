@@ -287,7 +287,7 @@ window.HOWTO_GUIDES=[
  tips:['The full-screen button gives you the whole page to write on.','You can also say “add had a great workout to my journal”.'],rel:['journal-ink','journal-photo','journal-all']},
 {id:'journal-book',cat:'Journal',ic:'book',title:'Read your journal as a book',keys:'journal book read pages flip turn page diary full screen index write edit',go:'journal',
  sum:'Your journal as a book, one page per day. Turn pages with your finger, jump to any day, write and edit on the page.',
- steps:[{x:'On Journal, tap “Read as a book”.'},
+ steps:[{x:'On Journal or Notes, tap the Book tab (next to Journal and Notes).'},
   {x:'Drag a page sideways to turn it, or tap near its edge. On a big screen you see two pages side by side.'},
   {x:'Tap the lines button for every page by month, or slide the bar at the bottom to jump.'},
   {x:'Tap the pencil on an entry to edit it, or “Write” to add to the day. The book opens again on that page.'}]},
