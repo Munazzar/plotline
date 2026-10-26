@@ -4,7 +4,7 @@ Written 2026-10-24 (updated the same day for 1.52.0 and 1.53.0) for a fresh Clau
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.59.0 is on main and released** (versionCode 150). **The next versionCode is 151.**
+Current state: **v1.59.1 is on main and released** (versionCode 151). **The next versionCode is 152.**
 
 **Product rules for every change (section 7 has the full list):** sync everything except looks and device-only
 things (section 2a); obvious features (delete, delete all, undo, search) must exist wherever data lives; secure and
@@ -146,7 +146,7 @@ unless noted.
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148, 1.58.0=149, 1.59.0=150. **Next: 151.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148, 1.58.0=149, 1.59.0=150, 1.59.1=151. **Next: 152.**
 
 ## 4. Building the APK (cloud, no Android SDK)
 
