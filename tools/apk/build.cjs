@@ -1,5 +1,6 @@
 // node build.cjs <base.apk> <repo dir> <out.apk> <oldVer> <newVer> <oldCode> <newCode> <key.pem> <cert.der> [entry=file ...]
-// Extra entry=file pairs replace or add APK entries as they are (e.g. classes4.dex=new4.dex classes6.dex=bridge.dex).
+// Extra entry=file pairs replace or add APK entries as they are (e.g. classes4.dex=new4.dex classes6.dex=bridge.dex);
+// a replacement AndroidManifest.xml (from manifest.cjs) still gets the new version.
 // Rebuilds the base APK with the repo's web files in assets/www, the new version in the manifest, stored entries
 // 4-byte aligned, old signatures dropped, then signs it with APK Signature Scheme v2.
 const fs = require('fs'), path = require('path'), zlib = require('zlib'), v2 = require('./v2.cjs');
@@ -35,7 +36,7 @@ for (const x of ents) {
   if (/^META-INF\/.*\.(SF|RSA|DSA|EC|MF)$/i.test(x.name)) continue;
   const w = x.name.startsWith('assets/www/') && x.name.slice(11);
   if (w && WEB.includes(w)) { list.push(fresh(x.name, fs.readFileSync(path.join(repo, w)), x.time)); rep.push(w); continue; }
-  if (put.has(x.name)) { list.push(fresh(x.name, fs.readFileSync(put.get(x.name)), x.time)); rep.push(x.name); put.delete(x.name); continue; }
+  if (put.has(x.name)) { const buf = fs.readFileSync(put.get(x.name)); list.push(fresh(x.name, x.name === 'AndroidManifest.xml' ? patchManifest(buf) : buf, x.time)); rep.push(x.name); put.delete(x.name); continue; }
   if (x.name === 'AndroidManifest.xml') { list.push(fresh(x.name, patchManifest(zlib.inflateRawSync(x.raw)), x.time)); continue; }
   list.push(x);
 }

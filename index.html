@@ -2430,7 +2430,7 @@ html:is([data-theme=glass],[data-theme=glasslight]) .sp-date span{background:var
 .lp-o{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:10px 14px;border-radius:14px;border:1px solid var(--line-2);background:var(--surface);color:var(--text);font:600 14.5px var(--f-body);text-align:left;cursor:pointer}
 .lp-o span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lp-o.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface))}.lp-o.on svg{color:var(--accent);flex:none}
-.selp{position:fixed;inset:0;z-index:120}
+.selp{position:fixed;inset:0;z-index:1000}
 .selp-dim{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .25s}.selp.on .selp-dim{opacity:1}
 .selp-s{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;max-height:72vh;display:flex;flex-direction:column;background:var(--bg-2);border:1px solid var(--line-2);border-bottom:0;border-radius:24px 24px 0 0;padding:10px 14px calc(14px + var(--sab,env(safe-area-inset-bottom)));transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.9,.25,1.05);box-shadow:0 -16px 40px rgba(0,0,0,.35)}
 .selp.on .selp-s{transform:none}
@@ -3575,7 +3575,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.56.1';
+const APP_VER='1.57.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};

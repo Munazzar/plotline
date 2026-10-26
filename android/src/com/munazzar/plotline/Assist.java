@@ -289,6 +289,14 @@ public class Assist {
     @JavascriptInterface
     public String usageHours(int days) { return UsageHours.json(c, days); }
 
+    /* bgAgent([{at}]): when agent tasks are due, so they run by themselves (BgAgent). "exact" or "no". 1.57. */
+    @JavascriptInterface
+    public String bgAgent(String json) { return BgAgent.schedule(c, json); }
+
+    /* bgModel(file, ctx, threads): the on-device model background tasks think with. 1.57. */
+    @JavascriptInterface
+    public void bgModel(String file, int ctx, int threads) { BgAgent.model(c, file, ctx, threads); }
+
     /* stepHours(days): steps per hour from this phone's step counter (StepHours); also keeps the 15-minute readings
        going and takes one now. 1.56. */
     @JavascriptInterface

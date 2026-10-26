@@ -463,7 +463,7 @@ window.HOWTO_GUIDES=[
   {x:'Choose what it may look at: your plan, Calendar, Gmail, Drive, Notion and the web.',d:[look('label:has([data-agsrc="plot"])'),look('label:has([data-agsrc="gcal"])')]},
   {x:'Tap Go. It works in the background, so you can leave the page.',d:[tap('[data-act="agAsk"]'),W(3000)]},
   {x:'The answer lands in the agent’s Inbox: the takeaway first, the details, and “What I’d do” as one-tap buttons.',d:[scr('.ag-inbox',{block:'start'}),W(2600)]}],
- tips:['Templates like “Morning brief” or “Evening review” can run on a schedule.','You can ask Plot in the chat too: email and calendar questions are handed to the agent.'],rel:['connections','chat']},
+ tips:['Scheduled tasks run by themselves at their time, even with Plotlines closed, and you get a notification with what they found (Android needs Alarms & reminders, or Plotlines exempt from battery optimisation).','Templates like “Plan my day”, “Write my day” and “Get tomorrow ready” do their work themselves: no tapping.','Templates like “Morning brief” or “Evening review” can run on a schedule.','You can ask Plot in the chat too: email and calendar questions are handed to the agent.'],rel:['connections','chat']},
 {id:'moves',cat:'Settings & more',ic:'chart',title:'Steps, workouts, sleep and places in detail',keys:'activity detail steps by hour workouts type time sleep schedule bedtime wake places timeline chart week month health connect',go:'moves',
  sum:'Your day on one 24-hour line, and each kind of activity by day, week, month or everything.',
  steps:[{x:'Open Activity and tap “In detail” on Steps, Sleep, Workouts or Places.'},
