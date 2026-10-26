@@ -124,6 +124,9 @@ public class StepHours {
             }
             out.put("days", D);
             out.put("n", p.length);
+            /* when the kept readings begin: hours before it weren't measured (1.56.1) */
+            int k0 = p.length > 0 ? p[0].indexOf(':') : -1;
+            if (k0 > 0) try { out.put("from", Long.parseLong(p[0].substring(0, k0))); } catch (Exception e) { }
         } catch (Exception e) {
             try { out.put("err", String.valueOf(e)); } catch (Exception x) { }
         }

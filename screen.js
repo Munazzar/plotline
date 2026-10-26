@@ -65,7 +65,8 @@ function barsSVG(cols,G,o){const sums=cols.map(c=>stack(c.m,G)),mx0=Math.max(o.m
  const F=o.fmt||fmtMin,step=o.fmt?(p=>[1,2,2.5,5,10].map(x=>x*p).find(x=>mx0/x<=4))(Math.pow(10,Math.floor(Math.log10(mx0/4)||0))):mx0>240?120:mx0>120?60:mx0>60?30:mx0>20?10:5,mx=Math.ceil(mx0/step)*step,gl=[];for(let v=step;v<=mx;v+=step)gl.push(v);
  const fl=o.axis||(v=>v>=60?(v%60?(v/60).toFixed(1):v/60)+'h':v+'m');
  const grid=gl.map(v=>`<i class="sc-g" style="bottom:${v/mx*100}%"><b>${fl(v)}</b></i>`).join('')+(o.goal?`<i class="sc-g goal" style="bottom:${o.goal/mx*100}%"></i>`:'');
- const bars=cols.map((c,i)=>{const S2=sums[i],t=S2.reduce((a,x)=>a+x[1],0),op=o.fade?Math.max(.3,Math.min(1,t/Math.max(mx0*.5,1))):1;
+ const bars=cols.map((c,i)=>{if(c.off)return`<div class="sc-c off na" title="${esc(c.aria)}: not recorded" aria-label="${esc(c.aria)}: not recorded"><div class="sc-st"></div><small>${c.lab||''}</small></div>`;
+  const S2=sums[i],t=S2.reduce((a,x)=>a+x[1],0),op=o.fade?Math.max(.3,Math.min(1,t/Math.max(mx0*.5,1))):1;
   return`<div class="sc-c${c.sel?' sel':''}${o.act?'':' na'}${o.goal&&t>=o.goal?' ok':''}"${o.act?` data-act="${o.act}" data-v="${c.v}" role="button" tabindex="0"`:''} aria-label="${esc(c.aria)}: ${t?F(t):'none'}" title="${esc(c.aria)}: ${t?F(t):'none'}"><div class="sc-st" style="height:${t/mx*100}%;opacity:${op}">${S2.map(([k,v])=>`<span style="flex:${v};background:${colOf(k,G)}"></span>`).join('')}</div><small>${c.lab||''}</small></div>`}).join('');
  return`<div class="sc-bw" style="--h:${o.h||150}px"><div class="sc-ax">${grid}</div><div class="sc-bs${cols.length>40?' thin':''}">${bars}</div></div>`}
 /* a day-by-hour grid: darker = more minutes in that hour */
@@ -197,7 +198,7 @@ const css=document.createElement('style');css.textContent=`
 .sc-st{display:flex;flex-direction:column-reverse;border-radius:4px 4px 2px 2px;overflow:hidden;min-height:0;margin-bottom:18px;transition:opacity .2s}
 .sc-st span{display:block;min-height:1px}
 .sc-c{position:relative}.sc-c small{position:absolute;bottom:0;left:-6px;right:-6px;text-align:center;font:500 10.5px var(--f-body);color:var(--muted);white-space:nowrap;height:16px}
-.sc-c.sel .sc-st{box-shadow:0 0 0 2px var(--text)}.sc-c.sel small{color:var(--text);font-weight:700}
+.sc-c.sel .sc-st{box-shadow:0 0 0 2px var(--text)}.sc-c.off .sc-st{height:100%;opacity:1;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--muted) 22%,transparent) 0 3px,transparent 3px 7px);border-radius:4px}.sc-c.sel small{color:var(--text);font-weight:700}
 .sc-hg{display:grid;grid-template-columns:34px repeat(24,1fr);gap:3px;align-items:center}
 .sc-hg>small{font:500 10.5px var(--f-body);color:var(--muted);text-align:left;white-space:nowrap;overflow:visible}
 .sc-hg>b{font:600 12px var(--f-body);color:var(--muted)}
