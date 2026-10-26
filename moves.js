@@ -11,7 +11,7 @@ const SC=window.SCREEN;if(!SC)return;
 const PAL=SC.PAL,MV={m:'steps',range:'day',ds:''};
 const METRICS=[['steps','👟','Steps'],['work','🏋️','Workouts'],['sleep','😴','Sleep'],['places','📍','Places']];
 const day=ds=>actLog()[ds]||{};
-const hrs=o=>{const h=typeof hrOf==='function'?hrOf(o):o.hr;return Array.isArray(h)&&h.some(x=>+x>0)?h.map(x=>Math.round(+x||0)):null};
+const hrs=o=>{const h=typeof hrOf==='function'?hrOf(o):window.flatHr&&flatHr(o.hr)?null:o.hr;return Array.isArray(h)&&h.some(x=>+x>0)?h.map(x=>Math.round(+x||0)):null};
 const wName=w=>(typeof ACT_EX!=='undefined'&&ACT_EX[w.k])||'Workout',wEm=w=>(typeof ACT_EI!=='undefined'&&ACT_EI[w.k])||'💪';
 const goalSteps=()=>+((S.settings.act||{}).goal)||8000,goalSleep=()=>(+((S.settings.act||{}).sleep)||7.5)*60;
 const n2=v=>Math.round(v).toLocaleString();
@@ -34,7 +34,7 @@ function lineHTML(ds){const o=day(ds),a=t0(ds),pct=t=>Math.max(0,Math.min(100,(t
  const wk=(o.w||[]).filter(w=>w.t).map(w=>({s:w.t,e:w.t+(+w.m||0)*6e4,c:'wk',t:`${wName(w)} ${hm(w.t)} · ${fmtMin(w.m)}`}));
  rows.push(['work','🏋️','Workouts',wk.length?blocks(wk):'']);
  const cells=(v,mx,c)=>v.map((x,h)=>`<i class="mv-h ${c}" style="opacity:${x?.15+.85*Math.min(1,x/mx):.05}" title="${SC.hName(h)}: ${c==='st'?n2(x)+' steps':fmtMin(x)}"></i>`).join('');
- rows.push(['steps','👟','Steps',H?`<div class="mv-hs">${cells(H,Math.max(...H,1),'st')}</div>`:'']);
+ rows.push(['steps','👟','Steps',H?`<div class="mv-hs">${cells(H,Math.max(...H,1),'st')}</div>`:+o.s?`<em class="muted small">${n2(o.s)} steps · no hourly detail</em>`:'']);
  if(sd.hrs){const v=sd.hrs.map(m=>Object.values(m).reduce((x,y)=>x+y,0));rows.push(['screen','📱','Screen',`<div class="mv-hs">${cells(v,Math.max(...v,1),'sc')}</div>`])}
  const ax=Array.from({length:9},(_,i)=>`<small style="left:${i*12.5}%">${SC.hLab(i*3%24)}</small>`).join('');
  return`<section class="panel rv mv-line"><div class="sc-cht"><b>Your day</b><small class="muted">Tap a row for detail.</small></div>${rows.map(([k,e,n,body])=>`<button class="mv-r${MV.m===k?' on':''}" data-act="${k==='screen'?'mvScreen':'mvM'}" data-v="${k}"><span class="mv-rl">${e} ${n}</span><span class="mv-tr">${body||'<em class="muted small">nothing recorded</em>'}</span></button>`).join('')}<div class="mv-ax"><span></span><span class="mv-axs">${ax}</span></div></section>`}
@@ -44,7 +44,7 @@ const G1=(k,c)=>({raw:1,top:[k],col:{[k]:c}});
 function stepsHTML(R,A){const g=goalSteps();
  if(R==='day'){const o=day(A[0]),H=hrs(o),s=+o.s||0,peak=H?H.indexOf(Math.max(...H)):-1,act=H?H.filter(x=>x>=250).length:0;
   return stat([[s?n2(s):'—','steps',s?`${Math.round(s/g*100)}% of ${n2(g)}`:''],[o.dm?(o.dm/1000).toFixed(1)+' km':'—','distance'],[peak>=0&&H[peak]?SC.hName(peak):'—','busiest hour'],[H?act+' h':'—','active hours','250+ steps']])+
-   (H?chart('Steps by hour','Faded = a quiet hour. Tap a bar.',SC.bars(H.map((v,h)=>({m:{steps:v},v:h,lab:h%3===0?SC.hLab(h):'',aria:SC.hName(h),sel:MV.h===h})),G1('steps',PAL[4]),{act:'mvH',fade:1,fmt:v=>n2(v)+' steps',axis:v=>v>=1000?(v/1000)+'k':v,h:160,min:200}))+(MV.h>=0&&H?`<p class="small mv-hd"><b>${SC.hName(MV.h)} – ${SC.hName((MV.h+1)%24)}</b> · ${n2(H[MV.h])} steps</p>`:''):'<p class="small muted rv">Steps by hour show up once Health Connect has the day, or after you open Plotlines a few times that day.</p>')}
+   (H?chart('Steps by hour','Faded = a quiet hour. Tap a bar.',SC.bars(H.map((v,h)=>({m:{steps:v},v:h,lab:h%3===0?SC.hLab(h):'',aria:SC.hName(h),sel:MV.h===h})),G1('steps',PAL[4]),{act:'mvH',fade:1,fmt:v=>n2(v)+' steps',axis:v=>v>=1000?(v/1000)+'k':v,h:160,min:200}))+(MV.h>=0&&H?`<p class="small mv-hd"><b>${SC.hName(MV.h)} – ${SC.hName((MV.h+1)%24)}</b> · ${n2(H[MV.h])} steps</p>`:''):`<p class="small muted rv">${s&&window.flatHr&&flatHr(o.hr)?'Your step app gives Health Connect one total for the whole day (Samsung Health does this), so it can’t say which hours you walked. Plotlines fills in the hours from the phone’s own step counter each time you open the app, so open it a few times a day for a clearer picture.':'Steps by hour show up once Health Connect has the day, or after you open Plotlines a few times that day.'}</p>`)}
  const D=A.map(ds=>({ds,s:+day(ds).s||0})),v=D.filter(x=>x.s),avg=v.length?v.reduce((a,x)=>a+x.s,0)/v.length:0,best=v.reduce((a,x)=>!a||x.s>a.s?x:a,null),hit=v.filter(x=>x.s>=g).length;
  const typ=Array(24).fill(0);let hd=0;A.forEach(ds=>{const H=hrs(day(ds));if(H){hd++;H.forEach((x,h)=>typ[h]+=x)}});
  return stat([[avg?n2(avg):'—','steps a day'],[best?n2(best.s):'—','best day',best?dayName(best.ds):''],[`${hit}/${v.length}`,'days at goal',n2(g)+' steps']])+
