@@ -4,7 +4,7 @@ Written 2026-10-24 (updated the same day for 1.52.0 and 1.53.0) for a fresh Clau
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.55.1 is on main and released** (versionCode 145). **The next versionCode is 146.**
+Current state: **v1.56.0 is on main and released** (versionCode 146). **The next versionCode is 147.**
 
 **Product rules for every change (section 7 has the full list):** sync everything except looks and device-only
 things (section 2a); obvious features (delete, delete all, undo, search) must exist wherever data lives; secure and
@@ -130,13 +130,14 @@ unless noted.
 - **1.53.0:** almost everything syncs (section 2a): agent tasks and reports, conversations, AI canvases, trackers, AI server address/model/key, Notion token, agent connections. Home "Agent reports" card. "Delete all" for conversations and canvases. Agent read_url only reads public https hosts. Backups no longer carry the PIN hash.
 - **1.54.0:** Screen time hour by hour (`screen.js`, `#/screen`): Day / Week / Month / All, hourly bars stacked by app (faded when light), a day-by-hour map, a typical day, a legend that hides apps, skip (not counted), daily limits with a nudge, habits that check themselves off, phone-habit tips; the assistant gets the hours (`scrHours`). Native: `UsageHours.java` + `PlotlineAssist.usageHours(days)`; `PlotlineAssist.http` now also does plain GETs to public https hosts (news/trends/RSS on Android). Settings in `S.settings.act.scx` (`act.scr` is the old daily screen-time goal: don't reuse it).
 - **1.55.0:** Activity in detail (`moves.js`, `#/moves/<day>`): a 24-hour day line (sleep, workouts, steps, screen time), steps by hour against the goal and a typical day, workouts by type with start/end and usual start hour, a sleep schedule (bedtime to wake per night, green when the goal is met, bedtime spread), minutes at places. Charts reuse `SCREEN.bars`. `actDetail(ds)` feeds the assistant. Places have minutes only: the phone (compiled MainActivity geofencing) doesn't record arrival/leave times.
-- **1.55.1:** steps by hour ignore Health Connect hours that are one day-long record spread evenly (Samsung Health writes steps that way; seen on the owner's phone): `flatHr` in index.html, used by `hrOf`, so both Activity and Activity in detail fall back to the phone counter's readings or say why there's no hourly chart. Real hourly steps for Samsung Health users would need the app to sample the phone's step counter in the background (native, not built).
+- **1.55.1:** steps by hour ignore Health Connect hours that are one day-long record spread evenly (Samsung Health writes steps that way; seen on the owner's phone): `flatHr` in index.html, used by `hrOf`, so both Activity and Activity in detail fall back to the phone counter's readings or say why there's no hourly chart. Fixed properly in 1.56.
+- **1.56.0:** steps by hour from the phone's own step counter: `StepHours.java` reads TYPE_STEP_COUNTER every ~15 min (inexact repeating alarm, request code 612, action `A_TICK` to `Auto`, so no manifest change and no exact-alarm permission) and keeps 11 days of readings; `PlotlineAssist.stepHours(days)` returns steps per hour; JS stores `actLog()[day].hs`, preferred by `hrOf` when Health Connect has no real hours. **Smali patch in classes.dex:** `Auto$3.run` calls `StepHours.tick(c)` right after `Auto.sampleSteps` (two instructions). Classes6.dex now holds Assist, UsageHours, StepHours. Re-apply the patch if classes.dex is ever rebuilt from elsewhere.
 
 ### versionCode table (for the APK)
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145. **Next: 146.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146. **Next: 147.**
 
 ## 4. Building the APK (cloud, no Android SDK)
 

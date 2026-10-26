@@ -289,6 +289,15 @@ public class Assist {
     @JavascriptInterface
     public String usageHours(int days) { return UsageHours.json(c, days); }
 
+    /* stepHours(days): steps per hour from this phone's step counter (StepHours); also keeps the 15-minute readings
+       going and takes one now. 1.56. */
+    @JavascriptInterface
+    public String stepHours(int days) {
+        StepHours.arm(c);
+        new Thread(new Runnable() { public void run() { StepHours.tick(c); } }).start();
+        return StepHours.hours(c, days);
+    }
+
     /* http(id, {url, method, headers, body}): a request for a connector whose server doesn't allow browser pages (Notion),
        or (1.54) a plain read of a public page or feed for the agent (news, trends, RSS). Only https. Requests with a body
        or headers go only to the hosts below; a plain GET goes to any public address, never this phone, the home network
