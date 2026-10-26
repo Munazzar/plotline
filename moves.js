@@ -8,9 +8,20 @@
 (()=>{
 'use strict';
 const SC=window.SCREEN;if(!SC)return;
+const NA=!window.PLOT_DEMO&&window.PlotlineAssist||null;
+/* 1.56: steps per hour counted by this phone (StepHours.java), for step apps that give Health Connect only a day total.
+   Stored as actLog()[day].hs (24 numbers), which hrOf prefers over evenly spread Health Connect hours. */
+const SH={at:0,perm:null};
+function stepPull(force){if(!(NA&&NA.stepHours))return;if(!force&&Date.now()-SH.at<60e3)return;SH.at=Date.now();let j=null;try{j=JSON.parse(NA.stepHours(10))}catch(e){return}
+ if(!j)return;SH.perm=!!j.perm;let ch=false;const L=actLog();
+ for(const[d,m]of Object.entries(j.days||{})){const a=Array.from({length:24},(_,h)=>Math.round(+m[h]||0));const o=L[d]||(L[d]={});if(JSON.stringify(o.hs)!==JSON.stringify(a)){o.hs=a;o.u=Date.now();ch=true}}
+ if(ch)save()}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){stepPull(true);if(cur.p==='moves')setTimeout(()=>render(false),300)}});
+if(NATIVE)setTimeout(()=>stepPull(true),5000);
 const PAL=SC.PAL,MV={m:'steps',range:'day',ds:''};
 const METRICS=[['steps','👟','Steps'],['work','🏋️','Workouts'],['sleep','😴','Sleep'],['places','📍','Places']];
 const day=ds=>actLog()[ds]||{};
+const hrsSrc=o=>{const hr=(o.hr||[]).map(Number),hs=hr.reduce((a,b)=>a+(b||0),0);return hs>0&&!(window.flatHr&&flatHr(hr))&&hs>=(+o.s||0)*.8?'hc':Array.isArray(o.hs)&&o.hs.some(x=>+x>0)?'phone':'est'};
 const hrs=o=>{const h=typeof hrOf==='function'?hrOf(o):window.flatHr&&flatHr(o.hr)?null:o.hr;return Array.isArray(h)&&h.some(x=>+x>0)?h.map(x=>Math.round(+x||0)):null};
 const wName=w=>(typeof ACT_EX!=='undefined'&&ACT_EX[w.k])||'Workout',wEm=w=>(typeof ACT_EI!=='undefined'&&ACT_EI[w.k])||'💪';
 const goalSteps=()=>+((S.settings.act||{}).goal)||8000,goalSleep=()=>(+((S.settings.act||{}).sleep)||7.5)*60;
@@ -44,7 +55,7 @@ const G1=(k,c)=>({raw:1,top:[k],col:{[k]:c}});
 function stepsHTML(R,A){const g=goalSteps();
  if(R==='day'){const o=day(A[0]),H=hrs(o),s=+o.s||0,peak=H?H.indexOf(Math.max(...H)):-1,act=H?H.filter(x=>x>=250).length:0;
   return stat([[s?n2(s):'—','steps',s?`${Math.round(s/g*100)}% of ${n2(g)}`:''],[o.dm?(o.dm/1000).toFixed(1)+' km':'—','distance'],[peak>=0&&H[peak]?SC.hName(peak):'—','busiest hour'],[H?act+' h':'—','active hours','250+ steps']])+
-   (H?chart('Steps by hour','Faded = a quiet hour. Tap a bar.',SC.bars(H.map((v,h)=>({m:{steps:v},v:h,lab:h%3===0?SC.hLab(h):'',aria:SC.hName(h),sel:MV.h===h})),G1('steps',PAL[4]),{act:'mvH',fade:1,fmt:v=>n2(v)+' steps',axis:v=>v>=1000?(v/1000)+'k':v,h:160,min:200}))+(MV.h>=0&&H?`<p class="small mv-hd"><b>${SC.hName(MV.h)} – ${SC.hName((MV.h+1)%24)}</b> · ${n2(H[MV.h])} steps</p>`:''):`<p class="small muted rv">${s&&window.flatHr&&flatHr(o.hr)?'Your step app gives Health Connect one total for the whole day (Samsung Health does this), so it can’t say which hours you walked. Plotlines fills in the hours from the phone’s own step counter each time you open the app, so open it a few times a day for a clearer picture.':'Steps by hour show up once Health Connect has the day, or after you open Plotlines a few times that day.'}</p>`)}
+   (H?chart('Steps by hour',(hrsSrc(o)==="phone"?'Counted by this phone. ':'')+'Faded = a quiet hour. Tap a bar.',SC.bars(H.map((v,h)=>({m:{steps:v},v:h,lab:h%3===0?SC.hLab(h):'',aria:SC.hName(h),sel:MV.h===h})),G1('steps',PAL[4]),{act:'mvH',fade:1,fmt:v=>n2(v)+' steps',axis:v=>v>=1000?(v/1000)+'k':v,h:160,min:200}))+(MV.h>=0&&H?`<p class="small mv-hd"><b>${SC.hName(MV.h)} – ${SC.hName((MV.h+1)%24)}</b> · ${n2(H[MV.h])} steps</p>`:''):`<p class="small muted rv">${s&&window.flatHr&&flatHr(o.hr)?'Your step app gives Health Connect one total for the whole day (Samsung Health does this), so it can’t say which hours you walked. '+(NA&&NA.stepHours?(SH.perm===false?'Allow “Physical activity” and Plotlines counts steps by hour with this phone from now on.</p><div class="actions left"><button class="btn sm pri" data-act="mvStepPerm">Count steps by hour</button></div><p class="small muted">It reads the phone’s step counter about every 15 minutes. Nothing leaves the phone except to your own Drive if sync is on.':'Plotlines now counts steps by hour with this phone, from when you installed this version: hours fill in as you go.'):'Plotlines fills in the hours from the phone’s own step counter each time you open the app.'):'Steps by hour show up once Health Connect has the day, or after you open Plotlines a few times that day.'}</p>`)}
  const D=A.map(ds=>({ds,s:+day(ds).s||0})),v=D.filter(x=>x.s),avg=v.length?v.reduce((a,x)=>a+x.s,0)/v.length:0,best=v.reduce((a,x)=>!a||x.s>a.s?x:a,null),hit=v.filter(x=>x.s>=g).length;
  const typ=Array(24).fill(0);let hd=0;A.forEach(ds=>{const H=hrs(day(ds));if(H){hd++;H.forEach((x,h)=>typ[h]+=x)}});
  return stat([[avg?n2(avg):'—','steps a day'],[best?n2(best.s):'—','best day',best?dayName(best.ds):''],[`${hit}/${v.length}`,'days at goal',n2(g)+' steps']])+
@@ -87,7 +98,7 @@ function cols(D,R,m){if(R==='all'&&D.length>62){const out=[];for(let i=0;i<D.len
 const stat=L=>`<div class="sc-stats rv">${L.map(([b,s,x])=>`<div><b>${esc(String(b))}</b><small>${esc(s)}${x?` · ${esc(x)}`:''}</small></div>`).join('')}</div>`;
 const chart=(t,s,body)=>`<section class="panel rv sc-ch"><div class="sc-cht"><b>${t}</b><small class="muted">${s}</small></div>${body}</section>`;
 
-function vMoves(id){if(typeof actLoad==='function')actLoad(false);const ds=/^\d{4}-\d{2}-\d{2}$/.test(id||'')?id:(MV.ds||ymd());MV.ds=ds;const R=MV.range,[a,b]=span(R,ds),A=[];for(let n=a;n<=b;n++)A.push(fromN(n));
+function vMoves(id){if(typeof actLoad==='function')actLoad(false);if(NATIVE)stepPull(false);const ds=/^\d{4}-\d{2}-\d{2}$/.test(id||'')?id:(MV.ds||ymd());MV.ds=ds;const R=MV.range,[a,b]=span(R,ds),A=[];for(let n=a;n<=b;n++)A.push(fromN(n));
  const M=METRICS.find(x=>x[0]===MV.m)||METRICS[0];
  const head=`<header class="ph"><div><h1>Activity in detail</h1><div class="data">${esc(ttl(R,a,b))}</div></div><div class="ph-r">${typeof gear==='function'?gear():''}</div></header>`;
  const tabs=`<div class="sc-top rv"><div class="seg sc-seg" role="tablist">${[['day','Day'],['week','Week'],['month','Month'],['all','All']].map(([k,n])=>`<button role="tab" aria-selected="${R===k}" class="${R===k?'on':''}" data-act="mvRange" data-v="${k}">${n}</button>`).join('')}</div>${R==='all'?'':`<div class="sc-nav"><button class="ibtn sm" data-act="mvMove" data-v="-1" aria-label="Earlier">${ic('back')}</button><button class="ibtn sm" data-act="mvMove" data-v="1" aria-label="Later" ${b>=dnum(ymd())?'disabled':''}>${ic('back','flip')}</button></div>`}</div>`;
@@ -102,7 +113,8 @@ Object.assign(ACT,{
  mvMove:d=>{const n=+d.v,ds=MV.ds||ymd();let x;if(MV.range==='day')x=fromN(dnum(ds)+n);else if(MV.range==='week')x=fromN(dnum(ds)+7*n);else{const t=new Date(ds+'T12:00');t.setDate(1);t.setMonth(t.getMonth()+n);x=ymd(t)}if(dnum(x)>dnum(ymd()))x=ymd();MV.ds=x;MV.h=-1;go('moves/'+x)},
  mvDay:d=>{if(!d.v)return;MV.range='day';MV.h=-1;go('moves/'+d.v)},
  mvH:d=>{MV.h=MV.h===+d.v?-1:+d.v;render(false)},
- mvScreen:()=>go('screen/'+(MV.ds||ymd()))
+ mvScreen:()=>go('screen/'+(MV.ds||ymd())),
+ mvStepPerm:async()=>{try{await ACT.autoPerm({t:'steps'})}catch(e){}SH.at=0;setTimeout(()=>{stepPull(true);render(false)},800)}
 });
 MV.h=-1;
 

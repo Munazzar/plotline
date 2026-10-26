@@ -469,7 +469,7 @@ window.HOWTO_GUIDES=[
  steps:[{x:'Open Activity and tap “In detail” on Steps, Sleep, Workouts or Places.'},
   {x:'Day shows sleep, workouts, steps and screen time side by side on one line. Tap a row for its detail: steps by hour, each workout’s type and time, when you fell asleep and woke.'},
   {x:'Week, Month and All show steps against your goal, workout minutes by type and when you usually train, a sleep schedule (green nights met your goal), and time at your places.'}],
- tips:['Workouts and sleep come from Health Connect (Samsung Health, Fitbit, a watch…). Places show how long you were there; the phone doesn’t record when.'],rel:['screen','sync']},
+ tips:['Workouts and sleep come from Health Connect (Samsung Health, Fitbit, a watch…). Places show how long you were there; the phone doesn’t record when.','If your step app only gives Health Connect a day total (Samsung Health does), allow Physical activity and Plotlines counts steps by hour with the phone itself.'],rel:['screen','sync']},
 {id:'screen',cat:'Settings & more',ic:'scr',title:'Screen time, hour by hour',keys:'screen time phone usage apps hours hourly chart graph unlocks limit skip digital wellbeing instagram youtube habit focus',go:'screen',
  sum:'See when you used your phone and which apps, for a day, a week, a month or everything, and build better phone habits.',
  steps:[{x:'Open Activity and tap “Hour by hour, by app” on Screen time (or ask “show my screen time yesterday”). On Android, allow Usage access once.'},
