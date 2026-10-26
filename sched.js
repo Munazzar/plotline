@@ -135,7 +135,7 @@ const tWhen=t=>{const d=new Date(t),ds=ymd(d);return{day:ds===ymd()?'Today':ds==
 function rowHTML(r){const x=r.id&&(r.k==='rem'||r.k==='day')?S.days.find(y=>y.id===r.id):null,[icon,lab]=x&&x.tmr?['timer','Timer']:KIND[r.k]||['bell','Reminder'],w=tWhen(r.at);
  const sub=x&&x.rep?`Every ${everyS(+x.rep.m)} until ${fmtTime(x.rep.to||'21:00')}${r.more?` · ${r.more} more`:''}`:r.more?`${lab} · ${r.more+1} times`:lab+(r.body&&r.k!=='rem'&&r.k!=='day'?' · '+r.body:'');
  const off=x?`<button class="ibtn sm" data-act="schedOff" data-id="${x.id}" aria-label="Cancel ${esc(r.title)}">${ic('plus')}</button>`:'';
- return`<li class="sc-r"><span class="sc-i">${ic(icon)}</span><span class="sc-t"><b>${esc(r.title)}</b><small>${esc(sub)}</small></span><span class="sc-w"><b>${esc(w.time)}</b><small>${esc(w.day)}</small></span>${off}</li>`}
+ return`<li class="sc-r"><span class="sc-i">${ic(icon)}</span><span class="sd-t"><b>${esc(r.title)}</b><small>${esc(sub)}</small></span><span class="sc-w"><b>${esc(w.time)}</b><small>${esc(w.day)}</small></span>${off}</li>`}
 function schedHTML(){const now=Date.now(),R=rows(upcoming(now,48*36e5)),N=6;
  const body=R.length?`<ul class="sc-l">${R.slice(0,N).map(rowHTML).join('')}</ul>`:`<p class="small muted" style="margin:6px 0 2px">Nothing in the next two days. Try telling your assistant “remind me tomorrow to drink water every 2 hours”.</p>`;
  return`<section class="rv hsched"><div class="st-h"><h3>Scheduled</h3><button class="link" data-act="schedAll">${R.length>N?`All ${R.length}`:'This week'}</button></div><div class="panel sc-p">${body}</div></section>`}
@@ -173,7 +173,7 @@ const css=document.createElement('style');css.textContent=`
 .sc-p{padding:4px 14px}.sc-l{list-style:none;margin:0;padding:0}
 .sc-r{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent)}.sc-r:first-child,.sc-d+.sc-r{border-top:0}
 .sc-i{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:11px;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}.sc-i svg{width:18px;height:18px}
-.sc-t{flex:1;min-width:0;display:flex;flex-direction:column}.sc-t b{font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sc-t small,.sc-w small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sd-t{flex:1;min-width:0;display:flex;flex-direction:column}.sd-t b{font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sd-t small,.sc-w small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sc-w{flex:none;display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums}.sc-w b{font-size:14px;font-weight:600}
 .sc-r .ibtn svg{transform:rotate(45deg)}.sc-d{padding:14px 0 2px;color:var(--muted)}
 .tr-w{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}

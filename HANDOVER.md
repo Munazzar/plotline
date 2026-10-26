@@ -4,7 +4,7 @@ Written 2026-10-24 (updated the same day for 1.52.0 and 1.53.0) for a fresh Clau
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.58.0 is on main and released** (versionCode 149). **The next versionCode is 150.**
+Current state: **v1.59.0 is on main and released** (versionCode 150). **The next versionCode is 151.**
 
 **Product rules for every change (section 7 has the full list):** sync everything except looks and device-only
 things (section 2a); obvious features (delete, delete all, undo, search) must exist wherever data lives; secure and
@@ -29,7 +29,7 @@ private by default, because the app is heading to the **Google Play Store**; nev
 
 Plain HTML/JS, no build step, no framework. Every file is loaded by `index.html` with a `<script src>` tag, in this
 order: `bench.js, lists.js, assistant.js, agent.js, ai.js, convs.js, me.js, canvas.js, ink.js, kokoro.js, polish.js,
-trackers.js, screen.js, moves.js, sched.js, guides.js, howto.js, setup.js, notes.js, bills.js`. Later scripts patch or wrap functions defined earlier, so
+trackers.js, screen.js, moves.js, sched.js, guides.js, howto.js, setup.js, notes.js, bills.js, book.js`. Later scripts patch or wrap functions defined earlier, so
 **order matters** and a later file often overrides an earlier one by reusing the same function name.
 
 Run locally: `npx http-server -p 8765 -c-1` in the repo root (see `.claude/launch.json`). Test with headless
@@ -57,6 +57,7 @@ Playwright at 390 px (phone) and 1280 px (desktop).
 | `polish.js` + `polish.css` | Design layer loaded last: SF-style icons, Apple type, shadows, backgrounds, swipe decks, page gears (`GEARS`), canvas mode. |
 | `notes.js` | Notes (1.58: Thread renamed Notes in the UI only; data, routes and `thr*` names unchanged, `#/notes` aliases `#/threads`): quick-note box, templates, title from the first line, pin (`t.pin`), colour (`t.col`), labels (`t.tags`), search across notes, sort, duplicate, archive (= old status "done"), delete with undo, tickable checklists, voice typing, reminder, AI tools (summarise, tidy, to-dos, keep writing, ask). |
 | `bills.js` | Bills (`#/bills`, `#/bill/<id>`): snap/pick a photo (PaddleOCR on device, or a Workbench vision AI), paste text, or read Gmail (`AGENT.mailSearch/mailRead`); the AI fills a strict JSON template (kind `not_a_bill` rejects junk; nothing guessed, nulls show "not read"); review sheet; totals check; due/paid, reminders, CSV, delete all. IndexedDB "bills" + `syncList("bills")`; photos per device ("billimg:<id>"). Ask: app-computed exact totals + bill index + BM25 top matches, answers cite `[bill:ID]`. Bills also feed `ragDocs`/`insOverview`. |
+| `book.js` | Journal book (1.59): full-screen book, one page per day (cover + days oldest first + today), one page on phones and a two-page spread from 900 px. Pages turn by drag, edge tap, buttons or arrow keys. Two flat faces rotate on their own (no preserve-3d) and a timer finishes every turn. Index by month, scrubber, write/edit via `writeSheet` and back to the same page, Back/Esc closes. |
 | `privacy.html` | Privacy policy (rewritten 2026-10-24, lists every outside service). Update it when a feature contacts a new service. |
 | `sw.js` | Service worker. Bump `CACHE` (`plotline-vX.Y.Z`) with every version. |
 | `firestore.rules`, `database.rules.json` | Firebase rules for sharing (Firebase project `plotline-510215`; Anonymous auth must stay on). |
@@ -139,11 +140,13 @@ unless noted.
 
 - **1.58.0:** Bills (`bills.js`), Thread renamed Notes with note-taking features (`notes.js`), Settings › Updates with a Check for updates button (index.html, "1.58: Settings › Updates"). Voice commands accept "note" as well as "thread". Agent suggestions the AI writes into its answer text (a "Suggestions" list) are lifted out into one-tap buttons (`sugsFromText`/`liftSugs` in agent.js), also for older reports.
 
+- **1.59.0: UI quality pass.** Mirrored flip cards: screen.js (1.54) defined a global `.flip{transform:scaleX(-1)}`, the same class flip cards use. It is now `.scr-flip`, and flip faces rotate on their own. Narrow goal step cards with broken titles: screen.js reused `.sc-in` (now `.scr-in`) and sched.js `.sc-t` (now `.sd-t`). screen.js `.sc-top` is now `.scr-top`. **Rule: scope every module class with its own prefix.** Also: the Notes icon is restored (the 1.58 rename turned polish.js `IC.thread` into `note`), and the canvas data key is `threads` again. Plus: Up next deck shadows no longer clipped, theme grid fits, back faces scroll, phone header buttons, goal card labels wrap, note previews without markdown (`thrPlain`), Agent reports in full on Home with show/hide (`A.hmin`), journal book mode.
+
 ### versionCode table (for the APK)
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148, 1.58.0=149. **Next: 150.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148, 1.58.0=149, 1.59.0=150. **Next: 151.**
 
 ## 4. Building the APK (cloud, no Android SDK)
 
@@ -250,6 +253,8 @@ Everything new must be approvable on Play without company paperwork. Known items
   LM Studio needs CORS on.
 
 ## 7. How the user wants Claude to work
+
+- **UI quality (2026-10-26):** "No half baked solutions." Check every page at 390 px and 1280 px in dark, glass and light themes before a release. Never change icons or visuals as a side effect without asking.
 
 - **Own data first, always.** Answers come from the user's own app data first, then what the AI knows, then
   connected apps. Go online only for live info or when nothing else can answer.
