@@ -14,7 +14,9 @@ const NA=!window.PLOT_DEMO&&window.PlotlineAssist||null;
 const SH={at:0,perm:null};
 function stepPull(force){if(!(NA&&NA.stepHours))return;if(!force&&Date.now()-SH.at<60e3)return;SH.at=Date.now();let j=null;try{j=JSON.parse(NA.stepHours(10))}catch(e){return}
  if(!j)return;SH.perm=!!j.perm;let ch=false;const L=actLog();
- for(const[d,m]of Object.entries(j.days||{})){const a=Array.from({length:24},(_,h)=>Math.round(+m[h]||0));const o=L[d]||(L[d]={});if(JSON.stringify(o.hs)!==JSON.stringify(a)){o.hs=a;o.u=Date.now();ch=true}}
+ const f0=+j.from||0,fd=f0?ymd(new Date(f0)):'',fh=f0?new Date(f0).getHours():0;
+ for(const[d,m]of Object.entries(j.days||{})){const a=Array.from({length:24},(_,h)=>Math.round(+m[h]||0)),hf=d===fd?fh:0;const o=L[d]||(L[d]={});if(JSON.stringify(o.hs)!==JSON.stringify(a)||(o.hsFrom||0)!==hf){o.hs=a;o.hsFrom=hf;if(d===fd)o.hsAt=f0;else delete o.hsAt;o.u=Date.now();ch=true}}
+ if(fd&&L[fd]&&!L[fd].hs){L[fd].hs=Array(24).fill(0);L[fd].hsFrom=fh;L[fd].hsAt=f0;L[fd].u=Date.now();ch=true}
  if(ch)save()}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){stepPull(true);if(cur.p==='moves')setTimeout(()=>render(false),300)}});
 if(NATIVE)setTimeout(()=>stepPull(true),5000);
@@ -22,7 +24,8 @@ const PAL=SC.PAL,MV={m:'steps',range:'day',ds:''};
 const METRICS=[['steps','👟','Steps'],['work','🏋️','Workouts'],['sleep','😴','Sleep'],['places','📍','Places']];
 const day=ds=>actLog()[ds]||{};
 const hrsSrc=o=>{const hr=(o.hr||[]).map(Number),hs=hr.reduce((a,b)=>a+(b||0),0);return hs>0&&!(window.flatHr&&flatHr(hr))&&hs>=(+o.s||0)*.8?'hc':Array.isArray(o.hs)&&o.hs.some(x=>+x>0)?'phone':'est'};
-const hrs=o=>{const h=typeof hrOf==='function'?hrOf(o):window.flatHr&&flatHr(o.hr)?null:o.hr;return Array.isArray(h)&&h.some(x=>+x>0)?h.map(x=>Math.round(+x||0)):null};
+const hrs=o=>{const h=typeof hrOf==='function'?hrOf(o):window.flatHr&&flatHr(o.hr)?null:o.hr;return Array.isArray(h)&&h.some(x=>x!=null)?h.map(x=>x==null?null:Math.round(+x||0)):null};
+const hmax=H=>Math.max(1,...H.filter(x=>x!=null));
 const wName=w=>(typeof ACT_EX!=='undefined'&&ACT_EX[w.k])||'Workout',wEm=w=>(typeof ACT_EI!=='undefined'&&ACT_EI[w.k])||'💪';
 const goalSteps=()=>+((S.settings.act||{}).goal)||8000,goalSleep=()=>(+((S.settings.act||{}).sleep)||7.5)*60;
 const n2=v=>Math.round(v).toLocaleString();
@@ -44,8 +47,8 @@ function lineHTML(ds){const o=day(ds),a=t0(ds),pct=t=>Math.max(0,Math.min(100,(t
  rows.push(['sleep','😴','Sleep',sl.length?blocks(sl):'']);
  const wk=(o.w||[]).filter(w=>w.t).map(w=>({s:w.t,e:w.t+(+w.m||0)*6e4,c:'wk',t:`${wName(w)} ${hm(w.t)} · ${fmtMin(w.m)}`}));
  rows.push(['work','🏋️','Workouts',wk.length?blocks(wk):'']);
- const cells=(v,mx,c)=>v.map((x,h)=>`<i class="mv-h ${c}" style="opacity:${x?.15+.85*Math.min(1,x/mx):.05}" title="${SC.hName(h)}: ${c==='st'?n2(x)+' steps':fmtMin(x)}"></i>`).join('');
- rows.push(['steps','👟','Steps',H?`<div class="mv-hs">${cells(H,Math.max(...H,1),'st')}</div>`:+o.s?`<em class="muted small">${n2(o.s)} steps · no hourly detail</em>`:'']);
+ const cells=(v,mx,c)=>v.map((x,h)=>x==null?`<i class="mv-h nr" title="${SC.hName(h)}: not recorded"></i>`:`<i class="mv-h ${c}" style="opacity:${x?.15+.85*Math.min(1,x/mx):.05}" title="${SC.hName(h)}: ${c==='st'?n2(x)+' steps':fmtMin(x)}"></i>`).join('');
+ rows.push(['steps','👟','Steps',H?`<div class="mv-hs">${cells(H,hmax(H),'st')}</div>`:+o.s?`<em class="muted small">${n2(o.s)} steps · no hourly detail</em>`:'']);
  if(sd.hrs){const v=sd.hrs.map(m=>Object.values(m).reduce((x,y)=>x+y,0));rows.push(['screen','📱','Screen',`<div class="mv-hs">${cells(v,Math.max(...v,1),'sc')}</div>`])}
  const ax=Array.from({length:9},(_,i)=>`<small style="left:${i*12.5}%">${SC.hLab(i*3%24)}</small>`).join('');
  return`<section class="panel rv mv-line"><div class="sc-cht"><b>Your day</b><small class="muted">Tap a row for detail.</small></div>${rows.map(([k,e,n,body])=>`<button class="mv-r${MV.m===k?' on':''}" data-act="${k==='screen'?'mvScreen':'mvM'}" data-v="${k}"><span class="mv-rl">${e} ${n}</span><span class="mv-tr">${body||'<em class="muted small">nothing recorded</em>'}</span></button>`).join('')}<div class="mv-ax"><span></span><span class="mv-axs">${ax}</span></div></section>`}
@@ -53,14 +56,14 @@ function lineHTML(ds){const o=day(ds),a=t0(ds),pct=t=>Math.max(0,Math.min(100,(t
 /* ---------------- each metric ---------------- */
 const G1=(k,c)=>({raw:1,top:[k],col:{[k]:c}});
 function stepsHTML(R,A){const g=goalSteps();
- if(R==='day'){const o=day(A[0]),H=hrs(o),s=+o.s||0,peak=H?H.indexOf(Math.max(...H)):-1,act=H?H.filter(x=>x>=250).length:0;
-  return stat([[s?n2(s):'—','steps',s?`${Math.round(s/g*100)}% of ${n2(g)}`:''],[o.dm?(o.dm/1000).toFixed(1)+' km':'—','distance'],[peak>=0&&H[peak]?SC.hName(peak):'—','busiest hour'],[H?act+' h':'—','active hours','250+ steps']])+
-   (H?chart('Steps by hour',(hrsSrc(o)==="phone"?'Counted by this phone. ':'')+'Faded = a quiet hour. Tap a bar.',SC.bars(H.map((v,h)=>({m:{steps:v},v:h,lab:h%3===0?SC.hLab(h):'',aria:SC.hName(h),sel:MV.h===h})),G1('steps',PAL[4]),{act:'mvH',fade:1,fmt:v=>n2(v)+' steps',axis:v=>v>=1000?(v/1000)+'k':v,h:160,min:200}))+(MV.h>=0&&H?`<p class="small mv-hd"><b>${SC.hName(MV.h)} – ${SC.hName((MV.h+1)%24)}</b> · ${n2(H[MV.h])} steps</p>`:''):`<p class="small muted rv">${s&&window.flatHr&&flatHr(o.hr)?'Your step app gives Health Connect one total for the whole day (Samsung Health does this), so it can’t say which hours you walked. '+(NA&&NA.stepHours?(SH.perm===false?'Allow “Physical activity” and Plotlines counts steps by hour with this phone from now on.</p><div class="actions left"><button class="btn sm pri" data-act="mvStepPerm">Count steps by hour</button></div><p class="small muted">It reads the phone’s step counter about every 15 minutes. Nothing leaves the phone except to your own Drive if sync is on.':'Plotlines now counts steps by hour with this phone, from when you installed this version: hours fill in as you go.'):'Plotlines fills in the hours from the phone’s own step counter each time you open the app.'):'Steps by hour show up once Health Connect has the day, or after you open Plotlines a few times that day.'}</p>`)}
+ if(R==='day'){const o=day(A[0]),H=hrs(o),s=+o.s||0,mH=H?Math.max(...H.filter(x=>x!=null)):0,peak=H&&mH>0?H.indexOf(mH):-1,act=H?H.filter(x=>x!=null&&x>=250).length:0,nr=H?H.findIndex(x=>x!=null):0;
+  return stat([[s?n2(s):'—','steps',s?`${Math.round(s/g*100)}% of ${n2(g)}`:''],...(o.dm!=null?[[(o.dm/1000).toFixed(1)+' km','distance']]:[]),[peak>=0?SC.hName(peak):'—','busiest hour',nr>0?'of the hours counted':''],[H?act+' h':'—','active hours',nr>0?'250+ steps, of the hours counted':'250+ steps']])+
+   (H?chart('Steps by hour',(hrsSrc(o)==='phone'?(o.hsAt?`Counted by this phone from ${tShort(o.hsAt)}${nr>0?'; striped hours weren’t recorded':''}. `:'Counted by this phone. '):'')+'Faded = a quiet hour. Tap a bar.',SC.bars(H.map((v,h)=>({m:{steps:v||0},off:v==null,v:h,lab:h%3===0?SC.hLab(h):'',aria:SC.hName(h),sel:MV.h===h})),G1('steps',PAL[4]),{act:'mvH',fade:1,fmt:v=>n2(v)+' steps',axis:v=>v>=1000?(v/1000)+'k':v,h:160,min:200}))+(MV.h>=0&&H?`<p class="small mv-hd"><b>${SC.hName(MV.h)} – ${SC.hName((MV.h+1)%24)}</b> · ${H[MV.h]==null?'not recorded':n2(H[MV.h])+' steps'}</p>`:''):`<p class="small muted rv">${s&&window.flatHr&&flatHr(o.hr)?'Your step app gives Health Connect one total for the whole day (Samsung Health does this), so it can’t say which hours you walked. '+(NA&&NA.stepHours?(SH.perm===false?'Allow “Physical activity” and Plotlines counts steps by hour with this phone from now on.</p><div class="actions left"><button class="btn sm pri" data-act="mvStepPerm">Count steps by hour</button></div><p class="small muted">It reads the phone’s step counter about every 15 minutes. Nothing leaves the phone except to your own Drive if sync is on.':'Plotlines now counts steps by hour with this phone, from when you installed this version: hours fill in as you go.'):'The Android app counts steps by hour with the phone; with sync on they show here too.'):'No steps by hour were recorded for this day.'}</p>`)}
  const D=A.map(ds=>({ds,s:+day(ds).s||0})),v=D.filter(x=>x.s),avg=v.length?v.reduce((a,x)=>a+x.s,0)/v.length:0,best=v.reduce((a,x)=>!a||x.s>a.s?x:a,null),hit=v.filter(x=>x.s>=g).length;
- const typ=Array(24).fill(0);let hd=0;A.forEach(ds=>{const H=hrs(day(ds));if(H){hd++;H.forEach((x,h)=>typ[h]+=x)}});
+ const typ=Array(24).fill(0),tn=Array(24).fill(0);let hd=0;A.forEach(ds=>{const H=hrs(day(ds));if(H){hd++;H.forEach((x,h)=>{if(x!=null){typ[h]+=x;tn[h]++}})}});
  return stat([[avg?n2(avg):'—','steps a day'],[best?n2(best.s):'—','best day',best?dayName(best.ds):''],[`${hit}/${v.length}`,'days at goal',n2(g)+' steps']])+
   chart(R==='all'&&D.length>62?'Each week':'Each day','The line is your goal. Tap a day.',SC.bars(cols(D,R,x=>({steps:x.s})),G1('steps',PAL[4]),{act:'mvDay',goal:R==='all'&&D.length>62?0:g,fmt:v=>n2(v)+' steps',axis:v=>v>=1000?(v/1000)+'k':v,h:150,min:1000}))+
-  (hd?chart('A typical day','Average steps in each hour.',SC.bars(typ.map((x,h)=>({m:{steps:x/hd},v:h,lab:h%3===0?SC.hLab(h):'',aria:SC.hName(h)})),G1('steps',PAL[4]),{fade:1,fmt:v=>n2(v)+' steps',axis:v=>v>=1000?(v/1000)+'k':v,h:130,min:100})):'')}
+  (hd?chart('A typical day','Average steps in each hour, over the days it was recorded.',SC.bars(typ.map((x,h)=>({m:{steps:tn[h]?x/tn[h]:0},off:!tn[h],v:h,lab:h%3===0?SC.hLab(h):'',aria:SC.hName(h)})),G1('steps',PAL[4]),{fade:1,fmt:v=>n2(v)+' steps',axis:v=>v>=1000?(v/1000)+'k':v,h:130,min:100})):'')}
 function workHTML(R,A){const W=A.flatMap(ds=>(day(ds).w||[]).map(w=>({...w,ds}))),types={};W.forEach(w=>{const n=wName(w);types[n]=(types[n]||0)+(+w.m||0)});
  const T=Object.entries(types).sort((a,b)=>b[1]-a[1]),G={raw:1,top:T.slice(0,8).map(x=>x[0]),col:Object.fromEntries(T.slice(0,8).map((x,i)=>[x[0],PAL[i]]))},tot=W.reduce((a,w)=>a+(+w.m||0),0);
  const list=W.length?`<div class="panel rv mv-list">${W.sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,40).map(w=>`<div class="mv-li"><span class="mv-e">${wEm(w)}</span><span><b>${esc(wName(w))}</b><small>${R==='day'?'':esc(dayName(w.ds))+' · '}${w.t?`${hm(w.t)} – ${hm(w.t+(+w.m||0)*6e4)}`:'time not recorded'}</small></span><b class="mv-v">${fmtMin(w.m)}</b></div>`).join('')}</div>`:`<p class="small muted rv">No workouts recorded${R==='day'?' this day':''}. They come from apps that write to Health Connect, like Samsung Health, Fitbit or Strava.</p>`;
@@ -124,7 +127,7 @@ MV.h=-1;
 
 /* the assistant reads it too: "when did I work out", "what time did I sleep", "when did I walk the most" */
 window.actDetail=ds=>{const o=day(ds),out=[],H=hrs(o);
- if(H){const top=H.map((v,h)=>[h,v]).filter(x=>x[1]>=100).sort((a,b)=>b[1]-a[1]).slice(0,6).sort((a,b)=>a[0]-b[0]);if(top.length)out.push('steps by hour: '+top.map(([h,v])=>`${SC.hName(h)} ${n2(v)}`).join(', '))}
+ if(H){const top=H.map((v,h)=>[h,v]).filter(x=>x[1]!=null&&x[1]>=100).sort((a,b)=>b[1]-a[1]).slice(0,6).sort((a,b)=>a[0]-b[0]);if(top.length)out.push('steps by hour: '+top.map(([h,v])=>`${SC.hName(h)} ${n2(v)}`).join(', '))}
  if((o.w||[]).length)out.push('workouts: '+o.w.map(w=>`${wName(w)}${w.t?' '+hm(w.t)+'–'+hm(w.t+(+w.m||0)*6e4):''} (${fmtMin(w.m)})`).join(', '));
  const L=sleepOf(ds);if(L.length)out.push('sleep: '+L.map(([s,e])=>`asleep ${hm(s)} to ${hm(e)}`).join(', '));
  const P=places(),pl=Object.entries(o.p||{}).filter(x=>+x[1]>0);if(pl.length)out.push('time at places: '+pl.map(([id,m])=>`${(P.find(x=>x.id===id)||{}).name||'a place'} ${fmtMin(m)}`).join(', '));
@@ -139,7 +142,7 @@ const css=document.createElement('style');css.textContent=`
 .mv-tr{position:relative;height:20px;border-radius:6px;background:color-mix(in srgb,var(--text) 5%,transparent);overflow:hidden;display:block}
 .mv-tr em{position:absolute;inset:0;display:flex;align-items:center;padding-left:8px;font-style:normal}
 .mv-b{position:absolute;top:3px;bottom:3px;border-radius:5px}.mv-b.sl{background:#7B6CF6}.mv-b.wk{background:#F28E2B}
-.mv-hs{display:grid;grid-template-columns:repeat(24,1fr);gap:1px;height:100%}.mv-h{display:block}.mv-h.st{background:#59A14F}.mv-h.sc{background:#4E79A7}
+.mv-hs{display:grid;grid-template-columns:repeat(24,1fr);gap:1px;height:100%}.mv-h{display:block}.mv-h.st{background:#59A14F}.mv-h.nr{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--muted) 30%,transparent) 0 3px,transparent 3px 6px)}.mv-h.sc{background:#4E79A7}
 .mv-ax{display:grid;grid-template-columns:96px 1fr;gap:8px;padding:2px 4px 0}.mv-axs{position:relative;height:14px}
 .mv-axs small{position:absolute;transform:translateX(-50%);font:500 10.5px var(--f-body);color:var(--muted)}.mv-axs small:first-child{transform:none}.mv-axs small:last-child{transform:translateX(-100%)}
 .mv-hd{margin:6px 6px 0}
