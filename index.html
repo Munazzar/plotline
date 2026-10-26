@@ -238,8 +238,8 @@ select.sel{width:auto;height:46px;padding:0 38px 0 14px;font-size:14px;font-weig
 .fc:hover{transform:translateY(-4px)}
 .fc:active{transform:scale(.98)}
 @media(max-width:560px){.fc{height:226px}}
-.fc-in{position:relative;height:100%;transform-style:preserve-3d;transition:transform .9s var(--spring)}
-.fc.flip .fc-in{transform:rotateY(180deg)}
+.fc-in{position:relative;height:100%}
+
 .fc-face{position:absolute;inset:0;border-radius:26px;padding:18px;-webkit-backface-visibility:hidden;backface-visibility:hidden;display:flex;flex-direction:column;overflow:hidden}
 .fgrid{padding:6px;margin:-6px}
 .fc-top .data{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -250,7 +250,7 @@ select.sel{width:auto;height:46px;padding:0 38px 0 14px;font-size:14px;font-weig
 .fc-p{margin-top:8px}
 @media(max-width:560px){.fc-n{font-size:66px}.fc-t{font-size:15px;margin:10px 0 12px}.fc-face{padding:15px;border-radius:22px}}
 .fc.done .fc-front{filter:saturate(.35) brightness(.86)}
-.fc-back{transform:rotateY(180deg);background:var(--surface-2);border:1px solid color-mix(in srgb,var(--c) 50%,var(--line));gap:10px}
+.fc-back{background:var(--surface-2);border:1px solid color-mix(in srgb,var(--c) 50%,var(--line));gap:10px}
 .fc-back .bt{display:flex;gap:8px;align-items:center;font-weight:700;font-size:15px;line-height:1.25}
 .fc-back .bt i{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
 .fc-back .nx{font-size:14px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
@@ -310,8 +310,8 @@ select.sel{width:auto;height:46px;padding:0 38px 0 14px;font-size:14px;font-weig
 }
 /* step flip card */
 .sc{perspective:1200px;cursor:pointer;-webkit-user-select:none;user-select:none}
-.sc-in{display:grid;transform-style:preserve-3d;transition:transform .85s var(--spring)}
-.sc.flip .sc-in{transform:rotateY(180deg)}
+.sc-in{display:grid}
+
 .sc-face{grid-area:1/1;border-radius:22px;padding:16px 18px;-webkit-backface-visibility:hidden;backface-visibility:hidden;min-height:118px;display:flex;flex-direction:column}
 .sc-n{font:800 40px/.8 var(--f-display)}
 .sc-t{font-weight:700;font-size:15.5px;line-height:1.28;margin:10px 0 8px}
@@ -319,7 +319,7 @@ select.sel{width:auto;height:46px;padding:0 38px 0 14px;font-size:14px;font-weig
 :is(.sp-item,.hs-item).done .sc-front{filter:saturate(.3) brightness(.8)}
 :is(.sp-item,.hs-item).done .sc-t{text-decoration:line-through;text-decoration-thickness:2px}
 :is(.sp-item,.hs-item).cur .sc-front{box-shadow:var(--t-sh),0 26px 60px -24px color-mix(in srgb,var(--c) 90%,transparent)}
-.sc-back{transform:rotateY(180deg);background:var(--surface-2);border:1px solid color-mix(in srgb,var(--c) 50%,var(--line));gap:8px}
+.sc-back{background:var(--surface-2);border:1px solid color-mix(in srgb,var(--c) 50%,var(--line));gap:8px}
 .sc-back .note{font-size:13.5px;line-height:1.45;color:var(--muted)}
 .sc-back.tint .note{color:var(--t-mut)}
 .sc-back .kv:first-child{border-top:0;padding-top:0}
@@ -660,10 +660,17 @@ html{font-synthesis-weight:none}
 .radios.wrap{flex-wrap:wrap}.radios.wrap label{flex:1 0 30%}
 /* journal moment flip cards */
 .jf{perspective:1200px;cursor:pointer;-webkit-user-select:none;user-select:none;position:relative}
-.jf-in{display:grid;transform-style:preserve-3d;transition:transform .85s var(--spring)}
-.jf.flip .jf-in{transform:rotateY(180deg)}
+.jf-in{display:grid}
+
 .jf-face{grid-area:1/1;border-radius:22px;padding:18px;min-height:200px;display:flex;flex-direction:column;-webkit-backface-visibility:hidden;backface-visibility:hidden;overflow:hidden;position:relative}
-.jf-back{transform:rotateY(180deg)}
+/* 1.59: flip cards turn each face on its own (no preserve-3d on the parent). Android WebView flattens a 3D parent under
+   blur, filters or glass themes, which showed the card mirrored. A face also hides at the halfway point, so even if
+   backface-visibility is ignored nothing is ever shown back to front. */
+:is(.fc,.sc,.jf) :is(.fc-face,.sc-face,.jf-face){transition:transform .8s var(--spring),visibility 0s linear .3s;transform:perspective(1400px) rotateY(0deg)}
+:is(.fc,.sc,.jf) :is(.fc-back,.sc-back,.jf-back){transform:perspective(1400px) rotateY(-180deg);visibility:hidden}
+:is(.fc,.sc,.jf).flip :is(.fc-front,.sc-front,.jf-front){transform:perspective(1400px) rotateY(180deg);visibility:hidden}
+:is(.fc,.sc,.jf).flip :is(.fc-back,.sc-back,.jf-back){transform:perspective(1400px) rotateY(0deg);visibility:visible}
+@media(prefers-reduced-motion:reduce){:is(.fc,.sc,.jf) :is(.fc-face,.sc-face,.jf-face){transition:none}}
 .jf .jt-big{font:800 26px/.92 var(--f-display);text-transform:uppercase;margin-top:auto;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .jf-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-top:12px}
 .jf-back h4{font:800 22px/.95 var(--f-display);text-transform:uppercase;margin:6px 0 8px}
@@ -3575,7 +3582,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.58.0';
+const APP_VER='1.59.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -7565,6 +7572,8 @@ const thrFor=(k,id)=>threads().filter(t=>t.link&&t.link.k===k&&t.link.id===id);
 const thrOwnC=t=>{const i=t&&t.col?AREA_IDS.indexOf(t.col):-1;return i<0?'':`--c:var(--c-${AREA_IDS[i]});--c2:var(--c-${AREA_IDS[(i+2)%7]});--c3:var(--c-${AREA_IDS[(i+5)%7]})`};
 const thrCol=t=>{const o=thrOwnC(t);if(o)return o;const l=thrLink(t);return l&&l.c?l.c:DEFC};
 function thrBtn(k,id){const n=thrFor(k,id).filter(t=>t.status!=='done').length;return`<button class="ibtn thr-b${n?' on':''}" data-act="thrFrom" data-k="${k}" data-id="${id}" aria-label="Note${n?' ('+n+')':''}" title="Note">${ic('thread')}${n?`<sup>${n}</sup>`:''}</button>`}
+/* 1.59: a note line without its formatting marks, for previews (lists, Home, widget) */
+const thrPlain=s=>String(s||'').replace(/\*\*|__|==|(?<!\*)\*(?!\*)/g,'').replace(/^\s*(?:- |\[ \] )/gm,'• ').replace(/^\s*\[[xX]\] /gm,'✓ ').replace(/\s*\n\s*/g,' · ').trim();
 const fmtInline=h=>h.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/__(.+?)__/g,'<u>$1</u>').replace(/==(.+?)==/g,'<mark>$1</mark>').replace(/(^|[^*\w])\*(?!\s)([^*]+?)\*(?!\*)/g,'$1<i>$2</i>');
 const thrText=x=>{const L=esc(String(x||'')).split('\n');let o='',inUl=false;
  const close=()=>{if(inUl){o+='</ul>';inUl=false}};
@@ -7577,10 +7586,10 @@ function thrLinkSel(cur){const gs=active(),hs=S.habits.filter(h=>h.status!=='arc
 const thrPick=v=>{if(!v)return null;const i=v.indexOf(':');return{k:v.slice(0,i),id:v.slice(i+1)}};
 /* cards, built from the journal's own card styles */
 function thrBig(t){const u=thrUps(t)[0],tg=u?thrTag(u.k):null,n=thrUps(t).length,lk=thrLink(t);
- return`<div class="jb tint thr-jb${t.status==='done'?' fin':''}" data-act="thrOpen" data-id="${t.id}" role="button" tabindex="0" aria-label="Open note ${esc(t.title)}"><div class="jh"><span class="data">${t.status==='done'?'✅ Done':tg?tg[1]+' '+tg[2]:'🧵 New'} · ${n} update${n===1?'':'s'}</span>${t.status==='done'?'':`<button class="x" data-act="thrAddSheet" data-id="${t.id}" aria-label="Add an update">${ic('plus')}</button>`}</div><div class="data" style="margin-top:4px">${thrAgo(thrLast(t))}</div><div class="jb-big">${esc(t.title)}</div>${u?`<div class="jb-q thr-clamp">${esc(trunc(u.x,180))}</div>`:'<div class="jb-q" style="opacity:.65">Nothing logged yet</div>'}${lk?`<span class="jg">${esc(lk.e)} ${esc(trunc(lk.n,34))}</span>`:''}</div>`}
+ return`<div class="jb tint thr-jb${t.status==='done'?' fin':''}" data-act="thrOpen" data-id="${t.id}" role="button" tabindex="0" aria-label="Open note ${esc(t.title)}"><div class="jh"><span class="data">${t.status==='done'?'✅ Done':tg?tg[1]+' '+tg[2]:'🧵 New'} · ${n} update${n===1?'':'s'}</span>${t.status==='done'?'':`<button class="x" data-act="thrAddSheet" data-id="${t.id}" aria-label="Add an update">${ic('plus')}</button>`}</div><div class="data" style="margin-top:4px">${thrAgo(thrLast(t))}</div><div class="jb-big">${esc(t.title)}</div>${u?`<div class="jb-q thr-clamp">${esc(trunc(thrPlain(u.x),180))}</div>`:'<div class="jb-q" style="opacity:.65">Nothing logged yet</div>'}${lk?`<span class="jg">${esc(lk.e)} ${esc(trunc(lk.n,34))}</span>`:''}</div>`}
 function thrFlip(t){const U=thrUps(t),u=U[0],tg=u?thrTag(u.k):null,lk=thrLink(t),when=thrAgo(thrLast(t));
  return`<div class="jf" style="${thrCol(t)}" data-act="flip" data-tid="${t.id}" tabindex="0" role="button" aria-label="${esc(t.title)}. Show latest updates"><div class="jf-in"><div class="jf-face jf-front tint"><div class="sc-top"><span class="data">${tg?tg[1]+' ':''}Note · ${when}</span><span class="flip-hint">${ic('flipi')}</span></div><div class="jt-big">${esc(t.title)}</div><div class="data" style="margin-top:10px">${U.length} update${U.length===1?'':'s'}${lk?' · '+esc(trunc(lk.n,28)):''}</div></div>
- <div class="jf-face jf-back tint"><div class="data">${when}</div><h4>${esc(t.title)}</h4>${U.slice(0,3).map(x=>`<p class="note thr-ln">${thrTag(x.k)[1]} ${esc(trunc(x.x,90))}</p>`).join('')||'<p class="note" style="opacity:.7">Nothing logged yet.</p>'}<div class="sc-act"><button class="btn inkline sm" data-act="thrOpen" data-id="${t.id}">${ic('eye')}<span>Open</span></button>${t.status==='done'?'':`<button class="btn inkline sm" data-act="thrAddSheet" data-id="${t.id}">${ic('plus')}<span>Update</span></button>`}</div></div></div></div>`}
+ <div class="jf-face jf-back tint"><div class="data">${when}</div><h4>${esc(t.title)}</h4>${U.slice(0,3).map(x=>`<p class="note thr-ln">${thrTag(x.k)[1]} ${esc(trunc(thrPlain(x.x),90))}</p>`).join('')||'<p class="note" style="opacity:.7">Nothing logged yet.</p>'}<div class="sc-act"><button class="btn inkline sm" data-act="thrOpen" data-id="${t.id}">${ic('eye')}<span>Open</span></button>${t.status==='done'?'':`<button class="btn inkline sm" data-act="thrAddSheet" data-id="${t.id}">${ic('plus')}<span>Update</span></button>`}</div></div></div></div>`}
 function thrSpine(L,dateOf,card,colOf){let last='',h='',i=0;L.forEach(x=>{const d=dOf(dateOf(x));if(d!==last){h+=`<div class="sp-date rv" data-jday="${d}"><span class="data">${dayLabel(dateOf(x))}</span></div>`;last=d}h+=`<div class="sp-item ${i++%2?'r':'l'} rv" style="${colOf(x)}"><div class="sp-card">${card(x)}</div><span class="jdot"></span></div>`});return`<div class="spine" data-zk="journal" style="${zoomCss('journal')}">${h}</div>`}
 /* 1.30.3 grid view: goal-style cards. Linked notes take their goal's or habit's colour; the rest get a steady colour
    from their id, so the grid isn't one flat colour. Stored apart from the Journal's layout (layout.thr). */
@@ -7588,7 +7597,7 @@ const thrGC=t=>{const o=thrOwnC(t);if(o)return o;const l=thrLink(t);if(l&&l.c)re
 function thrCard(t,n){const U=thrUps(t),u=U[0],tg=u?thrTag(u.k):null,lk=thrLink(t),dn=t.status==='done';
  return`<div class="fc thr-fc${dn?' done':''}" style="${thrGC(t)}" data-act="thrOpen" data-id="${t.id}" tabindex="0" role="button" aria-label="Open note ${esc(t.title)}"><div class="fc-in"><div class="fc-face fc-front tint${haloOn({})?' halo':''}">
  <div class="fc-top"><span class="data">${dn?'✅ Done':tg?tg[1]+' '+tg[2]:'🧵 New'} · ${U.length} update${U.length===1?'':'s'}</span><span class="fc-tr"><span class="nbadge">${pad2(n)}</span></span></div>${lk?`<div class="data fc-par ell">↳ ${esc(lk.e)} ${esc(trunc(lk.n,34))}</div>`:''}
- <div class="fc-t">${esc(t.title)}</div><div class="thr-fq">${u?esc(trunc(u.x,140)):'Nothing logged yet'}</div><div class="fc-p data">${esc(thrAgo(thrLast(t)))}</div></div></div></div>`}
+ <div class="fc-t">${esc(t.title)}</div><div class="thr-fq">${u?esc(trunc(thrPlain(u.x),140)):'Nothing logged yet'}</div><div class="fc-p data">${esc(thrAgo(thrLast(t)))}</div></div></div></div>`}
 ACT.gSubT=()=>{S.settings.goalsSub=!S.settings.goalsSub;save();render(false)};
 ACT.thrGrid=()=>{S.settings.layout.thr='grid';save();render(false)};
 {const _l=ACT.layout;ACT.layout=d=>{if(d.k==='journal'&&cur.p==='threads')delete S.settings.layout.thr;return _l(d)}}
@@ -7599,7 +7608,7 @@ function vThreads(){const all=threads().slice().sort((a,b)=>thrLast(b)-thrLast(a
  const H0=S.settings.layout.journal==='h';
  const LV=S.settings.layout.journal==='list';
  /* list view: one compact row per note, latest update clipped to two lines with "more" */
- const rows=()=>`<div class="list thr-rows rv">${L.map(t=>{const u=thrUps(t)[0];return`<div class="li thr-li" style="${thrCol(t)}" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}${t.status==='done'?' · done':''}</div><div class="s"><span class="ell clampx">${u?esc(u.x):'Nothing logged yet'}</span><button class="more-t" data-act="clampT" hidden>more</button></div></div><div class="data">${thrAgo(thrLast(t))}</div>${t.status==='done'?'':`<button class="ibtn sm" data-act="thrAddSheet" data-id="${t.id}" aria-label="Add an update to ${esc(t.title)}">${ic('plus')}</button>`}</div>`}).join('')}</div>`;
+ const rows=()=>`<div class="list thr-rows rv">${L.map(t=>{const u=thrUps(t)[0];return`<div class="li thr-li" style="${thrCol(t)}" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}${t.status==='done'?' · done':''}</div><div class="s"><span class="ell clampx">${u?esc(thrPlain(u.x)):'Nothing logged yet'}</span><button class="more-t" data-act="clampT" hidden>more</button></div></div><div class="data">${thrAgo(thrLast(t))}</div>${t.status==='done'?'':`<button class="ibtn sm" data-act="thrAddSheet" data-id="${t.id}" aria-label="Add an update to ${esc(t.title)}">${ic('plus')}</button>`}</div>`}).join('')}</div>`;
  const GV=S.settings.layout.thr==='grid';
  const body=L.length?(GV?`<div class="fgrid thr-grid rv">${L.map((t,i)=>thrCard(t,i+1)).join('')}</div>`:LV?rows():H0?hsShell('threads-'+THF,L.map(t=>hsItem(thrCol(t),thrBig(t),'done',`<span class="node static" aria-hidden="true"></span>`,dayLabel(thrLast(t)))).join(''),0):thrSpine(L,thrLast,thrFlip,thrCol))
   :all.length?`<div class="empty rv"><p>Nothing here.</p><div class="actions"><button class="btn" data-act="thrFilt" data-v="all">Show all notes</button></div></div>`
@@ -7707,20 +7716,20 @@ Object.assign(ACT,{
  thrFrom:d=>{const L=thrFor(d.k,d.id),it=d.k==='goal'?G(d.id):d.k==='habit'?H(d.id):S.entries.find(x=>x.id===d.id);if(!it)return;
   const ttl=d.k==='entry'?trunc((it.title||(it.text||'').split('\n')[0]||'').trim(),60):it.title;
   if(!L.length)return thrNewSheet({k:d.k,id:d.id},ttl);
-  openSheet(`<div class="data">Notes</div><h2 style="margin-top:6px">${esc(trunc(ttl||'This item',40))}</h2><div class="list" style="margin:14px 0">${L.sort((a,b)=>thrLast(b)-thrLast(a)).map(t=>{const u=thrUps(t)[0];return`<div class="li" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}</div><div class="s"><span class="ell clampx">${u?esc(u.x):'Nothing logged yet'}</span><button class="more-t" data-act="clampT" hidden>more</button></div></div><div class="data">${thrAgo(thrLast(t))}</div></div>`}).join('')}</div><div class="actions"><button class="btn ghost" data-act="close">Close</button><button class="btn pri" data-act="thrNewFrom" data-k="${d.k}" data-id="${d.id}">${ic('plus')}New note</button></div>`)},
+  openSheet(`<div class="data">Notes</div><h2 style="margin-top:6px">${esc(trunc(ttl||'This item',40))}</h2><div class="list" style="margin:14px 0">${L.sort((a,b)=>thrLast(b)-thrLast(a)).map(t=>{const u=thrUps(t)[0];return`<div class="li" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}</div><div class="s"><span class="ell clampx">${u?esc(thrPlain(u.x)):'Nothing logged yet'}</span><button class="more-t" data-act="clampT" hidden>more</button></div></div><div class="data">${thrAgo(thrLast(t))}</div></div>`}).join('')}</div><div class="actions"><button class="btn ghost" data-act="close">Close</button><button class="btn pri" data-act="thrNewFrom" data-k="${d.k}" data-id="${d.id}">${ic('plus')}New note</button></div>`)},
  thrNewFrom:d=>{const it=d.k==='goal'?G(d.id):d.k==='habit'?H(d.id):S.entries.find(x=>x.id===d.id);closeSheet();setTimeout(()=>thrNewSheet({k:d.k,id:d.id},it?(it.title||trunc((it.text||'').split('\n')[0],60)):''),380)},
  thrLinkGo:d=>{const t=TH(d.id),l=t&&thrLink(t);if(!l||l.gone)return;if(l.entry)ACT.viewEntry({id:l.entry});else go(l.go)},
  thrEdit:d=>{const t=TH(d.id);if(!t)return;openSheet(`<div class="data">Note</div><h2 style="margin-top:6px">Edit note</h2><form data-form="thrEdit" data-id="${t.id}" autocomplete="off"><div class="field"><label>Name</label><input name="title" maxlength="80" required value="${esc(t.title)}"></div><div class="field"><label>Linked to</label>${thrLinkSel(t.link)}</div><div class="actions"><button class="btn danger" type="button" data-act="thrDel" data-id="${t.id}">Delete</button><button class="btn pri" type="submit">Save</button></div></form>`)},
  thrDel:d=>askConfirm('Delete this note?','Its updates go with it. Your goals, habits and journal stay as they are.','Delete',()=>{S.threads=threads().filter(x=>x.id!==d.id);save();closeSheet();go('threads');toast('Note deleted')}),
  thrDone:d=>{const t=TH(d.id);if(!t)return;t.status='done';t.u=Date.now();save();render(false);toast('Note marked done')},
  thrReopen:d=>{const t=TH(d.id);if(!t)return;t.status='open';t.u=Date.now();save();render(false)},
- thrUpEdit:d=>{const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u);if(!u)return;openSheet(`<div class="data">${new Date(u.t).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div><h2 style="margin-top:6px">Edit update</h2><form data-form="thrUpEdit" data-id="${t.id}" data-u="${u.id}" autocomplete="off">${thrTags(u.k)}<div class="field" style="margin-top:12px">${fmtBar()}<textarea name="x" rows="8" maxlength="10000" data-fmt required>${esc(u.x)}</textarea></div><div class="actions"><button class="btn danger" type="button" data-act="thrUpDel" data-id="${t.id}" data-u="${u.id}">Delete</button><button class="btn ghost" type="button" data-act="thrFocus" title="Write full screen">${ic('full')}Focus</button><button class="btn pri" type="submit">Save</button></div></form>`)},
+ thrUpEdit:d=>{const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u);if(!u)return;openSheet(`<div class="data">${new Date(u.t).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div><h2 style="margin-top:6px">Edit update</h2><form data-form="thrUpEdit" data-id="${t.id}" data-u="${u.id}" autocomplete="off">${thrTags(u.k)}<div class="field" style="margin-top:12px">${fmtBar()}<textarea name="x" rows="8" maxlength="10000" data-fmt required>${esc(thrPlain(u.x))}</textarea></div><div class="actions"><button class="btn danger" type="button" data-act="thrUpDel" data-id="${t.id}" data-u="${u.id}">Delete</button><button class="btn ghost" type="button" data-act="thrFocus" title="Write full screen">${ic('full')}Focus</button><button class="btn pri" type="submit">Save</button></div></form>`)},
  thrUpDel:d=>{const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u);if(!u)return;u.del=1;u.u=Date.now();t.u=u.u;save();closeSheet();render(false);toast('Update removed')}});
 /* the quick box grows as you type; Enter sends on a keyboard, Shift+Enter is a new line */
 document.addEventListener('input',e=>{const t=e.target;if(t.matches&&t.matches('.thr-in textarea')){t.style.height='auto';t.style.height=Math.min(160,t.scrollHeight)+'px'}});
 document.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&!e.shiftKey&&t.matches&&t.matches('.thr-in textarea')&&matchMedia('(hover:hover)').matches){e.preventDefault();t.form.requestSubmit()}});
 function thrToday(){const L=threads().filter(t=>t.status!=='done').sort((a,b)=>thrLast(b)-thrLast(a)).slice(0,3);
- const rows=L.length?L.map(t=>{const u=thrUps(t)[0];return`<div class="li thr-li" style="${thrCol(t)}" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}</div><div class="s"><span class="ell clampx">${u?esc(u.x):'Nothing logged yet'}</span><button class="more-t" data-act="clampT" hidden>more</button></div></div><div class="data">${thrAgo(thrLast(t))}</div><button class="ibtn sm" data-act="thrAddSheet" data-id="${t.id}" aria-label="Add an update to ${esc(t.title)}">${ic('plus')}</button></div>`}).join('')
+ const rows=L.length?L.map(t=>{const u=thrUps(t)[0];return`<div class="li thr-li" style="${thrCol(t)}" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${u?thrTag(u.k)[1]:'🧵'}</span><div style="flex:1;min-width:0"><div class="t ell">${esc(t.title)}</div><div class="s"><span class="ell clampx">${u?esc(thrPlain(u.x)):'Nothing logged yet'}</span><button class="more-t" data-act="clampT" hidden>more</button></div></div><div class="data">${thrAgo(thrLast(t))}</div><button class="ibtn sm" data-act="thrAddSheet" data-id="${t.id}" aria-label="Add an update to ${esc(t.title)}">${ic('plus')}</button></div>`}).join('')
   :`<div class="li thr-li" data-act="thrNew"><span class="thr-em">🧵</span><div style="flex:1;min-width:0"><div class="t">Start a note</div><div class="s"><span class="ell">Log a thought or a status, then build on it</span></div></div>${ic('plus','ico-s')}</div>`;
  return`<section class="rv"><div class="st-h"><h3>Notes</h3><span style="display:flex;gap:16px;align-items:center">${L.length?`<button class="link" data-act="thrNew">New</button>`:''}<a class="link" href="#/threads">All notes</a></span></div><div class="list">${rows}</div></section>`}
 
@@ -7754,7 +7763,7 @@ function dyHabitRow(h,ds,fut){const v=hVal(h,ds),n=hTarget(h),dn=hDone(h,ds),sk=
  if(notes.length)body+=`<div class="dy-sub">Reminders and replies</div><ol class="dy-chat">${notes.map(dyNoteRow).join('')}</ol>`;
  if(reacts.length)body+=`<div class="dy-sub">Cheers</div><ul class="dy-rl">${reacts.map(dyReactRow).join('')}</ul>`;
  if(ents.length)body+=`<div class="dy-sub">Journal</div>${ents.map(e=>`<button class="dy-ent" data-act="viewEntry" data-id="${e.id}">${e.mood?e.mood+' ':''}${esc(trunc(e.title||e.text||'Entry',80))}<small>${tShort(e.t)}</small></button>`).join('')}`;
- if(tu.length)body+=`<div class="dy-sub">Note updates</div>${tu.map(({t,u})=>`<button class="dy-ent" data-act="thrOpen" data-id="${t.id}">${thrTag(u.k)[1]} ${esc(trunc(u.x,80))}<small>${esc(trunc(t.title,30))} · ${tShort(u.t)}</small></button>`).join('')}`;
+ if(tu.length)body+=`<div class="dy-sub">Note updates</div>${tu.map(({t,u})=>`<button class="dy-ent" data-act="thrOpen" data-id="${t.id}">${thrTag(u.k)[1]} ${esc(trunc(thrPlain(u.x),80))}<small>${esc(trunc(t.title,30))} · ${tShort(u.t)}</small></button>`).join('')}`;
  return`<div class="dy-h${open?' open':''}${dn?' d':''}" style="${cvar(h)}" data-hid="${h.id}"><div class="dy-hr"><button class="dy-hx" data-act="dyX" data-id="${h.id}" aria-expanded="${open}"><span class="hh-i">${esc(hIcon(h))}</span><span class="hh-t"><b>${esc(h.title)}</b><small>${st}${notes.length?` · 🔔 ${notes.length}`:''}${reacts.length?` · 👏 ${reacts.length}`:''}${ents.length?` · 📓 ${ents.length}`:''}${tu.length?` · 🧵 ${tu.length}`:''}</small></span>${ic('chev','dy-chev')}</button>${ctl}</div><div class="dy-hb"><div>${body}</div></div></div>`}
 function vDay(ds){ds=validDate(ds)||ymd();const td=ymd(),fut=ds>td,k=dnum(ds),rel=k-dnum(td);
  const top=`<div class="crumb dy-crumb"><button class="ibtn" data-act="dyBack" aria-label="Back">${ic('back')}</button><div class="ph-r"><div class="dy-step" role="group" aria-label="Change day"><button class="ibtn" data-act="dyGo" data-d="-1" aria-label="Day before">${ic('next')}</button><label class="ibtn jdate" aria-label="Pick a date" title="Pick a date">${ic('cal')}<input type="date" data-dydate max="${td}" value="${ds}"></label><button class="ibtn" data-act="dyGo" data-d="1" aria-label="Day after" ${ds>=td?'disabled':''}>${ic('next')}</button></div>${gear()}</div></div>`;
@@ -7770,7 +7779,7 @@ function vDay(ds){ds=validDate(ds)||ymd();const td=ymd(),fut=ds>td,k=dnum(ds),re
  if(stepsDone.length||due.length)o+=`<section class="rv dy-sec"><div class="st-h"><h3>Steps</h3></div><div class="list">${stepsDone.map(e=>{const g=G(e.goalId);return`<div class="li" style="${g?cvar(g):''}"><span class="chk on">${ic('check')}</span><div style="flex:1;min-width:0"><div class="t">${esc(e.text||'Step')}</div><div class="s"><i></i><span class="ell">${g?esc(g.title):''} · ${(st=>st&&st.ck&&st.ck.t?ckHow(st.ck):tShort(e.t))(g&&g.steps.find(x=>x.id===e.sid))}</span></div></div></div>`}).join('')}${due.map(({g,s})=>`<div class="li" style="${cvar(g)}"><button class="chk" data-act="toggleStep" data-g="${g.id}" data-s="${s.id}" aria-label="Done: ${esc(s.title)}">${ic('check')}</button><div style="flex:1;min-width:0"><div class="t">${esc(s.title)}</div><div class="s"><i></i><span class="ell">${esc(g.title)} · was due this day</span></div></div></div>`).join('')}</div></section>`;
  const jl=ents.filter(e=>e.type!=='step'&&e.type!=='focus');
  o+=`<section class="rv dy-sec" id="dyJ"><div class="st-h"><h3>Journal</h3>${fut?'':`<button class="link" data-act="addEntry">Write</button>`}</div>${jl.length?`<div class="dy-jg">${jl.map(e=>journalCard(e)).join('')}</div>`:'<p class="small muted">No journal entries on this day.</p>'}</section>`;
- if(tu.length)o+=`<section class="rv dy-sec"><div class="st-h"><h3>Notes</h3></div><div class="list">${tu.map(({t,u})=>`<div class="li" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${thrTag(u.k)[1]}</span><div style="flex:1;min-width:0"><div class="t">${esc(u.x)}</div><div class="s"><span class="ell">${esc(t.title)} · ${tShort(u.t)}</span></div></div></div>`).join('')}</div></section>`;
+ if(tu.length)o+=`<section class="rv dy-sec"><div class="st-h"><h3>Notes</h3></div><div class="list">${tu.map(({t,u})=>`<div class="li" data-act="thrOpen" data-id="${t.id}"><span class="thr-em">${thrTag(u.k)[1]}</span><div style="flex:1;min-width:0"><div class="t">${esc(thrPlain(u.x))}</div><div class="s"><span class="ell">${esc(t.title)} · ${tShort(u.t)}</span></div></div></div>`).join('')}</div></section>`;
  if(notes.length||reacts.length)o+=`<section class="rv dy-sec" id="dyN"><div class="st-h"><h3>Reminders, replies and cheers</h3></div>${notes.length?`<ol class="dy-chat">${notes.map(e=>{return dyNoteRow(e)}).join('')}</ol>`:''}${reacts.length?`<ul class="dy-rl">${reacts.map(dyReactRow).join('')}</ul>`:''}</section>`;
  else if(NATIVE&&NATIVE.notifLog)o+=`<section class="rv dy-sec" id="dyN"><div class="st-h"><h3>Reminders and replies</h3></div><p class="small muted">No reminders on this day. The phone keeps the latest 400.</p></section>`;
  return o}
@@ -8087,7 +8096,7 @@ THEMES.push(['glass','Liquid Glass','#10141F','#2A3042','#8FD8FF',0],['glassligh
 THEME_IDS.push('glass','glasslight');
 
 /* ================= THREADS WIDGET: data for the home screen, and what it typed or said ================= */
-function widgetThreads(){return{th:widgetTheme(),thr:threads().filter(t=>t.status!=='done').sort((a,b)=>thrLast(b)-thrLast(a)).slice(0,12).map(t=>{const u=thrUps(t)[0];return{id:t.id,t:t.title,x:u?trunc(u.x,90):'',e:u?thrTag(u.k)[1]:'🧵',at:thrLast(t)}})}}
+function widgetThreads(){return{th:widgetTheme(),thr:threads().filter(t=>t.status!=='done').sort((a,b)=>thrLast(b)-thrLast(a)).slice(0,12).map(t=>{const u=thrUps(t)[0];return{id:t.id,t:t.title,x:u?trunc(thrPlain(u.x),90):'',e:u?thrTag(u.k)[1]:'🧵',at:thrLast(t)}})}}
 function thrFromQueue(a){const k=['note','idea','prog','block','done'].includes(a.kind)?a.kind:'note',x=String(a.x||'').trim().slice(0,2000),t0=+a.t||Date.now(),qid=String(a.qid||'');
  if(a.k==='thrnew'){const title=String(a.title||'').trim().slice(0,80)||trunc(x,60);if(!title)return false;if(TH(a.nid))return false;const t={id:a.nid||uid(),title,link:null,status:'open',created:t0,u:Date.now(),ups:[]};if(x)t.ups.push({id:qid||uid(),t:t0,k,x,u:Date.now()});threads().push(t);return true}
  const t=TH(a.id);if(!t||!x)return false;if(qid&&t.ups.some(u=>u.id===qid))return false;t.ups.push({id:qid||uid(),t:t0,k,x,u:Date.now()});if(t.status==='done')t.status='open';t.u=Date.now();return true}
@@ -9001,5 +9010,6 @@ window.smStop=stop;
 <script src="setup.js"></script>
 <script src="notes.js"></script>
 <script src="bills.js"></script>
+<script src="book.js"></script>
 </body>
 </html>

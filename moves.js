@@ -123,7 +123,7 @@ MV.h=-1;
 
 /* links in: each activity card gets "In detail" (steps, sleep, workouts, places) */
 {const _va=VIEWS.activity;if(_va)VIEWS.activity=function(){let h=_va.apply(this,arguments);
- for(const[id,m]of[['steps','steps'],['sleep','sleep'],['work','work'],['places','places']]){const a=h.indexOf(`id="act-${id}"`),e=a<0?-1:h.indexOf('</section>',a);if(e>0)h=h.slice(0,e)+`<button class="btn sm sc-in" data-act="mvM" data-v="${m}">${ic('chart')}In detail</button>`+h.slice(e)}return h}}
+ for(const[id,m]of[['steps','steps'],['sleep','sleep'],['work','work'],['places','places']]){const a=h.indexOf(`id="act-${id}"`),e=a<0?-1:h.indexOf('</section>',a);if(e>0)h=h.slice(0,e)+`<button class="btn sm scr-in" data-act="mvM" data-v="${m}">${ic('chart')}In detail</button>`+h.slice(e)}return h}}
 
 /* the assistant reads it too: "when did I work out", "what time did I sleep", "when did I walk the most" */
 window.actDetail=ds=>{const o=day(ds),out=[],H=hrs(o);

@@ -55,7 +55,7 @@ const DATA_SHAPE=`window.PLOT_DATA = {
             history: [{date, due: bool, done: bool, value: number, skipped: bool}] (last 120 days, only days that were due or had a value), slips: [date] (quit habits)}],
   journal: [{date, time: "HH:MM", title, text, mood}] (newest first),
   plans: [{date, time, title, done}] (reminders and goals for a day, last 90 days to 60 days ahead),
-  notes: [{title, status, updates: [{date, text}]}],
+  threads: [{title, status, updates: [{date, text}]}],  (these are the user's Notes)
   lists: [{title, items: [{text, done}]}],
   activity: [{date, steps, sleepMinutes, screenMinutes, workouts: [string]}] (last 60 days, may be empty)
 }  (dates are "YYYY-MM-DD" strings)`;

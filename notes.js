@@ -12,7 +12,7 @@ const NQ={q:'',tag:'',sort:'recent'};
 const tagsOf=t=>Array.isArray(t.tags)?t.tags:[];
 const allTags=()=>[...new Set(threads().flatMap(tagsOf))].sort((a,b)=>a.localeCompare(b));
 const hay=t=>(t.title+' '+tagsOf(t).join(' ')+' '+thrUps(t).map(u=>u.x).join(' ')).toLowerCase();
-const plain=s=>String(s||'').replace(/\*\*|__|==|(?<!\*)\*(?!\*)/g,'').replace(/^\s*(?:- |\[[ xX]\] )/gm,'');
+const plain=s=>thrPlain(s);
 const sorter={recent:(a,b)=>thrLast(b)-thrLast(a),created:(a,b)=>(b.created||0)-(a.created||0),az:(a,b)=>String(a.title).localeCompare(String(b.title))};
 const pinFirst=L=>L.slice().sort((a,b)=>(!!b.pin-!!a.pin)||sorter[NQ.sort](a,b));
 const tagChips=t=>tagsOf(t).length?`<span class="nt-tags">${tagsOf(t).map(g=>`<span class="nt-tag">#${esc(g)}</span>`).join('')}</span>`:'';

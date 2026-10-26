@@ -82,7 +82,7 @@ function title(range,a,b){if(range==='day')return dayName(fromN(a));if(range==='
 function vScreen(id){if(NATIVE)pull(false);const ds=/^\d{4}-\d{2}-\d{2}$/.test(id||'')?id:(ST.ds||ymd());ST.ds=ds;
  const[a,b]=spanOf(ST.range,ds),A=agg(a,b),G=legendOf(A.apps),c=scfg(),R=ST.range;
  const head=`<header class="ph"><div><h1>Screen time</h1><div class="data">${esc(title(R,a,b))}</div></div><div class="ph-r"><button class="ibtn" data-act="scSet" aria-label="Screen time settings" title="Skipped apps and limits">${ic('tune')}</button>${typeof gear==='function'?gear():''}</div></header>`;
- const tabs=`<div class="sc-top rv"><div class="seg sc-seg" role="tablist">${RANGES.map(([k,n])=>`<button role="tab" aria-selected="${R===k}" class="${R===k?'on':''}" data-act="scRange" data-v="${k}">${n}</button>`).join('')}</div>${R==='all'?'':`<div class="sc-nav"><button class="ibtn sm" data-act="scMove" data-v="-1" aria-label="Earlier">${ic('back')}</button><button class="ibtn sm" data-act="scMove" data-v="1" aria-label="Later" ${b>=dnum(ymd())?'disabled':''}>${ic('back','flip')}</button></div>`}</div>`;
+ const tabs=`<div class="scr-top rv"><div class="seg sc-seg" role="tablist">${RANGES.map(([k,n])=>`<button role="tab" aria-selected="${R===k}" class="${R===k?'on':''}" data-act="scRange" data-v="${k}">${n}</button>`).join('')}</div>${R==='all'?'':`<div class="sc-nav"><button class="ibtn sm" data-act="scMove" data-v="-1" aria-label="Earlier">${ic('back')}</button><button class="ibtn sm" data-act="scMove" data-v="1" aria-label="Later" ${b>=dnum(ymd())?'disabled':''}>${ic('back','scr-flip')}</button></div>`}</div>`;
  let need='';
  if(NATIVE&&!hasHours())need=`<div class="panel rv sc-need"><p class="small">Update the Plotlines app to see screen time hour by hour. Until then you get each day’s totals.</p></div>`;
  else if(NATIVE&&ST.perm===false)need=`<div class="panel rv sc-need"><h3>See when you use your phone</h3><p class="small">Plotlines can read which apps you used and when, from Android’s own usage data (the same data Digital Wellbeing uses), to draw this report and help with phone habits. It stays on this phone, and in your own Google Drive if you turn on sync. It’s never sent to us or anyone else, and you can turn it off any time in Android’s settings.</p><div class="actions left"><button class="btn pri" data-act="scAllow">Allow usage access</button></div></div>`;
@@ -174,14 +174,14 @@ window.SCREEN={pull,dayData,lab,bars:barsSVG,hName,hLab,PAL};
 
 /* links in: the Activity page's screen tile and a day's activity */
 {const _va=VIEWS.activity;if(_va)VIEWS.activity=function(){const h=_va.apply(this,arguments),a=h.indexOf('id="act-screen"'),e=a<0?-1:h.indexOf('</section>',a);
- return e<0?h:h.slice(0,e)+`<a class="btn sm sc-in" href="#/screen">${ic('scr')}Hour by hour, by app</a>`+h.slice(e)}}
+ return e<0?h:h.slice(0,e)+`<a class="btn sm scr-in" href="#/screen">${ic('scr')}Hour by hour, by app</a>`+h.slice(e)}}
 
 const css=document.createElement('style');css.textContent=`
-.sc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 12px;flex-wrap:wrap}
+.scr-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 12px;flex-wrap:wrap}
 .sc-seg{display:inline-flex;padding:3px;border-radius:999px;background:var(--surface-2,var(--surface));border:1px solid var(--line)}
 .sc-seg button{border:0;background:none;color:var(--muted);font:600 13.5px var(--f-body);padding:7px 14px;border-radius:999px;cursor:pointer}
 .sc-seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
-.sc-nav{display:flex;gap:6px}.flip{transform:scaleX(-1)}
+.sc-nav{display:flex;gap:6px}.scr-flip{transform:scaleX(-1)}
 .sc-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
 .sc-stats div{padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:2px;min-width:0}
 .sc-stats b{font:800 22px/1.1 var(--f-display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sc-stats small{color:var(--muted);font-size:12.5px}
@@ -214,6 +214,6 @@ const css=document.createElement('style');css.textContent=`
 .sc-tips{padding:14px 16px;margin-bottom:12px}.sc-tips ul{margin:8px 0 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:14px}
 .sc-need{padding:16px;margin-bottom:12px}.sc-need h3{margin:0 0 6px}
 .sc-ll{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}.sc-ll li{display:flex;gap:10px;align-items:center}.sc-ll li span{color:var(--muted);margin-left:auto}
-.sc-in{display:inline-flex;align-items:center;gap:4px;margin-top:8px}.x45{transform:rotate(45deg)}`;
+.scr-in{display:inline-flex;align-items:center;gap:4px;margin-top:8px}.x45{transform:rotate(45deg)}`;
 document.head.appendChild(css);
 })();

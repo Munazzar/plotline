@@ -295,8 +295,11 @@ window.addEventListener('app-resume',()=>setTimeout(due,2500));
 setTimeout(due,6000);
 
 /* ---------------- Home: the latest reports, one tap to read them ---------------- */
-function homeAgHTML(){const I=ag().inbox;if(!I.length)return'';const n=I.filter(i=>!i.seen).length;
- return`<section class="rv hagent"><div class="st-h"><h3>Agent reports${n?` <span class="ag-n">${n} new</span>`:''}</h3><a class="link" href="#/agent">All</a></div><div class="panel ag-hl">${I.slice(0,3).map(it=>`<button class="ag-hr${it.seen?'':' new'}" data-act="agHome" data-i="${it.id}"><span class="ag-hi">${ic('agent')}</span><span class="ag-hb2"><b>${esc(it.title)}</b><small>${esc(dd(it.t))} · ${esc(tm(it.t))}</small><em>${esc(tr(firstLine(it.summary),120))}</em></span></button>`).join('')}</div></section>`}
+/* 1.59: Home shows the reports themselves, like the Agent page: open one to read it and tap its suggestions
+   right there. The arrow in the header hides or shows them (its own setting, apart from the Agent page's). */
+function homeAgHTML(){const A=ag(),I=A.inbox;if(!I.length)return'';const n=I.filter(i=>!i.seen).length,min=!!A.hmin;
+ return`<section class="rv hagent ag-inbox${min?' min':''}"><div class="st-h"><h3>Agent reports${n?` <span class="ag-n">${n} new</span>`:''}</h3><span class="ag-hb"><a class="link" href="#/agent">All</a><button class="ibtn sm" data-act="agHMin" aria-label="${min?'Show the reports':'Hide the reports'}" title="${min?'Show':'Hide'}" aria-expanded="${!min}">${ic(min?'down':'up')}</button></span></div>
+ ${min?`<button class="panel ag-mini" data-act="agHMin"><span class="ag-hi">${ic('agent')}</span><span><b>${n?`${n} new · `:''}${esc(I[0].title)}</b><small>${esc(tr(firstLine(I[0].summary),90))}</small></span></button>`:I.slice(0,3).map(itemHTML).join('')}</section>`}
 if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){let a='';try{a=homeAgHTML()}catch(e){}return _ht()+a}}
 if(typeof HOME_ORDER!=='undefined'&&!HOME_ORDER.includes('agent')){HOME_ORDER.splice(HOME_ORDER.indexOf('sched')+1,0,'agent');HOME_NAME.agent=['Agent reports','The latest results from your agent tasks'];const _hk=homeKey;homeKey=function(n){return n.classList&&n.classList.contains('hagent')?'agent':_hk(n)}}
 
@@ -434,6 +437,7 @@ Object.assign(ACT,{
  agHome:d=>{INB_OPEN.set(d.i,true);go('agent');setTimeout(()=>{const b=document.querySelector(`[data-act=agFold][data-i="${d.i}"]`);if(b)b.closest('.ag-it').scrollIntoView({block:'start'})},450)},
  agBgAllow:()=>{try{NATIVE.openExactAlarms()}catch(e){}window.addEventListener('focus',()=>{BGSIG='';try{bgSchedule(now())}catch(e){}render(false)},{once:true})},
  agMin:()=>{const A=ag();A.min=!A.min;save();render(false)},
+ agHMin:()=>{const A=ag();A.hmin=!A.hmin;save();render(false)},
  agMore:()=>{INB_N+=10;render(false)},agLess:()=>{INB_N=3;render(false)},
  agItX:d=>{const A=ag(),it=A.inbox.find(x=>x.id===d.i);if(!it)return;const at=A.inbox.indexOf(it);A.inbox.splice(at,1);save();render(false);
   toast('Result removed',()=>{A.inbox.splice(at,0,it);save();render(false)})},

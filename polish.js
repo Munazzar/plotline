@@ -42,7 +42,7 @@ Object.assign(IC,{
  unfull:'<path d="M9 4v3.4A1.6 1.6 0 0 1 7.4 9H4M20 9h-3.4A1.6 1.6 0 0 1 15 7.4V4M15 20v-3.4a1.6 1.6 0 0 1 1.6-1.6H20M4 15h3.4A1.6 1.6 0 0 1 9 16.6V20"/>',
  print:'<path d="M7 8.4V4.2a.8.8 0 0 1 .8-.8h8.4a.8.8 0 0 1 .8.8v4.2"/><path d="M7 17.2H5.4a2 2 0 0 1-2-2v-4.8a2 2 0 0 1 2-2h13.2a2 2 0 0 1 2 2v4.8a2 2 0 0 1-2 2H17"/><rect x="7" y="13.6" width="10" height="7" rx=".8"/>',
  share:'<path d="M12 14.6V3.6M8.2 7.2 12 3.4l3.8 3.8"/><path d="M8.4 10.2H7a2 2 0 0 0-2 2v6.4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.4a2 2 0 0 0-2-2h-1.4"/>',
- note:'<path d="M8.2 3.6h10.2a2 2 0 0 1 2 2v10.2"/><path d="M4 8.2a2 2 0 0 1 2-2h9.6a2 2 0 0 1 2 2v7.4l-4.8 4.8H6a2 2 0 0 1-2-2z"/><path d="M17.6 15.6h-3a1.8 1.8 0 0 0-1.8 1.8v3"/><path d="M7.4 10.6h6.8M7.4 13.8h4"/>',/* a stack of sticky notes: quick notes and chains of thought */
+ thread:'<path d="M8.2 3.6h10.2a2 2 0 0 1 2 2v10.2"/><path d="M4 8.2a2 2 0 0 1 2-2h9.6a2 2 0 0 1 2 2v7.4l-4.8 4.8H6a2 2 0 0 1-2-2z"/><path d="M17.6 15.6h-3a1.8 1.8 0 0 0-1.8 1.8v3"/><path d="M7.4 10.6h6.8M7.4 13.8h4"/>',/* a stack of sticky notes: quick notes and chains of thought */
  pin:'<path d="M9.4 3.6h5.2M10.2 3.6v5.2l-3.3 3.6v1.8h10.2v-1.8l-3.3-3.6V3.6M12 14.2v6.2"/>',
  link:'<path d="M10.2 13.8a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.1 1.1"/><path d="M13.8 10.2a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.1-1.1"/>',
  lock:'<rect x="5" y="10.6" width="14" height="10" rx="2.4"/><path d="M8.2 10.6V7.4a3.8 3.8 0 0 1 7.6 0v3.2"/>',
@@ -181,7 +181,7 @@ function hwLists(){const L=(typeof lists==='function'?lists():S.lists||[]).filte
   return`<a class="hw-r" href="#/list/${l.id}"><span class="hw-rt">${esc(l.emoji||'📝')} ${esc(l.title)}</span><small>${d} of ${it.length}</small></a>`}).join('')}</div></section>`}
 function hwThreads(){const T=(S.threads||[]).filter(t=>t.status!=='done').sort((a,b)=>(b.u||0)-(a.u||0)).slice(0,3);if(!T.length)return'';
  return`<section class="rv"><div class="st-h"><h3>Notes</h3>${hwLink('#/threads','All notes')}</div><div class="hw-box">${T.map(t=>{const u=(t.ups||[]).slice().sort((a,b)=>b.t-a.t)[0];
-  return`<a class="hw-r" href="#/thread/${t.id}"><span class="hw-rt"><b>${esc(t.title)}</b>${u?`<span class="ell">${esc(trunc(String(u.x||'').replace(/<[^>]+>/g,' '),80))}</span>`:''}</span><small>${(t.ups||[]).length}</small></a>`}).join('')}</div></section>`}
+  return`<a class="hw-r" href="#/thread/${t.id}"><span class="hw-rt"><b>${esc(t.title)}</b>${u?`<span class="ell">${esc(trunc(thrPlain(u.x),80))}</span>`:''}</span><small>${(t.ups||[]).length}</small></a>`}).join('')}</div></section>`}
 {const _vt=vToday;vToday=function(){const o=_vt.apply(this,arguments);if(!WIDE.matches)return o;
  const t=document.createElement('template');t.innerHTML=o;const N=[...t.content.children],top=[],L=[],Rt=[],end=[];
  N.forEach(n=>{const k=hSide(n);if(k==='full')(L.length||Rt.length?end:top).push(n);else(k==='r'?Rt:L).push(n)});
