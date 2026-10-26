@@ -4,7 +4,7 @@ Written 2026-10-24 (updated the same day for 1.52.0 and 1.53.0) for a fresh Clau
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.56.1 is on main and released** (versionCode 147). **The next versionCode is 148.**
+Current state: **v1.57.0 is on main and released** (versionCode 148). **The next versionCode is 149.**
 
 **Product rules for every change (section 7 has the full list):** sync everything except looks and device-only
 things (section 2a); obvious features (delete, delete all, undo, search) must exist wherever data lives; secure and
@@ -133,12 +133,13 @@ unless noted.
 - **1.55.1:** steps by hour ignore Health Connect hours that are one day-long record spread evenly (Samsung Health writes steps that way; seen on the owner's phone): `flatHr` in index.html, used by `hrOf`, so both Activity and Activity in detail fall back to the phone counter's readings or say why there's no hourly chart. Fixed properly in 1.56.
 - **1.56.0:** steps by hour from the phone's own step counter: `StepHours.java` reads TYPE_STEP_COUNTER every ~15 min (inexact repeating alarm, request code 612, action `A_TICK` to `Auto`, so no manifest change and no exact-alarm permission) and keeps 11 days of readings; `PlotlineAssist.stepHours(days)` returns steps per hour; JS stores `actLog()[day].hs`, preferred by `hrOf` when Health Connect has no real hours. **Smali patch in classes.dex:** `Auto$3.run` calls `StepHours.tick(c)` right after `Auto.sampleSteps` (two instructions). Classes6.dex now holds Assist, UsageHours, StepHours. Re-apply the patch if classes.dex is ever rebuilt from elsewhere.
 - **1.56.1: no estimates anywhere (owner's rule).** `hrOf` returns only measured hours: real Health Connect hours, else the phone's counted hours (`hs`), with `null` (shown striped, "not recorded") before counting began (`hsFrom`/`hsAt`, from `StepHours` `from`). The old spreading of app-open readings (`sp`) and the steps-based "about X km" distance are gone; distance shows only when measured.
+- **1.57.0: agent tasks run by themselves, app closed, no taps.** `BgAgent.java` (a dataSync foreground service, added to the binary manifest with `tools/apk/manifest.cjs` by copying the LiveShare `<service>`; check with aapt2) is started by an alarm at each task's time: exact when "Alarms & reminders" is allowed, else `setAndAllowWhileIdle` when Plotlines ignores battery optimisation (both let an alarm start a foreground service). It loads `https://appassets.androidplatform.net/index.html?bg=agent` in an invisible WebView (same origin, same data), and agent.js's runner does every due task, posts each result (`PlotlineBg.done`), syncs and stops (`PlotlineBg.finish`), 8 min max. Thinking: Your AI server as usual, or the on-device model via `PlotlineBg.llm` -> `LocalLlm.ensure/complete` (the phone's llama-server, as AI notification replies use) with the model the app passes in `PlotlineAssist.bgModel`. The app schedules with `PlotlineAssist.bgAgent([{at}])` from `agentAlarms` and drops the "Open Plotlines and I'll run it" reminder for tasks that will run by themselves. New do-it-itself templates: Plan my day, Write my day, Get tomorrow ready. Also: the in-app dropdown picker (`.selp`) sits above every sheet (it opened behind Plot settings).
 
 ### versionCode table (for the APK)
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147. **Next: 148.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148. **Next: 149.**
 
 ## 4. Building the APK (cloud, no Android SDK)
 
@@ -219,6 +220,8 @@ done with a hand-written AXML reader/writer in Python; androguard from PyPI is h
   the next version and versionCode, so each APK carries everything.
 
 ## 5a. Google Play readiness (the owner is a solo developer)
+
+- **1.57 background agent:** a dataSync foreground service started from an alarm. Play's foreground-service declaration needs a short video of a scheduled task running and its notification; SCHEDULE_EXACT_ALARM is justified by reminders and scheduled tasks. The owner wants tasks to run with no taps, so keep it automatic.
 
 Everything new must be approvable on Play without company paperwork. Known items before submitting:
 - **Usage access (PACKAGE_USAGE_STATS):** allowed for screen-time features. Show the in-app explanation before sending the user to Android's setting (done on the Screen time page). Declare it in the Data safety form (app activity, on device, optional sync to the user's Drive).

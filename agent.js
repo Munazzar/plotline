@@ -176,7 +176,11 @@ const SCHEMA_STEP=names=>({type:'object',properties:{lookups:{type:'array',maxIt
 /* what the user tuned over time: the tags they tapped under results, and the task's own More of / Less of */
 const prefTxt=t=>{const m=t.more||[],l=t.less||[];return m.length||l.length?`\nWHAT THEY TUNED OVER TIME (follow it): ${m.length?'more of '+m.join(', '):''}${m.length&&l.length?'; ':''}${l.length?'less of, or skip: '+l.join(', '):''}`:''};
 let ENG='';const engOf=t=>t&&t.ai==='server'&&insSet().url?'api':planEngine();
-async function llm1(msgs,opts){const e=ENG||planEngine();let out='';const on=x=>{out+=x};const onP=x=>{if(x)step(x)};
+async function llm1(msgs,opts){const e=ENG||planEngine();
+ if(window.PlotlineBg&&e!=='api'){if(!PlotlineBg.llm)throw new Error('Update Plotlines to think on this phone in the background');
+  const body={messages:msgs,max_tokens:opts.max_tokens||900,temperature:opts.temperature??.3,...(opts.schema?{response_format:{type:'json_schema',json_schema:{name:'out',schema:opts.schema}}}:{})};
+  let r={};try{r=JSON.parse(PlotlineBg.llm(JSON.stringify(body),300)||'{}')}catch(x){}if(r.error)throw new Error('On-device AI: '+r.error);
+  return String(r.choices?.[0]?.message?.content||'').replace(/<think>[\s\S]*?(<\/think>|$)/g,'').trim()}let out='';const on=x=>{out+=x};const onP=x=>{if(x)step(x)};
  if(e==='api')await apiChat(msgs,on,null,opts);else if(e==='native')await natChat(msgs,on,onP,()=>{out=''},opts);else if(e==='wasm')await localChat(msgs,on,onP,0,()=>{out=''},false,opts);else throw new Error('Pick an AI for the agent in Settings › AI & voice');
  return out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').trim()}
 /* JSON with the schema first; if the engine refuses the schema or the answer isn't JSON, once more asking for plain JSON */
@@ -193,7 +197,10 @@ const aiModel=()=>{try{return llmOf(insSet().llm)}catch(e){return null}};
 function parseJSON(s){try{return JSON.parse(s)}catch(e){}const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a){try{return JSON.parse(s.slice(a,b+1))}catch(e){}}return null}
 let BUSY=null,AGDL='',AGERR='',AGQ='';
 /* o.quiet: asked from the assistant, which shows the answer (or t.err) itself */
-async function runTask(t,manual,o={}){if(BUSY){t.err='I’m still busy with “'+BUSY+'”';return manual&&!o.quiet&&toast('The agent is busy with “'+BUSY+'”')}if(!engOf(t)){t.err='Pick an AI first: Settings › AI & voice';if(manual&&!o.quiet)toast(t.err);return}
+/* one run of a scheduled task at a time, across the open app and the invisible background run (they share storage) */
+const RUNK='plotline.agentRun',RUNME=uid();
+const runLock=t=>{try{const o=JSON.parse(localStorage.getItem(RUNK)||'null');if(o&&o.id===t.id&&o.me!==RUNME&&now()-o.t<10*6e4)return false;localStorage.setItem(RUNK,JSON.stringify({id:t.id,me:RUNME,t:now()}));return true}catch(e){return true}};
+async function runTask(t,manual,o={}){if(!manual&&!runLock(t))return;if(BUSY){t.err='I’m still busy with “'+BUSY+'”';return manual&&!o.quiet&&toast('The agent is busy with “'+BUSY+'”')}if(!engOf(t)){t.err='Pick an AI first: Settings › AI & voice';if(manual&&!o.quiet)toast(t.err);return}
  if(manual&&engOf(t)!=='api'&&!aiOk()){if(window.AIX){toast('Setting up the AI first. This happens once.');await AIX.setup({quiet:true});if(!aiOk())return}else aiMark()}
  BUSY=t.title;AGERR='';STEP='Starting…';paintSoon();const A=ag(),e=ENG=engOf(t),big=e==='api'||!IS_PHONE;
  try{const src=t.src&&t.src.length?t.src:['plot'],small=!big,d=new Date(),raw={mail:[],cal:[]},errs=[];
@@ -255,13 +262,33 @@ function nextAt(t,from){const k=t.when||'daily';if(k==='manual')return 0;if(k===
  const[h,m]=(t.at||'08:00').split(':').map(Number);const d=new Date(from);d.setSeconds(0,0);d.setHours(h,m);
  for(let i=0;i<9;i++){if(d.getTime()>from&&(k==='daily'||(k==='weekdays'&&d.getDay()%6!==0)||(k==='weekly'&&d.getDay()===+(t.dow||0))))return d.getTime();d.setDate(d.getDate()+1);d.setHours(h,m)}return from+864e5}
 const whenTxt=t=>{const k=t.when||'daily',at=fmtTime(t.at||'08:00');return k==='daily'?'Every day at '+at:k==='weekdays'?'Weekdays at '+at:k==='weekly'?`${DOW[+(t.dow||0)]}s at ${at}`:(WHEN.find(x=>x[0]===k)||[0,''])[1]};
-async function due(){if(BUSY||!ag().on||typeof S==='undefined')return;const A=ag(),t0=now();
+async function due(){if(BUSY||!ag().on||typeof S==='undefined'||window.PlotlineBg)return;const A=ag(),t0=now();
  for(const t of A.tasks){if(!t.on||(t.when||'daily')==='manual')continue;if(!t.next)t.next=t.when==='open'?t0:nextAt(t,t.created||t0);
   if(t.next<=t0){if(engOf(t)!=='api'&&!aiOk())return;if((typeof IN!=='undefined'&&IN.busy)||(window.AS_BUSY))return;
    /* with sync on, catch up first: another device may have run it already */
    if(typeof syncOn==='function'&&syncOn()){try{await syncNow(false)}catch(e){}const t2=ag().tasks.find(x=>x.id===t.id);if(!t2||!t2.on||!t2.next||t2.next>now()||BUSY)return;await runTask(t2,false);return}
    await runTask(t,false);return}}}
-window.agentAlarms=(n,L)=>{if(!ag().on)return;ag().tasks.forEach(t=>{if(!t.on||!['daily','weekdays','weekly'].includes(t.when))return;const at=t.next&&t.next>n?t.next:nextAt(t,n);L.push({at,title:'Plot · '+t.title,body:'Open Plotlines and I’ll run it',k:'agent',id:t.id})})};
+/* 1.57: tasks run by themselves. Scheduled tasks are handed to the phone (BgAgent.java): at their time it opens this
+   page invisibly with ?bg=agent and the runner below does them, even with Plotlines closed, thinking with Your AI server
+   or the on-device model (PlotlineBg.llm). Android lets that start when exact alarms are allowed or Plotlines may ignore
+   battery optimisation; without either the phone just reminds you to open the app. */
+let BGOK=false,BGSIG='';
+const bgTasks=()=>ag().on?ag().tasks.filter(t=>t.on&&!['open','manual'].includes(t.when||'daily')&&['api','native'].includes(engOf(t))):[];
+/* the on-device model the phone should use for them (the one picked in Settings › AI & voice, if it's downloaded) */
+function bgModelSync(){try{if(!(NA&&NA.bgModel)||typeof llmOf!=='function'||typeof natHave!=='function')return;const m=llmOf(insSet().llm),ok=natHave(m)?m:(typeof LLMS!=='undefined'&&LLMS.find(x=>natHave(x)))||null;
+ const k=ok?natFile(ok)+':'+natCtx(ok):'';if(bgModelSync.k===k)return;bgModelSync.k=k;NA.bgModel(ok?natFile(ok):'',ok?natCtx(ok):4096,typeof natThreads==='function'?natThreads():4)}catch(e){}}
+function bgSchedule(n){if(!(NA&&NA.bgAgent))return;bgModelSync();const L=bgTasks().map(t=>({at:t.next&&t.next>n?t.next:nextAt(t,n)})).sort((a,b)=>a.at-b.at).slice(0,8),sig=JSON.stringify(L);
+ if(sig===BGSIG)return;BGSIG=sig;try{BGOK=NA.bgAgent(sig)!=='no'}catch(e){BGOK=false}}
+window.agentAlarms=(n,L)=>{try{bgSchedule(n)}catch(e){}if(!ag().on)return;ag().tasks.forEach(t=>{if(!t.on||!['daily','weekdays','weekly'].includes(t.when))return;if(BGOK&&['api','native'].includes(engOf(t)))return;const at=t.next&&t.next>n?t.next:nextAt(t,n);L.push({at,title:'Plot · '+t.title,body:'Open Plotlines and I’ll run it',k:'agent',id:t.id})})};
+/* the invisible run: catch up with sync, do every task that's due, tell the phone what each found, sync, stop */
+if(window.PlotlineBg)(async()=>{try{await window.S_LOADED;await new Promise(r=>setTimeout(r,1500));
+ if(typeof syncOn==='function'&&syncOn()){try{await syncNow(false)}catch(e){}}
+ const t0=now(),L=ag().on?ag().tasks.filter(t=>t.on&&!['open','manual'].includes(t.when||'daily')&&t.next&&t.next<=t0+2*6e4):[];
+ for(const t of L){const it=await runTask(t,false,{bg:1});
+  if(it)PlotlineBg.done('Plot · '+t.title,tr(firstLine(it.summary),200)+(it.sugs.length?` · ${it.sugs.length} suggestion${it.sugs.length===1?'':'s'}${t.mode==='do'?', done':' to tap'}`:''));
+  else if(t.err)PlotlineBg.done('Plot · '+t.title,'Couldn’t finish: '+t.err)}
+ if(L.length&&typeof syncOn==='function'&&syncOn()){try{await syncNow(false)}catch(e){}}}
+ catch(e){}finally{try{PlotlineBg.finish()}catch(e){}}})();
 setInterval(()=>{if(!document.hidden)due()},60e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(due,2500)});
 window.addEventListener('app-resume',()=>setTimeout(due,2500));
@@ -281,6 +308,9 @@ const TPL=[
  {k:'week',title:'Plan my week',prompt:'Look at my calendar for the next 7 days and my active goals. Point out busy days and free time, and suggest goals and reminders that move my goals forward in the free time.',when:'weekly',dow:0,at:'18:00',src:['plot','gcal']},
  {k:'notion',title:'Notion catch-up',prompt:'Look at the Notion pages I edited recently. Summarise what changed, and suggest thread updates or goals for today that follow from them.',when:'daily',at:'12:00',src:['notion','plot']},
  {k:'deadlines',title:'Spot deadlines',prompt:'Find dates and deadlines mentioned in my email, calendar and plan in the next two weeks that I don’t have reminders for yet, and suggest reminders for them.',when:'daily',at:'09:00',src:['gmail','gcal','plot']},
+ {k:'plan',title:'Plan my day',prompt:'Look at today’s calendar, my goals and habits, and what I didn’t finish yesterday. Add the 3 most important things as goals for today and set reminders for anything with a time. Keep it realistic for the time I actually have.',when:'daily',at:'06:30',src:['plot','gcal'],mode:'do'},
+ {k:'diary',title:'Write my day',prompt:'Write a short, warm journal entry about my day from what I did: goals done, habits, steps, sleep, screen time and my notes. Save it to my journal. Mention one thing I can be proud of.',when:'daily',at:'22:00',src:['plot'],mode:'do'},
+ {k:'tomorrow',title:'Get tomorrow ready',prompt:'Look at tomorrow’s calendar and my unfinished goals. Set reminders for tomorrow’s timed things and add the top goals for tomorrow, so the day is planned before I wake up.',when:'daily',at:'21:00',src:['plot','gcal'],mode:'do'},
  {k:'news',title:'News for me',prompt:'Read today’s news and what’s trending. Pick the stories that matter to me, judging by my plan and goals and by what I told you I want more or less of. List each with one line on why it matters, its outlet and link, grouped by topic, most important first. Prefer established, reliable outlets.',when:'daily',at:'06:00',src:['web','plot']}];
 function addTask(o){const t={id:uid(),title:o.title||'New task',prompt:o.prompt||'',when:o.when||'daily',at:o.at||'08:00',dow:o.dow||0,src:o.src||['plot'],mode:o.mode||'suggest',ai:o.ai||'',more:o.more||[],less:o.less||[],on:true,created:now(),last:0,next:0,err:''};t.next=t.when==='open'?now():nextAt(t,now());ag().tasks.push(t);save();try{syncNative()}catch(e){}return t}
 
@@ -331,11 +361,17 @@ function connHTML(){const c=cset(),nk=notionKey();
  return`<section class="panel rv" id="agConn"><h3>Connections</h3><p class="small muted">What the agent may read. Google uses the same sign-in as Drive sync and asks for the extra permission when you connect. What they read goes only to the AI you picked; web lookups send just the words or link of the lookup to public services.</p>${['gcal','gmail','gdrive','notion','web'].map(row).join('')}
   ${c.notion||nk?`<div class="field"><label>Notion integration token</label><input type="password" data-agk="notion" value="${esc(nk)}" placeholder="ntn_…" autocomplete="off"><small class="muted">Make one at notion.so/my-integrations, then share the pages you want with it. The token stays on this device and, with sync on, in your own Drive’s hidden app folder.</small></div>`:''}${NA&&NA.http||!(c.notion||nk||connOn('web'))?'':`<div class="field"><label>Proxy for a browser</label><input data-agk="proxy" value="${esc(c.proxy)}" placeholder="https://your-proxy.example" autocomplete="off" spellcheck="false"><small class="muted">Notion, RSS feeds, Google News and Google trends don’t answer web pages directly. Without a proxy the web app reads news from GDELT and trends from Hacker News. The Android app doesn’t need this.</small></div>`}</section>`}
 function aiMark(){const s=insSet(),m=aiModel();if(m&&planEngine()!=='api'){s.dl={...(s.dl||{}),[m[0]]:1};save()}}
+/* does the phone run tasks by themselves? say so, or say what's missing */
+function bgHint(){if(!(NA&&NA.bgAgent)||!ag().tasks.some(t=>t.on&&!['open','manual'].includes(t.when||'daily')))return'';
+ if(!bgTasks().length)return`<div class="panel rv ag-bg"><p class="small"><b>Runs by itself:</b> once an AI is set up (Your AI server, or an on-device model that’s downloaded), scheduled tasks run at their time even with Plotlines closed.</p></div>`;
+ if(BGOK)return`<div class="panel rv ag-bg ok"><p class="small">${ic('check','ico-s')} <b>${bgTasks().length} task${bgTasks().length===1?'':'s'} run by ${bgTasks().length===1?'itself':'themselves'}</b> at their time, even with Plotlines closed. You get a notification with what each found.</p></div>`;
+ return`<div class="panel rv ag-bg"><p class="small"><b>Let tasks run by themselves.</b> Android needs one permission, once, for Plotlines to start a task while the app is closed: “Alarms & reminders”. Until then you get a reminder to open it.</p><div class="actions left"><button class="btn sm pri" data-act="agBgAllow">Allow</button></div></div>`}
 function vAgent(){const A=ag(),e=planEngine(),picked=aiPicked(),ready=picked;const m=aiModel(),dl=picked&&!aiOk()&&e!=='api'&&m;const unseen=A.inbox.filter(i=>!i.seen).length;
  if(unseen)setTimeout(()=>{A.inbox.forEach(i=>i.seen=true);save()},1500);
  return`<header class="ph"><div><h1>Agent</h1><div class="data">${ready?`Runs on this device with ${esc(planEngineName())}`:'Pick an AI to start'}</div></div><div class="ph-r"><button class="btn pri" data-act="agNew">${ic('plus')}<span>Task</span></button>${typeof gear==='function'?gear():''}</div></header>
  ${ready?'':`<div class="panel rv"><p>${insSet().engine==='copy'?'“Copy to any AI” can’t run tasks on its own. Pick On this device or Your AI server in Settings › AI & voice.':'The agent thinks with the AI from Settings › AI & voice. Gemma 4 runs on this device; your own server works too.'}</p><div class="actions left"><a class="btn pri" href="#/settings/voice">Pick an AI</a></div></div>`}
  ${dl&&window.AIX?`<div class="rv">${AIX.modelCard('agent')}<p class="small muted">Scheduled tasks wait until the model is set up. Tasks you run yourself set it up first.</p></div>`:dl?`<div class="panel rv"><p><b>${esc(String(m[1]).split(' · ')[0])}</b> downloads once (${m[3]} GB) the first time it runs, then works offline.</p><div class="actions left"><button class="btn pri" data-act="agDl" ${AGDL?'disabled':''}>${AGDL?esc(AGDL):'Download now'}</button></div></div>`:''}
+ ${bgHint()}
  ${BUSY?`<div class="panel rv ag-run"><span class="ag-spin" aria-hidden="true"></span><span><b>Working on “${esc(BUSY)}”</b><small id="agStep">${esc(STEP||'Starting…')}</small></span></div>`:''}
  ${AGERR?`<div class="panel rv ag-err"><p>${esc(AGERR)}</p><div class="actions left"><button class="btn sm ghost" data-act="agErrX">Dismiss</button><a class="btn sm ghost" href="#/settings/voice">AI settings</a></div></div>`:''}
  <section class="panel rv ag-ask"><div class="field"><label for="agQ">Ask the agent to do something now</label><textarea id="agQ" rows="2" placeholder="Look at my email and calendar and tell me what I’m forgetting">${esc(AGQ)}</textarea></div><div class="ag-src">${Object.keys(CN).map(k=>`<label class="chip${connOn(k)?'':' dim'}"><input type="checkbox" data-agsrc="${k}" ${connOn(k)?'checked':''} ${connOn(k)?'':'disabled'}>${CN[k][0]}</label>`).join('')}</div><div class="actions left"><button class="btn pri" data-act="agAsk" ${BUSY?'disabled':''}>${BUSY?'Working…':'Go'}</button></div>${window.AIX&&AIX.sugs?(setTimeout(()=>AIX.sugAuto('agent'),0),AIX.sugs('agent','agIdea','Ideas')):''}</section>
@@ -381,6 +417,7 @@ Object.assign(ACT,{
  agAll:async d=>{const it=ag().inbox.find(x=>x.id===d.i);if(!it)return;let n=0;for(const s of it.sugs)if(!s.st){try{await apply(s,true);n++}catch(e){}}toast(`Done ${n} of them`);render(false)},
  agFold:d=>{INB_OPEN.set(d.i,d.o!=='1');render(false)},
  agHome:d=>{INB_OPEN.set(d.i,true);go('agent');setTimeout(()=>{const b=document.querySelector(`[data-act=agFold][data-i="${d.i}"]`);if(b)b.closest('.ag-it').scrollIntoView({block:'start'})},450)},
+ agBgAllow:()=>{try{NATIVE.openExactAlarms()}catch(e){}window.addEventListener('focus',()=>{BGSIG='';try{bgSchedule(now())}catch(e){}render(false)},{once:true})},
  agMin:()=>{const A=ag();A.min=!A.min;save();render(false)},
  agMore:()=>{INB_N+=10;render(false)},agLess:()=>{INB_N=3;render(false)},
  agItX:d=>{const A=ag(),it=A.inbox.find(x=>x.id===d.i);if(!it)return;const at=A.inbox.indexOf(it);A.inbox.splice(at,1);save();render(false);
@@ -456,7 +493,7 @@ const css=document.createElement('style');css.textContent=`
 .ag-x{grid-column:1;min-width:0;overflow-wrap:anywhere;font-size:14.5px;line-height:1.4}.ag-b{display:flex;gap:4px}.ag-b .ibtn:last-child svg{transform:rotate(45deg)}.ag-ok{color:var(--accent)}
 .ag-tl{display:flex;flex-direction:column;gap:10px}.ag-t.off{opacity:.55}.ag-t p{margin:6px 0}
 .ag-c{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent)}.ag-c span{display:flex;flex-direction:column}.ag-c small{color:var(--muted);font-size:12px}
-.hagent .ag-hl{display:flex;flex-direction:column;padding:4px}.ag-hr{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:10px 12px;border:0;background:none;color:inherit;font:inherit;width:100%;border-radius:14px;cursor:pointer}.ag-hr+.ag-hr{border-top:1px solid var(--line);border-radius:0}.ag-hb2{display:flex;flex-direction:column;gap:2px;min-width:0}.ag-hb2 small{color:var(--muted);font-size:12px}.ag-hb2 em{font-style:normal;color:var(--muted);font-size:13.5px;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.ag-hr.new b::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:middle}.ag-tune{margin:12px 0 4px}.ag-tune .chips{margin-top:6px}.ag-tune .chip.less{background:transparent;color:var(--muted);border:1px dashed currentColor;text-decoration:line-through}.ag-src{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}.ag-src .chip{position:relative;color:var(--muted)}.ag-src .chip input{position:absolute;opacity:0;pointer-events:none}.ag-src .chip::before{content:'';width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;box-sizing:border-box}.ag-src .chip:has(input:checked){color:var(--text);background:color-mix(in srgb,var(--accent) 14%,var(--surface));border-color:color-mix(in srgb,var(--accent) 55%,transparent)}.ag-src .chip:has(input:checked)::before{background:var(--accent);border-color:var(--accent)}.ag-src .chip:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}.ag-src .chip.dim{opacity:.45}
+.hagent .ag-hl{display:flex;flex-direction:column;padding:4px}.ag-hr{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:10px 12px;border:0;background:none;color:inherit;font:inherit;width:100%;border-radius:14px;cursor:pointer}.ag-hr+.ag-hr{border-top:1px solid var(--line);border-radius:0}.ag-hb2{display:flex;flex-direction:column;gap:2px;min-width:0}.ag-hb2 small{color:var(--muted);font-size:12px}.ag-hb2 em{font-style:normal;color:var(--muted);font-size:13.5px;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.ag-hr.new b::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:middle}.ag-bg{padding:12px 16px;margin-bottom:12px}.ag-bg.ok{border-color:color-mix(in srgb,var(--ok,#3a9) 45%,var(--line))}.ag-tune{margin:12px 0 4px}.ag-tune .chips{margin-top:6px}.ag-tune .chip.less{background:transparent;color:var(--muted);border:1px dashed currentColor;text-decoration:line-through}.ag-src{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}.ag-src .chip{position:relative;color:var(--muted)}.ag-src .chip input{position:absolute;opacity:0;pointer-events:none}.ag-src .chip::before{content:'';width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;box-sizing:border-box}.ag-src .chip:has(input:checked){color:var(--text);background:color-mix(in srgb,var(--accent) 14%,var(--surface));border-color:color-mix(in srgb,var(--accent) 55%,transparent)}.ag-src .chip:has(input:checked)::before{background:var(--accent);border-color:var(--accent)}.ag-src .chip:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}.ag-src .chip.dim{opacity:.45}
 .ag-home{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;margin-bottom:12px}.ag-home span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}.ag-home small{color:var(--muted);font-size:12px}
 .ag-hi{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
 .sw.ag-sw{margin:0;padding:0;border:0}
