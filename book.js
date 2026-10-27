@@ -106,25 +106,28 @@ function reach(P,W,H,cy){const S1=[0,cy],S2=[0,H-cy],r1=W,r2=Math.hypot(W,H);let
  const lim=(c,r)=>{const dx=p[0]-c[0],dy=p[1]-c[1],d=Math.hypot(dx,dy);if(d>r){p=[c[0]+dx/d*r,c[1]+dy/d*r]}};lim(S1,r1);lim(S2,r2);return p}
 let T=null;
 function layer(cls,html,box){const d=document.createElement('div');d.className='bk-lay '+cls;Object.assign(d.style,{left:box.x+'px',top:box.y+'px',width:box.w+'px',height:box.h+'px'});if(html!=null)d.innerHTML=html;return d}
+/* 1.60.0 (owner's call): a page that isn't on screen yet stays plain paper while it turns in, and gets its words
+   once the turn has landed. Nothing new has to be drawn mid-turn, so nothing can flash. A cover keeps its leather. */
+const blankPg=p=>!p?pageHTML(p):p.k==='cover'?'<div class="bk-pc bk-cover"></div>':'<div class="bk-pc"></div>';
 function turnStart(dir,startY){if(B.busy)return false;const ni=clampI(B.i+dir*step());if(ni===B.i)return false;const book=$b('#bkBook');if(!book)return false;
  const L=$b('#bkL'),R=$b('#bkR'),i=B.i,sp=B.sp,mir=sp&&dir<0,pg=mir?L:R,br=book.getBoundingClientRect(),pr=pg.getBoundingClientRect(),W=pr.width,H=pr.height,box={x:pr.left-br.left,y:pr.top-br.top,w:W,h:H};
  const scrollOf=el=>{const c=el.querySelector('.bk-pc');return c?c.scrollTop:0};
  let frontP,frontN,backP,backN,underHTML;
- if(sp&&dir>0){frontP=B.P[i+1];frontN=i+2;backP=B.P[i+2];backN=i+3;underHTML=pageHTML(B.P[i+3],i+4)}
- else if(sp){frontP=B.P[i];frontN=i+1;backP=B.P[i-1];backN=i;underHTML=pageHTML(B.P[i-2],i-1)}
- else if(dir>0){frontP=B.P[i];frontN=i+1;underHTML=pageHTML(B.P[i+1],i+2)}
+ if(sp&&dir>0){frontP=B.P[i+1];frontN=i+2;backP=B.P[i+2];backN=i+3;underHTML=blankPg(B.P[i+3])}
+ else if(sp){frontP=B.P[i];frontN=i+1;backP=B.P[i-1];backN=i;underHTML=blankPg(B.P[i-2])}
+ else if(dir>0){frontP=B.P[i];frontN=i+1;underHTML=blankPg(B.P[i+1])}
  else{frontP=B.P[i-1];frontN=i;underHTML=null}
  const sc=(dir>0||sp)?scrollOf(pg):0;
  /* 1.59.8: when the turning page is the one on screen, that real (already painted) page folds; a fresh copy could show
     up blank for a frame or two before Android paints it. The next page waits behind it. Only a phone page coming back
     from the left needs a copy. */
  const real=sp||dir>0;
- const front=real?pg:layer('bk-pg bk-front'+(mir?' bk-l':' bk-r'),pageHTML(frontP,frontN)+'<i class="bk-fsh"></i>',box);
+ const front=real?pg:layer('bk-pg bk-front'+(mir?' bk-l':' bk-r'),blankPg(frontP)+'<i class="bk-fsh"></i>',box);
  if(real){front.classList.add('bk-front');front.insertAdjacentHTML('beforeend','<i class="bk-fsh"></i>')}
  const under=underHTML!=null?layer('bk-pg bk-under'+(mir?' bk-l':' bk-r'),underHTML,box):null;if(under&&real)under.style.setProperty('z-index','0','important');
  const cast=layer('bk-cast',null,box);
  const flapW=layer('bk-flapw',null,box),flapC=document.createElement('div');flapC.className='bk-pg bk-flap'+(mir?' bk-r':' bk-l');
- flapC.innerHTML=(sp?`<div class="bk-back" style="width:${W}px;height:${H}px">${pageHTML(backP,backN)}</div>`:'<div class="bk-back bk-paperback"></div>')+'<i class="bk-gloss"></i>';flapW.appendChild(flapC);
+ flapC.innerHTML=(sp?`<div class="bk-back" style="width:${W}px;height:${H}px">${blankPg(backP)}</div>`:'<div class="bk-back bk-paperback"></div>')+'<i class="bk-gloss"></i>';flapW.appendChild(flapC);
  const lays=[under,cast,real?null:front,flapW].filter(Boolean);lays.forEach(x=>x.classList.add('bk-prep'));book.append(...lays);raise(lays);if(!real){const fc=front.querySelector('.bk-pc');if(fc)fc.scrollTop=sc}
  const cy=(startY!=null?startY:H*.82)>H/2?H:0;
  T={dir,ni,W,H,mir,cy,real,under,front,cast,flapW,flapC,P:dir>0||sp?[W,cy]:[-W,cy],done:false};
@@ -158,7 +161,7 @@ const raise=L=>after2(()=>L.forEach(x=>x.classList.remove('bk-prep')));
 /* the real page folded back to normal */
 const unfold=pg=>{pg.style.clipPath='';pg.style.removeProperty('--fs');pg.classList.remove('bk-front');const f=pg.querySelector(':scope>.bk-fsh');if(f)f.remove()};
 function turnEnd(done){if(!T)return;const t=T;T=null;const L=[t.under,t.real?null:t.front,t.cast,t.flapW].filter(Boolean);B.busy=false;if(t.real)unfold(t.front);
- if(done){B.i=t.ni;rustle();paint();after2(()=>L.forEach(x=>x.remove()))}else L.forEach(x=>x.remove())}
+ if(done){B.i=t.ni;rustle();paint();if(!t.real)t.front.remove();/* a blank copy: the real page has the words now */after2(()=>L.forEach(x=>x.remove()))}else L.forEach(x=>x.remove())}
 /* finish (or undo) the turn: the corner travels in a slight arc, the way a hand lifts a page */
 function finishNow(){if(T&&T.goal!=null)turnEnd(T.goal);if(V&&V.goal!=null)svEnd(V.goal)}
 const EOUT=x=>1-Math.pow(1-x,3),EIO=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
@@ -170,7 +173,7 @@ function turn(dir){if(B.busy){if(D&&D.on)return;finishNow();if(B.busy)return}con
 /* slide and fade: the next page (or spread) sits in its own layer next to this one; the drag moves both, and
    letting go springs to whichever is nearer (or where a flick points) */
 let V=null;
-function viewHTML(i){return B.sp?`<div class="bk-pg bk-l">${pageHTML(B.P[i],i+1)}</div><div class="bk-pg bk-r">${pageHTML(B.P[i+1],i+2)}</div>`:`<div class="bk-pg bk-r">${pageHTML(B.P[i],i+1)}</div>`}
+function viewHTML(i){return B.sp?`<div class="bk-pg bk-l">${blankPg(B.P[i])}</div><div class="bk-pg bk-r">${blankPg(B.P[i+1])}</div>`:`<div class="bk-pg bk-r">${blankPg(B.P[i])}</div>`}
 function svStart(dir){if(B.busy)return false;const ni=clampI(B.i+dir*step());if(ni===B.i)return false;const book=$b('#bkBook');if(!book)return false;const br=book.getBoundingClientRect();
  const nv=layer('bk-view',viewHTML(ni),{x:0,y:0,w:br.width,h:br.height});book.appendChild(nv);
  const cur=[...book.querySelectorAll(':scope>.bk-pg,:scope>.bk-edge')];cur.forEach(e=>{e.style.willChange='transform,opacity'});
@@ -179,8 +182,8 @@ function svSet(p){const v=V;if(!v)return;v.p=p;
  if(v.mode==='fade'){v.cur.forEach(e=>{e.style.opacity=(1-p).toFixed(3)})}
  else{const x=-v.dir*v.w*p;v.cur.forEach(e=>{e.style.transform=`translateX(${x.toFixed(1)}px)`});v.nv.style.transform=`translateX(${(x+v.dir*v.w).toFixed(1)}px)`}}
 function svEnd(done){const v=V;if(!v)return;V=null;B.busy=false;const back=()=>{v.cur.forEach(e=>{e.style.transform='';e.style.opacity='';e.style.willChange=''});v.nv.remove()};
- /* done: the incoming view stays on top while the real pages are redrawn and moved back behind it, then it goes */
- if(done){B.i=v.ni;rustle();v.nv.style.setProperty('z-index','5','important');v.nv.style.transform='';paint();v.cur.forEach(e=>{e.style.transform='';e.style.opacity='';e.style.willChange=''});after2(()=>v.nv.remove())}else back()}
+ /* done: the real pages get their words now; the incoming view was only blank paper, so it goes at once */
+ if(done){B.i=v.ni;rustle();paint();v.cur.forEach(e=>{e.style.transform='';e.style.opacity='';e.style.willChange=''});v.nv.remove()}else back()}
 function svAnim(p1,ms,cb){const v=V;if(!v)return cb&&cb();const a=v.p,t0=performance.now(),ease=x=>1-Math.pow(1-x,3);let fin=false;const end=()=>{if(fin)return;fin=true;if(V===v){svSet(p1);cb&&cb()}};
  const tick=now=>{if(fin||V!==v)return;const k=Math.max(0,Math.min(1,(now-t0)/ms));svSet(a+(p1-a)*ease(k));if(k<1)requestAnimationFrame(tick);else end()};requestAnimationFrame(tick);setTimeout(end,ms+150)}
 function fade(){const bk=$b('#bkBook');paint();if(bk){bk.classList.remove('bk-fade');void bk.offsetWidth;bk.classList.add('bk-fade')}}
