@@ -79,6 +79,9 @@ function paperDark(){const c=getComputedStyle(document.body).backgroundColor.mat
 const $b=s=>document.querySelector('#book '+s);
 function paint(){const L=$b('#bkL'),R=$b('#bkR');if(!R)return;const i=B.i;
  if(B.sp){L.innerHTML=pageHTML(B.P[i],i+1);R.innerHTML=pageHTML(B.P[i+1],i+2)}else{L.innerHTML='';R.innerHTML=pageHTML(B.P[i],i+1)}
+ chrome(i)}
+/* everything around the pages, for page i: shown the moment a turn is decided, not when its animation ends */
+function chrome(i){
  const c=$b('#bkCount'),p=B.P[B.sp&&B.P[i+1]?i+1:i];if(c)c.innerHTML=`<b>${p&&p.k==='day'?esc(dt(p.d).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})):'Journal'}</b><small>${i+1}${B.sp&&B.P[i+1]?'–'+(i+2):''} of ${B.P.length}</small>`;
  const r=$b('#bkRange');if(r){r.max=B.P.length-1;r.step=1;r.value=i}
  const pv=$b('[data-act=bkPrev]'),nx=$b('[data-act=bkNext]');if(pv)pv.disabled=i<=0;if(nx)nx.disabled=i+step()>=B.P.length;
@@ -144,11 +147,13 @@ function foldTo(Pin){const t=T;if(!t)return;const{W,H,cy,mir}=t;let P=reach(Pin,
  t.front.style.setProperty('--fs',(k*.18).toFixed(3))}
 function turnEnd(done){if(!T)return;const t=T;T=null;[t.under,t.front,t.cast,t.flapW].forEach(x=>x&&x.remove());if(done){B.i=t.ni;rustle()}B.busy=false;paint()}
 /* finish (or undo) the turn: the corner travels in a slight arc, the way a hand lifts a page */
-function animTo(target,ms,cb){const t=T;if(!t)return cb&&cb();const a=t.P.slice(),t0=performance.now(),ease=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,lift=(t.cy?-1:1)*t.H*.16;let fin=false;
+function finishNow(){if(T&&T.goal!=null)turnEnd(T.goal);if(V&&V.goal!=null)svEnd(V.goal)}
+const EOUT=x=>1-Math.pow(1-x,3),EIO=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+function animTo(target,ms,cb,ease=EOUT){const t=T;if(!t)return cb&&cb();const a=t.P.slice(),t0=performance.now(),lift=(t.cy?-1:1)*t.H*.16;let fin=false;
  const end=()=>{if(fin)return;fin=true;if(T===t){foldTo(target);cb&&cb()}};
  const tick=now=>{if(fin||T!==t)return;const k=Math.min(1,(now-t0)/ms),e=ease(k);foldTo([a[0]+(target[0]-a[0])*e,a[1]+(target[1]-a[1])*e+lift*Math.sin(Math.PI*e)*Math.min(1,Math.abs(target[0]-a[0])/t.W)]);if(k<1)requestAnimationFrame(tick);else end()};
  requestAnimationFrame(tick);setTimeout(end,ms+150)}
-function turn(dir){if(B.busy)return;const st=BS().turn;if((st==='slide'||st==='fade')&&!reduced()){if(svStart(dir)){try{vib()}catch(e){}svAnim(1,Math.round((st==='fade'?340:420)*(SPEED[BS().speed]||1)),()=>svEnd(true))}return}if(reduced()){const ni=clampI(B.i+dir*step());if(ni===B.i)return;B.i=ni;fade();rustle();return}if(!turnStart(dir))return;try{vib()}catch(e){}animTo(P1(T),Math.round((B.sp?880:760)*(SPEED[BS().speed]||1)),()=>turnEnd(true))}
+function turn(dir){if(B.busy){if(D&&D.on)return;finishNow();if(B.busy)return}const st=BS().turn;if((st==='slide'||st==='fade')&&!reduced()){if(svStart(dir)){try{vib()}catch(e){}V.goal=true;chrome(V.ni);svAnim(1,Math.round((st==='fade'?340:420)*(SPEED[BS().speed]||1)),()=>svEnd(true))}return}if(reduced()){const ni=clampI(B.i+dir*step());if(ni===B.i)return;B.i=ni;fade();rustle();return}if(!turnStart(dir))return;try{vib()}catch(e){}T.goal=true;chrome(T.ni);animTo(P1(T),Math.round((B.sp?720:620)*(SPEED[BS().speed]||1)),()=>turnEnd(true),EIO)}
 /* slide and fade: the next page (or spread) sits in its own layer next to this one; the drag moves both, and
    letting go springs to whichever is nearer (or where a flick points) */
 let V=null;
@@ -167,7 +172,7 @@ function jump(k){k=clampI(+k);if(k===B.i)return;B.i=k;fade()}
 
 /* drag: the lifted corner follows the finger; past a quarter (or a flick) it finishes */
 let D=null,RAF=0;
-function onDown(e){if(!B.open||B.busy||e.button>0||e.target.closest('button,a,input,select,textarea,.bk-ix,.bk-top,.bk-bot'))return;const bk=$b('#bkBook');if(!bk||!bk.contains(e.target))return;D={x:e.clientX,y:e.clientY,t:performance.now(),on:false,id:e.pointerId,vx:0,lx:e.clientX,lt:performance.now()}}
+function onDown(e){if(!B.open||e.button>0||e.target.closest('button,a,input,select,textarea,.bk-ix,.bk-top,.bk-bot'))return;const bk=$b('#bkBook');if(!bk||!bk.contains(e.target))return;if(B.busy){finishNow();if(B.busy)return}D={x:e.clientX,y:e.clientY,t:performance.now(),on:false,id:e.pointerId,vx:0,lx:e.clientX,lt:performance.now()}}
 function frameXY(e){const t=T,pg=t.mir?$b('#bkL'):$b('#bkR'),r=pg.getBoundingClientRect();let x=e.clientX-r.left,y=e.clientY-r.top;if(t.mir)x=r.width-x;return[x,y]}
 function onMove(e){if(!D||e.pointerId!==D.id)return;const dx=e.clientX-D.x,dy=e.clientY-D.y,now=performance.now();
  if(!D.on){if(Math.abs(dx)<9||Math.abs(dx)<Math.abs(dy)*1.25){if(Math.abs(dy)>14)D=null;return}const dir=dx<0?1:-1,pg=(B.sp&&dir<0)?$b('#bkL'):$b('#bkR'),r=pg.getBoundingClientRect();
@@ -179,9 +184,9 @@ function onMove(e){if(!D||e.pointerId!==D.id)return;const dx=e.clientX-D.x,dy=e.
  const P=[D.p0[0]+(f[0]-D.o[0])*k,D.p0[1]+(f[1]-D.o[1])*.9];cancelAnimationFrame(RAF);RAF=requestAnimationFrame(()=>foldTo(P))}
 function onUp(e){if(!D||(e.pointerId!==D.id&&e.type!=='pointercancel'))return;const d=D;D=null;
  if(!d.on){if(e.type==='pointerup'&&Math.abs(e.clientX-d.x)<8&&Math.abs(e.clientY-d.y)<8&&!getSelection().toString()){const bk=$b('#bkBook').getBoundingClientRect(),x=(e.clientX-bk.left)/bk.width;if(x>.85)turn(1);else if(x<.15)turn(-1)}return}
- cancelAnimationFrame(RAF);if(d.sv){const v=V;if(!v)return;const fl=d.vx*-d.dir,go=v.p>.25||fl>.45;svAnim(go?1:0,Math.round(((go?1-v.p:v.p)*420+140)*(SPEED[BS().speed]||1)),()=>svEnd(go));return}
+ cancelAnimationFrame(RAF);if(d.sv){const v=V;if(!v)return;const fl=d.vx*-d.dir,go=v.p>.25||fl>.45;v.goal=go;if(go)chrome(v.ni);svAnim(go?1:0,Math.round(((go?1-v.p:v.p)*420+140)*(SPEED[BS().speed]||1)),()=>svEnd(go));return}
  const t=T;if(!t)return;const a=P0(t),z=P1(t),prog=Math.abs(t.P[0]-a[0])/Math.abs(z[0]-a[0]),fl=d.vx*(t.dir>0?-1:1)*(t.mir?-1:1);
- const go=prog>.25||fl>.5;animTo(go?z:a,Math.round(((go?1-prog:prog)*620+180)*(SPEED[BS().speed]||1)),()=>turnEnd(go))}
+ const go=prog>.25||fl>.5;t.goal=go;if(go)chrome(t.ni);animTo(go?z:a,Math.round(((go?1-prog:prog)*620+180)*(SPEED[BS().speed]||1)),()=>turnEnd(go))}
 
 /* ---------------- open, close, write ---------------- */
 function open(atDay){B.P=pages();B.sp=wide();B.set=false;if(!atDay&&BS().open==='last'&&BS().last)atDay=BS().last;let i=B.P.length-1;if(atDay){const k=B.P.findIndex(p=>p.d===atDay);if(k>=0)i=k}B.i=clampI(i);B.ix=false;
