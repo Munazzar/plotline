@@ -171,6 +171,11 @@ if(NATIVE)setTimeout(()=>pull(true),4000);
 window.scrHours=ds=>{const D=dayData(ds);if(!D.hrs)return'';const parts=[];D.hrs.forEach((m,h)=>{const L=Object.entries(fold(m)).sort((x,y)=>y[1]-x[1]),t=L.reduce((a,x)=>a+x[1],0);if(t>=1)parts.push(`${hName(h)} ${Math.round(t)}m (${L.slice(0,3).map(([k,v])=>`${lab(k)} ${Math.round(v)}m`).join(', ')})`)});
  return parts.length?'screen time by hour (the app shows this as a chart in Screen time): '+parts.join('; '):''};
 window.SCREEN={pull,dayData,lab,bars:barsSVG,hName,hLab,PAL};
+/* 1.61.0: a Home card with today hour by hour (Customize Home shows, hides and moves it). Nothing recorded today: no card */
+window.scrHome=()=>{if(NATIVE)pull(false);const n=dnum(ymd()),A=agg(n,n),D=A.days[0];if(!A.total)return'';const G=legendOf(A.apps),unl=A.un.reduce((x,y)=>x+y,0),P=agg(n-1,n-1);
+ const stats=`<div class="sc-stats"><div><b>${fmtMin(A.total)}</b><small>today so far${P.total?` · ${fmtMin(P.total)} yesterday`:''}</small></div>${A.hd?`<div><b>${unl}</b><small>unlocks</small></div>`:''}${G.top[0]?`<div><b>${esc(lab(G.top[0]))}</b><small>top app</small></div>`:''}</div>`;
+ const ch=D.hrs?barsSVG(D.hrs.map((m,h)=>({m,v:h,lab:h%3===0?hLab(h):'',aria:hName(h)})),G,{act:'',fade:1,cw:12,gap:3,h:120,min:15}):'';
+ return`<section class="rv hscr"><div class="st-h"><h3>Screen time</h3><a class="link" href="#/screen">Details</a></div><a class="panel hw" href="#/screen" aria-label="Screen time today: ${fmtMin(A.total)}. Open details">${stats}${ch}</a></section>`};
 
 /* links in: the Activity page's screen tile and a day's activity */
 {const _va=VIEWS.activity;if(_va)VIEWS.activity=function(){const h=_va.apply(this,arguments),a=h.indexOf('id="act-screen"'),e=a<0?-1:h.indexOf('</section>',a);
@@ -182,6 +187,7 @@ const css=document.createElement('style');css.textContent=`
 .sc-seg button{border:0;background:none;color:var(--muted);font:600 13.5px var(--f-body);padding:7px 14px;border-radius:999px;cursor:pointer}
 .sc-seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
 .sc-nav{display:flex;gap:6px}.scr-flip{transform:scaleX(-1)}
+.hw{display:block;padding:12px 12px 6px;color:inherit;text-decoration:none}.hw .sc-stats{margin-bottom:8px;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}.hw .sc-stats div{padding:9px 12px}.hw .sc-stats b{font-size:18px}.hw .sc-stats small{font-size:12px}
 .sc-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
 .sc-stats div{padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:2px;min-width:0}
 .sc-stats b{font:800 22px/1.1 var(--f-display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sc-stats small{color:var(--muted);font-size:12.5px}
