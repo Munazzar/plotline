@@ -1,0 +1,9 @@
+<!-- Screen time and Steps widgets (1.62.0): paste inside <application>. W.updateAll also calls ScreenWidget.updateAll and StepsWidget.updateAll. -->
+<receiver android:exported="true" android:label="Plotlines · Screen time" android:name="com.munazzar.plotline.ScreenWidget">
+    <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
+    <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_screen_info"/>
+</receiver>
+<receiver android:exported="true" android:label="Plotlines · Steps" android:name="com.munazzar.plotline.StepsWidget">
+    <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
+    <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_steps_info"/>
+</receiver>
