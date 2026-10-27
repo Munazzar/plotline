@@ -2188,7 +2188,7 @@ html.stu-attop .sbar{background:transparent;backdrop-filter:none;-webkit-backdro
 /* ---- page headers: title and every action (gear last, in the corner) share the first line ---- */
 .ph{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:14px;align-items:start}
 /* phones: the title and its buttons share the first line. Find (in More) and Full screen (desktop) leave the header so it never crowds */
-@media(max-width:820px){#view .ph-r>:is([data-act=findOpen],[data-act=focusMode]){display:none}#view .crumb .ph-r>:is(a[href='#/settings'],[data-act=pin]){display:none!important}#view .ph>div:first-child>h1{overflow-wrap:normal;word-break:normal;font-size:min(var(--h1fs,44px),11vw)}}
+@media(max-width:820px){html:not([data-pg=today]) #view .ph-r>[data-act=findOpen],#view .ph-r>[data-act=focusMode]{display:none}#view .crumb .ph-r>:is(a[href='#/settings'],[data-act=pin]){display:none!important}#view .ph>div:first-child>h1{overflow-wrap:normal;word-break:normal;font-size:min(var(--h1fs,44px),11vw)}}
 .ph>div:first-child{display:contents}
 .ph>div:first-child>*{grid-column:1/-1}
 .ph>div:first-child>h1{grid-column:1;grid-row:1;min-width:0;overflow-wrap:break-word}
@@ -2554,12 +2554,12 @@ html.fnat :is(.ph h1,.hero h1,.sheet h2,.st-h h3,.panel h3){letter-spacing:0}
 .fnd-in{display:flex;align-items:center;gap:10px;padding:0 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line-2)}
 .fnd-in svg{width:20px;height:20px;color:var(--muted);flex:none}
 .fnd-in input{flex:1;border:0;background:none;color:var(--text);font:500 16px var(--f-body);padding:14px 0;outline:none;min-width:0}
-.fnd-res{display:grid;gap:6px;margin-top:12px;min-height:120px}
+.fnd-res{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:12px;min-height:120px}
 .fnd-g{margin:10px 2px 2px}
 .fnd-r{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--text);text-align:left;font:inherit;cursor:pointer}
 .fnd-r i{width:10px;height:10px;border-radius:50%;background:var(--c,var(--accent));flex:none}
 .fnd-r .t{flex:1;min-width:0}
-.fnd-r .t b{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fnd-r .t b{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fnd-r .t small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fnd-r .t small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fnd-btn svg{width:20px;height:20px}
 
@@ -3255,7 +3255,7 @@ html[data-anim=snappy]::view-transition-new(root){animation-duration:.24s}
 /* Home: a calmer header, and the Customize Home sheet */
 @media(max-width:820px){html[data-pg=today] #view>.ph{row-gap:12px;margin-bottom:24px}
  html[data-pg=today] #view>.ph>div:first-child>h1{grid-column:1/-1;grid-row:2;font-size:clamp(34px,10.4vw,48px);line-height:.95}
- html[data-pg=today] #view>.ph>div:first-child>.data{grid-column:1;grid-row:1;align-self:center;margin:0;line-height:1.5}}
+ html[data-pg=today] #view>.ph>div:first-child>.data{grid-column:1/-1;grid-row:3;align-self:start;margin:8px 0 0;line-height:1.5}/* 1.63.0: the buttons (now with search) take the top row; the summary sits under the greeting */}
 .hcust{display:flex;justify-content:center;margin:34px 0 6px}.hcust .link{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-weight:600}.hcust svg{width:16px;height:16px}
 .hmq-b svg{width:17px;height:17px;color:var(--accent)}
 .hc-l{display:flex;flex-direction:column;gap:6px;margin:14px 0 6px}
@@ -3587,7 +3587,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.62.0';
+const APP_VER='1.63.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -8263,7 +8263,7 @@ Object.assign(ACT,{
 });
 
 /* ---------- find anything ---------- */
-const SETS=[['account','You & sync','Google account, Drive sync, devices'],['look','Look & feel','Theme, fonts, colours, cards, animations, start page'],['notif','Notifications','Reminders, check-ins, quiet hours'],['privacy','Privacy & lock','App lock, fingerprint, hide content'],['auto','Automations','Auto-tick habits from your phone'],['share','Sharing','Share goals and habits, live cheers'],['voice','AI & voice','On-device AI, speech'],['data','Your data','Backup, import, export, sample data']];
+const SETS=[['account','You & sync','Google account, Drive sync, devices'],['look','Look & feel','Theme, fonts, colours, cards, animations, start page'],['notif','Notifications','Reminders, check-ins, quiet hours'],['privacy','Privacy & lock','App lock, fingerprint, hide content'],['auto','Automations','Auto-tick habits from your phone'],['share','Sharing','Share goals and habits, live cheers'],['voice','AI & voice','On-device AI, speech'],['data','Your data','Backup, import, export, sample data']];window.FF_SETS=SETS;
 function findHTML(){return`<div class="data">Find anything</div><div class="fnd-in" style="margin-top:10px">${ic('search')}<input id="fndq" data-find type="search" placeholder="Goals, habits, steps, journal, settings" autocomplete="off" enterkeyhint="search"></div><div class="fnd-res" id="fndr">${findRes('')}</div>`}
 function fRow(act,attrs,c,t,s){return`<button class="fnd-r" data-act="${act}" ${attrs} style="${c?'--c:'+c:''}"><i></i><span class="t"><b>${esc(t)}</b>${s?`<small>${esc(s)}</small>`:''}</span>${ic('next','ico-s')}</button>`}
 function findRes(q){q=String(q||'').trim().toLowerCase();const hit=s=>s&&String(s).toLowerCase().includes(q);const out=[];
@@ -8401,7 +8401,7 @@ function cutSec(o,m){const i=o.indexOf(m);if(i<0)return o;const j=o.indexOf('</s
    More is a sheet: every page you haven't pinned as a big tile (one tap), search at the top (it doesn't grab the
    keyboard), your bar's pages, and settings shortcuts. Edit pins and orders pages in place. Tap More again, the
    close button, the scrim or Back to close it. */
-const PG=[['today','Home','home','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['activity','Activity','flame','Steps, sleep, screen time, workouts'],['journal','Journal','journal','Moments and history'],['vista','Timeline','map','Goal paths and life map'],['ask','Ask','ai','Insights and AI planning'],['threads','Notes','thread','Notes, ideas and running logs'],['agent','Agent','agent','Tasks it runs for you, with your calendar, email and more'],['lists','Lists','checklist','Checklists, packing and shopping lists you can share'],['bills','Bills','bill','Receipts and bills, read by the AI'],['chats','Conversations','hist','Your chats and talks with the assistant'],['me','Picture of me','me','Who you are, written by the AI from everything you add'],['canvas','AI canvas','cvs','Build reports, apps, sites and designs with the AI'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['howto','How-to','howto','Short guides with live demos of every feature'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='howto'||p[0]==='vista'||p[0]==='bench'||p[0]==='lists'||p[0]==='bills'||p[0]==='agent'||p[0]==='chats'||p[0]==='me'||p[0]==='canvas'||VIEWS[p[0]]);
+const PG=[['today','Home','home','Your day, insights and what’s next'],['habits','Habits','habit','Build, break and routines'],['cal','Calendar','cal','Day, week and month plans'],['goals','Goals','goals','Every goal and its steps'],['activity','Activity','flame','Steps, sleep, screen time, workouts'],['journal','Journal','journal','Moments and history'],['vista','Timeline','map','Goal paths and life map'],['ask','Ask','ai','Insights and AI planning'],['threads','Notes','thread','Notes, ideas and running logs'],['agent','Agent','agent','Tasks it runs for you, with your calendar, email and more'],['lists','Lists','checklist','Checklists, packing and shopping lists you can share'],['bills','Bills','bill','Receipts and bills, read by the AI'],['chats','Conversations','hist','Your chats and talks with the assistant'],['me','Picture of me','me','Who you are, written by the AI from everything you add'],['canvas','AI canvas','cvs','Build reports, apps, sites and designs with the AI'],['bench','Workbench','wbbench','Ideas, workflows and architectures with any AI'],['howto','How-to','howto','Short guides with live demos of every feature'],['settings','Settings','settings','Sync, look, notifications, sharing']].filter(p=>p[0]==='howto'||p[0]==='vista'||p[0]==='bench'||p[0]==='lists'||p[0]==='bills'||p[0]==='agent'||p[0]==='chats'||p[0]==='me'||p[0]==='canvas'||VIEWS[p[0]]);window.FF_PAGES=PG;
 /* phone home: every page in one row you swipe (pages not in the bar first); the next tile peeks in, so it reads as scrollable. Desktop has the rail, so it's hidden there. */
 /* most used first: writing and lists, then asking, then the rest */
 const FEAT_RANK=['journal','lists','bills','ask','threads','agent','activity','cal','goals','habits','chats','vista','bench'],featR=k=>{const i=FEAT_RANK.indexOf(k);return i<0?99:i};
@@ -8486,22 +8486,51 @@ const HOME_ORDER=['head','demo','share','feat','day','scr','stp','talk','weekly'
 const HOME_FIXED=['head','demo','share','other'],HOME_OFF0=['quick','pinned','threads','aip'];
 const HOME_NAME={feat:['Page shortcuts','Journal, Lists, Ask, Agent and more'],talk:['Talk with your assistant','Start a voice conversation'],day:['Your day','Progress ring and what’s next'],weekly:['Weekly review nudge','At the end of the week'],goals:['Today’s goals','Your checklist for today'],snap:['Habits','This week at a glance'],next:['Up next','The next step on your top goal'],coming:['Coming up','Next steps on other goals'],sched:['Scheduled','Reminders, timers and check-ins coming up'],charts:['Trends','Charts of your habits, goals and journal'],insights:['Insights','Streaks and patterns worth knowing'],act:['Activity','Steps and sleep'],scr:['Screen time','Today hour by hour, by app'],stp:['Steps','Today hour by hour'],quick:['Quick add','Buttons to add a goal, habit, entry…'],pinned:['Pinned goals','Goals you pinned'],threads:['Notes','Your running logs'],aip:['Plan with AI','Turn a wish into a plan']};
 const homeCfg=()=>{const c=S.settings.homeSecs||{};const o=(c.order||[]).filter(k=>HOME_ORDER.includes(k));HOME_ORDER.forEach(k=>{if(!o.includes(k))o.splice(Math.max(0,HOME_ORDER.indexOf(k)),0,k)});return{order:o,off:c.off||HOME_OFF0}};
-function homeKey(n){const c=n.classList,h=((n.querySelector(':scope>.st-h h3')||{}).textContent||'').trim().toLowerCase();
+function homeKey(n){if(n.dataset&&n.dataset.hk)return n.dataset.hk;const c=n.classList,h=((n.querySelector(':scope>.st-h h3')||{}).textContent||'').trim().toLowerCase();
  if(n.tagName==='HEADER')return'head';if(c.contains('demob'))return'demo';if(c.contains('sh-today'))return'share';if(c.contains('hft'))return'feat';if(c.contains('hmq'))return'quick';if(c.contains('hday'))return'day';if(c.contains('hscr'))return'scr';if(c.contains('hstp'))return'stp';if(c.contains('lv-home'))return'talk';if(c.contains('hsnap'))return'snap';if(c.contains('hsched'))return'sched';if(c.contains('hcharts'))return'charts';if(n.id==='actCard')return'act';if(c.contains('aip'))return'aip';if(n.dataset&&n.dataset.act==='weekly')return'weekly';if(n.querySelector(':scope>.now'))return'next';
  if(h.startsWith('insight'))return'insights';if(h.startsWith('today'))return'goals';if(h.startsWith('coming'))return'coming';if(h.startsWith('pinned'))return'pinned';if(h.startsWith('thread'))return'threads';return'other'}
 function homeOrder(html){const t=document.createElement('template');t.innerHTML=html;const N=[...t.content.children];if(N.length<3)return html;const C=homeCfg();
  const L=N.map((n,i)=>({n,i,k:homeKey(n)})).filter(x=>HOME_FIXED.includes(x.k)||!C.off.includes(x.k)).map(x=>({...x,r:x.k==='head'?-2:x.k==='demo'||x.k==='share'?-1:C.order.indexOf(x.k)}));L.sort((a,b)=>a.r-b.r||a.i-b.i);
  const hid=C.off.filter(k=>HOME_NAME[k]).length;
  return L.map(x=>x.n.outerHTML).join('')+`<div class="hcust rv"><button class="link" data-act="homeCust">${ic('tune')}Customize Home${hid?` · ${hid} hidden`:''}</button></div>`}
-function homeCustHTML(){const C=homeCfg(),ks=C.order.filter(k=>HOME_NAME[k]);
- return`<div class="data">Home</div><h2 style="margin-top:6px">Customize Home</h2><p class="small muted">Pick what Home shows and in what order. Saved on this device only.</p><div class="hc-l">${ks.map((k,i)=>`<div class="hc-r${C.off.includes(k)?' off':''}"><label class="sw hc-sw"><input type="checkbox" data-hc="${k}" ${C.off.includes(k)?'':'checked'} aria-label="Show ${HOME_NAME[k][0]}"><i></i></label><span><b>${HOME_NAME[k][0]}</b><small>${HOME_NAME[k][1]}</small></span><button class="ibtn sm" data-act="homeMv" data-k="${k}" data-d="-1" aria-label="Move ${HOME_NAME[k][0]} up" ${i?'':'disabled'}>${ic('up')}</button><button class="ibtn sm" data-act="homeMv" data-k="${k}" data-d="1" aria-label="Move ${HOME_NAME[k][0]} down" ${i<ks.length-1?'':'disabled'}>${ic('down')}</button></div>`).join('')}</div>
+function homeCustHTML(){pinSync();const C=homeCfg(),ks=C.order.filter(k=>HOME_NAME[k]);
+ return`<div class="data">Home</div><h2 style="margin-top:6px">Customize Home</h2><p class="small muted">Pick what Home shows and in what order. To add a section from any page, tap the pin next to its heading. Saved on this device only.</p><div class="hc-l">${ks.map((k,i)=>`<div class="hc-r${C.off.includes(k)?' off':''}"><label class="sw hc-sw"><input type="checkbox" data-hc="${k}" ${C.off.includes(k)?'':'checked'} aria-label="Show ${HOME_NAME[k][0]}"><i></i></label><span><b>${HOME_NAME[k][0]}</b><small>${HOME_NAME[k][1]}</small></span><button class="ibtn sm" data-act="homeMv" data-k="${k}" data-d="-1" aria-label="Move ${HOME_NAME[k][0]} up" ${i?'':'disabled'}>${ic('up')}</button><button class="ibtn sm" data-act="homeMv" data-k="${k}" data-d="1" aria-label="Move ${HOME_NAME[k][0]} down" ${i<ks.length-1?'':'disabled'}>${ic('down')}</button>${k.startsWith('pin:')?`<button class="ibtn sm" data-act="homeUnpin" data-k="${k}" aria-label="Remove ${HOME_NAME[k][0]} from Home">${ic('trash')}</button>`:''}</div>`).join('')}</div>
  <div class="actions"><button class="btn ghost" data-act="homeReset">Reset</button><button class="btn pri" data-act="close">Done</button></div>`}
 function homeCustPaint(){const sh=$('#sheet'),l=sh.querySelector('.hc-l');if(!l)return;const y=sh.scrollTop;sh.innerHTML='<div class="grab"></div>'+homeCustHTML();sh.scrollTop=y;if(cur.p==='today')render(false)}
 Object.assign(ACT,{homeCust:()=>openSheet(homeCustHTML()),
  homeMv:d=>{const C=homeCfg(),ks=C.order.filter(k=>HOME_NAME[k]),i=ks.indexOf(d.k),j=i+(+d.d);if(i<0||j<0||j>=ks.length)return;[ks[i],ks[j]]=[ks[j],ks[i]];S.settings.homeSecs={order:ks,off:C.off};save();homeCustPaint()},
  homeReset:()=>{delete S.settings.homeSecs;save();homeCustPaint()}});
 document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.hc;if(!k)return;const C=homeCfg(),off=C.off.filter(x=>x!==k);if(!e.target.checked)off.push(k);S.settings.homeSecs={order:C.order,off};save();homeCustPaint()});
-{const _vt=vToday,w=f=>{try{return typeof f==='function'?f():''}catch(e){return''}};vToday=function(){return homeOrder(_vt()+w(window.scrHome)+w(window.stepsHome))};VIEWS.today=vToday}
+{const _vt=vToday,w=f=>{try{return typeof f==='function'?f():''}catch(e){return''}};vToday=function(){return homeOrder(_vt()+w(window.scrHome)+w(window.stepsHome)+w(window.pinsHTML))};VIEWS.today=vToday}
+/* 1.63.0: any section of any page can go on Home. Every section heading (.st-h h3) outside Home gets a faint pin; tapping
+   it adds that section, live, to Home, where Customize Home moves, hides or removes it like any other card. A pin is
+   {id, r: page, i: page id, h: the heading's own text, pn: page name}, kept per device with the rest of the Home layout.
+   Home draws the page and keeps just that section, so it always shows what the page shows. */
+const pinsOf=()=>S.settings.homePins||(S.settings.homePins=[]);
+const pinK=p=>'pin:'+p.id,PIN_SEL='.st-h>h3,.sc-cht>b';
+const headOf=h=>[...h.childNodes].filter(n=>n.nodeType===3||(n.nodeType===1&&!n.matches('button,small,span.data,.hpin-b'))).map(n=>n.textContent).join('').trim();
+function pinSync(){const P=pinsOf();for(let i=HOME_ORDER.length-1;i>=0;i--)if(HOME_ORDER[i].startsWith('pin:')&&!P.some(p=>pinK(p)===HOME_ORDER[i])){delete HOME_NAME[HOME_ORDER[i]];HOME_ORDER.splice(i,1)}
+ P.forEach(p=>{const k=pinK(p);if(!HOME_ORDER.includes(k))HOME_ORDER.splice(HOME_ORDER.length-1,0,k);HOME_NAME[k]=p.h?[esc(p.h),esc('From '+p.pn)]:[esc(p.pn),'The whole page']})}
+window.pinsHTML=()=>{pinSync();return pinsOf().map(p=>{let html='';try{html=VIEWS[p.r]?VIEWS[p.r](p.i||undefined):''}catch(e){return''}
+ const t=document.createElement('template');t.innerHTML=html;/* parts inside a pinned section don't get the scroll-in reveal, so they start shown */t.content.querySelectorAll('* .rv').forEach(n=>n.classList.remove('rv'));if(!p.h){/* the whole page: everything under its header, kept short on Home, with a way through to the page */
+  const body=[...t.content.children].filter(n=>!n.matches('header,.ph,.crumb')).map(n=>(n.classList.remove('rv'),n.outerHTML)).join('');if(!body)return'';
+  return`<section class="rv hpinned hpg" data-hk="${pinK(p)}"><div class="st-h"><h3>${esc(p.pn)}</h3><a class="link" href="#/${esc(p.r+(p.i?'/'+p.i:''))}">Open</a></div><div class="hpg-b">${body}</div></section>`}
+ const sec=[...t.content.querySelectorAll(PIN_SEL)].filter(h=>headOf(h)===p.h).map(h=>h.matches('.st-h>h3')?h.closest('.st-h').parentElement:h.closest('section,.panel'))[0];
+ if(sec)sec.dataset.hk=pinK(p),sec.classList.add('hpinned');
+ /* a heading that sits straight on the page: its section is the heading and the block right under it */
+ if(!sec){const st=[...t.content.querySelectorAll('.st-h>h3')].filter(h=>headOf(h)===p.h).map(h=>h.parentElement)[0];if(!st||st.parentNode!==t.content)return'';let out=st.outerHTML;const n=st.nextElementSibling;if(n&&!n.matches('.st-h,header')&&!n.querySelector('.st-h'))out+=n.outerHTML;return`<section class="rv hpinned" data-hk="${pinK(p)}">${out}</section>`}
+ return sec.outerHTML}).join('')};
+const pinName=()=>{const P=(window.FF_PAGES||[]).find(x=>x[0]===cur.p);if(P)return P[1];const t=$('#view h1');return t?t.textContent.trim().slice(0,40):cur.p};
+function pinBtns(){if(cur.p==='today')return;const P=pinsOf();const h1=$('#view h1');document.querySelectorAll('#view h1,#view .st-h>h3,#view .sc-cht>b').forEach(h=>{if(h.querySelector('.hpin-b')||h.closest('.hpinned,#sheet')||(h.tagName==='H1'&&h!==h1))return;const t=h.tagName==='H1'?'':headOf(h);if(!t&&h.tagName!=='H1')return;
+ const on=P.some(p=>p.r===cur.p&&(p.i||'')===(cur.id||'')&&p.h===t);h.insertAdjacentHTML('beforeend',`<button class="hpin-b${on?' on':''}" data-act="homePin" aria-pressed="${on}" aria-label="${on?'Remove from Home':'Show on Home'}: ${esc(t||pinName())}" title="${on?'On Home · tap to remove':'Show on Home'}">${ic('pin')}</button>`)})}
+new MutationObserver(()=>pinBtns()).observe($('#view'),{childList:true});
+Object.assign(ACT,{homePin:(d,el)=>{const h=el.closest('h1,h3,b');if(!h)return;const t=h.tagName==='H1'?'':headOf(h),P=pinsOf(),i=P.findIndex(p=>p.r===cur.p&&(p.i||'')===(cur.id||'')&&p.h===t);
+  if(i>=0){const was=P.splice(i,1)[0];save();el.classList.remove('on');el.setAttribute('aria-pressed','false');toast(`Removed “${esc(t||was.pn)}” from Home`,()=>{pinsOf().splice(i,0,was);save();el.classList.add('on')})}
+  else{const p={id:uid(),r:cur.p,i:cur.id||'',h:t,pn:pinName()};P.push(p);save();el.classList.add('on');el.setAttribute('aria-pressed','true');toast(`“${esc(t||p.pn)}” is on Home now`,()=>{const k=pinsOf().indexOf(p);if(k>=0)pinsOf().splice(k,1);save();el.classList.remove('on')})}},
+ homeUnpin:d=>{const P=pinsOf(),i=P.findIndex(p=>pinK(p)===d.k);if(i<0)return;P.splice(i,1);save();homeCustPaint()}});
+document.head.appendChild(Object.assign(document.createElement('style'),{textContent:`.hpin-b{display:inline-grid;place-items:center;width:26px;height:26px;margin-left:6px;vertical-align:middle;border:0;border-radius:50%;background:none;color:var(--muted);opacity:.35;cursor:pointer;padding:0}
+.hpin-b svg{width:15px;height:15px}h1>.hpin-b{width:30px;height:30px}h1>.hpin-b svg{width:17px;height:17px}.hpg-b{max-height:460px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 82%,transparent);mask-image:linear-gradient(#000 82%,transparent)}.hpin-b:hover,.hpin-b:focus-visible{opacity:1}.hpin-b.on{opacity:.95;color:var(--accent)}
+@media(hover:hover){.st-h:not(:hover)>h3>.hpin-b:not(.on):not(:focus-visible){opacity:.18}}`}));
 /* 1.61.0: workout programs for a gym habit or goal. Standard, widely used training splits (full body, upper/lower,
    push/pull/legs), written here so they work offline. Starting one makes a routine habit per session on its own days,
    so each workout is a checklist with streaks and reminders like any routine. Sets×reps; a trailing number is minutes. */
