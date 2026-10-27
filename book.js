@@ -109,59 +109,58 @@ function layer(cls,html,box){const d=document.createElement('div');d.className='
 /* 1.60.0 (owner's call): a page that isn't on screen yet stays plain paper while it turns in, and gets its words
    once the turn has landed. Nothing new has to be drawn mid-turn, so nothing can flash. A cover keeps its leather. */
 const blankPg=p=>!p?pageHTML(p):p.k==='cover'?'<div class="bk-pc bk-cover"></div>':'<div class="bk-pc"></div>';
-function turnStart(dir,startY){if(B.busy)return false;const ni=clampI(B.i+dir*step());if(ni===B.i)return false;const book=$b('#bkBook');if(!book)return false;
- const L=$b('#bkL'),R=$b('#bkR'),i=B.i,sp=B.sp,mir=sp&&dir<0,pg=mir?L:R,br=book.getBoundingClientRect(),pr=pg.getBoundingClientRect(),W=pr.width,H=pr.height,box={x:pr.left-br.left,y:pr.top-br.top,w:W,h:H};
- const scrollOf=el=>{const c=el.querySelector('.bk-pc');return c?c.scrollTop:0};
- let frontP,frontN,backP,backN,underHTML;
- if(sp&&dir>0){frontP=B.P[i+1];frontN=i+2;backP=B.P[i+2];backN=i+3;underHTML=blankPg(B.P[i+3])}
- else if(sp){frontP=B.P[i];frontN=i+1;backP=B.P[i-1];backN=i;underHTML=blankPg(B.P[i-2])}
- else if(dir>0){frontP=B.P[i];frontN=i+1;underHTML=blankPg(B.P[i+1])}
- else{frontP=B.P[i-1];frontN=i;underHTML=null}
- const sc=(dir>0||sp)?scrollOf(pg):0;
- /* 1.59.8: when the turning page is the one on screen, that real (already painted) page folds; a fresh copy could show
-    up blank for a frame or two before Android paints it. The next page waits behind it. Only a phone page coming back
-    from the left needs a copy. */
+/* 1.60.1: turning works the way Noor's reader does, which stays smooth on phones. The turning layers are made once per
+   book and reused (no new layers to paint mid-turn); the flap carries its transform and its clip on one element; and the
+   shadows are strips moved with transforms, so no gradient is redrawn while the finger moves. Only the two clip paths
+   change each frame. */
+function lays(){const book=$b('#bkBook');if(!book)return null;if(B.lay&&B.lay.under.isConnected)return B.lay;
+ const mk=(cls,html)=>{const d=document.createElement('div');d.className='bk-lay '+cls;d.style.visibility='hidden';if(html)d.innerHTML=html;book.appendChild(d);return d};
+ const under=mk('bk-pg bk-under'),copy=mk('bk-pg bk-copy'),sh=mk('bk-shw','<i class="bk-cs"></i><i class="bk-fs"></i>'),flap=mk('bk-pg bk-flap','<div class="bk-back"></div><i class="bk-gl"></i>');
+ return B.lay={under,copy,sh,flap,cs:sh.firstChild,fs:sh.lastChild,back:flap.firstChild,gl:flap.lastChild}}
+const LAYS=Y=>[Y.under,Y.copy,Y.sh,Y.flap];
+function turnStart(dir,startY){if(B.busy)return false;const ni=clampI(B.i+dir*step());if(ni===B.i)return false;const book=$b('#bkBook'),Y=lays();if(!book||!Y)return false;
+ const L=$b('#bkL'),R=$b('#bkR'),i=B.i,sp=B.sp,mir=sp&&dir<0,pg=mir?L:R,br=book.getBoundingClientRect(),pr=pg.getBoundingClientRect(),W=pr.width,H=pr.height,side=mir?' bk-l':' bk-r';
+ let frontP,backP,underP,under=true;
+ if(sp&&dir>0){frontP=B.P[i+1];backP=B.P[i+2];underP=B.P[i+3]}
+ else if(sp){frontP=B.P[i];backP=B.P[i-1];underP=B.P[i-2]}
+ else if(dir>0){frontP=B.P[i];underP=B.P[i+1]}
+ else{frontP=B.P[i-1];under=false}
+ /* the turning page is the real one on screen, except a phone page coming back from the left (a plain copy) */
  const real=sp||dir>0;
- const front=real?pg:layer('bk-pg bk-front'+(mir?' bk-l':' bk-r'),blankPg(frontP)+'<i class="bk-fsh"></i>',box);
- if(real){front.classList.add('bk-front');front.insertAdjacentHTML('beforeend','<i class="bk-fsh"></i>')}
- const under=underHTML!=null?layer('bk-pg bk-under'+(mir?' bk-l':' bk-r'),underHTML,box):null;if(under&&real)under.style.setProperty('z-index','0','important');
- const cast=layer('bk-cast',null,box);
- const flapW=layer('bk-flapw',null,box),flapC=document.createElement('div');flapC.className='bk-pg bk-flap'+(mir?' bk-r':' bk-l');
- flapC.innerHTML=(sp?`<div class="bk-back" style="width:${W}px;height:${H}px">${blankPg(backP)}</div>`:'<div class="bk-back bk-paperback"></div>')+'<i class="bk-gloss"></i>';flapW.appendChild(flapC);
- const lays=[under,cast,real?null:front,flapW].filter(Boolean);lays.forEach(x=>x.classList.add('bk-prep'));book.append(...lays);raise(lays);if(!real){const fc=front.querySelector('.bk-pc');if(fc)fc.scrollTop=sc}
+ const put=(el,cls,html)=>{el.className='bk-lay '+cls;Object.assign(el.style,{left:(pr.left-br.left)+'px',top:(pr.top-br.top)+'px',width:W+'px',height:H+'px',clipPath:'',transform:'',visibility:'visible'});if(html!=null&&el._h!==html){el.innerHTML=html;el._h=html}};
+ if(under)put(Y.under,'bk-pg bk-under'+side,blankPg(underP));else Y.under.style.visibility='hidden';
+ if(!real)put(Y.copy,'bk-pg bk-copy'+side,blankPg(frontP));else Y.copy.style.visibility='hidden';
+ put(Y.sh,'bk-shw'+side,null);Y.sh.style.visibility='hidden';
+ put(Y.flap,'bk-pg bk-flap'+(mir?' bk-r':' bk-l'),null);Y.flap.style.visibility='hidden';
+ Y.back.className=sp?'bk-back':'bk-back bk-paperback';Y.back.style.width=W+'px';Y.back.style.height=H+'px';const bh=sp?blankPg(backP):'';if(Y.back._h!==bh){Y.back.innerHTML=bh;Y.back._h=bh}
  const cy=(startY!=null?startY:H*.82)>H/2?H:0;
- T={dir,ni,W,H,mir,cy,real,under,front,cast,flapW,flapC,P:dir>0||sp?[W,cy]:[-W,cy],done:false};
+ T={dir,ni,W,H,mir,cy,real,front:real?pg:Y.copy,P:dir>0||sp?[W,cy]:[-W,cy],done:false};
  B.busy=true;foldTo(T.P);return true}
 /* the corner positions that mean "not turned" and "fully turned" for this turn */
 const P0=t=>t.dir>0||t.mir?[t.W,t.cy]:[-t.W,t.cy],P1=t=>t.dir>0||t.mir?[-t.W,t.cy]:[t.W,t.cy];
-function foldTo(Pin){const t=T;if(!t)return;const{W,H,cy,mir}=t;let P=reach(Pin,W,H,cy);t.P=P;const C=[W,cy];
+function foldTo(Pin){const t=T,Y=B.lay;if(!t||!Y)return;const{W,H,cy,mir}=t;let P=reach(Pin,W,H,cy);t.P=P;const C=[W,cy];
  const css=X=>mir?[W-X[0],X[1]]:X,v=[C[0]-P[0],C[1]-P[1]],len=Math.hypot(v[0],v[1]);
- if(len<.5){t.front.style.clipPath='none';t.flapW.style.visibility='hidden';t.cast.style.opacity=0;return}
- t.flapW.style.visibility='visible';const n=[v[0]/len,v[1]/len],M=[(P[0]+C[0])/2,(P[1]+C[1])/2],rect=[[0,0],[W,0],[W,H],[0,H]];
- const keep=halfPlane(rect,n,M,true),fold=halfPlane(rect,n,M,false);
- t.front.style.clipPath=poly(keep.map(css));
- /* the flap: the folded part, reflected over the fold line (in css space, mirrored for a left page) */
+ if(len<.5){t.front.style.clipPath='';Y.flap.style.visibility='hidden';Y.sh.style.visibility='hidden';return}
+ const n=[v[0]/len,v[1]/len],M=[(P[0]+C[0])/2,(P[1]+C[1])/2],rect=[[0,0],[W,0],[W,H],[0,H]];
+ t.front.style.clipPath=poly(halfPlane(rect,n,M,true).map(css));
+ /* the flap: the folded part, reflected over the fold line (in css space, mirrored for a left page); its clip is in its own coordinates */
  const refl=X=>{const d=2*dot([X[0]-M[0],X[1]-M[1]],n);return[X[0]-d*n[0],X[1]-d*n[1]]};
  const F=X=>css(refl(css(X))),o=F([0,0]),ex=F([1,0]),ey=F([0,1]);
- t.flapW.style.transform=`matrix(${(ex[0]-o[0]).toFixed(5)},${(ex[1]-o[1]).toFixed(5)},${(ey[0]-o[0]).toFixed(5)},${(ey[1]-o[1]).toFixed(5)},${o[0].toFixed(2)},${o[1].toFixed(2)})`;
- t.flapC.style.clipPath=poly(fold.map(css));
- /* shading along the fold, in the flap's own (unreflected) coordinates */
- const nc=mir?[-n[0],n[1]]:n,Mc=css(M),ang=Math.atan2(nc[0],-nc[1]),Lg=Math.abs(W*Math.sin(ang))+Math.abs(H*Math.cos(ang)),Sx=W/2-nc[0]*Lg/2,Sy=H/2-nc[1]*Lg/2,dF=(Mc[0]-Sx)*nc[0]+(Mc[1]-Sy)*nc[1],half=len/2,deg=(ang*180/Math.PI).toFixed(2);
+ Y.flap.style.transform=`matrix(${(ex[0]-o[0]).toFixed(5)},${(ex[1]-o[1]).toFixed(5)},${(ey[0]-o[0]).toFixed(5)},${(ey[1]-o[1]).toFixed(5)},${o[0].toFixed(2)},${o[1].toFixed(2)})`;
+ Y.flap.style.clipPath=poly(halfPlane(rect,n,M,false).map(css));
+ /* shadows: strips that start at the fold line. The cast shadow falls on the page below (away from the spine), the
+    shade on the lifted page sits on its spine side, and the gloss runs across the flap */
+ const nc=mir?[-n[0],n[1]]:n,Mc=css(M),half=len/2,deg=Math.atan2(nc[1],nc[0])*180/Math.PI;
  const p=Math.max(0,Math.min(1,Math.abs(P[0]-P0(t)[0])/(2*W))),k=Math.sin(Math.PI*Math.min(1,p*1.15));
- t.flapC.querySelector('.bk-gloss').style.background=`linear-gradient(${deg}deg,rgba(0,0,0,0) ${dF-1}px,rgba(0,0,0,.28) ${dF}px,rgba(255,255,255,.22) ${dF+Math.min(14,half*.2)}px,rgba(255,255,255,0) ${dF+half*.45}px,rgba(0,0,0,.12) ${dF+half}px)`;
- /* the lifted page's shadow on the page it is about to cover: a gradient from the fold toward the spine (no filters: they flicker in Android WebView) */
- const dB=Lg-dF,fsh=t.front.querySelector('.bk-fsh');if(fsh)fsh.style.background=`linear-gradient(${(ang*180/Math.PI+180).toFixed(2)}deg,rgba(0,0,0,0) ${dB-1}px,rgba(0,0,0,${(.34*k+.06).toFixed(2)}) ${dB}px,rgba(0,0,0,${(.12*k).toFixed(2)}) ${dB+Math.max(12,half*.18)}px,rgba(0,0,0,0) ${dB+Math.max(28,Math.min(70,half*.5))}px)`;
- t.cast.style.clipPath=poly(fold.map(css));t.cast.style.opacity=1;
- t.cast.style.background=`linear-gradient(${deg}deg,rgba(0,0,0,0) ${dF-1}px,rgba(0,0,0,${(.5*k+.1).toFixed(2)}) ${dF}px,rgba(0,0,0,0) ${dF+Math.max(30,Math.min(90,half*.6))}px)`;
- t.front.style.setProperty('--fs',(k*.07).toFixed(3))}
-/* two frames: long enough for Android to paint what was just put on screen */
-const after2=fn=>requestAnimationFrame(()=>requestAnimationFrame(fn));
-const raise=L=>after2(()=>L.forEach(x=>x.classList.remove('bk-prep')));
-/* done: the pages underneath are redrawn while the turn's layers still cover them, and uncovered once painted. Undone: nothing underneath changed */
-/* the real page folded back to normal */
-const unfold=pg=>{pg.style.clipPath='';pg.style.removeProperty('--fs');pg.classList.remove('bk-front');const f=pg.querySelector(':scope>.bk-fsh');if(f)f.remove()};
-function turnEnd(done){if(!T)return;const t=T;T=null;const L=[t.under,t.real?null:t.front,t.cast,t.flapW].filter(Boolean);B.busy=false;if(t.real)unfold(t.front);
- if(done){B.i=t.ni;rustle();paint();if(!t.real)t.front.remove();/* a blank copy: the real page has the words now */after2(()=>L.forEach(x=>x.remove()))}else L.forEach(x=>x.remove())}
+ const strip=(el,a,w,op)=>{el.style.transform=`translate(${Mc[0].toFixed(1)}px,${Mc[1].toFixed(1)}px) rotate(${a.toFixed(2)}deg) translate(0,-50%) scaleX(${(w/100).toFixed(3)})`;el.style.opacity=op.toFixed(3)};
+ strip(Y.cs,deg,Math.max(30,Math.min(90,half*.6)),.5*k+.1);
+ strip(Y.fs,deg+180,Math.max(28,Math.min(70,half*.5)),Math.min(1,.85*k+.15));
+ strip(Y.gl,deg,Math.max(1,half),1);
+ Y.flap.style.visibility='visible';Y.sh.style.visibility='visible'}
+/* the turn is over: the real pages get their words (if it went through) and the turning layers are put away */
+function turnEnd(done){if(!T)return;const t=T;T=null;B.busy=false;if(t.real)t.front.style.clipPath='';
+ if(done){B.i=t.ni;rustle();paint()}
+ if(B.lay)LAYS(B.lay).forEach(el=>{el.style.visibility='hidden';el.style.clipPath='';el.style.transform=''})}
 /* finish (or undo) the turn: the corner travels in a slight arc, the way a hand lifts a page */
 function finishNow(){if(T&&T.goal!=null)turnEnd(T.goal);if(V&&V.goal!=null)svEnd(V.goal)}
 const EOUT=x=>1-Math.pow(1-x,3),EIO=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
@@ -176,7 +175,7 @@ let V=null;
 function viewHTML(i){return B.sp?`<div class="bk-pg bk-l">${blankPg(B.P[i])}</div><div class="bk-pg bk-r">${blankPg(B.P[i+1])}</div>`:`<div class="bk-pg bk-r">${blankPg(B.P[i])}</div>`}
 function svStart(dir){if(B.busy)return false;const ni=clampI(B.i+dir*step());if(ni===B.i)return false;const book=$b('#bkBook');if(!book)return false;const br=book.getBoundingClientRect();
  const nv=layer('bk-view',viewHTML(ni),{x:0,y:0,w:br.width,h:br.height});book.appendChild(nv);
- const cur=[...book.querySelectorAll(':scope>.bk-pg,:scope>.bk-edge')];cur.forEach(e=>{e.style.willChange='transform,opacity'});
+ const cur=[...book.querySelectorAll(':scope>.bk-pg:not(.bk-lay),:scope>.bk-edge')];cur.forEach(e=>{e.style.willChange='transform,opacity'});
  V={dir,ni,nv,cur,w:br.width+28,mode:BS().turn,p:0};B.busy=true;svSet(0);return true}
 function svSet(p){const v=V;if(!v)return;v.p=p;
  if(v.mode==='fade'){v.cur.forEach(e=>{e.style.opacity=(1-p).toFixed(3)})}
@@ -300,14 +299,16 @@ html.bk-on{overflow:hidden}
 .bk-lay.bk-pg{display:block!important}
 /* turning layers are placed against the whole book, never inside a grid column (that shifted them a page to the right) */
 .bk .bk-lay{grid-column:1/-1!important;grid-row:1!important}
-.bk-front::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,var(--fs,0));pointer-events:none}
-.bk-cast{z-index:2}
-.bk-flapw{z-index:4;transform-origin:0 0;will-change:transform}
-.bk-fsh{position:absolute;inset:0;pointer-events:none}
-.bk-flap{position:absolute;inset:0;display:block!important;border-radius:3px 8px 8px 3px;background-image:var(--grain)}
+/* 1.60.1, as in Noor: the flap moves and clips on one element; the shadows are strips moved with transforms */
+.bk-book>.bk-pg:not(.bk-lay){will-change:clip-path}
+.bk-flap{z-index:4!important;transform-origin:0 0;will-change:transform,clip-path;border-radius:3px 8px 8px 3px;background-image:var(--grain)}
+.bk-shw{overflow:hidden}
+.bk-cs,.bk-fs,.bk-gl{position:absolute;left:0;top:0;width:100px;height:300%;transform-origin:0 0;pointer-events:none}
+.bk-cs{background:linear-gradient(90deg,rgba(0,0,0,.5),rgba(0,0,0,.14) 40%,rgba(0,0,0,0))}
+.bk-fs{background:linear-gradient(90deg,rgba(0,0,0,.4),rgba(0,0,0,.14) 40%,rgba(0,0,0,0))}
+.bk-gl{background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(255,255,255,.22) 6%,rgba(255,255,255,0) 45%,rgba(0,0,0,.12))}
 .bk-back{position:absolute;left:0;top:0;transform:matrix(-1,0,0,1,0,0);transform-origin:50% 50%}
 .bk-paperback{inset:0;background:linear-gradient(90deg,var(--pp2),var(--pp))}
-.bk-gloss{position:absolute;inset:0;pointer-events:none}
 /* the page itself */
 .bk-pc{height:100%;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;padding:28px 30px 16px 38px;scrollbar-width:none;outline:0;font-family:var(--bkf);position:relative}
 .bk-pc::-webkit-scrollbar{display:none}
@@ -374,8 +375,7 @@ html.bk-on{overflow:hidden}
 .bk-reset{display:block;margin:18px auto 6px;padding:10px 16px;border:0;border-radius:12px;background:none;color:var(--ink2);font:14px var(--f-body);text-decoration:underline;cursor:pointer}
 /* sideways swipes belong to the book: each page scrolls only up and down, so Android never cancels the touch to pan it */
 .bk-book,.bk-book *{touch-action:pan-y}
-.bk-under{z-index:2!important}
-.bk-lay.bk-prep{z-index:0!important}
+.bk-under{z-index:0!important}
 .bk-view{z-index:0!important;display:grid;grid-template-columns:1fr;will-change:transform,opacity}.bk.sp .bk-view{grid-template-columns:1fr 1fr}.bk-view>.bk-pg{position:relative;grid-row:1}
 #sheet.bk-write{background-color:var(--pp)!important;background-image:var(--grain)!important;color:var(--ink)}
 #sheet.bk-write .wr-title,#sheet.bk-write #wrEd{font-family:var(--bkf);color:var(--ink);background-color:transparent}

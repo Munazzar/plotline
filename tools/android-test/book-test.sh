@@ -15,7 +15,7 @@ check() {  # check <expected index> <label>
   if [ "$(js '$("#sheet").classList.contains("on")')" = true ]; then   # a stray tap opened the writer
     shot "bugs/$STYLE-writer-opened-$N" >/dev/null; bad "$STYLE $2: the writer opened instead of a turn"; js 'closeSheet();1' >/dev/null; sleep 1.2; fi
   local r; r=$(js "(()=>{const s=BOOK.state(),B=document.querySelector('#bkBook'),R=document.querySelector('#bkR .bk-pc'),h=document.querySelector('#bkCount');
-    const left=[...B.querySelectorAll('.bk-lay,.bk-view')].length,moved=[...B.querySelectorAll(':scope>.bk-pg,:scope>.bk-edge')].filter(e=>e.style.transform||e.style.opacity).length;
+    const left=[...B.querySelectorAll('.bk-lay,.bk-view')].filter(e=>getComputedStyle(e).visibility!=='hidden').length,moved=[...B.querySelectorAll(':scope>.bk-pg:not(.bk-lay),:scope>.bk-edge')].filter(e=>e.style.transform||e.style.opacity).length;
     const r=B.getBoundingClientRect(),top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
     const dn=R&&R.querySelector('.bk-dn'),hd=h?h.innerText.replace(/\s+/g,' '):'';
     const hdOk=R&&R.classList.contains('bk-cover')?/^Journal/.test(hd):!!(dn&&new RegExp('\\\\b'+dn.textContent+'\\\\b').test(hd.split(' ').slice(0,3).join(' ')));
@@ -102,7 +102,7 @@ for STYLE in $STYLES; do
   # a swipe that starts on the "Add to this day" button (it sits mid-page on short pages) should still turn
   K=$(js '(()=>{for(let k=1;k<BOOK.state().n-1;k++){ACT.bkGo({i:k});const b=document.querySelector("#bkR .bk-add"),r=b&&b.getBoundingClientRect(),B=document.querySelector("#bkBook").getBoundingClientRect();if(r&&r.top>B.top+B.height*.3&&r.bottom<B.bottom-40)return k}return -1})()')
   if [ "$K" -ge 0 ]; then go $K; read -r AY AR <<<"$(js '(()=>{const r=document.querySelector("#bkR .bk-add").getBoundingClientRect(),d=devicePixelRatio;return Math.round((r.top+r.height/2)*d)+" "+Math.round((r.right-6)*d)})()' | tr -d '"')"
-    E=$(c 1); swipe $AR $AY $XL $AY 300; sleep 1.3; check $E "swipe starting on 'Add to this day'"; fi   # from its right end: a long enough drag
+    E=$(c 1); swipe $AR $AY $XL $AY 200; sleep 1.3; check $E "swipe starting on 'Add to this day'"; fi   # from its right end: a long enough drag
   V=$(rec_stop "book-$STYLE")
   log "analysing $V"
   BLANK_OK=1 "$PY" "$AT_DIR/frames.py" video "$V" "$OUT/frames-$STYLE" $BOX $HBOX | tee "$OUT/frames-$STYLE.txt" | tail -15 || FAIL=1
