@@ -13,6 +13,8 @@ import sys, os
 import numpy as np, cv2
 
 S = 4  # analyse at 1/4 size: fast, and still sees a one-frame glitch
+# Since 1.60.0 a page turns in as plain paper and gets its words when it lands, so blank pages are expected: BLANK_OK=1
+BLANK_OK = os.environ.get('BLANK_OK') == '1'
 
 
 def crop(img, x, y, w, h, s=1):
@@ -37,7 +39,7 @@ def video(path, out, box, hbox):
     B = [crop(g, *box, s=S) for g in small]
     H = [crop(g, *hbox, s=S) for g in small]
     for k in range(n):
-        if float(B[k].std()) < 2.0:
+        if not BLANK_OK and float(B[k].std()) < 2.0:
             flags.append((k, 'blank', 'book area is one flat colour (std %.2f)' % B[k].std()))
         if 0 < k < n - 1:
             for name, A, lim in (('flicker', B, 6.0), ('header-flicker', H, 6.0)):

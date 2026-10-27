@@ -105,7 +105,7 @@ for STYLE in $STYLES; do
     E=$(c 1); swipe $AR $AY $XL $AY 300; sleep 1.3; check $E "swipe starting on 'Add to this day'"; fi   # from its right end: a long enough drag
   V=$(rec_stop "book-$STYLE")
   log "analysing $V"
-  "$PY" "$AT_DIR/frames.py" video "$V" "$OUT/frames-$STYLE" $BOX $HBOX | tee "$OUT/frames-$STYLE.txt" | tail -15 || FAIL=1
+  BLANK_OK=1 "$PY" "$AT_DIR/frames.py" video "$V" "$OUT/frames-$STYLE" $BOX $HBOX | tee "$OUT/frames-$STYLE.txt" | tail -15 || FAIL=1
   grep -q '^\(blank\|flicker\|header\)' "$OUT/frames-$STYLE.txt" && bad "$STYLE: frame check flagged frames, see $OUT/frames-$STYLE.txt"
 done
 log "book test done, $( [ $FAIL = 0 ] && echo 'no bugs found' || echo "bugs in $OUT/book-bugs.txt")"
