@@ -97,7 +97,7 @@ const STEPS=[
 const title=x=>typeof x.t==='function'?esc(x.t()):x.t;
 function html(){const n=STEPS.length,x=STEPS[W.i],m=x.main&&x.main(),last=x.k==='end';
  return`<div class="wz" data-k="${x.k}"><div class="wz-top"><span class="data">Set up Plotlines${last?'':` · ${W.i+1} of ${n-1}`}</span>${last?'':'<button type="button" class="link small" data-act="wzLater">Finish later</button>'}</div>
- <div class="wz-dots" role="tablist" aria-label="Setup steps">${STEPS.map((y,j)=>`<button type="button" class="wz-dot${j===W.i?' on':''}${y.k!=='end'&&y.done()?' ok':''}" data-act="wzGo" data-k="${y.k}" role="tab" aria-selected="${j===W.i}" aria-label="${title(y)}"></button>`).join('')}</div>
+ <div class="wz-dots" role="tablist" aria-label="Setup steps">${STEPS.filter(y=>y.k!=='end').map((y,j)=>`<button type="button" class="wz-dot${j===W.i?' on':''}${y.k!=='end'&&y.done()?' ok':''}" data-act="wzGo" data-k="${y.k}" role="tab" aria-selected="${j===W.i}" aria-label="${title(y)}"></button>`).join('')}</div>
  <div class="wz-hd"><span class="wz-ic">${ic(x.ic)}</span><h2>${title(x)}</h2></div><p class="muted small wz-lead">${x.lead}</p>
  <div class="wz-b">${x.body()}</div>
  <div class="wz-nav">${W.i?`<button type="button" class="btn ghost wz-bk" data-act="wzBack" aria-label="Back">${ic('back')}</button>`:''}<span class="wz-sp"></span>${last?'':m?`<button type="button" class="btn ghost" data-act="wzNext">Skip</button>`:''}${m?`<button type="button" class="btn pri" data-act="wzMain">${m[0]}</button>`:`<button type="button" class="btn pri" data-act="wzNext">Next${ic('next')}</button>`}</div></div>`}
