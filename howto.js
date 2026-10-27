@@ -100,11 +100,45 @@ Object.assign(ACT,{
  hwTry:d=>go(d.r)});
 function ACT_PAINT(){const b=$('#hwPlay');if(b){b.innerHTML=ic(HW.paused?'play':'pause');b.setAttribute('aria-label',HW.paused?'Play':'Pause')}}
 
-/* the guides show up in Find anything too: under the app's own results, as they are typed */
-const fRow2=(r,t,sub)=>`<button class="fnd-r" data-act="fndGo" data-r="${esc(r)}"><i></i><span class="t"><b>${esc(t)}</b>${sub?`<small>${esc(sub)}</small>`:''}</span>${ic('next','ico-s')}</button>`;
+/* 1.63.0: Find anything understands plain words for features and settings ("change how my app looks" -> Look & feel).
+   Pages, settings sections, a few extra features and every guide are indexed once (the hand-picked words for settings and extras count like titles). A query's words, minus filler like
+   "how", "my" and "change", are matched by word start, through a few synonyms, and with one typo allowed on longer
+   words, then scored (titles weigh most). It all runs on the phone, so results appear as you type, best first. */
+const STOP=new Set('a an the to my me i im want wanna would like how do does can could where is are was find show open go get make set turn change chnage switch use using app apps plotline plotlines please for of in on off with and or it this that what which see'.split(' '));
+const SYN={look:'theme appearance design style colour color colours colors dark light mode font fonts wallpaper background glass halo pretty ui skin',theme:'look appearance dark light colour color',dark:'theme night black',font:'text typeface size bigger smaller letters',
+ notification:'notif alert alerts sound sounds ping buzz quiet disturb',vibrate:'vibration haptic haptics buzz tap feel',remind:'reminder reminders alarm alarms nudge',
+ lock:'privacy pin fingerprint face password secure security hide private',sync:'account google drive cloud backup devices sign login',ai:'assistant model llm gemma voice chat plot smart',
+ backup:'export import restore download data',delete:'remove erase clear wipe reset',home:'start dashboard main front',widget:'widgets launcher homescreen',steps:'walk walking activity pedometer',
+ screen:'phone usage screentime digital wellbeing',sleep:'bed bedtime rest',money:'bill bills receipt receipts expense expenses spend spending budget',gym:'workout exercise fitness lift training',
+ journal:'diary entry entries write writing moment',note:'notes thread threads log idea ideas',list:'lists checklist shopping groceries packing todo',goal:'goals target targets plan objective',habit:'habits routine routines streak'};
+const SYNX=new Map();for(const k in SYN){const all=[k,...SYN[k].split(' ')];all.forEach(w=>{const L=SYNX.get(w)||new Set();all.forEach(x=>L.add(x));SYNX.set(w,L)})}
+const stem=w=>w.length>4?w.replace(/(ings|ing|ies|es|ed|s)$/,''):w;
+/* one typo: a letter wrong, missing, extra, or two swapped ("chnage") */
+const near=(a,b)=>{if(a.length<6||Math.abs(a.length-b.length)>1)return false;let i=0;while(i<a.length&&a[i]===b[i])i++;if(i===a.length&&i===b.length)return true;
+ return a.slice(i+1)===b.slice(i+1)||a.slice(i)===b.slice(i+1)||a.slice(i+1)===b.slice(i)||(a[i]===b[i+1]&&a[i+1]===b[i]&&a.slice(i+2)===b.slice(i+2))};
+const SETK={account:'account sync google drive devices backup sign in login cloud',look:'look theme appearance colours fonts text size cards animations motion start page wallpaper glass halo dark light vibrate haptic tap',
+ notif:'notifications reminders check-ins quiet hours sound alerts',privacy:'privacy lock fingerprint pin hide content security',auto:'automations auto tick habits phone sensors',share:'sharing share friends family cheers invite live',
+ voice:'ai voice on-device model speech assistant server key talk',data:'data backup import export sample delete reset restore'};
+const EXTRA=[['remMgr','Reminders','Every reminder in one place: edit, turn off, pause all','reminders alarms manage pause mute snooze notifications'],['homeCust','Customize Home','Choose and order the cards on Home','home layout cards sections widgets rearrange hide show customise customize dashboard pin add'],
+ ['wkOpen','Workout programs','Beginner to advanced gym and home programs','gym workout exercise fitness program routine lifting']];
+let FI=null;
+function fIndex(){if(FI)return FI;FI=[];const P=window.FF_PAGES||[];
+ (window.FF_SETS||[]).forEach(s=>FI.push({r:'settings/'+s[0],t:s[1],sub:'Settings · '+s[2],kw:words(s[1]+' '+s[2]+' '+(SETK[s[0]]||'')),k2:words('settings setting preferences options')}));
+ P.forEach(p=>FI.push({r:p[0],t:p[1],sub:p[3],kw:words(p[1]),k2:words(p[3]+' page')}));
+ EXTRA.forEach(x=>FI.push({act:x[0],t:x[1],sub:x[2],kw:words(x[1]+' '+x[3]),k2:words(x[2])}));
+ G().forEach(g=>FI.push({r:'howto/'+g.id,t:g.title,sub:'How-to · '+g.sum,kw:words(g.title),k2:words((g.keys||'')+' '+g.cat+' '+g.sum),guide:1}));
+ FI.forEach(f=>{f.kw=f.kw.map(stem);f.k2=f.k2.map(stem)});return FI}
+function fScore(f,Q){let n=0;for(const q of Q){const qs=[q,...(SYNX.get(q)||[])].map(stem),q0=stem(q);let k=0;
+  for(const w of qs){const syn=w!==q0,m=L=>L.some(v=>v===w||(w.length>2&&v.startsWith(w))||(v.length>4&&w.startsWith(v)))||(!syn&&L.some(v=>near(w,v)));
+   if(m(f.kw))k=Math.max(k,syn?6:10);else if(m(f.k2))k=Math.max(k,syn?3:5)}if(k)n+=k+4}
+ /* every query word that matches counts extra, so an answer to the whole question beats one strong word; a page or setting beats a guide about it */
+ return n?n-(f.guide?3:0):0}
+window.featureFind=q=>{const raw=words(q),Q=raw.filter(w=>!STOP.has(w)),use=Q.length?Q:raw.filter(w=>w.length>2);if(!use.length)return[];
+ return fIndex().map(f=>({f,n:fScore(f,use)})).filter(x=>x.n>=Math.min(9,use.length*7)).sort((a,b)=>b.n-a.n).slice(0,7).map(x=>x.f)};
+const fRow2=f=>`<button class="fnd-r" data-act="${f.act||'fndGo'}" ${f.r?`data-r="${esc(f.r)}"`:''}><i></i><span class="t"><b>${esc(f.t)}</b>${f.sub?`<small>${esc(f.sub)}</small>`:''}</span>${ic('next','ico-s')}</button>`;
 document.addEventListener('input',e=>{const t=e.target;if(!t||!t.matches||!t.matches('[data-find]'))return;const r=$('#fndr');if(!r)return;const q=t.value.trim();if(!q)return;
- const L=search(q,'').slice(0,6);if(!L.length)return;const rows=`<div class="fnd-g data">How-to</div>`+L.map(x=>fRow2('howto/'+x.g.id,x.g.title,x.r.step>=0?`Step ${x.r.step+1}: ${stepText(x.g.steps[x.r.step])}`:x.g.sum)).join('');
- if(r.querySelector('.fnd-r'))r.insertAdjacentHTML('beforeend',rows);else r.innerHTML=rows});
+ const L=featureFind(q);if(!L.length)return;const rows=`<div class="fnd-g data">Features and settings</div>`+L.map(fRow2).join('');
+ if(r.querySelector('.fnd-r'))r.insertAdjacentHTML('afterbegin',rows);else r.innerHTML=rows});
 
 /* the More sheet and the sidebar find it through PAGES; it gets its own icon */
 const css=document.createElement('style');css.textContent=`
