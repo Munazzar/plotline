@@ -614,7 +614,7 @@ function thinkPlay(id){const s=TSTART[id];if(!s)return null;try{ACX=ACX||new(win
 function thinkStop(h){if(!h)return;try{h.stop();const t=h.c.currentTime;h.g.gain.cancelScheduledValues(t);h.g.gain.setValueAtTime(h.g.gain.value,t);h.g.gain.linearRampToValueAtTime(0,t+.4);setTimeout(()=>{try{h.g.disconnect()}catch(e){}},600)}catch(e){}}
 window.asHum=on=>{const id=thinkOf();if(on&&id==='none')on=false;if(!on){thinkStop(HUM);HUM=null;return}if(HUM)return;HUM=thinkPlay(id)};
 let THTRY=null;function thinkTry(){thinkStop(THTRY);const h=THTRY=thinkPlay(thinkOf());setTimeout(()=>{if(THTRY===h){thinkStop(h);THTRY=null}},5000)}
-window.asCue=k=>{if(aset().cues===false)return;cuePlay(cueOf(k));try{navigator.vibrate&&navigator.vibrate(k==='start'?[18]:[10,60,10])}catch(e){}};
+window.asCue=k=>{if(aset().cues===false)return;cuePlay(cueOf(k));try{(!window.hapOn||hapOn())&&navigator.vibrate&&navigator.vibrate(k==='start'?[18]:[10,60,10])}catch(e){}};
 
 /* ---------------- the sheet ---------------- */
 function headSub(){if(AS.busy)return AS.prog||'Thinking…';if(AS.listening)return'Listening…';if(SPK)return'Speaking…';const a=aset();if(NA&&(a.wake||a.bg)){const w=AS.wst||'';return w==='err'?'Can’t hear the wake word right now':w==='perm'?'Allow the microphone for the wake word':w==='unavailable'?'The wake word needs online speech allowed':w==='lang'?'The phone’s on-device speech can’t do your language yet. Allow online speech in Settings › Voice':`Say “${wakeWord()}” anytime`}return'Ask or tell me anything'}
