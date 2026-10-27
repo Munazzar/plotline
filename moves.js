@@ -127,6 +127,8 @@ MV.h=-1;
 
 /* the assistant reads it too: "when did I work out", "what time did I sleep", "when did I walk the most" */
 /* 1.61.0: a Home card with today's steps hour by hour, only hours that were measured (an unmeasured hour shows as not recorded) */
+/* 1.62.0: today's steps for the Steps home-screen widget: -1 is an hour nothing measured */
+window.stepsWidget=()=>{const o=day(ymd()),H=hrs(o);if(!(+o.s)&&!H)return null;return{d:ymd(),t:Math.round(+o.s||0),g:goalSteps(),h:H?H.map(v=>v==null?-1:v):null}};
 window.stepsHome=()=>{const o=day(ymd()),t=+o.s||0,H=hrs(o);if(!t&&!H)return'';const g=goalSteps(),SC=window.SCREEN;let top=-1;(H||[]).forEach((v,h)=>{if(v!=null&&v>0&&(top<0||v>H[top]))top=h});
  const stats=`<div class="sc-stats"><div><b>${n2(t)}</b><small>steps · ${Math.round(t/g*100)}% of ${n2(g)}</small></div>${top>=0?`<div><b>${SC?SC.hName(top):top+":00"}</b><small>most steps · ${n2(H[top])}</small></div>`:''}</div>`;
  const G={top:['s'],col:{s:'#59A14F'},rest:[],raw:1},ch=H&&SC?SC.bars(H.map((v,h)=>({m:v?{s:v}:{},off:v==null,v:h,lab:h%3===0?SC.hLab(h):'',aria:SC.hName(h)})),G,{act:'',h:120,min:100,fmt:v=>n2(v)+' steps',axis:v=>v>=1000?(v/1000)+'k':String(v)}):'';

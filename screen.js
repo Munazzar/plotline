@@ -171,6 +171,8 @@ if(NATIVE)setTimeout(()=>pull(true),4000);
 window.scrHours=ds=>{const D=dayData(ds);if(!D.hrs)return'';const parts=[];D.hrs.forEach((m,h)=>{const L=Object.entries(fold(m)).sort((x,y)=>y[1]-x[1]),t=L.reduce((a,x)=>a+x[1],0);if(t>=1)parts.push(`${hName(h)} ${Math.round(t)}m (${L.slice(0,3).map(([k,v])=>`${lab(k)} ${Math.round(v)}m`).join(', ')})`)});
  return parts.length?'screen time by hour (the app shows this as a chart in Screen time): '+parts.join('; '):''};
 window.SCREEN={pull,dayData,lab,bars:barsSVG,hName,hLab,PAL};
+/* 1.62.0: what the Screen time home-screen widget needs from the app: skipped apps and renamed apps (it reads the minutes itself) */
+window.scrWidget=()=>{const c=scfg();return{skip:c.skip.filter(k=>!k.startsWith('n:')),lab:c.lab}};
 /* 1.61.0: a Home card with today hour by hour (Customize Home shows, hides and moves it). Nothing recorded today: no card */
 window.scrHome=()=>{if(NATIVE)pull(false);const n=dnum(ymd()),A=agg(n,n),D=A.days[0];if(!A.total)return'';const G=legendOf(A.apps),unl=A.un.reduce((x,y)=>x+y,0),P=agg(n-1,n-1);
  const stats=`<div class="sc-stats"><div><b>${fmtMin(A.total)}</b><small>today so far${P.total?` · ${fmtMin(P.total)} yesterday`:''}</small></div>${A.hd?`<div><b>${unl}</b><small>unlocks</small></div>`:''}${G.top[0]?`<div><b>${esc(lab(G.top[0]))}</b><small>top app</small></div>`:''}</div>`;
