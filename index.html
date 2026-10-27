@@ -3587,7 +3587,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.59.8';
+const APP_VER='1.59.9';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -4516,7 +4516,15 @@ function askConfirm(t,msg,ok,fn,danger=true){CONF=fn;openSheet(`<h2>${t}</h2><p 
 function toast(msg,undo){const t=$('#toast');t.innerHTML=`<span>${msg}</span>${undo?`<button class="link" data-act="undo">Undo</button>`:''}`;UNDO=undo||null;t.classList.add('on');clearTimeout(TT);TT=setTimeout(()=>t.classList.remove('on'),undo?5200:2600)}
 const undoPoint=()=>{const s=JSON.stringify(S);return()=>{S=JSON.parse(s);save();render(false)}};
 function burst(){if(reduced())return;const b=document.createElement('div');b.className='burst';const cs=getComputedStyle(document.documentElement);const cols=[cs.getPropertyValue('--accent'),'#46C99B','#6B9BFF','#FF8C6B','#F0C862'];for(let i=0;i<34;i++){const a=Math.random()*Math.PI*2,d=80+Math.random()*180;const s=document.createElement('i');s.style.cssText=`--x:${Math.cos(a)*d}px;--y:${Math.sin(a)*d}px;--k:${cols[i%5]}`;b.appendChild(s)}document.body.appendChild(b);setTimeout(()=>b.remove(),1400)}
-const vib=()=>{try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}};
+/* 1.59.9: a light buzz when you tap, set in Settings › Look & feel (Off, Light, Medium, Strong; per device). Every buzz in the app goes through hap() */
+const HAP=[['off','Off'],['light','Light'],['medium','Medium'],['strong','Strong']],HAPMS={light:8,medium:16,strong:28};
+const hapLv=()=>HAPMS[S.settings.hap]||S.settings.hap==='off'?S.settings.hap:'light';
+window.hapOn=()=>hapLv()!=='off';
+let HAPT=0;window.hap=p=>{if(!hapOn()||!navigator.vibrate)return;const t=Date.now();if(t-HAPT<70)return;HAPT=t;try{navigator.vibrate(p||HAPMS[hapLv()])}catch(e){}};
+const vib=()=>hap();
+/* touch taps on anything you can press; not mouse clicks, and not scrolls (no click) */
+let HPT='';addEventListener('pointerdown',e=>{HPT=e.pointerType},true);
+addEventListener('click',e=>{if(!e.isTrusted||HPT!=='touch')return;const t=e.target.closest&&e.target.closest('button,a[href],[data-act],[role=tab],[role=switch],label,summary,select,input[type=checkbox],input[type=radio]');if(t&&!t.disabled&&!(t.dataset.act==='hapSet'&&t.dataset.v==='off'))hap()},true);
 async function copyText(t){if(NATIVE){try{NATIVE.copy(t);return true}catch(e){}}try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}a.remove();return ok}}
 function download(name,text,type){if(NATIVE){try{NATIVE.saveFile(name,type,text,/\.ics$/.test(name));return}catch(e){}}const b=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},800)}
 const icsEsc=s=>String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
@@ -7201,7 +7209,7 @@ function shInbox(){const rx={...(shset().rx||{})},fresh=[],og=openGroup();let ch
  if(bg.length){reactBanner(bg);render(false)}}
 /* the banner: shows on any page while the app is open */
 let RB={q:[],tm:0};
-function reactBanner(L){RB.q=[...RB.q,...L.sort((a,b)=>a.t-b.t)].slice(-12);reactShow();reactBurst(L[L.length-1].e||'💬');try{navigator.vibrate&&navigator.vibrate([20,60,20])}catch(e){}}
+function reactBanner(L){RB.q=[...RB.q,...L.sort((a,b)=>a.t-b.t)].slice(-12);reactShow();reactBurst(L[L.length-1].e||'💬');try{hapOn()&&navigator.vibrate&&navigator.vibrate([20,60,20])}catch(e){}}
 function reactShow(){let el=$('#rxb');if(!el){el=document.createElement('div');el.id='rxb';el.className='rxb';el.setAttribute('role','status');el.setAttribute('aria-live','polite');document.body.appendChild(el)}
  clearTimeout(RB.tm);const r=RB.q[RB.q.length-1];if(!r){el.classList.remove('on');return}const more=RB.q.length-1,sh=shById(r.cid);
  el.innerHTML=`<button class="rxb-main" data-act="rxOpen" data-id="${r.cid}"><span class="rxb-e">${esc(r.e||'💬')}</span><span class="rxb-t"><b>${esc(r.from)}</b><span>${r.m?esc(r.m):'sent you '+esc(r.e)}</span><small>${sh?'on “'+esc(sh.title)+'”':''}${more?` · +${more} more`:''}</small></span></button><button class="btn sm pri" data-act="shReact" data-id="${r.cid}" data-to="${esc(r.fe)}" data-nm="${esc(r.from)}">React</button><button class="ibtn sm rxb-x" data-act="rxClose" aria-label="Dismiss">✕</button>`;
@@ -8766,6 +8774,8 @@ function tszApply(){const r=document.documentElement;r.style.setProperty('--tz',
 {const _at=applyTheme;applyTheme=function(a){_at(a);tszApply()}}tszApply();
 {const _hp=homePanel;homePanel=function(){return _hp()+`<section class="panel wide rv" id="tszset"><h3>Text size</h3><p class="small muted">Makes text and everything around it bigger or smaller. Long titles wrap onto the next line.</p>${segHTML('tsz','tszSet',TSZ,String(tsz()))}<p class="small" style="margin-top:12px;font-size:${tsz()*.15}px">Preview: Plan your week in ten minutes.</p></section>`}}
 ACT.tszSet=d=>{S.settings.tsz=+d.v;save();tszApply();render(false)};
+{const _hp=homePanel;homePanel=function(){return _hp()+('vibrate' in navigator&&(NATIVE||matchMedia('(any-pointer:coarse)').matches)?`<section class="panel wide rv" id="hapset"><h3>Vibrate when you tap</h3><p class="small muted">A light buzz when you press a button, so you feel the tap. It follows your phone’s own “touch feedback” setting too.</p>${segHTML('hap','hapSet',HAP,hapLv())}</section>`:'')}}
+ACT.hapSet=d=>{S.settings.hap=d.v;save();render(false);if(d.v!=='off'){HAPT=0;hap()}};
 /* a tap in the calendar's hour grid still lands on the right half hour at any text size */
 ACT.calSlot=(d,el,e)=>{if(Date.now()-HSDRAG<300)return;const r=el.getBoundingClientRect(),z=r.height/(el.offsetHeight||r.height)||1,m=Math.max(0,Math.min(1410,Math.floor((e.clientY-r.top)/z/calPpm()/30)*30));openSheet(dayForm(null,CAL.d,pad2(Math.floor(m/60))+':'+pad2(m%60)))};
 
