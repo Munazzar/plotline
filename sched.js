@@ -138,17 +138,58 @@ function rowHTML(r){const x=r.id&&(r.k==='rem'||r.k==='day')?S.days.find(y=>y.id
  return`<li class="sc-r"><span class="sc-i">${ic(icon)}</span><span class="sd-t"><b>${esc(r.title)}</b><small>${esc(sub)}</small></span><span class="sc-w"><b>${esc(w.time)}</b><small>${esc(w.day)}</small></span>${off}</li>`}
 function schedHTML(){const now=Date.now(),R=rows(upcoming(now,48*36e5)),N=6;
  const body=R.length?`<ul class="sc-l">${R.slice(0,N).map(rowHTML).join('')}</ul>`:`<p class="small muted" style="margin:6px 0 2px">Nothing in the next two days. Try telling your assistant “remind me tomorrow to drink water every 2 hours”.</p>`;
- return`<section class="rv hsched"><div class="st-h"><h3>Scheduled</h3><button class="link" data-act="schedAll">${R.length>N?`All ${R.length}`:'This week'}</button></div><div class="panel sc-p">${body}</div></section>`}
+ return`<section class="rv hsched"><div class="st-h"><h3>Scheduled</h3><span class="rm-h"><button class="link" data-act="remMgr">Manage</button><button class="link" data-act="schedAll">${R.length>N?`All ${R.length}`:'This week'}</button></span></div><div class="panel sc-p">${+S.settings.remPause>Date.now()?`<p class="small rm-pzl">${ic('bell','ico-s')} Reminders paused until ${esc(tWhen(+S.settings.remPause).day+' '+tWhen(+S.settings.remPause).time)} · <button class="link" data-act="remPause" data-m="0">Resume</button></p>`:''}${body}</div></section>`}
 function schedAllHTML(){const now=Date.now(),R=rows(upcoming(now,7*864e5));let last='';
  return`<div class="data">Next 7 days</div><h2 style="margin-top:6px">Scheduled</h2>${R.length?`<ul class="sc-l">${R.map(r=>{const d=tWhen(r.at).day,h=d!==last?`<li class="sc-d data">${esc(d)}</li>`:'';last=d;return h+rowHTML(r)}).join('')}</ul>`:'<p class="muted">Nothing scheduled this week.</p>'}
  <p class="small muted">Reminders, timers, goal check-ins, habit reminders and agent tasks. Ask your assistant to add or change any of them.</p><div class="actions"><button class="btn pri" data-act="close">Done</button></div>`}
 Object.assign(ACT,{schedAll:()=>openSheet(schedAllHTML()),
  schedOff:d=>{const x=S.days.find(y=>y.id===d.id);if(!x)return;const prev={...x},plot=x.src==='plot';
   if(plot)S.days=S.days.filter(y=>y!==x);else{x.remind='';delete x.rep;x.u=Date.now()}save();sync();
-  if($('#sheet').classList.contains('on')&&$('#sheet .sc-l'))openSheet(schedAllHTML());redraw();
-  toast(`Cancelled “${esc(prev.title)}”`,()=>{if(plot)S.days.push(prev);else Object.assign(x,prev);save();sync();redraw();if($('#sheet .sc-l'))openSheet(schedAllHTML())})}});
+  if($('#sheet .rm-pz'))remRe();else if($('#sheet').classList.contains('on')&&$('#sheet .sc-l'))openSheet(schedAllHTML());redraw();
+  toast(`Cancelled “${esc(prev.title)}”`,()=>{if(plot)S.days.push(prev);else Object.assign(x,prev);save();sync();redraw();if($('#sheet .rm-pz'))remRe();else if($('#sheet .sc-l'))openSheet(schedAllHTML())})}});
 /* the assistant's "See what's scheduled" chip */
 if(typeof window.__route==='function'){const _r=window.__route;window.__route=r=>{if(r==='sched'){go('today');setTimeout(()=>ACT.schedAll(),350);return}return _r(r)}}
+/* 1.61.0: Reminders, all in one place. Every source that can notify (reminders, habits, goal steps, check-ins, target
+   dates, agent tasks, wrap-up, lists) listed once with its next time, searchable, with Edit and Off on each, and a
+   pause for all of them (S.settings.remPause: until when). A pause holds back both Android's alarms and in-app ones. */
+const PZ=()=>{const p=+S.settings.remPause||0;return p>Date.now()?p:0};
+const _al=alarmList;alarmList=function(now,all){const L=_al(now,all),p=PZ();return p?L.filter(x=>x.at>p):L};
+const _nt=notify;notify=function(t,b){if(PZ()&&t!=='Focus session complete')return;return _nt(t,b)};
+const rkey=x=>x.k==='rem'||x.k==='day'?'d'+x.id:x.k==='step'?'s'+x.s:x.k==='habit'?'h'+x.hid:x.k==='checkin'?(/^Target:/.test(x.title)?'t':'c')+x.g:x.k+':'+x.title;
+const RGRP=[['habit','Habits'],['rem','Reminders'],['step','Goal steps'],['checkin','Goal check-ins and targets'],['other','Agent, lists and more']];
+function remSrcs(){const L=_al(Date.now(),true).filter(x=>x.k!=='timer'&&x.k!=='mile').sort((a,b)=>a.at-b.at),seen={},out=[];
+ L.forEach(x=>{const k=rkey(x);if(seen[k]){seen[k].n++;return}out.push(seen[k]={...x,key:k,n:1})});return out}
+function remSub(r){if(r.k==='habit'){const h=H(r.hid);if(h)return`${freqText(h)} · ${habitRemTimes(h).map(fmtTime).join(', ')}${h.again?` · again after ${everyS(h.again)}`:''}`}
+ if(r.k==='rem'||r.k==='day'){const x=S.days.find(y=>y.id===r.id);if(x&&x.rep)return`Every ${everyS(+x.rep.m)} until ${fmtTime(x.rep.to||'21:00')}`}
+ if(r.k==='checkin'&&!/^Target:/.test(r.title)){const g=G(r.g);if(g)return g.checkin==='weekly'?`Weekly · ${new Date(2024,0,7+(+g.checkinDay||0)).toLocaleDateString(undefined,{weekday:'long'})} ${fmtTime(g.checkinTime||'19:00')}`:`Daily · ${fmtTime(g.checkinTime||'19:00')}`}
+ return r.body||''}
+function remBtns(r){const x=(r.k==='rem'||r.k==='day')&&S.days.find(y=>y.id===r.id),T=esc(r.title);
+ const ed=r.k==='habit'?`data-k="habit" data-id="${r.hid}"`:r.k==='step'?`data-k="step" data-g="${r.g}" data-s="${r.s}"`:r.k==='checkin'?`data-k="goal" data-id="${r.g}"`:x&&!x.rep&&!(+x.at>0)?`data-k="day" data-id="${x.id}"`:'';
+ const off=x&&x.src==='plot'?`<button class="btn sm ghost" data-act="schedOff" data-id="${x.id}" aria-label="Delete ${T}">Delete</button>`:ed?`<button class="btn sm ghost" data-act="remOff" data-key="${r.key}" aria-label="Turn off ${T}">Off</button>`:r.k==='agent'?`<a class="btn sm ghost" href="#/agent">Open</a>`:'';
+ return(ed?`<button class="btn sm" data-act="remEdit" ${ed} aria-label="Edit ${T}">Edit</button>`:'')+off}
+function remMgrHTML(){const R=remSrcs(),p=PZ(),w=t=>{const d=tWhen(t);return d.day+' '+d.time};
+ const grp=k=>RGRP.some(g=>g[0]===k)?k:k==='day'?'rem':'other';
+ const body=RGRP.map(([g,name])=>{const rs=R.filter(r=>grp(r.k)===g);return rs.length?`<div class="rm-g"><div class="sc-d data">${name} · ${rs.length}</div><ul class="sc-l">${rs.map(r=>{const[icon]=KIND[r.k]||['bell'];
+  return`<li class="sc-r rm-r" data-q="${esc((r.title+' '+remSub(r)).toLowerCase())}"><span class="sc-i">${ic(icon)}</span><span class="sd-t"><b>${esc(r.title)}</b><small>${esc(remSub(r))}</small><small>Next: ${esc(w(r.at))}</small></span><span class="rm-a">${remBtns(r)}</span></li>`}).join('')}</ul></div>`:''}).join('');
+ const pz=p?`<div class="panel rm-pz on">${ic('bell')}<span><b>Paused until ${esc(w(p))}</b><small>Nothing will notify you before then.</small></span><button class="btn sm pri" data-act="remPause" data-m="0">Resume</button></div>`
+  :`<div class="rm-pz"><span class="small muted">Pause all</span>${[[60,'1 hour'],[180,'3 hours'],['tm','Until tomorrow'],[10080,'1 week']].map(([m,n])=>`<button class="chip" data-act="remPause" data-m="${m}">${n}</button>`).join('')}</div>`;
+ return`<div class="data">Every reminder</div><h2 style="margin-top:6px">Reminders</h2>${pz}${R.length>5?`<div class="fnd-in rm-q">${ic('search')}<input type="search" data-remq placeholder="Search reminders" autocomplete="off"></div>`:''}
+ ${R.length?body:'<p class="muted">No reminders yet. Turn one on from a habit or goal (the bell), or tell your assistant “remind me at 6 to stretch”.</p>'}
+ <div class="actions"><button class="btn pri" data-act="close">Done</button></div>`}
+const remRe=()=>{if($('#sheet').classList.contains('on')&&$('#sheet .rm-pz')){const sh=$('#sheet'),y=sh.scrollTop;openSheet(remMgrHTML());sh.scrollTop=y}};
+function remOffOf(key){const R=remSrcs().find(r=>r.key===key);if(!R)return null;
+ if(R.k==='habit'){const h=H(R.hid);return h&&[h,{remind:false,again:0}]}
+ if(R.k==='step'){const g=G(R.g),s=g&&g.steps.find(x=>x.id===R.s);return s&&[s,{remind:''},g]}
+ if(R.k==='day'||R.k==='rem'){const x=S.days.find(y=>y.id===R.id);return x&&[x,{remind:''}]}
+ if(R.k==='checkin'){const g=G(R.g);return g&&[g,/^Target:/.test(R.title)?{remTarget:''}:{checkin:''}]}return null}
+Object.assign(ACT,{remMgr:()=>openSheet(remMgrHTML()),
+ remOff:d=>{const o=remOffOf(d.key);if(!o)return;const[x,ch,par]=o,prev={};for(const k in ch)prev[k]=x[k];Object.assign(x,ch);x.u=Date.now();if(par)par.u=Date.now();save();sync();redraw();remRe();
+  toast(`Turned off “${esc(x.title)}”`,()=>{Object.assign(x,prev);x.u=Date.now();save();sync();redraw();remRe()})},
+ remPause:d=>{if(d.m==='0'){delete S.settings.remPause}else{let t=Date.now()+(+d.m||0)*6e4;if(d.m==='tm'){const n=new Date();n.setDate(n.getDate()+1);n.setHours(7,0,0,0);t=n.getTime()}S.settings.remPause=t}
+  save();sync();redraw();remRe();toast(PZ()?'Reminders paused':'Reminders back on')}});
+document.addEventListener('input',e=>{if(!e.target.matches||!e.target.matches('[data-remq]'))return;const q=e.target.value.trim().toLowerCase();
+ document.querySelectorAll('#sheet .rm-r').forEach(li=>li.hidden=!!q&&!li.dataset.q.includes(q));document.querySelectorAll('#sheet .rm-g').forEach(g=>g.hidden=![...g.querySelectorAll('.rm-r')].some(li=>!li.hidden))});
+if(typeof window.__route==='function'){const _r2=window.__route;window.__route=r=>{if(r==='reminders'){go('today');setTimeout(()=>ACT.remMgr(),350);return}return _r2(r)}}
 
 /* ---------------- Home: trends ---------------- */
 function bars(vals,o={}){const mx=o.max||Math.max(1,...vals.map(v=>v||0));const tn=dnum(ymd());
@@ -170,6 +211,13 @@ if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){let a='',b=
 window.SCHED={make,remind,timer,checkin,fromText,words,occ,upcoming};
 
 const css=document.createElement('style');css.textContent=`
+.rm-h{display:flex;gap:14px}
+.rm-pz{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 12px}
+.rm-pz.on{padding:10px 12px;gap:10px;flex-wrap:nowrap}.rm-pz.on>span{flex:1;display:flex;flex-direction:column;min-width:0}.rm-pz.on small{color:var(--muted)}
+.rm-pzl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 8px}
+.rm-q{margin:0 0 6px}
+.rm-r{flex-wrap:wrap}.rm-r .sd-t{flex:1;min-width:0}.rm-r .sd-t small{display:block}
+.rm-a{display:flex;gap:6px;margin-left:auto}
 .sc-p{padding:4px 14px}.sc-l{list-style:none;margin:0;padding:0}
 .sc-r{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent)}.sc-r:first-child,.sc-d+.sc-r{border-top:0}
 .sc-i{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:11px;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}.sc-i svg{width:18px;height:18px}

@@ -126,6 +126,11 @@ MV.h=-1;
  for(const[id,m]of[['steps','steps'],['sleep','sleep'],['work','work'],['places','places']]){const a=h.indexOf(`id="act-${id}"`),e=a<0?-1:h.indexOf('</section>',a);if(e>0)h=h.slice(0,e)+`<button class="btn sm scr-in" data-act="mvM" data-v="${m}">${ic('chart')}In detail</button>`+h.slice(e)}return h}}
 
 /* the assistant reads it too: "when did I work out", "what time did I sleep", "when did I walk the most" */
+/* 1.61.0: a Home card with today's steps hour by hour, only hours that were measured (an unmeasured hour shows as not recorded) */
+window.stepsHome=()=>{const o=day(ymd()),t=+o.s||0,H=hrs(o);if(!t&&!H)return'';const g=goalSteps(),SC=window.SCREEN;let top=-1;(H||[]).forEach((v,h)=>{if(v!=null&&v>0&&(top<0||v>H[top]))top=h});
+ const stats=`<div class="sc-stats"><div><b>${n2(t)}</b><small>steps · ${Math.round(t/g*100)}% of ${n2(g)}</small></div>${top>=0?`<div><b>${SC?SC.hName(top):top+":00"}</b><small>most steps · ${n2(H[top])}</small></div>`:''}</div>`;
+ const G={top:['s'],col:{s:'#59A14F'},rest:[],raw:1},ch=H&&SC?SC.bars(H.map((v,h)=>({m:v?{s:v}:{},off:v==null,v:h,lab:h%3===0?SC.hLab(h):'',aria:SC.hName(h)})),G,{act:'',h:120,min:100,fmt:v=>n2(v)+' steps',axis:v=>v>=1000?(v/1000)+'k':String(v)}):'';
+ return`<section class="rv hstp"><div class="st-h"><h3>Steps</h3><a class="link" href="#/activity">Details</a></div><a class="panel hw" href="#/activity" aria-label="Steps today: ${n2(t)}. Open details">${stats}${ch}${H?'':'<p class="small muted" style="margin:2px 4px 6px">No hour-by-hour steps recorded today.</p>'}</a></section>`};
 window.actDetail=ds=>{const o=day(ds),out=[],H=hrs(o);
  if(H){const top=H.map((v,h)=>[h,v]).filter(x=>x[1]!=null&&x[1]>=100).sort((a,b)=>b[1]-a[1]).slice(0,6).sort((a,b)=>a[0]-b[0]);if(top.length)out.push('steps by hour: '+top.map(([h,v])=>`${SC.hName(h)} ${n2(v)}`).join(', '))}
  if((o.w||[]).length)out.push('workouts: '+o.w.map(w=>`${wName(w)}${w.t?' '+hm(w.t)+'–'+hm(w.t+(+w.m||0)*6e4):''} (${fmtMin(w.m)})`).join(', '));

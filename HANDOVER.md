@@ -4,7 +4,7 @@ Written 2026-10-24 (updated the same day for 1.52.0 and 1.53.0) for a fresh Clau
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.60.1 is on main and released** (versionCode 161). **The next versionCode is 162.** (`tools/apk/build.cjs` needs old and new versionName of the same length, so after 1.59.9 came 1.60.0.)
+Current state: **v1.61.0 is on main and released** (versionCode 162). **The next versionCode is 163.** (`tools/apk/build.cjs` needs old and new versionName of the same length, so after 1.59.9 came 1.60.0.)
 
 **Product rules for every change (section 7 has the full list):** sync everything except looks and device-only
 things (section 2a); obvious features (delete, delete all, undo, search) must exist wherever data lives; secure and
@@ -172,6 +172,8 @@ unless noted.
 
 - **1.60.0: no flicker by design (the owner's idea).** A page that isn't on screen yet is plain paper while it turns in: the under page, the flap's back on a spread, a phone page coming back, and the slide/fade incoming view. A cover keeps its leather. The words are drawn once the turn lands, in `paint()`. See `blankPg` in book.js. Owner, 2026-10-27: the flicker was still there on the phone in 1.59.9.
 
+- **1.61.0: Home widgets, a Reminders manager and workout programs.** Home has Screen time (`scrHome` in screen.js) and Steps (`stepsHome` in moves.js) cards, today hour by hour; they are Customize Home sections `scr` and `stp` and render nothing when nothing was recorded today. More › Reminders / Scheduled › Manage (`remMgr` in sched.js) lists every alarm source once (deduped from `alarmList(now,true)`), with Edit (the existing `remEdit` sheet), Off with undo, search, and Pause all (`S.settings.remPause`, per device: it filters `alarmList` and mutes `notify` except the focus timer). Workout programs (`WKP` in index.html, after Customize Home) make one `routine` habit per session on fixed weekdays, marked `wk`; offered in the routine templates and on gym-ish habits and goals (`GYM_RX`).
+  - 1.60.2 (not released): turning `.bk-pc` to `overflow:hidden` during a curl made the top bar vanish for a frame at turn start (layer rebuild). Don't toggle overflow or other layer-creating styles at turn start. The phone's slow-turn flicker is still open; a phone screen recording was asked for.
 - **1.60.1: the curl works like Munazzar/noor's book reader** (the owner: "smooth on web as well, no issues at all, just replicate that"). Slow drags on the owner's phone still flickered the shadow and the next page.
   - The turning layers (`lays()`: under, copy, shadow strips, flap) are made once per open book and reused (`visibility` toggles), never created or removed mid-turn.
   - The flap carries its transform and clip-path on one element (`will-change:transform,clip-path`). The real pages have `will-change:clip-path`.
@@ -182,7 +184,7 @@ unless noted.
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148, 1.58.0=149, 1.59.0=150, 1.59.1=151, 1.59.2=152, 1.59.3=153, 1.59.4=154, 1.59.5=155, 1.59.6=156, 1.59.7=157, 1.59.8=158, 1.59.9=159, 1.60.0=160, 1.60.1=161. **Next: 162.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148, 1.58.0=149, 1.59.0=150, 1.59.1=151, 1.59.2=152, 1.59.3=153, 1.59.4=154, 1.59.5=155, 1.59.6=156, 1.59.7=157, 1.59.8=158, 1.59.9=159, 1.60.0=160, 1.60.1=161, 1.61.0=162. **Next: 163.**
 
 ## 4. Building the APK (cloud, no Android SDK)
 
