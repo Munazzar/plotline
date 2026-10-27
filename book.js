@@ -115,12 +115,12 @@ function turnStart(dir,startY){if(B.busy)return false;const ni=clampI(B.i+dir*st
  else if(dir>0){frontP=B.P[i];frontN=i+1;underHTML=pageHTML(B.P[i+1],i+2)}
  else{frontP=B.P[i-1];frontN=i;underHTML=null}
  const sc=(dir>0||sp)?scrollOf(pg):0;
- const front=layer('bk-pg bk-front'+(mir?' bk-l':' bk-r'),pageHTML(frontP,frontN),box);
+ const front=layer('bk-pg bk-front'+(mir?' bk-l':' bk-r'),pageHTML(frontP,frontN)+'<i class="bk-fsh"></i>',box);
  const under=underHTML!=null?layer('bk-pg bk-under'+(mir?' bk-l':' bk-r'),underHTML,box):null;
  const cast=layer('bk-cast',null,box);
  const flapW=layer('bk-flapw',null,box),flapC=document.createElement('div');flapC.className='bk-pg bk-flap'+(mir?' bk-r':' bk-l');
  flapC.innerHTML=(sp?`<div class="bk-back" style="width:${W}px;height:${H}px">${pageHTML(backP,backN)}</div>`:'<div class="bk-back bk-paperback"></div>')+'<i class="bk-gloss"></i>';flapW.appendChild(flapC);
- if(under)book.append(under);book.append(cast,front,flapW);const fc=front.querySelector('.bk-pc');if(fc)fc.scrollTop=sc;
+ const lays=[under,cast,front,flapW].filter(Boolean);lays.forEach(x=>x.classList.add('bk-prep'));book.append(...lays);raise(lays);const fc=front.querySelector('.bk-pc');if(fc)fc.scrollTop=sc;
  const cy=(startY!=null?startY:H*.82)>H/2?H:0;
  T={dir,ni,W,H,mir,cy,under,front,cast,flapW,flapC,P:dir>0||sp?[W,cy]:[-W,cy],done:false};
  B.busy=true;foldTo(T.P);return true}
@@ -141,11 +141,17 @@ function foldTo(Pin){const t=T;if(!t)return;const{W,H,cy,mir}=t;let P=reach(Pin,
  const nc=mir?[-n[0],n[1]]:n,Mc=css(M),ang=Math.atan2(nc[0],-nc[1]),Lg=Math.abs(W*Math.sin(ang))+Math.abs(H*Math.cos(ang)),Sx=W/2-nc[0]*Lg/2,Sy=H/2-nc[1]*Lg/2,dF=(Mc[0]-Sx)*nc[0]+(Mc[1]-Sy)*nc[1],half=len/2,deg=(ang*180/Math.PI).toFixed(2);
  const p=Math.max(0,Math.min(1,Math.abs(P[0]-P0(t)[0])/(2*W))),k=Math.sin(Math.PI*Math.min(1,p*1.15));
  t.flapC.querySelector('.bk-gloss').style.background=`linear-gradient(${deg}deg,rgba(0,0,0,0) ${dF-1}px,rgba(0,0,0,.28) ${dF}px,rgba(255,255,255,.22) ${dF+Math.min(14,half*.2)}px,rgba(255,255,255,0) ${dF+half*.45}px,rgba(0,0,0,.12) ${dF+half}px)`;
- t.flapW.style.filter=`drop-shadow(${(-nc[0]*9*k).toFixed(1)}px ${(-nc[1]*9*k).toFixed(1)}px ${(6+12*k).toFixed(1)}px rgba(0,0,0,${(.42*k+.08).toFixed(2)}))`;
+ /* the lifted page's shadow on the page it is about to cover: a gradient from the fold toward the spine (no filters: they flicker in Android WebView) */
+ const dB=Lg-dF,fsh=t.front.querySelector('.bk-fsh');if(fsh)fsh.style.background=`linear-gradient(${(ang*180/Math.PI+180).toFixed(2)}deg,rgba(0,0,0,0) ${dB-1}px,rgba(0,0,0,${(.34*k+.06).toFixed(2)}) ${dB}px,rgba(0,0,0,${(.12*k).toFixed(2)}) ${dB+Math.max(12,half*.18)}px,rgba(0,0,0,0) ${dB+Math.max(28,Math.min(70,half*.5))}px)`;
  t.cast.style.clipPath=poly(fold.map(css));t.cast.style.opacity=1;
  t.cast.style.background=`linear-gradient(${deg}deg,rgba(0,0,0,0) ${dF-1}px,rgba(0,0,0,${(.5*k+.1).toFixed(2)}) ${dF}px,rgba(0,0,0,0) ${dF+Math.max(30,Math.min(90,half*.6))}px)`;
- t.front.style.setProperty('--fs',(k*.18).toFixed(3))}
-function turnEnd(done){if(!T)return;const t=T;T=null;[t.under,t.front,t.cast,t.flapW].forEach(x=>x&&x.remove());if(done){B.i=t.ni;rustle()}B.busy=false;paint()}
+ t.front.style.setProperty('--fs',(k*.07).toFixed(3))}
+/* two frames: long enough for Android to paint what was just put on screen */
+const after2=fn=>requestAnimationFrame(()=>requestAnimationFrame(fn));
+const raise=L=>after2(()=>L.forEach(x=>x.classList.remove('bk-prep')));
+/* done: the pages underneath are redrawn while the turn's layers still cover them, and uncovered once painted. Undone: nothing underneath changed */
+function turnEnd(done){if(!T)return;const t=T;T=null;const L=[t.under,t.front,t.cast,t.flapW].filter(Boolean);B.busy=false;
+ if(done){B.i=t.ni;rustle();paint();after2(()=>L.forEach(x=>x.remove()))}else L.forEach(x=>x.remove())}
 /* finish (or undo) the turn: the corner travels in a slight arc, the way a hand lifts a page */
 function finishNow(){if(T&&T.goal!=null)turnEnd(T.goal);if(V&&V.goal!=null)svEnd(V.goal)}
 const EOUT=x=>1-Math.pow(1-x,3),EIO=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
@@ -160,11 +166,14 @@ let V=null;
 function viewHTML(i){return B.sp?`<div class="bk-pg bk-l">${pageHTML(B.P[i],i+1)}</div><div class="bk-pg bk-r">${pageHTML(B.P[i+1],i+2)}</div>`:`<div class="bk-pg bk-r">${pageHTML(B.P[i],i+1)}</div>`}
 function svStart(dir){if(B.busy)return false;const ni=clampI(B.i+dir*step());if(ni===B.i)return false;const book=$b('#bkBook');if(!book)return false;const br=book.getBoundingClientRect();
  const nv=layer('bk-view',viewHTML(ni),{x:0,y:0,w:br.width,h:br.height});book.appendChild(nv);
- V={dir,ni,nv,cur:[...book.querySelectorAll(':scope>.bk-pg,:scope>.bk-edge')],w:br.width+28,mode:BS().turn,p:0};B.busy=true;svSet(0);return true}
+ const cur=[...book.querySelectorAll(':scope>.bk-pg,:scope>.bk-edge')];cur.forEach(e=>{e.style.willChange='transform,opacity'});
+ V={dir,ni,nv,cur,w:br.width+28,mode:BS().turn,p:0};B.busy=true;svSet(0);return true}
 function svSet(p){const v=V;if(!v)return;v.p=p;
- if(v.mode==='fade'){v.nv.style.opacity=p.toFixed(3);v.cur.forEach(e=>{e.style.opacity=(1-p*.85).toFixed(3)})}
+ if(v.mode==='fade'){v.cur.forEach(e=>{e.style.opacity=(1-p).toFixed(3)})}
  else{const x=-v.dir*v.w*p;v.cur.forEach(e=>{e.style.transform=`translateX(${x.toFixed(1)}px)`});v.nv.style.transform=`translateX(${(x+v.dir*v.w).toFixed(1)}px)`}}
-function svEnd(done){const v=V;if(!v)return;V=null;v.nv.remove();v.cur.forEach(e=>{e.style.transform='';e.style.opacity=''});if(done){B.i=v.ni;rustle()}B.busy=false;paint()}
+function svEnd(done){const v=V;if(!v)return;V=null;B.busy=false;const back=()=>{v.cur.forEach(e=>{e.style.transform='';e.style.opacity='';e.style.willChange=''});v.nv.remove()};
+ /* done: the incoming view stays on top while the real pages are redrawn and moved back behind it, then it goes */
+ if(done){B.i=v.ni;rustle();v.nv.style.setProperty('z-index','5','important');v.nv.style.transform='';paint();v.cur.forEach(e=>{e.style.transform='';e.style.opacity='';e.style.willChange=''});after2(()=>v.nv.remove())}else back()}
 function svAnim(p1,ms,cb){const v=V;if(!v)return cb&&cb();const a=v.p,t0=performance.now(),ease=x=>1-Math.pow(1-x,3);let fin=false;const end=()=>{if(fin)return;fin=true;if(V===v){svSet(p1);cb&&cb()}};
  const tick=now=>{if(fin||V!==v)return;const k=Math.min(1,(now-t0)/ms);svSet(a+(p1-a)*ease(k));if(k<1)requestAnimationFrame(tick);else end()};requestAnimationFrame(tick);setTimeout(end,ms+150)}
 function fade(){const bk=$b('#bkBook');paint();if(bk){bk.classList.remove('bk-fade');void bk.offsetWidth;bk.classList.add('bk-fade')}}
@@ -233,7 +242,7 @@ if(typeof jSwitchRow==='function'){const _js=jSwitchRow;jSwitchRow=function(on){
 if(typeof booted!=='undefined'&&booted&&(cur.p==='journal'||cur.p==='threads'))render(false);
 window.BOOK={open,close,state:()=>({open:B.open,i:B.i,n:B.P.length,sp:B.sp,busy:B.busy})};
 
-const GRAIN=`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .35 0 0 0 0 .25 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
+const GRAIN=(()=>{try{const n=160,c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d'),d=x.createImageData(n,n);for(let k=0;k<d.data.length;k+=4){d.data[k]=107;d.data[k+1]=90;d.data[k+2]=64;d.data[k+3]=Math.random()<.5?Math.round(Math.random()*17):0}x.putImageData(d,0,0);return`url(${c.toDataURL('image/png')})`}catch(e){return'linear-gradient(transparent,transparent)'}})();
 const css=document.createElement('style');css.textContent=`
 html.bk-on{overflow:hidden}
 .bk{--pp:#f7f1e4;--pp2:#efe6d3;--ink:#2b261f;--ink2:#7c705e;--rule:rgba(90,70,40,.16);--acc:#8a5a2b;--desk:radial-gradient(130% 100% at 50% 35%,#ece6dc 0,#d9d1c4 60%,#c9bfaf 100%);--board:#5a3a2a;
@@ -274,7 +283,8 @@ html.bk-on{overflow:hidden}
 .bk .bk-lay{grid-column:1/-1!important;grid-row:1!important}
 .bk-front::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,var(--fs,0));pointer-events:none}
 .bk-cast{z-index:2}
-.bk-flapw{z-index:4;transform-origin:0 0;will-change:transform,filter}
+.bk-flapw{z-index:4;transform-origin:0 0;will-change:transform}
+.bk-fsh{position:absolute;inset:0;pointer-events:none}
 .bk-flap{position:absolute;inset:0;display:block!important;border-radius:3px 8px 8px 3px;background-image:var(--grain)}
 .bk-back{position:absolute;left:0;top:0;transform:matrix(-1,0,0,1,0,0);transform-origin:50% 50%}
 .bk-paperback{inset:0;background:linear-gradient(90deg,var(--pp2),var(--pp))}
@@ -345,8 +355,8 @@ html.bk-on{overflow:hidden}
 /* sideways swipes belong to the book: each page scrolls only up and down, so Android never cancels the touch to pan it */
 .bk-book,.bk-book *{touch-action:pan-y}
 .bk-under{z-index:2!important}
-.bk-view{z-index:3;display:grid;grid-template-columns:1fr;will-change:transform,opacity}.bk.sp .bk-view{grid-template-columns:1fr 1fr}.bk-view>.bk-pg{position:relative;grid-row:1}
-.bk-book>.bk-pg,.bk-book>.bk-edge{will-change:transform}
+.bk-lay.bk-prep{z-index:0!important}
+.bk-view{z-index:0!important;display:grid;grid-template-columns:1fr;will-change:transform,opacity}.bk.sp .bk-view{grid-template-columns:1fr 1fr}.bk-view>.bk-pg{position:relative;grid-row:1}
 #sheet.bk-write{background-color:var(--pp)!important;background-image:var(--grain)!important;color:var(--ink)}
 #sheet.bk-write .wr-title,#sheet.bk-write #wrEd{font-family:var(--bkf);color:var(--ink);background-color:transparent}
 #sheet.bk-write .wr-title{font-size:calc(var(--bks) * 1.25);font-weight:600}
