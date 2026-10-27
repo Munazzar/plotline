@@ -55,6 +55,7 @@
 [data-theme=mono]{color-scheme:light;--bg:#F4F4F3;--bg-2:#EBEBEA;--surface:#FFFFFF;--surface-2:#F9F9F8;--line:rgba(0,0,0,.08);--line-2:rgba(0,0,0,.17);--text:#111111;--muted:#5C5C5C;--dim:#A6A6A6;--accent:#111111;--on-accent:#fff;--stars:0;--glow:transparent;--mo:#D6D6D6}
 /* Halo (1.35): the signature theme. Ink-dark with an iris-to-cyan light source; Halo Light is its daytime twin. */
 [data-theme=halo]{color-scheme:dark;--bg:#07080E;--bg-2:#0D0F18;--surface:#12141F;--surface-2:#191C2A;--line:rgba(196,200,255,.075);--line-2:rgba(196,200,255,.15);--text:#EEF0F8;--muted:#8D92AB;--dim:#4A4F68;--accent:#9A88FF;--on-accent:#0A0720;--stars:.2;--glow:rgba(154,136,255,.10);--mo:#262A3C;--halo-a:#A08CFF;--halo-b:#5B8DFF;--halo-c:#45D3FF;--halo-g:linear-gradient(120deg,var(--halo-a),var(--halo-b) 52%,var(--halo-c))}
+[data-theme=halo] [style*="--c:var(--mo"] .tint,[data-theme=halo] .tint[style*="--c:var(--mo"]{--t-fg:#EEF0F8;--t-mut:rgba(238,240,248,.72);--t-bar:#EEF0F8;--t-barbg:rgba(238,240,248,.16);--t-inv:#0B1020;--t-ring:rgba(238,240,248,.14);--t-moon:rgba(238,240,248,.26)}
 [data-theme=halolight]{color-scheme:light;--bg:#F4F4FA;--bg-2:#ECECF6;--surface:#FFFFFF;--surface-2:#F8F8FD;--line:rgba(30,28,80,.08);--line-2:rgba(30,28,80,.15);--text:#15142C;--muted:#5D6080;--dim:#A6A8C2;--accent:#6447FF;--on-accent:#fff;--stars:0;--glow:rgba(100,71,255,.08);--mo:#DCDCEA;--halo-a:#7B5CFF;--halo-b:#4F6BFF;--halo-c:#2AA8F2;--halo-g:linear-gradient(120deg,var(--halo-a),var(--halo-b) 52%,var(--halo-c))}
 
 /* ================= base ================= */
@@ -2200,7 +2201,7 @@ html.stu-on #vin>.ph>.ph-r{align-self:center}
 .crumb>.ph-r{flex-wrap:nowrap}
 
 /* ---- journal: one tidy row of controls, a week you can swipe, filter chips ---- */
-.jbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-14px 0 14px}
+.jbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-14px 0 14px;flex-wrap:wrap;row-gap:8px}
 .jbar>.data{color:var(--muted)}
 .jw{display:flex;align-items:center;gap:6px;border-radius:22px;background:var(--surface);border:1px solid var(--line);padding:6px;touch-action:pan-y}
 .jw .ibtn{flex:none;width:34px;height:34px;border-radius:12px}.jw .ibtn:disabled{opacity:.3;cursor:default}
@@ -3295,7 +3296,11 @@ html:is([data-theme=halo],[data-theme=halolight],[data-theme=night]) body{backgr
  .sheet.wsheet>.grab{margin-bottom:8px;flex:none}
  .sheet.wsheet>.wr{flex:1 0 auto;display:flex;flex-direction:column;gap:12px}
  .sheet.wsheet .wr-ed{flex:1 0 auto;min-height:max(220px,calc(var(--vvh,100dvh) - 330px))}
- .sheet.wsheet .wr-tb{position:sticky;top:-6px;z-index:3;background:var(--bg-2);box-shadow:0 8px 14px -10px rgba(0,0,0,.5)}
+ /* sticky offsets count from inside the sheet's top padding (6px + status bar): -6px pins a row right under the status bar */
+ .sheet.wsheet .wr-top{position:sticky;top:-6px;z-index:4}
+ .sheet.wsheet .wr-top::before{content:"";position:absolute;z-index:-1;left:-40px;right:-40px;bottom:-6px;top:calc(-6px - var(--sat,env(safe-area-inset-top)));background:var(--bg-2);opacity:0;transition:opacity .15s}
+ .sheet.wsheet.wr-stuck .wr-top::before{opacity:1}
+ .sheet.wsheet .wr-tb{position:sticky;top:calc(var(--wrth,48px) - 6px);z-index:3;background:var(--bg-2);box-shadow:0 8px 14px -10px rgba(0,0,0,.5)}
  .sheet.wsheet .wr-mood{flex:none}
  .wr-top{flex-wrap:nowrap}.wr-top .data{flex:0 1 auto;min-width:0;max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wr-pills{flex:1;min-width:0}
 }
@@ -3582,7 +3587,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.59.7';
+const APP_VER='1.59.8';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -5178,7 +5183,7 @@ const TOUR_STEPS=[
  {r:'today',c:1,native:1,t:'Home-screen widgets',x:'Long-press your home screen, choose Widgets, then Plotlines. Habit vista draws your habit lines right on the home screen. Check off goals and habits, see your week, or watch a live clean-time clock without opening the app.',d:'widget'},
  {r:'today',c:1,t:'You’re all set',x:'Your own plan is back, exactly as you left it. Replay this tour any time from Settings.'},
 ].filter(s=>(!s.native||NATIVE)&&(!s.wide||innerWidth>=1180));
-function tourPrompt(){if(TOURING||$('.tprompt')||S.settings.tourOffered)return;if(!S.settings.setupDone&&typeof setupFlow==='function'){setupFlow(tourPrompt);return}S.settings.tourOffered=true;save();const d=document.createElement('div');d.className='tprompt';d.setAttribute('role','dialog');d.innerHTML=`${LOGO}<div><b>Take a quick tour?</b><span>Two minutes, with examples, through goals, habits, the calendar, timeline and more.</span></div><div class="tp-a"><button class="btn ghost sm" data-act="tourNo">Not now</button><button class="btn pri sm" data-act="tourGo">Start tour</button></div>`;document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'))}
+function tourPrompt(){if(TOURING||$('.tprompt')||S.settings.tourOffered)return;if(document.getElementById('book')||$('#sheet').classList.contains('on')){setTimeout(tourPrompt,5000);return}if(!S.settings.setupDone&&typeof setupFlow==='function'){setupFlow(tourPrompt);return}S.settings.tourOffered=true;save();const d=document.createElement('div');d.className='tprompt';d.setAttribute('role','dialog');d.innerHTML=`${LOGO}<div><b>Take a quick tour?</b><span>Two minutes, with examples, through goals, habits, the calendar, timeline and more.</span></div><div class="tp-a"><button class="btn ghost sm" data-act="tourNo">Not now</button><button class="btn pri sm" data-act="tourGo">Start tour</button></div>`;document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'))}
 function startTour(){document.querySelector('.tprompt')?.remove();if(TOURING)return;closeSheet();RP=null;URGE=null;const st=S.settings;
  document.documentElement.dataset.touring='1';TR={prev:JSON.stringify(S),back:location.hash,hv:HV,i:-1,timers:[],pos:0};TOURING=true;
  S=norm({settings:{...JSON.parse(JSON.stringify(st)),sync:{...st.sync,on:false},timer:null,pinHash:''}});seedDemo();
@@ -5287,6 +5292,8 @@ const skCover=e=>{if(!e||!e.sk)return'';const m=/data-sk="([a-z0-9]{4,24})"/i.ex
 const skStrip=L=>L&&L.length?`<div class="sk-strip">${L.map(x=>`<img class="sk-img" src="${x.img}" alt="${x.s&&x.s.length?'Sketch':'Photo'}" loading="lazy" draggable="false">`).join('')}</div>`:'';
 const richOf=e=>e.html?skHydrate(cleanHTML(e.html),e.sk):esc(e.text||'').replace(/\n/g,'<br>');
 let WR=null,WRT=0;
+/* the writer's top row covers what scrolls under the status bar once the page has moved (not at rest, where the handle shows) */
+document.addEventListener('scroll',e=>{const s=e.target;if(!s||s.id!=='sheet'||!s.classList.contains('wsheet'))return;s.classList.toggle('wr-stuck',s.scrollTop>4);const t=s.querySelector('.wr-top');if(t)s.style.setProperty('--wrth',t.offsetHeight+6+'px')},true);
 function writeSheet(e,gid,date){const ed=!!e;PHOTO=ed?(e.img||null):null;SKC={...(ed&&e.sk||{})};WR={id:ed?e.id:null,gid:ed?e.goalId:(gid||null),date:date||(ed?ymd(new Date(e.t)):ymd())};
  const day=WR.date,sib=S.entries.filter(x=>x.type==='note'&&ymd(new Date(x.t))===day).sort((a,b)=>a.t-b.t);
  openSheet(`<div class="wr">
@@ -5938,7 +5945,8 @@ Object.assign(ACT,{
  (native llama.cpp on the Android app, wllama on the web, or your own AI server). Local engines are
  constrained by a JSON schema of the format, so a small model can only write valid JSON;
  validatePlan() still checks every field and one automatic retry carries the errors back. */
-function planEngine(){const s=insSet();if(s.engine==='api'&&s.url)return'api';if(NAT_OK())return'native';if(s.engine==='local')return'wasm';return''}
+const natReady=()=>{try{const st=NAT_ST||natSt(),f=natFile(llmOf(insSet().llm)),d=st.dl||{};return!!((st.have||{})[f]||(d.busy&&d.name===f))}catch(e){return false}};
+function planEngine(){const s=insSet();if(s.engine==='api'&&s.url)return'api';if(NAT_OK()&&(lrtOn()||natReady()))return'native';if(s.engine==='local')return'wasm';return''}
 function planEngineName(){const e=planEngine();return e==='api'?'Your AI server':e==='native'?'On-device AI on this phone':'On-device AI'}
 function planSchema(mode){const up=mode==='update',N=t=>({type:[t,'null']});
  const step={type:'object',properties:{id:up?{type:'string',maxLength:24}:{const:'new'},title:{type:'string',minLength:3,maxLength:100},dueInDays:{type:['integer','null'],minimum:0},dueTime:{type:['string','null'],pattern:'^([01][0-9]|2[0-3]):[0-5][0-9]$'},reminder:{enum:['none','at-time','15m','1h','1d','1w']},note:{type:'string',maxLength:200}},required:STEP_KEYS,additionalProperties:false};

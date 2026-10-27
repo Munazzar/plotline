@@ -4,7 +4,7 @@ Written 2026-10-24 (updated the same day for 1.52.0 and 1.53.0) for a fresh Clau
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.59.7 is on main and released** (versionCode 157). **The next versionCode is 158.**
+Current state: **v1.59.8 is on main and released** (versionCode 158). **The next versionCode is 159.**
 
 **Product rules for every change (section 7 has the full list):** sync everything except looks and device-only
 things (section 2a); obvious features (delete, delete all, undo, search) must exist wherever data lives; secure and
@@ -142,11 +142,32 @@ unless noted.
 
 - **1.59.0: UI quality pass.** Mirrored flip cards: screen.js (1.54) defined a global `.flip{transform:scaleX(-1)}`, the same class flip cards use. It is now `.scr-flip`, and flip faces rotate on their own. Narrow goal step cards with broken titles: screen.js reused `.sc-in` (now `.scr-in`) and sched.js `.sc-t` (now `.sd-t`). screen.js `.sc-top` is now `.scr-top`. **Rule: scope every module class with its own prefix.** Also: the Notes icon is restored (the 1.58 rename turned polish.js `IC.thread` into `note`), and the canvas data key is `threads` again. Plus: Up next deck shadows no longer clipped, theme grid fits, back faces scroll, phone header buttons, goal card labels wrap, note previews without markdown (`thrPlain`), Agent reports in full on Home with show/hide (`A.hmin`), journal book mode.
 
+- **1.59.8: bugs found by the Android emulator tests** (`tools/android-test/`, see its README; run `tools/android-test/run.sh` before every release).
+  - **Book:**
+    - A turn decides from where the finger lifts. The last pointermove can arrive late or be skipped (`dragP` in `onUp`). A swipe whose moves never arrived at all (only down and up, 40 px or more sideways) still turns.
+    - `animTo`/`svAnim` clamp `k>=0`: the first rAF is stamped before `t0`, which swung the page back for a frame.
+    - A swipe may start on a button inside the page ("Add to this day", edit). A tap still presses it.
+    - An edge tap that turns the page swallows the click Chrome would move onto a nearby button (`NOCLICK`).
+    - The page number follows the text (`.bk-pc` is a flex column) instead of being drawn over it.
+    - The Aa and Contents panels' sticky header covers the status bar.
+  - **Writer (phone):** the top row with Done stays below the status bar (sticky; `wr-stuck` paints behind it once scrolled), and the formatting bar sits under it.
+  - **Tour prompt:** it waits while the book or a sheet is open.
+  - **Bills:**
+    - "From a picture" works again. The review sheet's pick action is now `blPickF`; it had the same name as the picture action and replaced it.
+    - A receipt line that holds only a quantity takes its name from the line above and fills Qty. This includes OCR putting "2" on a line of its own between "Apples" and "3.40" (`pq` in `picks`). `tools/android-test/picks-check.cjs` checks this.
+    - Item columns are in px, so the headings line up.
+    - The item count follows added and removed rows, and the × fits.
+  - **`planEngine()` picks on-device AI only when its model is on the phone, or already downloading (`natReady`).** Before this, the first Bills read on a fresh install started a 2.8 GB Gemma download with no notice and no way to stop it.
+  - **Halo:** text on moment and note cards (`--mo` #262A3C) is light.
+  - **Other:** the Journal/Notes/Book row wraps instead of clipping "Book". The setup dots count the same steps as "1 of 7".
+  - **Curl folds the real page.** When the turning page is the one on screen (forward turns, and spreads), that page itself folds (`real` in `turnStart`, `unfold` in `turnEnd`). Before, a fresh copy was used, and it could show blank for a frame or two before Android painted it. Only a phone page coming back from the left is still a copy. After this, about 10,000 recorded frames had no blank or flicker frames.
+  - **Safe areas:** the book uses the native `--sat`/`--sab` (as the rest of the app does). On Android, `env(safe-area-inset-top)` can read 0, which put the book's top bar under the status bar.
+
 ### versionCode table (for the APK)
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148, 1.58.0=149, 1.59.0=150, 1.59.1=151, 1.59.2=152, 1.59.3=153, 1.59.4=154, 1.59.5=155, 1.59.6=156, 1.59.7=157. **Next: 158.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148, 1.58.0=149, 1.59.0=150, 1.59.1=151, 1.59.2=152, 1.59.3=153, 1.59.4=154, 1.59.5=155, 1.59.6=156, 1.59.7=157, 1.59.8=158. **Next: 159.**
 
 ## 4. Building the APK (cloud, no Android SDK)
 

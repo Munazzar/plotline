@@ -115,14 +115,19 @@ function turnStart(dir,startY){if(B.busy)return false;const ni=clampI(B.i+dir*st
  else if(dir>0){frontP=B.P[i];frontN=i+1;underHTML=pageHTML(B.P[i+1],i+2)}
  else{frontP=B.P[i-1];frontN=i;underHTML=null}
  const sc=(dir>0||sp)?scrollOf(pg):0;
- const front=layer('bk-pg bk-front'+(mir?' bk-l':' bk-r'),pageHTML(frontP,frontN)+'<i class="bk-fsh"></i>',box);
- const under=underHTML!=null?layer('bk-pg bk-under'+(mir?' bk-l':' bk-r'),underHTML,box):null;
+ /* 1.59.8: when the turning page is the one on screen, that real (already painted) page folds; a fresh copy could show
+    up blank for a frame or two before Android paints it. The next page waits behind it. Only a phone page coming back
+    from the left needs a copy. */
+ const real=sp||dir>0;
+ const front=real?pg:layer('bk-pg bk-front'+(mir?' bk-l':' bk-r'),pageHTML(frontP,frontN)+'<i class="bk-fsh"></i>',box);
+ if(real){front.classList.add('bk-front');front.insertAdjacentHTML('beforeend','<i class="bk-fsh"></i>')}
+ const under=underHTML!=null?layer('bk-pg bk-under'+(mir?' bk-l':' bk-r'),underHTML,box):null;if(under&&real)under.style.setProperty('z-index','0','important');
  const cast=layer('bk-cast',null,box);
  const flapW=layer('bk-flapw',null,box),flapC=document.createElement('div');flapC.className='bk-pg bk-flap'+(mir?' bk-r':' bk-l');
  flapC.innerHTML=(sp?`<div class="bk-back" style="width:${W}px;height:${H}px">${pageHTML(backP,backN)}</div>`:'<div class="bk-back bk-paperback"></div>')+'<i class="bk-gloss"></i>';flapW.appendChild(flapC);
- const lays=[under,cast,front,flapW].filter(Boolean);lays.forEach(x=>x.classList.add('bk-prep'));book.append(...lays);raise(lays);const fc=front.querySelector('.bk-pc');if(fc)fc.scrollTop=sc;
+ const lays=[under,cast,real?null:front,flapW].filter(Boolean);lays.forEach(x=>x.classList.add('bk-prep'));book.append(...lays);raise(lays);if(!real){const fc=front.querySelector('.bk-pc');if(fc)fc.scrollTop=sc}
  const cy=(startY!=null?startY:H*.82)>H/2?H:0;
- T={dir,ni,W,H,mir,cy,under,front,cast,flapW,flapC,P:dir>0||sp?[W,cy]:[-W,cy],done:false};
+ T={dir,ni,W,H,mir,cy,real,under,front,cast,flapW,flapC,P:dir>0||sp?[W,cy]:[-W,cy],done:false};
  B.busy=true;foldTo(T.P);return true}
 /* the corner positions that mean "not turned" and "fully turned" for this turn */
 const P0=t=>t.dir>0||t.mir?[t.W,t.cy]:[-t.W,t.cy],P1=t=>t.dir>0||t.mir?[-t.W,t.cy]:[t.W,t.cy];
@@ -150,14 +155,16 @@ function foldTo(Pin){const t=T;if(!t)return;const{W,H,cy,mir}=t;let P=reach(Pin,
 const after2=fn=>requestAnimationFrame(()=>requestAnimationFrame(fn));
 const raise=L=>after2(()=>L.forEach(x=>x.classList.remove('bk-prep')));
 /* done: the pages underneath are redrawn while the turn's layers still cover them, and uncovered once painted. Undone: nothing underneath changed */
-function turnEnd(done){if(!T)return;const t=T;T=null;const L=[t.under,t.front,t.cast,t.flapW].filter(Boolean);B.busy=false;
+/* the real page folded back to normal */
+const unfold=pg=>{pg.style.clipPath='';pg.style.removeProperty('--fs');pg.classList.remove('bk-front');const f=pg.querySelector(':scope>.bk-fsh');if(f)f.remove()};
+function turnEnd(done){if(!T)return;const t=T;T=null;const L=[t.under,t.real?null:t.front,t.cast,t.flapW].filter(Boolean);B.busy=false;if(t.real)unfold(t.front);
  if(done){B.i=t.ni;rustle();paint();after2(()=>L.forEach(x=>x.remove()))}else L.forEach(x=>x.remove())}
 /* finish (or undo) the turn: the corner travels in a slight arc, the way a hand lifts a page */
 function finishNow(){if(T&&T.goal!=null)turnEnd(T.goal);if(V&&V.goal!=null)svEnd(V.goal)}
 const EOUT=x=>1-Math.pow(1-x,3),EIO=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
 function animTo(target,ms,cb,ease=EOUT){const t=T;if(!t)return cb&&cb();const a=t.P.slice(),t0=performance.now(),lift=(t.cy?-1:1)*t.H*.16;let fin=false;
  const end=()=>{if(fin)return;fin=true;if(T===t){foldTo(target);cb&&cb()}};
- const tick=now=>{if(fin||T!==t)return;const k=Math.min(1,(now-t0)/ms),e=ease(k);foldTo([a[0]+(target[0]-a[0])*e,a[1]+(target[1]-a[1])*e+lift*Math.sin(Math.PI*e)*Math.min(1,Math.abs(target[0]-a[0])/t.W)]);if(k<1)requestAnimationFrame(tick);else end()};
+ const tick=now=>{if(fin||T!==t)return;const k=Math.max(0,Math.min(1,(now-t0)/ms)),e=ease(k);/* the first frame can be stamped before t0: k<0 would swing the page back for a frame */foldTo([a[0]+(target[0]-a[0])*e,a[1]+(target[1]-a[1])*e+lift*Math.sin(Math.PI*e)*Math.min(1,Math.abs(target[0]-a[0])/t.W)]);if(k<1)requestAnimationFrame(tick);else end()};
  requestAnimationFrame(tick);setTimeout(end,ms+150)}
 function turn(dir){if(B.busy){if(D&&D.on)return;finishNow();if(B.busy)return}const st=BS().turn;if((st==='slide'||st==='fade')&&!reduced()){if(svStart(dir)){try{vib()}catch(e){}V.goal=true;chrome(V.ni);svAnim(1,Math.round((st==='fade'?340:420)*(SPEED[BS().speed]||1)),()=>svEnd(true))}return}if(reduced()){const ni=clampI(B.i+dir*step());if(ni===B.i)return;B.i=ni;fade();rustle();return}if(!turnStart(dir))return;try{vib()}catch(e){}T.goal=true;chrome(T.ni);animTo(P1(T),Math.round((B.sp?720:620)*(SPEED[BS().speed]||1)),()=>turnEnd(true),EIO)}
 /* slide and fade: the next page (or spread) sits in its own layer next to this one; the drag moves both, and
@@ -175,13 +182,16 @@ function svEnd(done){const v=V;if(!v)return;V=null;B.busy=false;const back=()=>{
  /* done: the incoming view stays on top while the real pages are redrawn and moved back behind it, then it goes */
  if(done){B.i=v.ni;rustle();v.nv.style.setProperty('z-index','5','important');v.nv.style.transform='';paint();v.cur.forEach(e=>{e.style.transform='';e.style.opacity='';e.style.willChange=''});after2(()=>v.nv.remove())}else back()}
 function svAnim(p1,ms,cb){const v=V;if(!v)return cb&&cb();const a=v.p,t0=performance.now(),ease=x=>1-Math.pow(1-x,3);let fin=false;const end=()=>{if(fin)return;fin=true;if(V===v){svSet(p1);cb&&cb()}};
- const tick=now=>{if(fin||V!==v)return;const k=Math.min(1,(now-t0)/ms);svSet(a+(p1-a)*ease(k));if(k<1)requestAnimationFrame(tick);else end()};requestAnimationFrame(tick);setTimeout(end,ms+150)}
+ const tick=now=>{if(fin||V!==v)return;const k=Math.max(0,Math.min(1,(now-t0)/ms));svSet(a+(p1-a)*ease(k));if(k<1)requestAnimationFrame(tick);else end()};requestAnimationFrame(tick);setTimeout(end,ms+150)}
 function fade(){const bk=$b('#bkBook');paint();if(bk){bk.classList.remove('bk-fade');void bk.offsetWidth;bk.classList.add('bk-fade')}}
 function jump(k){k=clampI(+k);if(k===B.i)return;B.i=k;fade()}
 
 /* drag: the lifted corner follows the finger; past a quarter (or a flick) it finishes */
-let D=null,RAF=0;
-function onDown(e){if(!B.open||e.button>0||e.target.closest('button,a,input,select,textarea,.bk-ix,.bk-top,.bk-bot'))return;const bk=$b('#bkBook');if(!bk||!bk.contains(e.target))return;if(B.busy){finishNow();if(B.busy)return}D={x:e.clientX,y:e.clientY,t:performance.now(),on:false,id:e.pointerId,vx:0,lx:e.clientX,lt:performance.now()}}
+let D=null,RAF=0,NOCLICK=0;
+/* an edge tap that turns the page must not also press a button near it (Chrome moves a tap onto a nearby button) */
+document.addEventListener('click',e=>{if(NOCLICK&&performance.now()-NOCLICK<500&&e.target.closest&&e.target.closest('#bkBook')){e.stopPropagation();e.preventDefault()}NOCLICK=0},true);
+function onDown(e){if(!B.open||e.button>0)return;const pb=e.target.closest('.bk-pc button');/* a swipe may start on a button in the page (Add to this day, edit); a tap still presses it */
+ if(!pb&&e.target.closest('button,a,input,select,textarea,.bk-ix,.bk-top,.bk-bot'))return;const bk=$b('#bkBook');if(!bk||!bk.contains(e.target))return;if(B.busy){finishNow();if(B.busy)return}D={x:e.clientX,y:e.clientY,t:performance.now(),on:false,id:e.pointerId,vx:0,lx:e.clientX,lt:performance.now(),btn:!!pb}}
 function frameXY(e){const t=T,pg=t.mir?$b('#bkL'):$b('#bkR'),r=pg.getBoundingClientRect();let x=e.clientX-r.left,y=e.clientY-r.top;if(t.mir)x=r.width-x;return[x,y]}
 function onMove(e){if(!D||e.pointerId!==D.id)return;const dx=e.clientX-D.x,dy=e.clientY-D.y,now=performance.now();
  if(!D.on){if(Math.abs(dx)<9||Math.abs(dx)<Math.abs(dy)*1.25){if(Math.abs(dy)>14)D=null;return}const dir=dx<0?1:-1,pg=(B.sp&&dir<0)?$b('#bkL'):$b('#bkR'),r=pg.getBoundingClientRect();
@@ -189,11 +199,17 @@ function onMove(e){if(!D||e.pointerId!==D.id)return;const dx=e.clientX-D.x,dy=e.
   else{if(!turnStart(dir,D.y-r.top)){D=null;return}D.on=true;D.dir=dir;D.o=frameXY({clientX:D.x,clientY:D.y});D.p0=T.P.slice();try{$b("#bkBook").setPointerCapture(e.pointerId)}catch(_){}}}
  e.preventDefault();D.vx=(e.clientX-D.lx)/Math.max(1,now-D.lt);D.lx=e.clientX;D.lt=now;
  if(D.sv){const p=Math.max(0,Math.min(1,(-dx*D.dir)/(V?V.w*.9:1)));cancelAnimationFrame(RAF);RAF=requestAnimationFrame(()=>svSet(p));return}
- const f=frameXY(e),t=T,k=(!t.mir&&t.dir<0&&!B.sp)?2:1;/* a phone page coming back from the left travels twice as far as the finger */
- const P=[D.p0[0]+(f[0]-D.o[0])*k,D.p0[1]+(f[1]-D.o[1])*.9];cancelAnimationFrame(RAF);RAF=requestAnimationFrame(()=>foldTo(P))}
+ const P=dragP(D,e);cancelAnimationFrame(RAF);RAF=requestAnimationFrame(()=>foldTo(P))}
+/* where the lifted corner is for the finger at e; a phone page coming back from the left travels twice as far as the finger */
+function dragP(d,e){const f=frameXY(e),t=T,k=(!t.mir&&t.dir<0&&!B.sp)?2:1;return[d.p0[0]+(f[0]-d.o[0])*k,d.p0[1]+(f[1]-d.o[1])*.9]}
 function onUp(e){if(!D||(e.pointerId!==D.id&&e.type!=='pointercancel'))return;const d=D;D=null;
- if(!d.on){if(e.type==='pointerup'&&Math.abs(e.clientX-d.x)<8&&Math.abs(e.clientY-d.y)<8&&!getSelection().toString()){const bk=$b('#bkBook').getBoundingClientRect(),x=(e.clientX-bk.left)/bk.width;if(x>.85)turn(1);else if(x<.15)turn(-1)}return}
- cancelAnimationFrame(RAF);if(d.sv){const v=V;if(!v)return;const fl=d.vx*-d.dir,go=v.p>.25||fl>.45;v.goal=go;if(go)chrome(v.ni);svAnim(go?1:0,Math.round(((go?1-v.p:v.p)*420+140)*(SPEED[BS().speed]||1)),()=>svEnd(go));return}
+ if(!d.on){if(!d.btn&&e.type==='pointerup'&&Math.abs(e.clientX-d.x)<8&&Math.abs(e.clientY-d.y)<8&&!getSelection().toString()){const bk=$b('#bkBook').getBoundingClientRect(),x=(e.clientX-bk.left)/bk.width;if(x>.85||x<.15){NOCLICK=performance.now();turn(x>.85?1:-1)}}
+  /* a quick swipe whose moves never arrived (only down and up): still a swipe */
+  else if(e.type==='pointerup'){const dx=e.clientX-d.x,dy=e.clientY-d.y;if(Math.abs(dx)>=40&&Math.abs(dx)>Math.abs(dy)*1.25){NOCLICK=performance.now();turn(dx<0?1:-1)}}return}
+ cancelAnimationFrame(RAF);
+ /* the release can land well past the last move (moves get coalesced or dropped): it counts as the last move */
+ if(e.type==='pointerup'&&e.clientX!==d.lx){const vx=(e.clientX-d.lx)/Math.max(1,performance.now()-d.lt);if(Math.abs(vx)>Math.abs(d.vx))d.vx=vx;
+  if(d.sv){if(V)svSet(Math.max(0,Math.min(1,(-(e.clientX-d.x)*d.dir)/(V.w*.9))))}else if(T)foldTo(dragP(d,e))}if(d.sv){const v=V;if(!v)return;const fl=d.vx*-d.dir,go=v.p>.25||fl>.45;v.goal=go;if(go)chrome(v.ni);svAnim(go?1:0,Math.round(((go?1-v.p:v.p)*420+140)*(SPEED[BS().speed]||1)),()=>svEnd(go));return}
  const t=T;if(!t)return;const a=P0(t),z=P1(t),prog=Math.abs(t.P[0]-a[0])/Math.abs(z[0]-a[0]),fl=d.vx*(t.dir>0?-1:1)*(t.mir?-1:1);
  const go=prog>.25||fl>.5;t.goal=go;if(go)chrome(t.ni);animTo(go?z:a,Math.round(((go?1-prog:prog)*620+180)*(SPEED[BS().speed]||1)),()=>turnEnd(go))}
 
@@ -246,7 +262,7 @@ const GRAIN=(()=>{try{const n=160,c=document.createElement('canvas');c.width=c.h
 const css=document.createElement('style');css.textContent=`
 html.bk-on{overflow:hidden}
 .bk{--pp:#f7f1e4;--pp2:#efe6d3;--ink:#2b261f;--ink2:#7c705e;--rule:rgba(90,70,40,.16);--acc:#8a5a2b;--desk:radial-gradient(130% 100% at 50% 35%,#ece6dc 0,#d9d1c4 60%,#c9bfaf 100%);--board:#5a3a2a;
- position:fixed;inset:0;z-index:56;display:flex;flex-direction:column;background:var(--desk);color:var(--ink);opacity:0;transition:opacity .3s ease;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);-webkit-tap-highlight-color:transparent}
+ position:fixed;inset:0;z-index:56;display:flex;flex-direction:column;background:var(--desk);color:var(--ink);opacity:0;transition:opacity .3s ease;padding:var(--sat,env(safe-area-inset-top)) 0 var(--sab,env(safe-area-inset-bottom));-webkit-tap-highlight-color:transparent}
 .bk.dk{--pp:#25221e;--pp2:#1f1c19;--ink:#ece4d6;--ink2:#a2967f;--rule:rgba(236,220,190,.12);--acc:#d9b27c;--desk:radial-gradient(130% 100% at 50% 35%,#2e2a26 0,#191715 62%,#0d0c0b 100%);--board:#3a281f}
 .bk.in{opacity:1}
 .bk{--grain:${GRAIN};--bkf:'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif;--bks:18px;--bkl:1.72}.bk.nograin{--grain:linear-gradient(transparent,transparent)}
@@ -290,9 +306,9 @@ html.bk-on{overflow:hidden}
 .bk-paperback{inset:0;background:linear-gradient(90deg,var(--pp2),var(--pp))}
 .bk-gloss{position:absolute;inset:0;pointer-events:none}
 /* the page itself */
-.bk-pc{height:100%;overflow-y:auto;overscroll-behavior:contain;padding:28px 30px 54px 38px;scrollbar-width:none;outline:0;font-family:var(--bkf);position:relative}
+.bk-pc{height:100%;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;padding:28px 30px 16px 38px;scrollbar-width:none;outline:0;font-family:var(--bkf);position:relative}
 .bk-pc::-webkit-scrollbar{display:none}
-.bk.sp .bk-l .bk-pc,.bk-flap.bk-l .bk-pc,.bk-lay.bk-l .bk-pc{padding:28px 38px 54px 30px}
+.bk.sp .bk-l .bk-pc,.bk-flap.bk-l .bk-pc,.bk-lay.bk-l .bk-pc{padding:28px 38px 16px 30px}
 .bk-run{text-align:center;font:600 10.5px/1 var(--f-body);letter-spacing:.22em;text-transform:uppercase;color:var(--ink2);margin-bottom:18px}
 .bk-ph{display:flex;align-items:center;gap:14px;margin:0 0 20px;padding-bottom:16px;border-bottom:1px solid var(--rule)}
 .bk-dn{font:400 58px/.85 'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;color:var(--acc);font-variant-numeric:lining-nums}
@@ -311,7 +327,7 @@ html.bk-on{overflow:hidden}
 .bk-mos li{display:flex;gap:12px;font-size:15px;line-height:1.45}.bk-mos .bk-tm{min-width:5.2em;padding-top:3px}.bk-mos em{color:var(--ink2)}
 .bk-empty{color:var(--ink2);font-style:italic;font-size:17px;margin:10px 0 22px}
 .bk-add{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:8px 2px;border:0;border-bottom:1px solid color-mix(in srgb,var(--acc) 45%,transparent);background:none;color:var(--acc);font:italic 16px 'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;cursor:pointer}.bk-add svg{width:15px;height:15px}
-.bk-pn{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:13px;color:var(--ink2);pointer-events:none;font-variant-numeric:oldstyle-nums}
+.bk-pn{margin-top:auto;padding-top:22px;text-align:center;font-size:13px;color:var(--ink2);pointer-events:none;font-variant-numeric:oldstyle-nums}
 /* the cover: leather with a gold-foil title */
 .bk-cover{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:34px;background:radial-gradient(120% 90% at 30% 20%,color-mix(in srgb,var(--board) 70%,#fff 14%),var(--board) 55%,color-mix(in srgb,var(--board) 70%,#000)),var(--grain);color:#f1e3c0}
 .bk-cvf{width:min(100%,360px);padding:42px 24px;border:1px solid rgba(232,200,130,.5);outline:1px solid rgba(232,200,130,.25);outline-offset:6px;border-radius:4px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
@@ -328,9 +344,10 @@ html.bk-on{overflow:hidden}
 .bk-scr input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-7.5px;border-radius:50%;background:var(--acc);box-shadow:0 1px 4px rgba(0,0,0,.35)}
 .bk-scr input::-moz-range-track{height:3px;border-radius:3px;background:color-mix(in srgb,var(--ink) 18%,transparent)}.bk-scr input::-moz-range-thumb{width:18px;height:18px;border:0;border-radius:50%;background:var(--acc)}
 .bk-bub{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;padding:4px 10px;border-radius:999px;background:var(--pp);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.25);font:13px 'Iowan Old Style',Palatino,Georgia,serif}.bk-bub:empty{display:none}
-.bk-ix{position:absolute;top:0;bottom:0;right:0;width:min(360px,90vw);z-index:8;overflow-y:auto;overscroll-behavior:contain;background-color:var(--pp);background-image:var(--grain);color:var(--ink);box-shadow:-30px 0 50px -20px rgba(0,0,0,.55);padding:max(12px,env(safe-area-inset-top)) 12px calc(16px + env(safe-area-inset-bottom));font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;animation:bkIx .32s cubic-bezier(.2,.8,.2,1)}
+.bk-ix{position:absolute;top:0;bottom:0;right:0;width:min(360px,90vw);z-index:8;overflow-y:auto;overscroll-behavior:contain;background-color:var(--pp);background-image:var(--grain);color:var(--ink);box-shadow:-30px 0 50px -20px rgba(0,0,0,.55);padding:0 12px calc(16px + var(--sab,env(safe-area-inset-bottom)));font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;animation:bkIx .32s cubic-bezier(.2,.8,.2,1)}
 @keyframes bkIx{from{transform:translateX(30px);opacity:0}}
-.bk-ixh{display:flex;align-items:center;justify-content:space-between;padding:6px 4px 12px;position:sticky;top:-12px;background:var(--pp);z-index:1}.bk-ixh b{font-size:22px;font-weight:600}
+/* the panel's header runs under the status bar, so what scrolls under it never shows up there */
+.bk-ixh{display:flex;align-items:center;justify-content:space-between;margin:0 -12px;padding:calc(max(12px,var(--sat,env(safe-area-inset-top))) + 6px) 16px 12px;position:sticky;top:0;background:var(--pp);z-index:1}.bk-ixh b{font-size:22px;font-weight:600}
 .bk-ixm{margin:18px 8px 8px;font:600 10.5px var(--f-body);letter-spacing:.2em;text-transform:uppercase;color:var(--ink2)}
 .bk-ixr{display:flex;align-items:center;gap:12px;width:100%;padding:10px 8px;border:0;border-bottom:1px solid var(--rule);background:none;color:var(--ink);text-align:left;font:inherit;cursor:pointer}.bk-ixr.on{background:color-mix(in srgb,var(--acc) 14%,transparent);border-radius:8px}
 .bk-ixd{width:34px;flex:none;text-align:center;font-size:22px;color:var(--acc)}
@@ -365,12 +382,13 @@ html.bk-on{overflow:hidden}
 #sheet.bk-write.bk-dots #wrEd{background-image:radial-gradient(var(--rule) 1.1px,transparent 1.5px);background-size:22px 22px;background-attachment:local}
 #sheet.bk-write .data,#sheet.bk-write .wr-m small,#sheet.bk-write ::placeholder{color:var(--ink2)}
 #sheet.bk-write .wr-pill,#sheet.bk-write .wr-tb button,#sheet.bk-write .wr-m,#sheet.bk-write .ibtn{color:var(--ink);border-color:var(--rule);background-color:color-mix(in srgb,var(--ink) 5%,transparent)}
+#sheet.bk-write .wr-top::before{background:var(--pp)}
 #sheet.bk-write .wr-pill.on,#sheet.bk-write .wr-m.on{background-color:color-mix(in srgb,var(--acc) 22%,transparent);border-color:var(--acc)}
 #sheet.bk-write .btn.pri,#sheet.bk-write .wr-pr{background:var(--acc);color:var(--pp);border-color:var(--acc)}
 #sheet.bk-write mark{background:color-mix(in srgb,var(--acc) 30%,transparent);color:inherit}
 .bk-fade{animation:bkFade .35s ease}@keyframes bkFade{from{opacity:.25;transform:scale(.995)}to{opacity:1;transform:none}}
 .bk-tab{display:inline-flex;align-items:center;gap:6px}.bk-tab svg{width:16px;height:16px}
-@media(max-width:560px){.bk-pc{padding:24px 22px 50px 28px}.bk-x{font-size:17px}.bk-dn{font-size:50px}.bk-stage{padding:6px 12px 8px}}
+@media(max-width:560px){.bk-pc{padding:24px 22px 14px 28px}.bk-x{font-size:17px}.bk-dn{font-size:50px}.bk-stage{padding:6px 12px 8px}}
 @media(prefers-reduced-motion:reduce){.bk{transition:none}.bk-ix{animation:none}}
 `;document.head.appendChild(css);
 })();
