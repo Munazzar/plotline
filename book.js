@@ -17,15 +17,16 @@ const B={open:false,P:[],i:0,busy:false,ix:false,focus:'',sp:false};
 const wide=()=>innerWidth>=900&&S.settings.book?.spread!==false;
 const dayOf=t=>ymd(new Date(t));
 /* ---------------- look and feel (1.59.3): the book's own settings, kept on this device like the rest of the looks ---------------- */
-const BDEF={paper:'auto',lines:'none',grain:true,font:'serif',size:18,lh:'normal',cover:'leather',turn:'curl',speed:'normal',sound:false,spread:true,moments:true,drop:true,open:'today',last:''};
+const BDEF={paper:'auto',lines:'none',grain:true,font:'serif',size:18,lh:'normal',cover:'leather',turn:'curl',speed:'normal',sound:false,spread:true,moments:true,drop:true,open:'today',last:'',wsync:true};
 const BS=()=>S.settings.book=Object.assign({},BDEF,S.settings.book||{});
-const PAPERS=[['auto','Auto'],['cream','Cream'],['white','White'],['sepia','Sepia'],['grey','Stone'],['dark','Night'],['black','Black']];
+const PAPERS=[['app','App theme'],['auto','Auto'],['cream','Cream'],['white','White'],['sepia','Sepia'],['grey','Stone'],['dark','Night'],['black','Black']];
 const COVERS=[['leather','Leather','#5a3a2a'],['navy','Navy','#1f2d4a'],['forest','Forest','#24392c'],['wine','Wine','#4d1f2a'],['ink','Black','#1b1a1a'],['sand','Sand','#9a7b55'],['accent','Theme colour','']];
 const FONTS=[['serif','Book'],['sans','Clean'],['mono','Typewriter'],['hand','Handwritten']];
 const FONT_CSS={serif:"'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif",sans:'var(--f-body)',mono:"'Courier Prime','Courier New',Courier,ui-monospace,monospace",hand:"'Segoe Print','Bradley Hand','Snell Roundhand','Comic Neue','Comic Sans MS',cursive"};
 const SPEED={slow:1.45,normal:1,fast:.62};
-function bkCls(){const s=BS(),dark=s.paper==='auto'?paperDark():s.paper==='dark'||s.paper==='black';return`bk${B.sp?' sp':''}${dark?' dk':''} pp-${s.paper} ln-${s.lines}${s.grain?'':' nograin'}${s.drop?'':' nodrop'}`}
-function bkApply(){const el=document.getElementById('book');if(!el)return;const s=BS(),open=el.classList.contains('in');el.className=bkCls()+(open?' in':'');
+function bkCls(){const s=BS(),dark=s.paper==='auto'||s.paper==='app'?paperDark():s.paper==='dark'||s.paper==='black';return`bk${B.sp?' sp':''}${dark?' dk':''} pp-${s.paper} ln-${s.lines}${s.grain?'':' nograin'}${s.drop?'':' nodrop'}`}
+function bkApply(){const el=document.getElementById('book');if(!el)return;const open=el.classList.contains('in');el.className=bkCls()+(open?' in':'');bkStyle(el)}
+function bkStyle(el){const s=BS();
  const cv=COVERS.find(c=>c[0]===s.cover)||COVERS[0];el.style.setProperty('--board',cv[2]||'color-mix(in srgb,var(--accent) 55%,#1a1410)');
  el.style.setProperty('--bkf',FONT_CSS[s.font]||FONT_CSS.serif);el.style.setProperty('--bks',(+s.size||18)+'px');el.style.setProperty('--bkl',{tight:1.5,normal:1.72,airy:1.95}[s.lh]||1.72)}
 const seg=(k,L,v)=>`<div class="bk-sg" role="radiogroup">${L.map(([x,n])=>`<button class="${String(v)===String(x)?'on':''}" role="radio" aria-checked="${String(v)===String(x)}" data-act="bkSetV" data-k="${k}" data-v="${x}">${n}</button>`).join('')}</div>`;
@@ -39,11 +40,11 @@ function setPaint(){const el=$b('#bkSet');if(!el)return;const s=BS();
  ${seg('lh',[['tight','Compact'],['normal','Normal'],['airy','Airy']],s.lh)}${tog('drop','Large first letter',s.drop)}${tog('moments','Show steps and goals',s.moments)}
  <h4>Cover</h4><div class="bk-sw">${COVERS.map(([k,n,c])=>`<button class="bk-swc${s.cover===k?' on':''}" style="--c:${c||'var(--accent)'}" data-act="bkSetV" data-k="cover" data-v="${k}" aria-label="${n}" title="${n}"><i></i><span>${n}</span></button>`).join('')}</div>
  <h4>Turning pages</h4>${seg('turn',[['curl','Paper curl'],['slide','Slide'],['fade','Fade']],s.turn)}${seg('speed',[['slow','Slow'],['normal','Normal'],['fast','Fast']],s.speed)}${tog('sound','Page sound',s.sound)}
- <h4>Layout</h4>${tog('spread','Two pages on wide screens',s.spread)}${seg('open',[['today','Open on today'],['last','Open where I left off']],s.open)}
+ <h4>Layout</h4>${tog('spread','Two pages on wide screens',s.spread)}${tog('wsync','Writing looks like the book',s.wsync)}${seg('open',[['today','Open on today'],['last','Open where I left off']],s.open)}
  <button class="bk-reset" data-act="bkSetReset">Back to the defaults</button>`}
 function setChange(k,v){const s=BS();if(k==='size')v=Math.max(14,Math.min(26,+v||18));s[k]=v;S.settings.book=s;save();
  if(k==='spread'){const sp=wide();if(sp!==B.sp){B.sp=sp;B.i=clampI(B.i)}}
- bkApply();if(['moments','spread'].includes(k))paint();if(k!=='size')setPaint();else{const b=$b('.bk-rg b');if(b)b.textContent=v}}
+ bkApply();if(['moments','spread'].includes(k))paint();if(k==='wsync'&&$('#sheet').classList.contains('wsheet'))sheetLook(v);if(k!=='size')setPaint();else{const b=$b('.bk-rg b');if(b)b.textContent=v}}
 /* a soft page sound: a short burst of filtered noise, made on the device (no files) */
 let AC=null;function rustle(){if(!BS().sound)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const d=.32,n=Math.floor(AC.sampleRate*d),buf=AC.createBuffer(1,n,AC.sampleRate),x=buf.getChannelData(0);for(let k=0;k<n;k++){const t=k/n;x[k]=(Math.random()*2-1)*Math.pow(Math.sin(Math.PI*t),1.6)*(.6+.4*Math.random())}
  const src=AC.createBufferSource(),bp=AC.createBiquadFilter(),g=AC.createGain();src.buffer=buf;bp.type='bandpass';bp.frequency.value=2600;bp.Q.value=.7;g.gain.value=.16;src.connect(bp).connect(g).connect(AC.destination);src.start()}catch(e){}}
@@ -105,20 +106,20 @@ function layer(cls,html,box){const d=document.createElement('div');d.className='
 function turnStart(dir,startY){if(B.busy)return false;const ni=clampI(B.i+dir*step());if(ni===B.i)return false;const book=$b('#bkBook');if(!book)return false;
  const L=$b('#bkL'),R=$b('#bkR'),i=B.i,sp=B.sp,mir=sp&&dir<0,pg=mir?L:R,br=book.getBoundingClientRect(),pr=pg.getBoundingClientRect(),W=pr.width,H=pr.height,box={x:pr.left-br.left,y:pr.top-br.top,w:W,h:H};
  const scrollOf=el=>{const c=el.querySelector('.bk-pc');return c?c.scrollTop:0};
- let frontP,frontN,backP,backN,underEl=pg,underHTML;
+ let frontP,frontN,backP,backN,underHTML;
  if(sp&&dir>0){frontP=B.P[i+1];frontN=i+2;backP=B.P[i+2];backN=i+3;underHTML=pageHTML(B.P[i+3],i+4)}
  else if(sp){frontP=B.P[i];frontN=i+1;backP=B.P[i-1];backN=i;underHTML=pageHTML(B.P[i-2],i-1)}
  else if(dir>0){frontP=B.P[i];frontN=i+1;underHTML=pageHTML(B.P[i+1],i+2)}
  else{frontP=B.P[i-1];frontN=i;underHTML=null}
  const sc=(dir>0||sp)?scrollOf(pg):0;
  const front=layer('bk-pg bk-front'+(mir?' bk-l':' bk-r'),pageHTML(frontP,frontN),box);
- if(underHTML!=null)underEl.innerHTML=underHTML;
+ const under=underHTML!=null?layer('bk-pg bk-under'+(mir?' bk-l':' bk-r'),underHTML,box):null;
  const cast=layer('bk-cast',null,box);
  const flapW=layer('bk-flapw',null,box),flapC=document.createElement('div');flapC.className='bk-pg bk-flap'+(mir?' bk-r':' bk-l');
  flapC.innerHTML=(sp?`<div class="bk-back" style="width:${W}px;height:${H}px">${pageHTML(backP,backN)}</div>`:'<div class="bk-back bk-paperback"></div>')+'<i class="bk-gloss"></i>';flapW.appendChild(flapC);
- book.append(cast,front,flapW);const fc=front.querySelector('.bk-pc');if(fc)fc.scrollTop=sc;
+ if(under)book.append(under);book.append(cast,front,flapW);const fc=front.querySelector('.bk-pc');if(fc)fc.scrollTop=sc;
  const cy=(startY!=null?startY:H*.82)>H/2?H:0;
- T={dir,ni,W,H,mir,cy,front,cast,flapW,flapC,P:dir>0||sp?[W,cy]:[-W,cy],done:false};
+ T={dir,ni,W,H,mir,cy,under,front,cast,flapW,flapC,P:dir>0||sp?[W,cy]:[-W,cy],done:false};
  B.busy=true;foldTo(T.P);return true}
 /* the corner positions that mean "not turned" and "fully turned" for this turn */
 const P0=t=>t.dir>0||t.mir?[t.W,t.cy]:[-t.W,t.cy],P1=t=>t.dir>0||t.mir?[-t.W,t.cy]:[t.W,t.cy];
@@ -141,15 +142,26 @@ function foldTo(Pin){const t=T;if(!t)return;const{W,H,cy,mir}=t;let P=reach(Pin,
  t.cast.style.clipPath=poly(fold.map(css));t.cast.style.opacity=1;
  t.cast.style.background=`linear-gradient(${deg}deg,rgba(0,0,0,0) ${dF-1}px,rgba(0,0,0,${(.5*k+.1).toFixed(2)}) ${dF}px,rgba(0,0,0,0) ${dF+Math.max(30,Math.min(90,half*.6))}px)`;
  t.front.style.setProperty('--fs',(k*.18).toFixed(3))}
-function turnEnd(done){if(!T)return;const t=T;T=null;[t.front,t.cast,t.flapW].forEach(x=>x&&x.remove());if(done){B.i=t.ni;rustle()}B.busy=false;paint()}
+function turnEnd(done){if(!T)return;const t=T;T=null;[t.under,t.front,t.cast,t.flapW].forEach(x=>x&&x.remove());if(done){B.i=t.ni;rustle()}B.busy=false;paint()}
 /* finish (or undo) the turn: the corner travels in a slight arc, the way a hand lifts a page */
 function animTo(target,ms,cb){const t=T;if(!t)return cb&&cb();const a=t.P.slice(),t0=performance.now(),ease=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,lift=(t.cy?-1:1)*t.H*.16;let fin=false;
  const end=()=>{if(fin)return;fin=true;if(T===t){foldTo(target);cb&&cb()}};
  const tick=now=>{if(fin||T!==t)return;const k=Math.min(1,(now-t0)/ms),e=ease(k);foldTo([a[0]+(target[0]-a[0])*e,a[1]+(target[1]-a[1])*e+lift*Math.sin(Math.PI*e)*Math.min(1,Math.abs(target[0]-a[0])/t.W)]);if(k<1)requestAnimationFrame(tick);else end()};
  requestAnimationFrame(tick);setTimeout(end,ms+150)}
-function turn(dir){if(B.busy)return;const st=BS().turn;if(st==='slide'&&!reduced()){slide(dir);return}if(reduced()||st==='fade'){const ni=clampI(B.i+dir*step());if(ni===B.i)return;B.i=ni;fade();rustle();return}if(!turnStart(dir))return;try{vib()}catch(e){}animTo(P1(T),Math.round((B.sp?880:760)*(SPEED[BS().speed]||1)),()=>turnEnd(true))}
-/* slide: the next page comes in from the side it's turned to */
-function slide(dir){const ni=clampI(B.i+dir*step());if(ni===B.i)return;B.i=ni;paint();rustle();const bk=$b('#bkBook');if(!bk)return;bk.style.animationDuration=Math.round(380*(SPEED[BS().speed]||1))+'ms';bk.classList.remove('bk-sln','bk-slp');void bk.offsetWidth;bk.classList.add(dir>0?'bk-sln':'bk-slp')}
+function turn(dir){if(B.busy)return;const st=BS().turn;if((st==='slide'||st==='fade')&&!reduced()){if(svStart(dir)){try{vib()}catch(e){}svAnim(1,Math.round((st==='fade'?340:420)*(SPEED[BS().speed]||1)),()=>svEnd(true))}return}if(reduced()){const ni=clampI(B.i+dir*step());if(ni===B.i)return;B.i=ni;fade();rustle();return}if(!turnStart(dir))return;try{vib()}catch(e){}animTo(P1(T),Math.round((B.sp?880:760)*(SPEED[BS().speed]||1)),()=>turnEnd(true))}
+/* slide and fade: the next page (or spread) sits in its own layer next to this one; the drag moves both, and
+   letting go springs to whichever is nearer (or where a flick points) */
+let V=null;
+function viewHTML(i){return B.sp?`<div class="bk-pg bk-l">${pageHTML(B.P[i],i+1)}</div><div class="bk-pg bk-r">${pageHTML(B.P[i+1],i+2)}</div>`:`<div class="bk-pg bk-r">${pageHTML(B.P[i],i+1)}</div>`}
+function svStart(dir){if(B.busy)return false;const ni=clampI(B.i+dir*step());if(ni===B.i)return false;const book=$b('#bkBook');if(!book)return false;const br=book.getBoundingClientRect();
+ const nv=layer('bk-view',viewHTML(ni),{x:0,y:0,w:br.width,h:br.height});book.appendChild(nv);
+ V={dir,ni,nv,cur:[...book.querySelectorAll(':scope>.bk-pg,:scope>.bk-edge')],w:br.width+28,mode:BS().turn,p:0};B.busy=true;svSet(0);return true}
+function svSet(p){const v=V;if(!v)return;v.p=p;
+ if(v.mode==='fade'){v.nv.style.opacity=p.toFixed(3);v.cur.forEach(e=>{e.style.opacity=(1-p*.85).toFixed(3)})}
+ else{const x=-v.dir*v.w*p;v.cur.forEach(e=>{e.style.transform=`translateX(${x.toFixed(1)}px)`});v.nv.style.transform=`translateX(${(x+v.dir*v.w).toFixed(1)}px)`}}
+function svEnd(done){const v=V;if(!v)return;V=null;v.nv.remove();v.cur.forEach(e=>{e.style.transform='';e.style.opacity=''});if(done){B.i=v.ni;rustle()}B.busy=false;paint()}
+function svAnim(p1,ms,cb){const v=V;if(!v)return cb&&cb();const a=v.p,t0=performance.now(),ease=x=>1-Math.pow(1-x,3);let fin=false;const end=()=>{if(fin)return;fin=true;if(V===v){svSet(p1);cb&&cb()}};
+ const tick=now=>{if(fin||V!==v)return;const k=Math.min(1,(now-t0)/ms);svSet(a+(p1-a)*ease(k));if(k<1)requestAnimationFrame(tick);else end()};requestAnimationFrame(tick);setTimeout(end,ms+150)}
 function fade(){const bk=$b('#bkBook');paint();if(bk){bk.classList.remove('bk-fade');void bk.offsetWidth;bk.classList.add('bk-fade')}}
 function jump(k){k=clampI(+k);if(k===B.i)return;B.i=k;fade()}
 
@@ -159,13 +171,16 @@ function onDown(e){if(!B.open||B.busy||e.button>0||e.target.closest('button,a,in
 function frameXY(e){const t=T,pg=t.mir?$b('#bkL'):$b('#bkR'),r=pg.getBoundingClientRect();let x=e.clientX-r.left,y=e.clientY-r.top;if(t.mir)x=r.width-x;return[x,y]}
 function onMove(e){if(!D||e.pointerId!==D.id)return;const dx=e.clientX-D.x,dy=e.clientY-D.y,now=performance.now();
  if(!D.on){if(Math.abs(dx)<9||Math.abs(dx)<Math.abs(dy)*1.25){if(Math.abs(dy)>14)D=null;return}const dir=dx<0?1:-1,pg=(B.sp&&dir<0)?$b('#bkL'):$b('#bkR'),r=pg.getBoundingClientRect();
-  if(BS().turn!=='curl'){D.sw=dir;return}if(!turnStart(dir,D.y-r.top)){D=null;return}D.on=true;D.dir=dir;D.o=frameXY({clientX:D.x,clientY:D.y});D.p0=T.P.slice();try{$b("#bkBook").setPointerCapture(e.pointerId)}catch(_){}}
+  if(BS().turn!=='curl'&&!reduced()){if(!svStart(dir)){D=null;return}D.on=true;D.dir=dir;D.sv=true;try{$b('#bkBook').setPointerCapture(e.pointerId)}catch(_){}}
+  else{if(!turnStart(dir,D.y-r.top)){D=null;return}D.on=true;D.dir=dir;D.o=frameXY({clientX:D.x,clientY:D.y});D.p0=T.P.slice();try{$b("#bkBook").setPointerCapture(e.pointerId)}catch(_){}}}
  e.preventDefault();D.vx=(e.clientX-D.lx)/Math.max(1,now-D.lt);D.lx=e.clientX;D.lt=now;
+ if(D.sv){const p=Math.max(0,Math.min(1,(-dx*D.dir)/(V?V.w*.9:1)));cancelAnimationFrame(RAF);RAF=requestAnimationFrame(()=>svSet(p));return}
  const f=frameXY(e),t=T,k=(!t.mir&&t.dir<0&&!B.sp)?2:1;/* a phone page coming back from the left travels twice as far as the finger */
  const P=[D.p0[0]+(f[0]-D.o[0])*k,D.p0[1]+(f[1]-D.o[1])*.9];cancelAnimationFrame(RAF);RAF=requestAnimationFrame(()=>foldTo(P))}
 function onUp(e){if(!D||(e.pointerId!==D.id&&e.type!=='pointercancel'))return;const d=D;D=null;
- if(!d.on){if(d.sw&&e.type==='pointerup'&&Math.abs(e.clientX-d.x)>40){turn(d.sw);return}if(e.type==='pointerup'&&Math.abs(e.clientX-d.x)<8&&Math.abs(e.clientY-d.y)<8&&!getSelection().toString()){const bk=$b('#bkBook').getBoundingClientRect(),x=(e.clientX-bk.left)/bk.width;if(x>.85)turn(1);else if(x<.15)turn(-1)}return}
- cancelAnimationFrame(RAF);const t=T;if(!t)return;const a=P0(t),z=P1(t),prog=Math.abs(t.P[0]-a[0])/Math.abs(z[0]-a[0]),fl=d.vx*(t.dir>0?-1:1)*(t.mir?-1:1);
+ if(!d.on){if(e.type==='pointerup'&&Math.abs(e.clientX-d.x)<8&&Math.abs(e.clientY-d.y)<8&&!getSelection().toString()){const bk=$b('#bkBook').getBoundingClientRect(),x=(e.clientX-bk.left)/bk.width;if(x>.85)turn(1);else if(x<.15)turn(-1)}return}
+ cancelAnimationFrame(RAF);if(d.sv){const v=V;if(!v)return;const fl=d.vx*-d.dir,go=v.p>.25||fl>.45;svAnim(go?1:0,Math.round(((go?1-v.p:v.p)*420+140)*(SPEED[BS().speed]||1)),()=>svEnd(go));return}
+ const t=T;if(!t)return;const a=P0(t),z=P1(t),prog=Math.abs(t.P[0]-a[0])/Math.abs(z[0]-a[0]),fl=d.vx*(t.dir>0?-1:1)*(t.mir?-1:1);
  const go=prog>.25||fl>.5;animTo(go?z:a,Math.round(((go?1-prog:prog)*620+180)*(SPEED[BS().speed]||1)),()=>turnEnd(go))}
 
 /* ---------------- open, close, write ---------------- */
@@ -178,7 +193,7 @@ let BKB=0;
 addEventListener('popstate',e=>{if(BKB){BKB=0;return}if(B.open&&!(e.state&&e.state.book)&&!$('#sheet').classList.contains('on')){close(true)}});
 {const _b=window.__back;window.__back=function(){if(B.open&&!$('#sheet').classList.contains('on')){if(B.set){B.set=false;setShow();return true}if(B.ix){B.ix=false;ixShow();return true}close();return true}return _b.apply(this,arguments)}}
 /* after writing or editing, the book comes back on that day */
-{const _cs=closeSheet;closeSheet=function(){const r=_cs.apply(this,arguments);if(B.open){setTimeout(()=>{if(!B.open)return;const d=B.focus||(B.P[B.i]&&B.P[B.i].d);B.P=pages();const k=B.P.findIndex(p=>p.d===d);B.i=clampI(k>=0?k:B.i);paint()},420)}return r}}
+{const _cs=closeSheet;closeSheet=function(){const r=_cs.apply(this,arguments);sheetLook(false);if(B.open){setTimeout(()=>{if(!B.open)return;const d=B.focus||(B.P[B.i]&&B.P[B.i].d);B.P=pages();const k=B.P.findIndex(p=>p.d===d);B.i=clampI(k>=0?k:B.i);paint()},420)}return r}}
 function setShow(){const el=$b('#bkSet'),b=$b('.bk-top [data-act=bkSet]');if(!el)return;el.hidden=!B.set;if(b)b.setAttribute('aria-expanded',B.set);if(B.set){B.ix=false;ixShow();setPaint()}}
 function ixShow(){const el=$b('#bkIx'),b=$b('.bk-top [data-act=bkIx]');if(!el)return;el.hidden=!B.ix;if(b)b.setAttribute('aria-expanded',B.ix);if(B.ix)ixPaint()}
 Object.assign(ACT,{
@@ -190,8 +205,16 @@ Object.assign(ACT,{
  bkSetV:d=>setChange(d.k,d.v),
  bkSetReset:()=>{const last=BS().last;S.settings.book={...BDEF,last};save();const sp=wide();if(sp!==B.sp){B.sp=sp;B.i=clampI(B.i)}bkApply();paint();setPaint()},
  bkGo:d=>{if(!wide()){B.ix=false;ixShow()}jump(d.i)},
- bkWrite:d=>{B.focus=d.d||ymd();writeSheet(null,null,B.focus)},
- bkEdit:d=>{const e=S.entries.find(x=>x.id===d.id);if(!e)return;B.focus=dayOf(e.t);writeSheet(e)}});
+ bkWrite:d=>{B.focus=d.d||ymd();writeSheet(null,null,B.focus);sheetLook(true)},
+ bkEdit:d=>{const e=S.entries.find(x=>x.id===d.id);if(!e)return;B.focus=dayOf(e.t);writeSheet(e);sheetLook(true)}});
+/* every journal entry is written on the book's paper (unless turned off in Aa) */
+{const _ws=writeSheet;writeSheet=function(){const r=_ws.apply(this,arguments);try{sheetLook(true)}catch(e){}return r}}
+/* the writer takes the book's paper, ink, font, size and lines while you write from the book */
+const LOOKV=['--pp','--pp2','--ink','--ink2','--acc','--rule','--bkf','--bks','--bkl','--grain'];
+function sheetLook(on){const sh=$('#sheet');if(!sh)return;let bk=document.getElementById('book'),tmp=null;if(on&&BS().wsync===false)on=false;
+ /* the book is closed: read its look off a hidden copy */
+ if(on&&!bk){tmp=document.createElement('div');tmp.className=bkCls();tmp.style.display='none';document.body.appendChild(tmp);bkStyle(tmp);bk=tmp}
+ if(on){const cs=getComputedStyle(bk);LOOKV.forEach(k=>sh.style.setProperty(k,cs.getPropertyValue(k)));sh.classList.add('bk-write');sh.classList.toggle('bk-lined',BS().lines==='lined');sh.classList.toggle('bk-dots',BS().lines==='dots');if(tmp)tmp.remove()}else{LOOKV.forEach(k=>sh.style.removeProperty(k));sh.classList.remove('bk-write','bk-lined','bk-dots')}}
 document.addEventListener('pointerdown',onDown);document.addEventListener('pointermove',onMove,{passive:false});document.addEventListener('pointerup',onUp);document.addEventListener('pointercancel',onUp);
 document.addEventListener('keydown',e=>{if(!B.open||$('#sheet').classList.contains('on')||e.target.matches('input,textarea,[contenteditable]'))return;if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();turn(1)}else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();turn(-1)}else if(e.key==='Escape'){e.preventDefault();if(B.set){B.set=false;setShow()}else if(B.ix){B.ix=false;ixShow()}else close()}});
 document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.bkset;if(!k||!B.open)return;setChange(k,e.target.type==='checkbox'?e.target.checked:e.target.value)});
@@ -213,6 +236,7 @@ html.bk-on{overflow:hidden}
 .bk.dk{--pp:#25221e;--pp2:#1f1c19;--ink:#ece4d6;--ink2:#a2967f;--rule:rgba(236,220,190,.12);--acc:#d9b27c;--desk:radial-gradient(130% 100% at 50% 35%,#2e2a26 0,#191715 62%,#0d0c0b 100%);--board:#3a281f}
 .bk.in{opacity:1}
 .bk{--grain:${GRAIN};--bkf:'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif;--bks:18px;--bkl:1.72}.bk.nograin{--grain:linear-gradient(transparent,transparent)}
+.bk.pp-app{--pp:var(--surface);--pp2:color-mix(in srgb,var(--surface) 82%,var(--bg));--ink:var(--text);--ink2:var(--muted);--rule:var(--line);--acc:var(--accent);--desk:var(--bg)}
 .bk.pp-cream{--pp:#f7f1e4;--pp2:#efe6d3;--ink:#2b261f;--ink2:#7c705e;--rule:rgba(90,70,40,.16);--acc:#8a5a2b}
 .bk.pp-white{--pp:#fdfdfb;--pp2:#efefec;--ink:#1d1f24;--ink2:#6c707a;--rule:rgba(30,40,60,.13);--acc:#3d5a98}
 .bk.pp-sepia{--pp:#eedfc0;--pp2:#e1cfa9;--ink:#3a2a17;--ink2:#7b6343;--rule:rgba(110,70,20,.2);--acc:#8b4a17}
@@ -309,10 +333,26 @@ html.bk-on{overflow:hidden}
 .bk-sw{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 2px 6px}
 .bk-sw button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 2px;border:0;border-radius:12px;background:none;color:var(--ink);font:12px var(--f-body);cursor:pointer;min-width:0}.bk-sw span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bk-sw i{width:40px;height:40px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.2)}.bk-sw button.on i{box-shadow:0 0 0 2px var(--pp),0 0 0 4px var(--acc)}
-.p-auto i{background:linear-gradient(135deg,#f7f1e4 50%,#25221e 50%)}.p-cream i{background:#f7f1e4}.p-white i{background:#fdfdfb}.p-sepia i{background:#eedfc0}.p-grey i{background:#e8e7e3}.p-dark i{background:#25221e}.p-black i{background:#0d0d0d}
+.p-app i{background:linear-gradient(135deg,var(--surface) 0 50%,var(--accent) 50%)}.p-auto i{background:linear-gradient(135deg,#f7f1e4 50%,#25221e 50%)}.p-cream i{background:#f7f1e4}.p-white i{background:#fdfdfb}.p-sepia i{background:#eedfc0}.p-grey i{background:#e8e7e3}.p-dark i{background:#25221e}.p-black i{background:#0d0d0d}
 .bk-swc i{background:linear-gradient(160deg,color-mix(in srgb,var(--c) 80%,#fff 15%),var(--c))}
 .bk-rg{display:flex;align-items:center;gap:12px;padding:8px 6px;font:15px var(--f-body)}.bk-rg input{flex:1;accent-color:var(--acc)}.bk-rg b{width:2em;text-align:right;font-variant-numeric:tabular-nums}
 .bk-reset{display:block;margin:18px auto 6px;padding:10px 16px;border:0;border-radius:12px;background:none;color:var(--ink2);font:14px var(--f-body);text-decoration:underline;cursor:pointer}
+/* sideways swipes belong to the book: each page scrolls only up and down, so Android never cancels the touch to pan it */
+.bk-book,.bk-book *{touch-action:pan-y}
+.bk-under{z-index:2!important}
+.bk-view{z-index:3;display:grid;grid-template-columns:1fr;will-change:transform,opacity}.bk.sp .bk-view{grid-template-columns:1fr 1fr}.bk-view>.bk-pg{position:relative;grid-row:1}
+.bk-book>.bk-pg,.bk-book>.bk-edge{will-change:transform}
+#sheet.bk-write{background-color:var(--pp)!important;background-image:var(--grain)!important;color:var(--ink)}
+#sheet.bk-write .wr-title,#sheet.bk-write #wrEd{font-family:var(--bkf);color:var(--ink);background-color:transparent}
+#sheet.bk-write .wr-title{font-size:calc(var(--bks) * 1.25);font-weight:600}
+#sheet.bk-write #wrEd{font-size:var(--bks);line-height:var(--bkl)}
+#sheet.bk-write.bk-lined #wrEd{background-image:repeating-linear-gradient(transparent 0 calc(var(--bks) * var(--bkl) - 1px),var(--rule) calc(var(--bks) * var(--bkl) - 1px) calc(var(--bks) * var(--bkl)));background-attachment:local}
+#sheet.bk-write.bk-dots #wrEd{background-image:radial-gradient(var(--rule) 1.1px,transparent 1.5px);background-size:22px 22px;background-attachment:local}
+#sheet.bk-write .data,#sheet.bk-write .wr-m small,#sheet.bk-write ::placeholder{color:var(--ink2)}
+#sheet.bk-write .wr-pill,#sheet.bk-write .wr-tb button,#sheet.bk-write .wr-m,#sheet.bk-write .ibtn{color:var(--ink);border-color:var(--rule);background-color:color-mix(in srgb,var(--ink) 5%,transparent)}
+#sheet.bk-write .wr-pill.on,#sheet.bk-write .wr-m.on{background-color:color-mix(in srgb,var(--acc) 22%,transparent);border-color:var(--acc)}
+#sheet.bk-write .btn.pri,#sheet.bk-write .wr-pr{background:var(--acc);color:var(--pp);border-color:var(--acc)}
+#sheet.bk-write mark{background:color-mix(in srgb,var(--acc) 30%,transparent);color:inherit}
 .bk-fade{animation:bkFade .35s ease}@keyframes bkFade{from{opacity:.25;transform:scale(.995)}to{opacity:1;transform:none}}
 .bk-tab{display:inline-flex;align-items:center;gap:6px}.bk-tab svg{width:16px;height:16px}
 @media(max-width:560px){.bk-pc{padding:24px 22px 50px 28px}.bk-x{font-size:17px}.bk-dn{font-size:50px}.bk-stage{padding:6px 12px 8px}}
