@@ -3255,7 +3255,7 @@ html[data-anim=snappy]::view-transition-new(root){animation-duration:.24s}
 /* Home: a calmer header, and the Customize Home sheet */
 @media(max-width:820px){html[data-pg=today] #view>.ph{row-gap:12px;margin-bottom:24px}
  html[data-pg=today] #view>.ph>div:first-child>h1{grid-column:1/-1;grid-row:2;font-size:clamp(34px,10.4vw,48px);line-height:.95}
- html[data-pg=today] #view>.ph>div:first-child>.data{grid-column:1/-1;grid-row:3;align-self:start;margin:8px 0 0;line-height:1.5}/* 1.63.0: the buttons (now with search) take the top row; the summary sits under the greeting */}
+ html[data-pg=today] #view>.ph>div:first-child>.data{grid-column:1;grid-row:1;align-self:center;margin:0;line-height:1.5}}
 .hcust{display:flex;justify-content:center;margin:34px 0 6px}.hcust .link{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-weight:600}.hcust svg{width:16px;height:16px}
 .hmq-b svg{width:17px;height:17px;color:var(--accent)}
 .hc-l{display:flex;flex-direction:column;gap:6px;margin:14px 0 6px}
@@ -3587,7 +3587,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.63.1';
+const APP_VER='1.63.2';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -8266,22 +8266,25 @@ Object.assign(ACT,{
 const SETS=[['account','You & sync','Google account, Drive sync, devices'],['look','Look & feel','Theme, fonts, colours, cards, animations, start page'],['notif','Notifications','Reminders, check-ins, quiet hours'],['privacy','Privacy & lock','App lock, fingerprint, hide content'],['auto','Automations','Auto-tick habits from your phone'],['share','Sharing','Share goals and habits, live cheers'],['voice','AI & voice','On-device AI, speech'],['data','Your data','Backup, import, export, sample data']];window.FF_SETS=SETS;
 function findHTML(){return`<div class="data">Find anything</div><div class="fnd-in" style="margin-top:10px">${ic('search')}<input id="fndq" data-find type="search" placeholder="Goals, habits, steps, journal, settings" autocomplete="off" enterkeyhint="search"></div><div class="fnd-res" id="fndr">${findRes('')}</div>`}
 function fRow(act,attrs,c,t,s){return`<button class="fnd-r" data-act="${act}" ${attrs} style="${c?'--c:'+c:''}"><i></i><span class="t"><b>${esc(t)}</b>${s?`<small>${esc(s)}</small>`:''}</span>${ic('next','ico-s')}</button>`}
-function findRes(q){q=String(q||'').trim().toLowerCase();const hit=s=>s&&String(s).toLowerCase().includes(q);const out=[];
+function findRes(q){q=String(q||'').trim().toLowerCase();/* 1.63.2: plain words too (nlQ in howto.js): "my coffee habit", "journal about mom" */const M=q&&window.nlQ?nlQ(q):null;
+ const hit=(c,...a)=>{if(M&&M.c&&M.c!==c)return false;if(M&&M.c===c&&!M.n)return true;const s=a.filter(Boolean).join(' ').toLowerCase();return!!s&&(s.includes(q)||!!(M&&M.n&&M.t(s)))};const out=[];
  if(!q){const recent=[...S.goals.filter(g=>g.status==='active')].slice(0,5).map(g=>fRow('fndGo',`data-r="goal/${g.id}"`,colOf(g),g.title,pct(g)+'% · '+areaName(g.area)));
   const hs=S.habits.filter(h=>h.status==='active').slice(0,5).map(h=>fRow('fndGo',`data-r="habit/${h.id}"`,colOf(h),hIcon(h)+' '+h.title,freqText(h)));
   return(recent.length?`<div class="fnd-g data">Active goals</div>`+recent.join(''):'')+(hs.length?`<div class="fnd-g data">Habits</div>`+hs.join(''):'')+`<div class="fnd-g data">Settings</div>`+SETS.map(s=>fRow('fndGo',`data-r="settings/${s[0]}"`,'',s[1],s[2])).join('')}
- const G1=S.goals.filter(g=>hit(g.title)||hit(g.why)).slice(0,8).map(g=>fRow('fndGo',`data-r="goal/${g.id}"`,colOf(g),g.title,(g.status==='done'?'Achieved':pct(g)+'%')+' · '+areaName(g.area)));
- const St=[];S.goals.forEach(g=>g.steps.forEach(s=>{if(St.length<10&&(hit(s.title)||hit(s.note)))St.push(fRow('calItem',`data-k="step" data-g="${g.id}" data-s="${s.id}" data-d="${s.due||today()}"`,colOf(g),s.title,(s.done?'Done · ':s.due?dayName(s.due)+' · ':'')+g.title))}));
- const Hb=S.habits.filter(h=>hit(h.title)||hit(h.why)||hit(h.cue)).slice(0,8).map(h=>fRow('fndGo',`data-r="habit/${h.id}"`,colOf(h),hIcon(h)+' '+h.title,freqText(h)+(h.status!=='active'?' · '+h.status:'')));
- const Dy=S.days.filter(x=>hit(x.title)).slice(0,8).map(x=>fRow('calItem',`data-k="day" data-id="${x.id}" data-d="${x.date}"`,colOf(x.goalId&&G(x.goalId)),x.title,dayName(x.date)+(x.done?' · done':'')));
- const En=S.entries.filter(e=>!e.private&&(hit(e.title)||hit(e.text))).sort((a,b)=>b.t-a.t).slice(0,8).map(e=>fRow('fndEntry',`data-id="${e.id}"`,'',e.title||trunc(e.text||'',70),(JK[e.type]||'Moment')+' · '+dayLabel(e.t)));
- const Th=(S.threads||[]).filter(t=>hit(t.title)||hit(t.name)).slice(0,6).map(t=>fRow('fndGo',`data-r="thread/${t.id}"`,'',t.title||t.name||'Note','Note'));
- const Se=SETS.filter(s=>hit(s[1])||hit(s[2])).map(s=>fRow('fndGo',`data-r="settings/${s[0]}"`,'',s[1],s[2]));
- const Pg=PAGES.filter(p=>hit(p[1])||hit(p[3])).map(p=>fRow('fndGo',`data-r="${p[0]}"`,'',p[1],p[3]));
- [['Pages',Pg],['Goals',G1],['Steps',St],['Habits',Hb],['Day plans',Dy],['Journal',En],['Notes',Th],['Settings',Se]].forEach(([n,L])=>{if(L.length)out.push(`<div class="fnd-g data">${n}</div>`+L.join(''))});
+ const G1=S.goals.filter(g=>hit('goal',g.title,g.why)).slice(0,8).map(g=>fRow('fndGo',`data-r="goal/${g.id}"`,colOf(g),g.title,(g.status==='done'?'Achieved':pct(g)+'%')+' · '+areaName(g.area)));
+ const St=[];S.goals.forEach(g=>g.steps.forEach(s=>{if(St.length<10&&hit('goal',s.title,s.note))St.push(fRow('calItem',`data-k="step" data-g="${g.id}" data-s="${s.id}" data-d="${s.due||today()}"`,colOf(g),s.title,(s.done?'Done · ':s.due?dayName(s.due)+' · ':'')+g.title))}));
+ const Hb=S.habits.filter(h=>hit('habit',h.title,h.why,h.cue,h.unit,HKN[h.kind],h.kind==='quit'?'quit stop break cut down':'')).slice(0,8).map(h=>fRow('fndGo',`data-r="habit/${h.id}"`,colOf(h),hIcon(h)+' '+h.title,freqText(h)+(h.status!=='active'?' · '+h.status:'')));
+ const Dy=S.days.filter(x=>hit('day',x.title)).slice(0,8).map(x=>fRow('calItem',`data-k="day" data-id="${x.id}" data-d="${x.date}"`,colOf(x.goalId&&G(x.goalId)),x.title,dayName(x.date)+(x.done?' · done':'')));
+ const En=S.entries.filter(e=>!e.private&&hit('journal',e.title,e.text)).sort((a,b)=>b.t-a.t).slice(0,8).map(e=>fRow('fndEntry',`data-id="${e.id}"`,'',e.title||trunc(e.text||'',70),(JK[e.type]||'Moment')+' · '+dayLabel(e.t)));
+ const Th=(S.threads||[]).filter(t=>hit('note',t.title,t.name,(t.tags||[]).join(' '),(t.ups||[]).map(u=>u.x).join(' '))).slice(0,6).map(t=>fRow('fndGo',`data-r="thread/${t.id}"`,'',t.title||t.name||'Note','Note'+((t.tags||[]).length?' · '+t.tags.join(', '):'')));
+ const Ls=(S.lists||[]).filter(l=>hit('list',l.title,Object.values(l.items||{}).filter(i=>!i.del).map(i=>i.t).join(' '))).slice(0,6).map(l=>fRow('fndGo',`data-r="list/${l.id}"`,'',(l.emoji?l.emoji+' ':'')+l.title,'List'));
+ const Rm=(window.remFind?remFind():[]).filter(r=>hit('rem',r.t,r.s)).slice(0,6).map(r=>fRow('fndRem',`data-q="${esc(r.t)}"`,'',r.t,r.s||'Reminder'));
+ const Se=SETS.filter(s=>hit('',s[1],s[2])).map(s=>fRow('fndGo',`data-r="settings/${s[0]}"`,'',s[1],s[2]));
+ const Pg=PAGES.filter(p=>hit('',p[1],p[3])).map(p=>fRow('fndGo',`data-r="${p[0]}"`,'',p[1],p[3]));
+ [['Pages',Pg],['Goals',G1],['Steps',St],['Habits',Hb],['Day plans',Dy],['Journal',En],['Notes',Th],['Lists',Ls],['Reminders',Rm],['Settings',Se]].forEach(([n,L])=>{if(L.length)out.push(`<div class="fnd-g data">${n}</div>`+L.join(''))});
  return out.join('')||`<p class="small muted" style="margin:16px 4px">Nothing matches “${esc(q)}”.</p>`}
 document.addEventListener('input',e=>{if(e.target&&e.target.matches&&e.target.matches('[data-find]')){const r=$('#fndr');if(r)r.innerHTML=findRes(e.target.value)}});
-Object.assign(ACT,{fndGo:d=>{closeSheet();go(d.r)},fndEntry:d=>{closeSheet();setTimeout(()=>ACT.viewEntry({id:d.id}),260)}});
+Object.assign(ACT,{fndGo:d=>{closeSheet();go(d.r)},fndEntry:d=>{closeSheet();setTimeout(()=>ACT.viewEntry({id:d.id}),260)},fndRem:d=>{ACT.remMgr();const i=$('#sheet [data-remq]');if(i){i.value=d.q;i.dispatchEvent(new Event('input',{bubbles:true}))}}});
 /* a search button on every page header (next to the gear) */
 {const _g=gear;gear=function(){return`<button class="ibtn fnd-btn" data-act="findOpen" aria-label="Find anything" title="Find anything">${ic('search')}</button>`+_g()}}
 
