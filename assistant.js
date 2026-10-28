@@ -834,4 +834,20 @@ const css=document.createElement('style');css.textContent=`
 .lv-btn svg{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.as-big,.asv .as-av,.as-av::before,.ai-mini .as-av{animation:none!important}}`;
 document.head.appendChild(css);
+/* 1.63.3: search with the AI when it's on. Typed words still answer instantly; a longer question ("what did I write about
+   mom last week") also goes to the AI after a short pause, which turns it into a kind, search words and dates. The app
+   then searches with those, on this device, and shows them on top. Nothing is sent anywhere the AI isn't already. */
+let FAI=null,FAT=0;
+async function aiFind(q,sig){const e=typeof planEngine==='function'?planEngine():'',fast=e!=='api'&&isLrtM(llmOf(insSet().llm));if(e!=='api'&&e!=='native'&&!fast||!aiReady())return null;
+ const schema={type:'object',properties:{kind:{enum:['any','habit','goal','journal','note','list','reminder']},words:{type:'string'},from:{type:'string'},to:{type:'string'}},required:['kind','words'],additionalProperties:false};
+ const d=new Date(),msgs=[{role:'system',content:'You turn a search typed into a personal journal, habits and goals app into JSON. Reply with JSON only.'},{role:'user',content:`Today is ${d.toLocaleDateString('en-US',{weekday:'long'})} ${ymd()}.\nSearch: "${q}"\n\nkind: what to look in (any if unclear). words: 1 to 6 words that would appear in the item, including close alternatives (coffee caffeine), no filler like "my" or "about". from and to: YYYY-MM-DD only when the search names a time ("last week", "in March"), else leave them out.`}];
+ let out='';const o={schema,max_tokens:90,temperature:0};try{if(e==='api')await apiChat(msgs,x=>{out+=x},sig,o);else if(e==='wasm')await localChat(msgs,x=>{out+=x},null,0,null,false,o);else await natChat(msgs,x=>{out+=x},null,null,o);
+  const j=JSON.parse(out.slice(out.indexOf('{'),out.lastIndexOf('}')+1)),dt=s=>/^\d{4}-\d{2}-\d{2}$/.test(s||'')?new Date(s+'T00:00').getTime():0;
+  return{kind:j.kind==='any'?'':j.kind==='reminder'?'reminders':j.kind,words:String(j.words||'').slice(0,80),from:dt(j.from),to:dt(j.to)}}catch(err){return null}}
+document.addEventListener('input',ev=>{const t=ev.target;if(!t||!t.matches||!t.matches('[data-find]'))return;clearTimeout(FAT);if(FAI)FAI.abort();const q=t.value.trim();
+ if(q.split(/\s+/).length<3||!aiReady())return;FAT=setTimeout(async()=>{const r=$('#fndr');if(!r||t.value.trim()!==q)return;FAI=new AbortController();
+  r.insertAdjacentHTML('afterbegin',`<div class="fnd-g data fnd-ai">Asking ${esc(aname())}…</div>`);const a=await aiFind(q,FAI.signal);const r2=$('#fndr');if(!r2||t.value.trim()!==q)return;r2.querySelector('.fnd-ai')?.remove();if(!a)return;
+  window.FND_D=a.from||a.to?[a.from||0,(a.to||a.from)+864e5]:null;const aq=(a.kind+' '+a.words).trim();let res='';try{res=aq||window.FND_D?window.findRes(aq||'journal',true):''}finally{window.FND_D=null}
+  if(!res||/^<p/.test(res))return;const span=a.from||a.to?' · '+[...new Set([a.from,a.to].filter(Boolean))].map(x=>dayLabel(x)).join(' to '):'';
+  r2.insertAdjacentHTML('afterbegin',`<div class="fnd-ai-w"><div class="fnd-g data">${esc(aname())} understood: ${esc(aq||'journal')}${esc(span)}</div>${res}</div><div class="fnd-g data">Exact words</div>`)},600)});
 })();

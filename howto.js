@@ -139,8 +139,8 @@ window.featureFind=q=>{const raw=words(q),Q=raw.filter(w=>!STOP.has(w)),use=Q.le
    to that group; every other word must turn up in the item, by word start, a synonym or one typo. */
 const CAT={habit:'habit',habits:'habit',routine:'habit',routines:'habit',goal:'goal',goals:'goal',journal:'journal',diary:'journal',entry:'journal',entries:'journal',wrote:'journal',written:'journal',
  note:'note',notes:'note',thread:'note',threads:'note',reminder:'rem',reminders:'rem',remind:'rem',alarm:'rem',alarms:'rem',list:'list',lists:'list'},STOP2=new Set('about did all any ive from write'.split(' '));
-window.nlQ=q=>{const W=words(q).filter(w=>!STOP.has(w)&&!STOP2.has(w)),c=W.map(w=>CAT[w]).find(Boolean)||'',Q=W.filter(w=>!CAT[w]),qs=Q.map(w=>[w,...(SYNX.get(w)||[])].map(stem));
- return{c,n:Q.length,t:s=>{const L=words(s).map(stem);return qs.every((ws,i)=>ws.some(w=>L.some(v=>v===w||(w.length>2&&v.startsWith(w))))||L.some(v=>near(qs[i][0],v)))}}};
+window.nlQ=(q,any)=>{const W=words(q).filter(w=>!STOP.has(w)&&!STOP2.has(w)),c=W.map(w=>CAT[w]).find(Boolean)||'',Q=W.filter(w=>!CAT[w]),qs=Q.map(w=>[w,...(SYNX.get(w)||[])].map(stem));
+ return{c,n:Q.length,t:s=>{const L=words(s).map(stem);return qs[any?'some':'every']((ws,i)=>ws.some(w=>L.some(v=>v===w||(w.length>2&&v.startsWith(w))))||L.some(v=>near(qs[i][0],v)))}}};
 const fRow2=f=>`<button class="fnd-r" data-act="${f.act||'fndGo'}" ${f.r?`data-r="${esc(f.r)}"`:''}><i></i><span class="t"><b>${esc(f.t)}</b>${f.sub?`<small>${esc(f.sub)}</small>`:''}</span>${ic('next','ico-s')}</button>`;
 document.addEventListener('input',e=>{const t=e.target;if(!t||!t.matches||!t.matches('[data-find]'))return;const r=$('#fndr');if(!r)return;const q=t.value.trim();if(!q)return;
  const mine=!!r.querySelector('.fnd-r'),L=featureFind(q).slice(0,mine?3:7);if(!L.length)return;const rows=`<div class="fnd-g data">Features and settings</div>`+L.map(fRow2).join('');
