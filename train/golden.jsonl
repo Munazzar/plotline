@@ -1,0 +1,45 @@
+{"say": "remind me to call mom at 5pm", "kind": "do", "items": [{"type": "reminder", "title": "call mom", "when": "at 5pm"}]}
+{"say": "hey plot don't let me forget my pills tonight at 9", "kind": "do", "items": [{"type": "reminder", "title": "pills", "when": "tonight at 9"}]}
+{"say": "set a reminder for tomorrow morning to send the invoice", "kind": "do", "items": [{"type": "reminder", "title": "send the invoice", "when": "tomorrow morning"}]}
+{"say": "ping me in 20 minutes to check the oven", "kind": "do", "items": [{"type": "reminder", "title": "check the oven", "when": "in 20 minutes"}]}
+{"say": "remind me to drink water every 2 hours", "kind": "do", "items": [{"type": "reminder", "title": "drink water", "when": "every 2 hours"}]}
+{"say": "remind me on friday at 10am to renew the car insurance", "kind": "do", "items": [{"type": "reminder", "title": "renew the car insurance", "when": "on friday at 10am"}]}
+{"say": "dentist tomorrow at 3 until 4pm", "kind": "do", "items": [{"type": "reminder", "title": "dentist", "when": "tomorrow at 3", "end": "4pm"}]}
+{"say": "block today from 2 to 5pm for deep work", "kind": "do", "items": [{"type": "reminder", "title": "deep work", "when": "today 2", "end": "5pm"}]}
+{"say": "team meeting on monday at 10am till 11", "kind": "do", "items": [{"type": "reminder", "title": "team meeting", "when": "on monday at 10am", "end": "11"}]}
+{"say": "today's goal is finish the slides and remind me at 4", "kind": "do", "items": [{"type": "today", "title": "finish the slides", "when": "at 4"}]}
+{"say": "add a goal for today to clean the kitchen", "kind": "do", "items": [{"type": "today", "title": "clean the kitchen"}]}
+{"say": "today i want to read 20 pages, remind me at 9pm", "kind": "do", "items": [{"type": "today", "title": "read 20 pages", "when": "at 9pm"}]}
+{"say": "set a task for today reply to Ana", "kind": "do", "items": [{"type": "today", "title": "reply to Ana"}]}
+{"say": "new goal learn spanish", "kind": "do", "items": [{"type": "goal", "title": "learn spanish"}]}
+{"say": "i want to run a marathon this year, make it a goal", "kind": "do", "items": [{"type": "goal", "title": "run a marathon"}]}
+{"say": "set a goal to save 5000 dollars and remind me every sunday at 6pm", "kind": "do", "items": [{"type": "goal", "title": "save 5000 dollars", "when": "every sunday at 6pm"}]}
+{"say": "start a reading habit at 9pm", "kind": "do", "items": [{"type": "habit", "title": "reading", "when": "at 9pm"}]}
+{"say": "new habit meditation", "kind": "do", "items": [{"type": "habit", "title": "meditation"}]}
+{"say": "add a habit of flossing every night at 10pm", "kind": "do", "items": [{"type": "habit", "title": "flossing", "when": "every night at 10pm"}]}
+{"say": "i did my workout", "kind": "do", "items": [{"type": "habit_done", "title": "workout"}]}
+{"say": "mark meditation done", "kind": "do", "items": [{"type": "habit_done", "title": "meditation"}]}
+{"say": "check off vitamins for today", "kind": "do", "items": [{"type": "habit_done", "title": "vitamins"}]}
+{"say": "add to my journal that i had a great walk with Sam", "kind": "do", "items": [{"type": "journal", "title": "", "detail": "had a great walk with Sam"}]}
+{"say": "new general entry felt tired all day", "kind": "do", "items": [{"type": "journal", "title": "", "detail": "felt tired all day"}]}
+{"say": "write in my diary work was stressful but i got through it", "kind": "do", "items": [{"type": "journal", "title": "", "detail": "work was stressful but i got through it"}]}
+{"say": "start a note called car and write got the quote for new tires", "kind": "do", "items": [{"type": "thread", "title": "car", "detail": "got the quote for new tires"}]}
+{"say": "new note wedding ideas", "kind": "do", "items": [{"type": "thread", "title": "wedding ideas"}]}
+{"say": "jot down in the house note that the plumber is coming thursday", "kind": "do", "items": [{"type": "thread_update", "title": "house", "detail": "the plumber is coming thursday"}]}
+{"say": "update my job search note sent two applications", "kind": "do", "items": [{"type": "thread_update", "title": "job search", "detail": "sent two applications"}]}
+{"say": "make a packing list with socks charger and passport", "kind": "do", "items": [{"type": "list", "title": "packing", "detail": "socks, charger, passport"}]}
+{"say": "create a new list called gift ideas", "kind": "do", "items": [{"type": "list", "title": "gift ideas"}]}
+{"say": "add milk eggs and bread to my groceries", "kind": "do", "items": [{"type": "list_add", "title": "groceries", "detail": "milk, eggs, bread"}]}
+{"say": "put batteries on the hardware store liost", "kind": "do", "items": [{"type": "list_add", "title": "hardware store", "detail": "batteries"}]}
+{"say": "add coffee to groceries and remind me to buy it at 6", "kind": "do", "items": [{"type": "list_add", "title": "groceries", "detail": "coffee"}, {"type": "reminder", "title": "buy coffee", "when": "at 6"}]}
+{"say": "journal finished the book and mark reading done", "kind": "do", "items": [{"type": "journal", "title": "", "detail": "finished the book"}, {"type": "habit_done", "title": "reading"}]}
+{"say": "remind me to pay rent on the 1st at 9am and add call the bank to today", "kind": "do", "items": [{"type": "reminder", "title": "pay rent", "when": "on the 1st at 9am"}, {"type": "today", "title": "call the bank"}]}
+{"say": "every morning summarise my emails", "kind": "agent_task", "items": []}
+{"say": "keep an eye on replies from my landlord", "kind": "agent_task", "items": []}
+{"say": "check if Sam replied", "kind": "agent_now", "items": []}
+{"say": "what meetings do i have tomorrow", "kind": "agent_now", "items": []}
+{"say": "how am i doing on my goals", "kind": "question", "items": []}
+{"say": "why do i keep skipping my workouts", "kind": "question", "items": []}
+{"say": "what is the capital of portugal", "kind": "question", "items": []}
+{"say": "give me a tip to sleep better", "kind": "question", "items": []}
+{"say": "when did i last change my oil", "kind": "question", "items": []}

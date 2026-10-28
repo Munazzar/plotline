@@ -21,7 +21,7 @@ const fastOn=()=>aset().fast!==false;
 const aset=()=>({...ADEF,...(S.settings.assist||{})});
 const aname=()=>String(aset().name||'').replace(/[^\p{L}\p{N} '\-]/gu,'').replace(/\s+/g,' ').trim().slice(0,24)||'Plot';
 const wakeWord=()=>'Hey '+aname();
-const AS={turns:[],busy:false,listening:false,await:null,undo:{},spoken:false,after:null,ctl:null,cid:null,kind:'chat',last:0};
+const AS={turns:[],q:[],busy:false,listening:false,await:null,undo:{},spoken:false,after:null,ctl:null,cid:null,kind:'chat',last:0};
 /* every chat and talk is kept as its own conversation (convs.js): AS.cid is the one on screen. After a long pause the next
    message starts a new one; the earlier one stays in Conversations, where it can be read and continued. */
 const CV_GAP=30*60e3;
@@ -86,8 +86,8 @@ function addToThread(th,x){x=cap(clean(x));const now=Date.now(),u={id:uid(),t:no
 function addToList(L,items){const its=items.map(x=>cap(clean(x))).filter(Boolean);if(!its.length)return null;const ids=[];
  its.forEach(t=>{const i=uid();ids.push(i);cardsFromQueue({src:'list',id:L.id,i,op:'add',t})});save();rerender();
  const n=its.length;return{say:`Added ${n===1?quote(its[0]):n+' items'} to your ${L.title} list.`,undo:()=>{ids.forEach(i=>cardsFromQueue({src:'list',id:L.id,i,op:'del'}));save();rerender()},chips:[['Open list','list/'+L.id]]}}
-function addToday(title){title=cap(clean(title)).slice(0,90);const x={id:uid(),title,date:today(),time:'',goalId:null,done:false,doneAt:null,createdAt:Date.now()};S.days.push(x);save();rerender();
- return{say:`Added ${quote(title)} to today's goals.`,undo:()=>{S.days=S.days.filter(y=>y.id!==x.id);save();rerender()},chips:[['Open today','today']]}}
+function addToday(title,w){title=cap(clean(title)).slice(0,90);const tm=w&&w.time||'',x={id:uid(),title,date:w&&w.date||today(),time:tm,goalId:null,done:false,doneAt:null,createdAt:Date.now(),...(tm?{remind:'0'}:{})};S.days.push(x);save();if(tm)try{syncNative()}catch(e){}rerender();
+ return{say:`Added ${quote(title)} to ${x.date===today()?'today’s goals':'your goals for '+fmtDate(x.date)}${tm?`, with a reminder ${atTxt(x.date,tm)}`:''}.`,undo:()=>{S.days=S.days.filter(y=>y.id!==x.id);save();if(tm)try{syncNative()}catch(e){}rerender()},chips:[['Open today','today']]}}
 function addReminder(title,w){title=cap(clean(title).replace(/^(?:(?:me|to|that|about|for)\s+)+/i,'')).slice(0,90);const x={id:uid(),title,date:w.date,time:w.time,dur:15,goalId:null,done:false,doneAt:null,createdAt:Date.now(),remind:'0'};S.days.push(x);save();try{syncNative()}catch(e){}rerender();
  return{say:`Okay, I'll remind you ${atTxt(w.date,w.time)}: ${quote(title)}.${NATIVE?'':' Keep Plotlines open in this browser for the reminder to show.'}`,undo:()=>{S.days=S.days.filter(y=>y.id!==x.id);save();try{syncNative()}catch(e){}rerender()},chips:[['Open calendar','cal-'+w.date]]}}
 function markDone(name){const h=pick(S.habits.filter(x=>!x.archived),name,x=>x.title);
@@ -200,16 +200,25 @@ function parse(raw){const t=strip(normCmd(raw)),l=lcs(t);let m;if(!t)return null
  return null}
 
 /* things the AI decided to make, done now: "make a packing list with socks, charger and passport" */
-function doItem(it){const t=clean(it.title||''),x=clean(it.detail||'');if(!t&&!x&&!(it.type==='timer'&&it.minutes))return null;
+/* the time words they said ("tomorrow at 5pm", "at 4") are read here, not worked out by the model: small models get dates wrong */
+function whenOf(s){s=clean(s||'');if(!s)return null;const w=parseWhen(s);if(!w.found)return null;let tm=/\d|noon|midnight|morning|afternoon|evening|night/i.test(s)?w.time:'';
+ /* "every night at 9", "evening at 7": parseWhen only reads the part of day after today/tonight/this */
+ if(tm&&+tm.slice(0,2)<12&&/\b(?:evening|night)\b/i.test(s)&&!/\bam\b/i.test(s))tm=pad2(+tm.slice(0,2)+12)+tm.slice(2);return{date:w.date,time:tm}}
+const hmin=t=>/^\d\d:\d\d/.test(t||'')?+t.slice(0,2)*60+ +t.slice(3,5):NaN;
+function doItem(it){const t=clean(it.title||''),x=clean(it.detail||'');if(!t&&!x&&!(it.type==='timer'&&it.minutes))return null;const wn=whenOf(it.when);
+ /* a goal or note with a time also reminds them then */
+ const also=r=>{if(!r||!wn||!wn.time)return r;const q=addReminder(t||x,wn);return{say:r.say+' '+q.say,undo:()=>{q.undo();if(r.undo)r.undo()},chips:r.chips}};
  switch(it.type){
+  case'habit_done':return markDone(t||x);
   case'list':return newList(t||'New list',x?splitItems(x):[]);
   case'list_add':{const L=pick(S.lists||[],t,l=>l.title);return L?addToList(L,splitItems(x||t)):newList(t||'New list',x?splitItems(x):[])}
   case'journal':return addJournal(x||t);
-  case'today':return addToday(t||x);
-  case'thread':return newThread(t||x,t?x:'');
+  case'today':return addToday(t||x,wn);
+  case'thread':return also(newThread(t||x,t?x:''));
   case'thread_update':{const th=pick(threads().filter(z=>z.status!=='archived'),t,z=>z.title||z.name);return th?addToThread(th,x||t):newThread(t,x)}
-  case'reminder':case'alarm':case'timer':case'checkin':{if(window.SCHED){const r=SCHED.make(it);if(r)return r}if(it.type==='checkin')return null;const w=parseWhen((t+' '+x).trim());return addReminder(w.found?(w.rest||t):t,w.found?w:{date:addDays(1),time:'09:00'})}
-  case'goal':case'habit':case'routine':{if(!window.AIX)return null;const r=AIX.doAct({k:it.type,t:t||x,x:it.type==='routine'?x:''});return r&&{say:r.say,undo:r.undo,chips:r.go?[['Open',r.go]]:[]}}}
+  case'reminder':case'alarm':case'timer':case'checkin':{if(wn)it={...it,date:wn.date,time:wn.time||it.time||''};if(it.when)it.q=[it.q,it.when].filter(Boolean).join(' ');
+   const e=whenOf(it.end),d=e?hmin(e.time)-hmin(it.time):0;if(d>0)it.dur=d;if(window.SCHED){const r=SCHED.make(it);if(r)return r}if(it.type==='checkin')return null;const w=parseWhen((t+' '+x).trim());return addReminder(w.found?(w.rest||t):t,w.found?w:{date:addDays(1),time:'09:00'})}
+  case'goal':case'habit':case'routine':{if(!window.AIX)return null;const r=AIX.doAct({k:it.type,t:t||x,x:it.type==='routine'?x:'',time:it.type!=='goal'&&wn&&wn.time||''});const o=r&&{say:r.say,undo:r.undo,chips:r.go?[['Open',r.go]]:[]};return it.type==='goal'?also(o):o}}
  return null}
 function doItems(items){const said=[],undos=[],chips=[];
  for(const it of(items||[]).slice(0,8)){let x=null;try{x=doItem(it)}catch(e){}if(!x||!x.say)continue;said.push(x.say);if(x.undo)undos.push(x.undo);if(x.chips)chips.push(...x.chips)}
@@ -218,6 +227,7 @@ function doItems(items){const said=[],undos=[],chips=[];
 window.PlotDo={doItems,addJournal,newThread,addToThread,addToday,addReminder,addTo,newList,parseWhen,pick,splitItems,body,aiReady:()=>aiReady()};
 function exec(p,raw){const A=aset();switch(p.k){
  case'agentNow':return{agent:p.x};
+ case'items':return doItems(p.items)||{say:'I couldn’t make that. Try saying it another way, like “remind me tomorrow at 5 to call mom”.'};
  case'agent':return window.agentFromVoice?agentFromVoice(p.x):{say:'The agent isn’t available here.'};
  case'cancel':return{say:'Okay.'};
  case'live':setTimeout(()=>{if(window.liveOpen)liveOpen()},60);return{say:'Sure, let’s talk.',quiet:1};
@@ -433,11 +443,13 @@ async function aiAnswer(q,onP,hint){if(!aiReady())return null;const e=planEngine
  if(X){const c=X.care(q,out);if(c)out+=' '+c}
  if(out)AS.wrote=true;return out||null}
 async function llmIntent(t){const e=typeof planEngine==='function'?planEngine():'',fast=e!=='api'&&isLrtM(llmOf(insSet().llm));if(e!=='api'&&e!=='native'&&!fast||!aiReady())return null;
- const schema={type:'object',properties:{action:{enum:['journal','new_thread','thread_update','reminder','new_list','list_add','today_goal','habit_done','agent_task','agent_now','question']},text:{type:'string'},target:{type:'string'},when:{type:'string'}},required:['action','text'],additionalProperties:false};
- const msgs=[{role:'system',content:'You turn one spoken or typed request to a personal journal and habits app into JSON. Requests can be phrased any way, misspelled ("jounel", "liost", "thred") or misheard ("general entry" means journal entry). Reply with JSON only. The text field holds only what should be saved: never the command words ("make a journal entry", "add to my list", "that says"), never the target name.'},{role:'user',content:`Request: "${t}"\n\nactions: journal (save text to today's journal), new_thread (start a note; text is its title), thread_update (target is the note name; text is the update), reminder (when is the time words like "tomorrow at 5pm"), new_list (text is the list name; target is its items separated by commas, or empty), list_add (target is the list name; text is the items), today_goal, habit_done (text is the habit), agent_task (only for something to repeat on a schedule or keep an eye on, like "every morning summarise my emails"; text is the task), agent_now (something to look up or do right now in their email, calendar, Google Drive or Notion, like "check if Sam replied" or "put lunch with Ana on my calendar Friday"; text is the whole request), question (anything asked).`}];
- let out='';try{if(e==='api')await apiChat(msgs,x=>{out+=x},AS.ctl.signal,{schema,max_tokens:160,temperature:0});else if(e==='wasm')await localChat(msgs,x=>{out+=x},null,0,null,false,{schema,max_tokens:160,temperature:0});else await natChat(msgs,x=>{out+=x},null,null,{schema,max_tokens:160,temperature:0});const j=JSON.parse(out.slice(out.indexOf('{'),out.lastIndexOf('}')+1));
-  const x=String(j.text||''),tg=String(j.target||''),w=String(j.when||'');
-  return{journal:{k:'journal',x:body(x)},new_thread:{k:'thrnew',title:x},thread_update:{k:'add',x,to:tg+' note'},reminder:{k:'remind',x:x+(w?' '+w:'')},list_add:{k:'add',x,to:tg+' list'},new_list:{k:'listnew',title:x,items:tg?splitItems(tg):[]},today_goal:{k:'today',x},habit_done:{k:'done',x},agent_task:{k:'agent',x},agent_now:window.AGENT&&AGENT.connected().length?{k:'agentNow',x:t}:null}[j.action]||null}catch(err){return null}}
+ const item={type:'object',properties:{type:{enum:['reminder','today','goal','habit','habit_done','journal','thread','thread_update','list','list_add']},title:{type:'string'},detail:{type:'string'},when:{type:'string'},end:{type:'string'}},required:['type','title'],additionalProperties:false};
+ const schema={type:'object',properties:{kind:{enum:['do','agent_task','agent_now','question']},items:{type:'array',maxItems:6,items:item}},required:['kind'],additionalProperties:false};
+ const msgs=[{role:'system',content:'You turn one spoken or typed request to a personal goals, habits and journal app into JSON. Requests can be phrased any way, misspelled ("jounel", "liost", "thred") or misheard ("general entry" means journal entry). Reply with JSON only. Title and detail hold only what should be saved, in their own words: never the command words ("make a journal entry", "remind me to", "that says") and never the time words.'},{role:'user',content:`Request: "${t}"\n\nkind: do (make, add, log or mark something: one item for each thing to make), agent_task (only for something to repeat on a schedule or keep an eye on, like "every morning summarise my emails"), agent_now (something to look up or do right now in their email, calendar, Google Drive or Notion, like "check if Sam replied"), question (anything asked).\nitem types: reminder (title is what to remind them about), today (a goal for today), goal (a bigger goal), habit (a new habit), habit_done (title is the habit they did), journal (detail is the text to save), thread (a new note: title is its name, detail is what to write in it), thread_update (title is the note's name, detail is the update), list (title is the list name, detail is its items separated by commas), list_add (title is the list name, detail is the items).\nwhen: the time words exactly as said ("tomorrow at 5pm", "at 4", "every 2 hours", "on Friday at 9"), or empty. A today goal, goal, habit or note with a time is one item with that when, not an extra reminder. end: the end time words, if said ("from 3 to 4pm" gives when "3" and end "4pm").`}];
+ let out='';try{if(e==='api')await apiChat(msgs,x=>{out+=x},AS.ctl.signal,{schema,max_tokens:240,temperature:0});else if(e==='wasm')await localChat(msgs,x=>{out+=x},null,0,null,false,{schema,max_tokens:240,temperature:0});else await natChat(msgs,x=>{out+=x},null,null,{schema,max_tokens:240,temperature:0});const j=JSON.parse(out.slice(out.indexOf('{'),out.lastIndexOf('}')+1));
+  const items=(Array.isArray(j.items)?j.items:[]).filter(x=>x&&x.type&&String(x.title||x.detail||'').trim());
+  if(j.kind==='do')return items.length?{k:'items',items}:null;if(j.kind==='agent_task')return{k:'agent',x:t};
+  return j.kind==='agent_now'&&window.AGENT&&AGENT.connected().length?{k:'agentNow',x:t}:null}catch(err){if(err&&err.name==='AbortError')throw err;return null}}
 
 /* ---------------- speed ----------------
    The instant path: a request the parser fully understands, or a simple lookup in their own data, is answered here in a few
@@ -488,9 +500,11 @@ function asWarm(){try{if(/^kokoro:/.test(aset().voice||'')&&window.KOKORO)KOKORO
 
 /* ---------------- one request, start to finish ---------------- */
 const QRX=/^(?:who|what|when|where|why|how|which|is|are|was|were|do|does|did|have|has|had|can i|should i|tell me|show me|list|summari[sz]e|give me)\b/i;
+/* Stop pressed while a model call that can't be cancelled was running: nothing it decided gets made */
+function halt(){if(AS.ctl&&AS.ctl.signal.aborted){const e=new Error('Stopped');e.name='AbortError';throw e}}
 async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegExp('^(?:(?:hey|hi|ok(?:ay)?)\\s+)?'+aname().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[,.!]?\\s*','i'),'');
  if(!text){listen();return}
- if(AS.busy){toast('Still working on the last one');return}
+ if(AS.busy){AS.q.push([text,o]);toast('Got it. I’ll do that next.');paintHead();return}
  if(AS.turns.length&&AS.last&&Date.now()-AS.last>CV_GAP)convFresh('chat');
  asOpen();wakePause(true);$('#asIn')?.setAttribute('placeholder','Ask or tell me something…');const turn={q:o.show||text,a:'',chips:[],t:Date.now(),id:uid(),wait:true};AS.turns.push(turn);AS.turns=AS.turns.slice(-30);AS.spoken=!!o.spoken;AS.busy=true;AS.ctl=new AbortController();paint(true);if(AS.spoken)window.asHum(true);
  let r=null;AS.acts=null;AS.srcs=null;AS.wrote=false;AS.liveT=turn;tmBegin(text,o);sqStop();
@@ -506,20 +520,21 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
   if(TM){TM.path=r?'fast':'model';tmMark('routed')}
   if(!r&&aiReady())asWarm();
   /* the AI decides: make it now, ask the agent, schedule it, or just talk */
-  let dec=null;if(!r&&aiReady()&&window.AGENT&&needsDecide(text)){status('Thinking…');/* the note search runs while the AI decides */AS.rag={q:text,p:ragRetrieve(text,{win:0,goal:'',broad:insFocus(text).broad},null).catch(()=>null)};dec=await AGENT.decide(text,AS.turns.filter(t=>!t.wait&&t.a));if(dec&&dec.agent)r={agent:dec.agent,web:dec.web};else if(dec&&dec.items)r=doItems(dec.items);else if(dec&&dec.schedule)r=exec({k:'agent',x:dec.schedule},text)}
+  let dec=null;if(!r&&aiReady()&&window.AGENT&&needsDecide(text)){status('Thinking…');/* the note search runs while the AI decides */AS.rag={q:text,p:ragRetrieve(text,{win:0,goal:'',broad:insFocus(text).broad},null).catch(()=>null)};dec=await AGENT.decide(text,AS.turns.filter(t=>!t.wait&&t.a));halt();if(dec&&dec.agent)r={agent:dec.agent,web:dec.web};else if(dec&&dec.items)r=doItems(dec.items);else if(dec&&dec.schedule)r=exec({k:'agent',x:dec.schedule},text)}
   if(!r&&aiReady()){const st=strip(text),cmd=!dec&&(!QRX.test(st)||/^(?:can|could|would|will) you\b|\b(?:please|i want to|i need to|i'd like to)\b/i.test(st));
-   if(cmd&&!/^(?:can|could|would|will) you (?:tell|show|explain|remind me (?:what|when|how))/i.test(st)){status('Working it out…');const p=await llmIntent(st);if(p&&p.k)r=exec(p,text)}
+   if(cmd&&!/^(?:can|could|would|will) you (?:tell|show|explain|remind me (?:what|when|how))/i.test(st)){status('Working it out…');const p=await llmIntent(st);halt();if(p&&p.k)r=exec(p,text)}
    if(!r){const L=localAsk(text);if(L&&(L.ask||L.await))r=L;
     else{status('Thinking…');const a=await aiAnswer(text,status,L&&!L.miss?L.say:'').catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
      r=a?{say:a,chips:L&&L.chips||[]}:L&&!L.miss?L:{say:'Sorry, I couldn’t answer that right now.',chips:[['Try again','?'+text]]}}}}
   if(r&&r.ask){const q=r.ask;status('Thinking…');const a=await aiAnswer(q,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});r=a?{say:a}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'To answer questions like that I need an AI. Set one up once (it can run privately on this device) and I’ll answer from your notes.',chips:aiChips(q)}}
   if(r&&r.miss){const miss=r.miss;r=null;status('Thinking…');const a=await aiAnswer(text,status).catch(()=>null);r=a?{say:a}:{say:`I couldn't find anything about ${quote(miss)} in your journal, notes, lists or habits.`}}
-  if(!r&&!dec&&!QRX.test(strip(text))&&/^(?:add|put|write|log|create|start|make|set|remind|schedule|note|save|mark|record|jot|track|new)\b/i.test(strip(text))){status('Working it out…');const p=await llmIntent(strip(text));if(p&&p.k)r=exec(p,text)}
+  if(!r&&!dec&&!QRX.test(strip(text))&&/^(?:add|put|write|log|create|start|make|set|remind|schedule|note|save|mark|record|jot|track|new)\b/i.test(strip(text))){status('Working it out…');const p=await llmIntent(strip(text));halt();if(p&&p.k)r=exec(p,text)}
   if(!r){status('Thinking…');const a=await aiAnswer(text,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});
    r=a?{say:a}:{say:aiReady()?'Sorry, I couldn’t answer that right now.':'I can add things and look up when you last did something. For other questions, set up an AI once (it can run privately on this device), and after that I’ll answer from your notes too.',chips:aiReady()?[['Try again','?'+text]]:aiChips(text)}}
   if(r&&r.say&&r.say.agent)r={agent:r.say.agent};
   if(r&&r.agent)r=await agentRun(r.agent,r.web);}
- catch(e){r={say:e&&e.name==='AbortError'?'Stopped.':'Something went wrong: '+(e&&e.message||e)}}
+ /* stopped or failed: their words are never lost. They go back in the box, and "Try again" sends them again */
+ catch(e){const ab=e&&e.name==='AbortError',i=$('#asIn');if(ab&&i&&!i.value.trim()){i.value=text;sendState()}r={say:ab?'Stopped. What you said is back in the box.':'Something went wrong: '+(e&&e.message||e),chips:[['Try again','',()=>{if(i&&i.value.trim()===text){i.value='';sendState()}run(text,{spoken:o.spoken})}]]}}
  status('');window.asHum(false);AS.liveT=null;turn.wait=false;turn.live='';turn.a=r.say||'';if(AS.srcs&&AS.srcs.length&&turn.a)turn.srcs=AS.srcs;if(AS.wrote&&turn.a&&!r.chips?.some?.(c=>c[1]==='agent'))turn.ai=1;AS.srcs=null;AS.wrote=false;turn.chips=(r.chips||[]).map(c=>({t:c[0],r:c[1],fn:c[2]}));if(r.undo){AS.undo[turn.id]=r.undo;turn.chips.unshift({t:'Undo',undo:1})}
  if(AS.acts&&AS.acts.length&&window.AIX){const A=AS.acts;AS.acts=null;turn.chips.unshift(...A.map(a=>{const c={t:'+ '+AIX.actLabel(a),act:1};c.fn=()=>{let x;try{x=AIX.doAct(a)}catch(e){return toast('Couldn’t add that')}c.t='✓ '+AIX.actLabel(a);c.fn=()=>x&&x.go&&(asClose(),setTimeout(()=>go(x.go),380));paint();toast(esc((x&&x.say)||'Added'))};return c}))}
  AS.await=r.await||null;AS.busy=false;AS.ctl=null;paint(true);pushWidget2();
@@ -548,7 +563,7 @@ function sysSpeak(id,t,rate,pitch,voice){
  SPK=null;spoke()}
 function spoke(){const f=SPK_CB;SPK_CB=null;if(f){paintHead();f();return}afterSpeak()}
 function hush(){sqStop();SPK=null;SPK_CB=null;try{if(window.KOKORO)KOKORO.stop()}catch(e){}try{if(NA&&NA.stopSpeaking)NA.stopSpeaking();else if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}paintHead()}
-function afterSpeak(){paintHead();const a=AS.after;AS.after=null;if(a==='listen'&&AS.open)setTimeout(()=>listen(),250);else{wakePause(false);handsOff()}}
+function afterSpeak(){paintHead();const a=AS.after;AS.after=null;if(AS.q.length&&!AS.busy){const[x,y]=AS.q.shift();setTimeout(()=>run(x,y),250);return}if(a==='listen'&&AS.open)setTimeout(()=>listen(),250);else{wakePause(false);handsOff()}}
 /* woken by "Hey Plot" while Plotlines was closed or the phone locked: once the answer is spoken and nothing follows, step aside again */
 function handsOff(){if(!AS.bg||!NA||!NA.background)return;clearTimeout(AS.bgT);AS.bgT=setTimeout(()=>{if(!AS.bg||AS.busy||AS.listening||AS.await||SPK)return;AS.bg=false;asClose();try{NA.background()}catch(e){}},2500)}
 ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{if(AS.bg){AS.bg=false;clearTimeout(AS.bgT)}},true));
@@ -619,11 +634,12 @@ window.asCue=k=>{if(aset().cues===false)return;cuePlay(cueOf(k));try{(!window.ha
 /* ---------------- the sheet ---------------- */
 function headSub(){if(AS.busy)return AS.prog||'Thinking…';if(AS.listening)return'Listening…';if(SPK)return'Speaking…';const a=aset();if(NA&&(a.wake||a.bg)){const w=AS.wst||'';return w==='err'?'Can’t hear the wake word right now':w==='perm'?'Allow the microphone for the wake word':w==='unavailable'?'The wake word needs online speech allowed':w==='lang'?'The phone’s on-device speech can’t do your language yet. Allow online speech in Settings › Voice':`Say “${wakeWord()}” anytime`}return'Ask or tell me anything'}
 function asOpen(){AS.open=true;if(AS.min){AS.min=false;miniPaint()}let el=$('#asv');if(el){el.classList.remove('min');el.classList.add('on')}else{el=document.createElement('div');el.id='asv';el.className='aov asv';
- el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="as-stop" data-act="asStop" aria-label="Stop talking">■ Stop</button><button class="ibtn sm" data-act="liveOpen" aria-label="Talk out loud" title="Talk out loud">${ic('live')}</button><button class="ibtn sm" data-act="convGo" aria-label="Conversation history" title="History">${ic('hist')}</button><button class="ibtn sm" data-act="asClear" aria-label="New conversation" title="New conversation">${ic('plus')}</button><button class="ibtn sm" data-act="asSet" aria-label="Assistant settings" title="Settings">${ic('settings')}</button><button class="ibtn sm" data-act="asMin" aria-label="Minimize" title="Minimize">${ic('minz')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="as-qs" role="toolbar" aria-label="Quick settings"></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="submit" class="as-send" aria-label="Send" title="Send">${ic('up')}</button><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form>${window.AIX?AIX.note('as-note'):''}</div></section>`;
+ el.innerHTML=`<div class="aov-dim" data-act="asClose"></div><section class="aov-s" role="dialog" aria-modal="true" aria-label="Assistant"><div class="aov-h"><span class="aov-grab" aria-hidden="true"></span><div class="aov-t"><span class="as-av" aria-hidden="true"><i></i></span><span class="as-tt"><b class="as-nm"></b><small class="as-st"></small></span></div><button class="as-stop" data-act="asStop" aria-label="Stop talking">■ Stop</button><button class="ibtn sm" data-act="liveOpen" aria-label="Talk out loud" title="Talk out loud">${ic('live')}</button><button class="ibtn sm" data-act="convGo" aria-label="Conversation history" title="History">${ic('hist')}</button><button class="ibtn sm" data-act="asClear" aria-label="New conversation" title="New conversation">${ic('plus')}</button><button class="ibtn sm" data-act="asSet" aria-label="Assistant settings" title="Settings">${ic('settings')}</button><button class="ibtn sm" data-act="asMin" aria-label="Minimize" title="Minimize">${ic('minz')}</button><button class="ibtn sm" data-act="asClose" aria-label="Close" title="Close">✕</button></div><div class="as-qs" role="toolbar" aria-label="Quick settings"></div><div class="aov-b as-b"></div><div class="ask-comp aov-comp"><button type="button" class="as-tag" data-act="asTag"></button><form class="ask-row as-row" data-form="asSend" autocomplete="off"><input id="asIn" maxlength="500" placeholder="Ask or tell me something…" aria-label="Message" enterkeyhint="send"><button type="submit" class="as-send" aria-label="Send" title="Send">${ic('up')}</button><button type="button" class="as-mic" data-act="asMic" aria-label="Talk">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'}<i></i></button></form>${window.AIX?AIX.note('as-note'):''}</div></section>`;
  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'))}
  document.documentElement.classList.add('aov-on');paint(true);return el}
 function asClose(){AS.open=false;if(AS.min){AS.min=false;miniPaint()}$('#asv')?.classList.remove('min');if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);hush();const el=$('#asv');document.documentElement.classList.remove('aov-on');if(!el)return;el.classList.remove('on');setTimeout(()=>{if(!AS.open)el.remove()},360);wakePause(false)}
-function paintHead(){const el=$('#asv');if(!el)return;el.querySelector('.as-nm').textContent=aname();el.querySelector('.as-st').textContent=headSub();el.classList.toggle('lis',AS.listening);el.classList.toggle('spk',!!SPK);el.classList.toggle('busy',AS.busy);miniPaint()}
+function paintHead(){const el=$('#asv');if(!el)return;el.querySelector('.as-nm').textContent=aname();el.querySelector('.as-st').textContent=headSub();
+ const g=el.querySelector('.as-tag');if(g){const k=AS.listening?'lis':AS.busy?'busy':SPK?'spk':'';g.dataset.st=k;g.disabled=k==='busy';g.textContent=k==='lis'?'Listening… tap to finish':k==='busy'?(AS.prog||'Processing…')+(AS.q.length?` · ${AS.q.length} waiting`:''):k==='spk'?'Speaking… tap to stop':'Tap to start listening'}el.classList.toggle('lis',AS.listening);el.classList.toggle('spk',!!SPK);el.classList.toggle('busy',AS.busy);miniPaint()}
 IC.minz='<path d="M7 9l5 5 5-5"/><path d="M6 19h12"/>';
 /* minimized: the conversation keeps going (listening, thinking, talking) behind a small bubble */
 function asMin(){const el=$('#asv');if(!el||!AS.open)return;AS.min=true;document.activeElement?.blur?.();el.classList.remove('on');el.classList.add('min');document.documentElement.classList.remove('aov-on');miniPaint()}
@@ -686,8 +702,9 @@ function paint(scroll){const el=$('#asv');if(!el)return;paintHead();const b=el.q
 Object.assign(ACT,{
  asOpen:()=>{asOpen();asWarm();setTimeout(()=>{if(!AS.turns.length&&NA&&typeof voiceAvail==='function'&&voiceAvail())listen();else $('#asIn')?.focus()},300)},
  asClose:()=>asClose(),asMin:()=>asMin(),asBack:()=>asOpen(),asSet:()=>{if(window.aiQuick)aiQuick();else go('settings/voice')},
- asMic:()=>{if(VC&&VC.el&&VC.el.id==='asIn'){voiceStop(false,true);return}if(AS.busy){AS.ctl&&AS.ctl.abort();return}AS.nlis=false;listen()},
- asStop:()=>{AS.after=null;if(AS.busy&&AS.ctl)AS.ctl.abort();if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);AS.listening=AS.nlis=false;hush();wakePause(false)},
+ asMic:()=>{if(VC&&VC.el&&VC.el.id==='asIn'){voiceStop(false,true);return}if(AS.busy){toast('Still working on it. Tap Stop to cancel.');return}AS.nlis=false;listen()},
+ asTag:()=>{if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(false,true);else if(SPK){hush();afterSpeak()}else if(!AS.busy){AS.nlis=false;listen()}},
+ asStop:()=>{AS.after=null;AS.q=[];if(AS.busy&&AS.ctl)AS.ctl.abort();if(VC&&VC.el&&VC.el.id==='asIn')voiceStop(true);AS.listening=AS.nlis=false;hush();wakePause(false)},
  asTry:d=>run(d.q),
  asDel:d=>{const i=AS.turns.findIndex(t=>t.id===d.id);if(i<0)return;const t=AS.turns[i],cid=AS.cid;AS.turns.splice(i,1);if(window.CONV&&CONV.removeTurn&&cid)CONV.removeTurn(cid,t.id);if(!AS.turns.length)AS.cid=null;paint();pushWidget2();
   toast('Message removed',()=>{AS.turns.splice(Math.min(i,AS.turns.length),0,t);if(!AS.cid)AS.cid=cid;paint();convSync()})},
@@ -805,6 +822,12 @@ const css=document.createElement('style');css.textContent=`
 .as-mic svg{width:22px;height:22px}
 .as-mic i{position:absolute;inset:0;border-radius:50%;pointer-events:none}
 .as-mic.rec i{box-shadow:0 0 0 calc(3px + var(--lv,0) * 10px) color-mix(in srgb,var(--accent) 30%,transparent);transition:box-shadow .12s}
+.as-tag{display:flex;align-items:center;gap:8px;margin:0 auto 8px;width:fit-content;max-width:100%;min-height:32px;padding:6px 14px;border-radius:999px;border:1px solid var(--line-2,var(--line));background:var(--surface);color:var(--muted);font:600 13px var(--f-body);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.as-tag::before{content:'';flex:none;width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.as-tag[data-st=lis]{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,transparent)}.as-tag[data-st=lis]::before{background:#e5484d;animation:asDot 1s ease-in-out infinite}
+.as-tag[data-st=busy]{cursor:default}.as-tag[data-st=busy]::before{background:var(--accent);animation:asDot 1s ease-in-out infinite}
+.as-tag[data-st=spk]{color:var(--text)}.as-tag[data-st=spk]::before{width:8px;height:8px;border-radius:2px;background:var(--text)}
+.as-mic.rec svg{display:none}.as-mic.rec::after{content:'';width:14px;height:14px;border-radius:3px;background:currentColor}
 .asv.lis .as-row{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
 .as-stop{display:none;flex:none;height:34px;padding:0 14px;border-radius:17px;border:0;background:var(--accent);color:var(--on-accent);font:700 13px var(--f-body);cursor:pointer}
 .asv.spk .as-stop,.asv.busy .as-stop,.asv.lis .as-stop{display:block}

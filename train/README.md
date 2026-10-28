@@ -26,19 +26,26 @@ speed panel shows the real numbers for your phone. For questions to answer in a 
 
 ## Plot Mini: train a command model
 
-A small model fine-tuned to do one job: turn a request into the JSON action the app's `llmIntent` already understands
-(`journal`, `new_thread`, `thread_update`, `reminder`, `new_list`, `list_add`, `today_goal`, `habit_done`,
-`agent_task`, `agent_now`, `question`). The router handles the common phrasings with no AI. Plot Mini is for the
+A small model fine-tuned to do one job: turn a request into the JSON command the app's `llmIntent` understands:
+`{"kind": "do" | "agent_task" | "agent_now" | "question", "items": [...]}`. Each item has a `type` (`reminder`, `today`,
+`goal`, `habit`, `habit_done`, `journal`, `thread`, `thread_update`, `list`, `list_add`), a `title`, an optional
+`detail`, and the time words copied exactly as said in `when` and `end` ("tomorrow at 3", "4pm"). The app reads the
+time words itself (`whenOf` in assistant.js), so the model never does date maths. A today goal, goal, habit or note
+with a `when` also gets its reminder; a reminder with an `end` gets that length. `AGENT.decide` uses the same items. The router handles the common phrasings with no AI. Plot Mini is for the
 loose ones ("jot down that the plumber's coming thursday in the house thread"), and answers in well under a second.
 
 1. **Data**: `python train/gen_dataset.py` writes `train/data/train.jsonl` and `val.jsonl`. It reads the prompt and
    the action list from `assistant.js`, so a new action there shows up in the data (and the script fails if an
    action has no examples). Add phrasings in the lists at the top of the script.
-2. **Train**: open `train/plot_mini_lora.ipynb` in Colab (T4 GPU), run all cells. It uses Unsloth + LoRA on
+2. **Check it**: `python train/score.py --url <any OpenAI-compatible server>` runs the handwritten requests in
+   `train/golden.jsonl` with the app's exact prompt and schema, and prints accuracy for kind, item types, titles and
+   time words, plus every miss. Run it before and after training, and before shipping a prompt change. Add a line to
+   `golden.jsonl` for every real request the app got wrong.
+3. **Train**: open `train/plot_mini_lora.ipynb` in Colab (T4 GPU), run all cells. It uses Unsloth + LoRA on
    Gemma 3 270M (or 1B / Qwen 2.5 0.5B, one line to change) and prints how many held-out requests it gets right.
-3. **Export**: the notebook writes `plot-mini-q4_0.gguf` (native llama.cpp, the app's default engine) and, optionally,
+4. **Export**: the notebook writes `plot-mini-q4_0.gguf` (native llama.cpp, the app's default engine) and, optionally,
    `plot-mini.litertlm` (GPU path through LiteRT-LM).
-4. **Publish**: the last cell uploads both to `huggingface.co/Munazzar/plot-mini`. The app checks for the GGUF
+5. **Publish**: the last cell uploads both to `huggingface.co/Munazzar/plot-mini`. The app checks for the GGUF
    once a day and then lists **Plot Mini 270M** under AI › How answers are made (`MINI` in `index.html`).
 
 Plot Mini is a command model, not a chat model. Picked as the main model, it makes commands fast and gives short,
