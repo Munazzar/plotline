@@ -38,7 +38,7 @@ window.schedTick=now=>{let ch=false;S.days.forEach(x=>{if(x.done||!own(x))return
   if(x.tmr&&!x.rep){x.done=true;x.doneAt=now}}});return ch};
 
 /* ---------------- making things from what the AI understood ---------------- */
-function addItem(o){const x={id:uid(),title:o.title,date:o.date,time:o.time,dur:15,goalId:null,done:false,doneAt:null,createdAt:Date.now(),remind:'0',src:'plot',u:Date.now()};
+function addItem(o){const x={id:uid(),title:o.title,date:o.date,time:o.time,dur:Math.min(1440,Math.max(5,Math.round(+o.dur||15))),goalId:null,done:false,doneAt:null,createdAt:Date.now(),remind:'0',src:'plot',u:Date.now()};
  if(o.rep)x.rep=o.rep;if(o.at){x.at=o.at;x.tmr=o.tmr||0}S.days.push(x);return x}
 function drop(ids){S.days=S.days.filter(y=>!ids.includes(y.id));save();sync();redraw()}
 const dayWord=d=>d===ymd()?'today':d===addDays(1)?'tomorrow':(typeof dayName==='function'?dayName(d):d);
@@ -65,7 +65,7 @@ function remind(o){const title=cap(String(o.title||'').replace(/^(?:(?:please|re
  if(m&&date===ymd()&&atOf(date,time)<=now.getTime()){const t=new Date(Math.ceil((now.getTime()+6e4)/3e5)*3e5);time=hm(t)}
  const n=Math.max(0,Math.round(+o.times||0)),days=Math.min(14,Math.max(1,Math.round(+o.days||0)||(rpt&&m?7:1)));
  const ds=[];for(let k=0,d=new Date(date+'T12:00');ds.length<days&&k<30;k++,d.setDate(d.getDate()+1)){const w=d.getDay(),s=ymd(d);if(rpt==='weekdays'&&(w===0||w===6))continue;if(rpt==='weekly'&&k%7)continue;ds.push(s)}
- const t1=normT(o.time)||'09:00',made=ds.map((d,i)=>addItem({title,date:d,time:i?t1:time,rep:m?{m,to:until,...(n?{n}:{})}:null}));save();sync();redraw();
+ const t1=normT(o.time)||'09:00',made=ds.map((d,i)=>addItem({title,date:d,time:i?t1:time,dur:o.dur,rep:m?{m,to:until,...(n?{n}:{})}:null}));save();sync();redraw();
  const ids=made.map(x=>x.id),cnt=m?occ(made[made.length>1?1:0]).length:0;
  const when=ds.length>1?`${dayWord(ds[0])} and the next ${ds.length-1} day${ds.length>2?'s':''}`:dayWord(date);
  const say=m?`Okay, ${when} I'll remind you to ${lc(title)} every ${every(m)}${n?`, ${cnt} time${cnt===1?'':'s'}`:''} from ${fmtTime(time)} until ${fmtTime(until)}${!n&&cnt?` (${cnt} reminder${cnt===1?'':'s'}${ds.length>1?' a day':''})`:''}.`
