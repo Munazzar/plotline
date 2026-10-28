@@ -208,6 +208,7 @@ function trendsHTML(){const tn=dnum(ymd()),N=14,K=[...Array(N)].map((_,i)=>fromN
  return`<section class="rv hcharts"><div class="st-h"><h3>Trends</h3><a class="link" href="#/activity">More</a></div><div class="tr-w">${cards.join('')}</div></section>`}
 if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){let a='',b='';try{a=schedHTML()}catch(e){}try{b=trendsHTML()}catch(e){}return _ht()+a+b}}
 
+window.remFind=()=>remSrcs().map(r=>({t:r.title,s:remSub(r)}));
 window.SCHED={make,remind,timer,checkin,fromText,words,occ,upcoming};
 
 const css=document.createElement('style');css.textContent=`
