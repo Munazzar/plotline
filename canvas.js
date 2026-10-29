@@ -111,11 +111,12 @@ function cvsLook(done,tries){
   if(!far.length)P.push(nm(e)+' scrolls sideways ('+e.scrollWidth+' px of content in a '+e.clientWidth+' px box), but the part you scroll to is empty');
   else N.push(nm(e)+' scrolls sideways: '+e.scrollWidth+' px of content in a '+e.clientWidth+' px box')});
  /* text cut off: by its own box, or by a box around it that hides overflow */
- var cut=[];LEAF.forEach(function(e){if(cut.length>=4)return;var c=getComputedStyle(e);
+ var cut=[],ell=[];LEAF.forEach(function(e){if(cut.length>=4)return;var c=getComputedStyle(e);
+  if(c.textOverflow==='ellipsis'&&e.scrollWidth>e.clientWidth+2){if(ell.length<3)ell.push(nm(e));return}
   if(/(hidden|clip)/.test(c.overflowX)&&e.scrollWidth>e.clientWidth+2){cut.push(nm(e)+' (shows '+e.clientWidth+' of '+e.scrollWidth+' px)');return}
   var a=clipAnc(e);if(!a)return;var ac=getComputedStyle(a);if(/(auto|scroll)/.test(ac.overflowX)&&/(auto|scroll)/.test(ac.overflowY))return;var q=R(e),b=R(a);
   if(!/(auto|scroll)/.test(ac.overflowX)&&(q.right>b.right+3||q.left<b.left-3)||!/(auto|scroll)/.test(ac.overflowY)&&(q.bottom>b.bottom+3||q.top<b.top-3))cut.push(nm(e)+' (cut off by '+nm(a).split(' ')[0]+')')});
- if(cut.length)P.push('Text is cut off: '+cut.join('; '));
+ if(cut.length)P.push('Text is cut off: '+cut.join('; '));if(ell.length)M.push('Text is shortened with “…”: '+ell.join('; '));
  /* text on top of other text */
  /* flip cards stack a front and a back face, one hidden with backface-visibility: not an overlap */
  var face=function(e){for(var p=e;p&&p!==document.body;p=p.parentElement)if(getComputedStyle(p).backfaceVisibility==='hidden')return true;return false};
@@ -136,8 +137,9 @@ function cvsLook(done,tries){
  var cx=function(e){var q=R(e);return(q.left+q.right)/2},LR=rowsOf(SH).filter(function(r){return r.length>=7}),CR=rowsOf(BX.concat(SH)),al=0;
  LR.forEach(function(lr){if(al>=2)return;var y=Math.max.apply(null,lr.map(function(e){return R(e).bottom}));
   var ext=function(r){return[Math.min.apply(null,r.map(function(e){return R(e).left})),Math.max.apply(null,r.map(function(e){return R(e).right}))]},le=ext(lr);
-  var cr=CR.filter(function(r){var t=R(r[0]).top,e2=ext(r),ov=Math.min(le[1],e2[1])-Math.max(le[0],e2[0]);return r!==lr&&t>=y-2&&t<y+160&&!r.some(function(e){return lr.indexOf(e)>=0})&&r[0].parentElement!==lr[0].parentElement&&r.length>=lr.length-1&&ov>=.75*Math.min(le[1]-le[0],e2[1]-e2[0])&&(e2[1]-e2[0])>=.6*(le[1]-le[0])})[0];if(!cr)return;
-  var L=lr.map(cx),worst=0,wi=0,wl=0;cr.forEach(function(e,i){var x=cx(e),bi=0;L.forEach(function(v,j){if(Math.abs(v-x)<Math.abs(L[bi]-x))bi=j});var d=Math.abs(L[bi]-x);if(d>worst){worst=d;wi=i;wl=bi}});
+  /* every row under the labels, not just the first: a row further down can drift too */
+  var crs=CR.filter(function(r){var t=R(r[0]).top,e2=ext(r),ov=Math.min(le[1],e2[1])-Math.max(le[0],e2[0]);return r!==lr&&t>=y-2&&t<y+900&&!r.some(function(e){return lr.indexOf(e)>=0})&&r[0].parentElement!==lr[0].parentElement&&r.length>=lr.length-1&&ov>=.75*Math.min(le[1]-le[0],e2[1]-e2[0])&&(e2[1]-e2[0])>=.6*(le[1]-le[0])});if(!crs.length)return;
+  var L=lr.map(cx),worst=0,wi=0,wl=0,cr=crs[0];crs.forEach(function(r){r.forEach(function(e,i){var x=cx(e),bi=0;L.forEach(function(v,j){if(Math.abs(v-x)<Math.abs(L[bi]-x))bi=j});var d=Math.abs(L[bi]-x);if(d>worst){worst=d;wi=i;wl=bi;cr=r}})});
   var Ls=L.slice().sort(function(a,b){return a-b}),gaps=Ls.slice(1).map(function(v,i){return v-Ls[i]}).sort(function(a,b){return a-b}),pitch=gaps[Math.floor(gaps.length/2)]||40;
   if(worst>Math.max(8,pitch*.3)){al++;P.push('A row of labels doesn’t line up with the row under it: '+lr.length+' labels ('+nm(lr[0].parentElement).split(' ')[0]+') over '+cr.length+' items ('+nm(cr[0].parentElement).split(' ')[0]+'). The item '+(wi+1)+' is centred at '+Math.round(cx(cr[wi]))+' px but the nearest label, “'+txt(lr[wl])+'”, is at '+Math.round(L[wl])+' px. Put the labels and the items in the same grid, or give both exactly the same column widths and gaps.')}});
  /* text too dark or too light to read against what's behind it */
@@ -145,9 +147,9 @@ function cvsLook(done,tries){
  var lum=function(c){var f=function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(c.r)+.7152*f(c.g)+.0722*f(c.b)};
  var root=getComputedStyle(document.documentElement),pageBg=rgb(root.getPropertyValue('--pl-bg').trim().replace(/^#(..)(..)(..)$/,function(_,a,b,c){return 'rgb('+parseInt(a,16)+','+parseInt(b,16)+','+parseInt(c,16)+')'}))||{r:255,g:255,b:255,a:1};
  var bgOf=function(e){for(var p=e;p;p=p.parentElement){var c=getComputedStyle(p);if(c.backgroundImage!=='none')return null;var b=rgb(c.backgroundColor);if(b&&b.a>=.5)return b}return pageBg};
- var low=[];LEAF.forEach(function(e){if(low.length>=3)return;var c=getComputedStyle(e),f=rgb(c.color),b=bgOf(e);if(!f||!b||f.a<.3)return;var L1=lum(f),L2=lum(b),cr=(Math.max(L1,L2)+.05)/(Math.min(L1,L2)+.05);
-  if(cr<2.2)low.push(nm(e)+' (text '+c.color+' on '+(b===pageBg?'the page background':'rgb('+b.r+','+b.g+','+b.b+')')+', contrast '+cr.toFixed(1)+':1)')});
- if(low.length)P.push('Text is hard or impossible to read against what is behind it: '+low.join('; ')+(pageBg.r<60?'. The background here is dark, so text needs a light colour (var(--pl-text)).':''));
+ var low=[],dim=[];LEAF.forEach(function(e){if(low.length>=3)return;var c=getComputedStyle(e),f=rgb(c.color),b=bgOf(e);if(!f||!b||f.a<.3)return;var L1=lum(f),L2=lum(b),cr=(Math.max(L1,L2)+.05)/(Math.min(L1,L2)+.05);
+  if(cr<2.2)(cr<1.6||txt(e).length>3?low:dim).push(nm(e)+' (text '+c.color+' on '+(b===pageBg?'the page background':'rgb('+b.r+','+b.g+','+b.b+')')+', contrast '+cr.toFixed(1)+':1)')});
+ if(dim.length)M.push('Low contrast, hard to read: '+dim.slice(0,3).join('; '));if(low.length)P.push('Text is hard or impossible to read against what is behind it: '+low.join('; ')+(pageBg.r<60?'. The background here is dark, so text needs a light colour (var(--pl-text)).':''));
  /* the page says there's nothing to show, but the data it reads has plenty */
  var D=window.PLOT_DATA;if(D&&typeof D==='object'){var A=D.activity||[],cnt=function(f){return A.filter(f).length};
   var have={step:cnt(function(a){return a.steps>0}),sleep:cnt(function(a){return a.sleepMinutes>0}),screen:cnt(function(a){return a.screenMinutes>0||a.screenByHour}),workout:cnt(function(a){return (a.workouts||[]).length}),
@@ -155,11 +157,20 @@ function cvsLook(done,tries){
   var none=LEAF.map(txt).filter(function(t){return /\b(no|not any|nothing)\b.{0,40}\b(data|entries|entry|records?|recorded|available|found|yet|logged|matching)\b/i.test(t)&&t.length<140});
   none.slice(0,2).forEach(function(t){var k=Object.keys(have).filter(function(k){return new RegExp('\\b'+k,'i').test(t)&&have[k]>=5})[0];
    if(k)P.push('The page says “'+t+'”, but PLOT_DATA has '+have[k]+' '+(k==='step'||k==='sleep'||k==='screen'||k==='workout'?'days with '+k+' data':k+'s')+'. Check how the page reads, filters and dates the data: dates are "YYYY-MM-DD" strings in local time, and activity only lists days that have a record.')})}
+ /* rows of cells that should line up with each other (one row per habit, person, item...) but each starts at its own x */
+ var boxRows=[];V.forEach(function(e){var K=[].filter.call(e.children,function(k){return BX.indexOf(k)>=0});if(K.length>=7)boxRows.push({e:e,x:Math.min.apply(null,K.map(function(k){return R(k).left})),w:R(K[0]).width,n:K.length,t:R(e).top})});
+ boxRows.sort(function(p,q){return p.t-q.t});var runs=[],cur0=[];boxRows.forEach(function(b){var p=cur0[cur0.length-1];if(p&&Math.abs(p.w-b.w)<=Math.max(2,p.w*.2)&&b.n>=p.n*.5&&b.n<=p.n*2)cur0.push(b);else{if(cur0.length>=3)runs.push(cur0);cur0=[b]}});if(cur0.length>=3)runs.push(cur0);
+ runs.slice(0,1).forEach(function(r){var xs=r.map(function(b){return Math.round(b.x)}),sp=Math.max.apply(null,xs)-Math.min.apply(null,xs);
+  if(sp>Math.max(8,r[0].w))P.push(r.length+' rows of cells ('+nm(r[0].e).split(' ')[0]+') each start at a different place ('+xs.slice(0,6).join(', ')+' px), so their columns don’t line up from one row to the next. Give the row labels one fixed width, or put labels and cells in one grid with fixed columns.')});
  /* values that leaked out of the code: NaN, undefined, [object Object], Invalid Date */
  var junk=LEAF.filter(function(e){return /(^|[^\w])(NaN|undefined|null|\[object Object\]|Invalid Date|Infinity)([^\w]|$)/.test(txt(e))&&!/^(INPUT|TEXTAREA|CODE|PRE)$/.test(e.tagName)}).slice(0,3);
  if(junk.length)P.push('The page shows values that came out of a calculation gone wrong: '+junk.map(nm).join('; ')+'. Find where they come from (dividing by zero, reading a field that does not exist, a number that is really text) and show a real value or "–".');
  /* a grid that should have columns but lays everything out one per row: its columns didn't take (an invalid grid-template-columns, often built in code) */
- V.forEach(function(e){var c=getComputedStyle(e);if(!/grid/.test(c.display))return;var K=[].filter.call(e.children,vis);if(K.length<12)return;var cols=c.gridTemplateColumns.split(' ').filter(Boolean).length;
+ V.forEach(function(e){var c=getComputedStyle(e),K=[].filter.call(e.children,vis);if(K.length<12)return;
+  /* any box (grid or not) whose many short labels or cells sit one per line: they were meant to sit side by side */
+  if(!/grid/.test(c.display)){var sh=K.every(function(k){var t=txt(k);return t.length<=4&&R(k).width<120}),lf={};K.forEach(function(k){lf[Math.round(R(k).left/4)]=1});
+   if(sh&&Object.keys(lf).length<=1)P.push(nm(e).split(' ')[0]+' stacks its '+K.length+' short labels or cells in one column, one per line (“'+K.slice(0,3).map(txt).join('”, “')+'”…). They look like they should sit side by side, as a row or the columns of a grid.');return}
+  var cols=c.gridTemplateColumns.split(' ').filter(Boolean).length;
   var lefts={};K.forEach(function(k){lefts[Math.round(R(k).left/4)]=1});if(cols<=1&&Object.keys(lefts).length<=1)P.push(nm(e).split(' ')[0]+' is a grid, but its '+K.length+' items sit in one column, one per row (grid-template-columns is "'+c.gridTemplateColumns+'"). Its columns probably were not set or the value is invalid; set them so the items sit side by side as intended.')});
  /* text too small to read */
  var tiny=LEAF.filter(function(e){return parseFloat(getComputedStyle(e).fontSize)<9}).slice(0,3);if(tiny.length)M.push('Text smaller than 9 px is hard to read: '+tiny.map(nm).join('; '));
@@ -174,7 +185,7 @@ function cvsLook(done,tries){
  /* tap each button once (in this throwaway frame) and see that something changes */
  var B=V.filter(function(e){return e.matches('button,[role=button],input[type=button],input[type=submit]')&&!e.disabled}).slice(0,8),dead=[],i2=0;
  var snap=function(){return document.body.innerHTML.length+':'+txt(document.body).length+':'+txt(document.body).slice(0,2000)};
- (function next(){if(i2>=B.length){if(dead.length)M.push('Tapping '+(dead.length===1?'this button':'these buttons')+' changed nothing on the page: '+dead.join('; '));done({probs:P,minor:M,notes:N,outline:outline});return}
+ (function next(){if(i2>=B.length){if(dead.length)M.push('Tapping '+(dead.length===1?'this button':'these buttons')+' changed nothing on the page: '+dead.join('; '));var uq=function(A){return A.filter(function(x,i){return A.indexOf(x)===i})};done({probs:uq(P),minor:uq(M),notes:N,outline:outline});return}
   var b=B[i2++];if(!b.isConnected)return next();var s=snap();try{b.click()}catch(x){}setTimeout(function(){if(snap()===s)dead.push(nm(b));next()},180)})()}
 /* runs first inside the frame: the data, a localStorage that's kept with the canvas, and errors reported back */
 function boot(c,data,live,o){return(c.slot?themeCSS():'')+`<script>(function(){['PlotlineNative','PlotlineAssist','PlotTalk'].forEach(function(k){try{delete window[k]}catch(e){}try{if(window[k])window[k]=undefined}catch(e){}})})();window.PLOT_DATA=${data?J(data):'null'};(function(){var S=${J(c.store||{})},live=${live?1:0},send=function(){if(live)try{parent.postMessage({cvs:${J(c.id)},store:S},'*')}catch(e){}};
