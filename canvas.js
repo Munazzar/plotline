@@ -75,6 +75,7 @@ const DATA_SHAPE=`window.PLOT_DATA = {
 }  (dates are "YYYY-MM-DD" strings in the user's local time)
 What the fields mean:
 - A habit day with due: true and done: false (and skipped: false) is a MISSED day; skipped: true means the user chose to skip it. "Skipped" in everyday speech usually means missed or skipped.
+- A journal mood is a word, one of: Calm, Energized, Grateful, Okay, Low, Anxious, Frustrated, Tired (or empty). It is not a number: to chart it, choose and show a clear order or group (for example pleasant / neutral / unpleasant).
 - A streak counts back from today, but today still counts as in progress: if today isn't done yet, start from yesterday.
 - A day or hour that has no record (missing from activity, or null) is "not recorded": show it as that (blank, striped or "–"), never as 0 and never guessed.`;
 function dataNow(){const D=plotData(),hab=D.habits.map(h=>h.title).slice(0,25),gl=D.goals.filter(g=>g.status!=='done').map(g=>g.title).slice(0,20);
@@ -134,10 +135,11 @@ function cvsLook(done,tries){
  var rowsOf=function(L){var m={};L.forEach(function(e){var k=Math.round(R(e).top/6);(m[k]=m[k]||[]).push(e)});return Object.keys(m).map(Number).sort(function(x,y){return x-y}).map(function(k){return m[k]}).filter(function(r){return r.length>=5})};
  var cx=function(e){var q=R(e);return(q.left+q.right)/2},LR=rowsOf(SH).filter(function(r){return r.length>=7}),CR=rowsOf(BX.concat(SH)),al=0;
  LR.forEach(function(lr){if(al>=2)return;var y=Math.max.apply(null,lr.map(function(e){return R(e).bottom}));
-  var cr=CR.filter(function(r){var t=R(r[0]).top;return r!==lr&&t>=y-2&&t<y+160&&!r.some(function(e){return lr.indexOf(e)>=0})&&r[0].parentElement!==lr[0].parentElement})[0];if(!cr)return;
+  var ext=function(r){return[Math.min.apply(null,r.map(function(e){return R(e).left})),Math.max.apply(null,r.map(function(e){return R(e).right}))]},le=ext(lr);
+  var cr=CR.filter(function(r){var t=R(r[0]).top,e2=ext(r),ov=Math.min(le[1],e2[1])-Math.max(le[0],e2[0]);return r!==lr&&t>=y-2&&t<y+160&&!r.some(function(e){return lr.indexOf(e)>=0})&&r[0].parentElement!==lr[0].parentElement&&r.length>=lr.length-1&&ov>=.75*Math.min(le[1]-le[0],e2[1]-e2[0])&&(e2[1]-e2[0])>=.6*(le[1]-le[0])})[0];if(!cr)return;
   var L=lr.map(cx),worst=0,wi=0,wl=0;cr.forEach(function(e,i){var x=cx(e),bi=0;L.forEach(function(v,j){if(Math.abs(v-x)<Math.abs(L[bi]-x))bi=j});var d=Math.abs(L[bi]-x);if(d>worst){worst=d;wi=i;wl=bi}});
-  var w=Math.min.apply(null,cr.map(function(e){return R(e).width}));
-  if(worst>Math.max(6,w*.5)){al++;P.push('A row of labels doesn’t line up with the row under it: '+lr.length+' labels ('+nm(lr[0].parentElement).split(' ')[0]+') over '+cr.length+' items ('+nm(cr[0].parentElement).split(' ')[0]+'). The item '+(wi+1)+' is centred at '+Math.round(cx(cr[wi]))+' px but the nearest label, “'+txt(lr[wl])+'”, is at '+Math.round(L[wl])+' px. Put the labels and the items in the same grid, or give both exactly the same column widths and gaps.')}});
+  var Ls=L.slice().sort(function(a,b){return a-b}),gaps=Ls.slice(1).map(function(v,i){return v-Ls[i]}).sort(function(a,b){return a-b}),pitch=gaps[Math.floor(gaps.length/2)]||40;
+  if(worst>Math.max(8,pitch*.3)){al++;P.push('A row of labels doesn’t line up with the row under it: '+lr.length+' labels ('+nm(lr[0].parentElement).split(' ')[0]+') over '+cr.length+' items ('+nm(cr[0].parentElement).split(' ')[0]+'). The item '+(wi+1)+' is centred at '+Math.round(cx(cr[wi]))+' px but the nearest label, “'+txt(lr[wl])+'”, is at '+Math.round(L[wl])+' px. Put the labels and the items in the same grid, or give both exactly the same column widths and gaps.')}});
  /* text too dark or too light to read against what's behind it */
  var rgb=function(c){var m=String(c).match(/[\d.]+/g);return m?{r:+m[0],g:+m[1],b:+m[2],a:m[3]==null?1:+m[3]}:null};
  var lum=function(c){var f=function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(c.r)+.7152*f(c.g)+.0722*f(c.b)};
@@ -153,6 +155,12 @@ function cvsLook(done,tries){
   var none=LEAF.map(txt).filter(function(t){return /\b(no|not any|nothing)\b.{0,40}\b(data|entries|entry|records?|recorded|available|found|yet|logged|matching)\b/i.test(t)&&t.length<140});
   none.slice(0,2).forEach(function(t){var k=Object.keys(have).filter(function(k){return new RegExp('\\b'+k,'i').test(t)&&have[k]>=5})[0];
    if(k)P.push('The page says “'+t+'”, but PLOT_DATA has '+have[k]+' '+(k==='step'||k==='sleep'||k==='screen'||k==='workout'?'days with '+k+' data':k+'s')+'. Check how the page reads, filters and dates the data: dates are "YYYY-MM-DD" strings in local time, and activity only lists days that have a record.')})}
+ /* values that leaked out of the code: NaN, undefined, [object Object], Invalid Date */
+ var junk=LEAF.filter(function(e){return /(^|[^\w])(NaN|undefined|null|\[object Object\]|Invalid Date|Infinity)([^\w]|$)/.test(txt(e))&&!/^(INPUT|TEXTAREA|CODE|PRE)$/.test(e.tagName)}).slice(0,3);
+ if(junk.length)P.push('The page shows values that came out of a calculation gone wrong: '+junk.map(nm).join('; ')+'. Find where they come from (dividing by zero, reading a field that does not exist, a number that is really text) and show a real value or "–".');
+ /* a grid that should have columns but lays everything out one per row: its columns didn't take (an invalid grid-template-columns, often built in code) */
+ V.forEach(function(e){var c=getComputedStyle(e);if(!/grid/.test(c.display))return;var K=[].filter.call(e.children,vis);if(K.length<12)return;var cols=c.gridTemplateColumns.split(' ').filter(Boolean).length;
+  var lefts={};K.forEach(function(k){lefts[Math.round(R(k).left/4)]=1});if(cols<=1&&Object.keys(lefts).length<=1)P.push(nm(e).split(' ')[0]+' is a grid, but its '+K.length+' items sit in one column, one per row (grid-template-columns is "'+c.gridTemplateColumns+'"). Its columns probably were not set or the value is invalid; set them so the items sit side by side as intended.')});
  /* text too small to read */
  var tiny=LEAF.filter(function(e){return parseFloat(getComputedStyle(e).fontSize)<9}).slice(0,3);if(tiny.length)M.push('Text smaller than 9 px is hard to read: '+tiny.map(nm).join('; '));
  /* the outline: what's on screen, top to bottom */
@@ -176,7 +184,7 @@ var E=[],chk=${J(o&&o.chk||'')},post=function(m){try{parent.postMessage(m,'*')}c
 /* the check frame is thrown away: dialogs, new windows and form posts would only block or break it */
 if(chk){window.alert=function(){};window.confirm=function(){return true};window.prompt=function(){return null};window.open=function(){return null};window.print=function(){};addEventListener('submit',function(e){e.preventDefault()},true)}
 var bad=function(m){m=String(m||'Script error');if(E.length<5)E.push(m);if(live)post({cvs:${J(c.id)},err:m})};
-window.addEventListener('error',function(e){if(e.target&&e.target!==window&&(e.target.src||e.target.href))bad('Couldn’t load '+(e.target.src||e.target.href));else bad(String(e.message||'Script error')+(e.lineno?' (line '+e.lineno+')':''))},true);
+window.addEventListener('error',function(e){if(e.target&&e.target!==window&&(e.target.src||e.target.href))bad('Couldn’t load '+(e.target.src||e.target.href));else bad(String(e.message||'Script error')+(e.lineno?' (line '+Math.max(1,e.lineno-/*LOFF*/0)+')':''))},true);
 window.addEventListener('unhandledrejection',function(e){bad('Unhandled error: '+String(e.reason&&e.reason.message||e.reason))});
 /* a health check once the page has settled: did it throw, and does it show anything? */
 ${o&&o.part?`if(live){var lh=0,rp=function(){var b=document.body;if(!b)return;var s=getComputedStyle(b),h=Math.ceil(b.getBoundingClientRect().height+parseFloat(s.marginTop)+parseFloat(s.marginBottom));if(Math.abs(h-lh)>1){lh=h;post({cvs:${J(c.id)},h:h})}};document.addEventListener('DOMContentLoaded',rp);window.addEventListener('load',function(){rp();try{new ResizeObserver(rp).observe(document.body)}catch(x){}setTimeout(rp,500)})}`:''}
@@ -188,7 +196,7 @@ if(chk)window.addEventListener('load',function(){setTimeout(function(){var b=doc
    frame first, so page code can't reach them. */
 const LOCK=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src data: blob:; media-src data: blob:; connect-src data: blob: https://cdn.jsdelivr.net; worker-src blob: https://cdn.jsdelivr.net; frame-src 'none'; form-action 'none'; base-uri 'none'">`;
 const usesData=h=>/PLOT_DATA/.test(h);
-function docOf(c,o={}){const h=o.html!=null?o.html:(c.html||''),withData=!!(c.data&&o.data!==false&&usesData(h)),b=(withData?LOCK:'')+boot(c,withData?(o.D||plotData()):null,!o.file&&!o.chk,o);
+function docOf(c,o={}){const h=o.html!=null?o.html:(c.html||''),withData=!!(c.data&&o.data!==false&&usesData(h)),b0=(withData?LOCK:'')+boot(c,withData?(o.D||plotData()):null,!o.file&&!o.chk,o),b=b0.replace('/*LOFF*/0',String((b0.match(/\n/g)||[]).length));
  if(/<head[^>]*>/i.test(h))return h.replace(/<head[^>]*>/i,m=>m+b);if(/<html[^>]*>/i.test(h))return h.replace(/<html[^>]*>/i,m=>m+'<head>'+b+'</head>');return'<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+b+h}
 const SANDBOX='allow-scripts allow-forms allow-modals allow-popups allow-downloads';
 let FR_ERR=null;
@@ -196,7 +204,8 @@ let FR_ERR=null;
 const CHK=new Map();
 function check(c,html){return new Promise(res=>{const id=uid(),f=document.createElement('iframe');let done=false;
  const end=r=>{if(done)return;done=true;CHK.delete(id);clearTimeout(t);f.remove();res(r)};
- CHK.set(id,d=>end({errs:d.errs||[],blank:!d.txt&&!d.media,ok:true,look:d.look&&typeof d.look==='object'?d.look:null}));const t=setTimeout(()=>end({errs:[],blank:false,ok:false,slow:true,look:null}),14000);
+ const at=n=>{const L=String(html).split('\n')[n-1];return L?': '+L.trim().slice(0,160):''};
+ CHK.set(id,d=>end({errs:(d.errs||[]).map(e=>{const m=/\(line (\d+)\)$/.exec(e);return m?e+at(+m[1]):e}),blank:!d.txt&&!d.media,ok:true,look:d.look&&typeof d.look==='object'?d.look:null}));const t=setTimeout(()=>end({errs:[],blank:false,ok:false,slow:true,look:null}),14000);
  f.setAttribute('sandbox',SANDBOX);f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-10000px;top:0;width:390px;height:700px;border:0;opacity:0;pointer-events:none';
  f.srcdoc=docOf(c,{html,chk:id});document.body.appendChild(f)})}
 addEventListener('message',e=>{const d=e.data;if(d&&d.cvsChk&&CHK.has(d.cvsChk)){CHK.get(d.cvsChk)(d);return}if(!d||!d.cvs)return;const fr=[...document.querySelectorAll('iframe.cvs-fr')].find(f=>f.contentWindow===e.source);if(!fr||fr.dataset.id!==d.cvs)return;const c=get(d.cvs);if(!c)return;
@@ -520,6 +529,7 @@ It sits inside the user's ${slotName(c.slot)} page in Plotlines, under the app's
 It can be anything the user asks for: a view of their data (chart, table, summary), or a tool they use right there (tracker or log they fill in, checklist, timer, counter, calculator, planner, quiz, game, notes board...). Build exactly what they describe; don't turn it into a chart unless they ask for one. Whatever the user enters is kept with localStorage, which is saved with the part. A part can read their Plotlines data but can't change it (their goals, habits, journal...): if they ask for that, say so in one line and keep the part's own record instead. So:
 - No page header, hero, navigation or footer: at most a small title row. The app already shows the part's name above it.
 - Never use 100vh, position:fixed or a fixed height on html or body: the frame grows to fit what you show. Nothing scrolls inside it.
+- Charts drawn by a library (Chart.js and others) can't read CSS variables: read the colours first, e.g. getComputedStyle(document.documentElement).getPropertyValue('--pl-accent').trim(), and pass them in for lines, bars, labels and grid lines, or the chart comes out black on a dark page.
 - Keep html and body transparent, and use the app's colours, which are set on :root and follow the user's theme: var(--pl-surface) and var(--pl-surface-2) for cards, var(--pl-line) for borders, var(--pl-text), var(--pl-muted), var(--pl-accent) (with var(--pl-on-accent) for text on it), and font-family var(--pl-font). Don't use prefers-color-scheme, the theme already decides light or dark.
 - When it shows data over time, give it a small switch for the span (for example Today, This week, This month, Last month) or to step back and forward, and remembers the choice with localStorage.
 - Show only what the data really has. A day or hour with no record is "not recorded" (null), never a guessed or spread-out number.`}

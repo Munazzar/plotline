@@ -10,15 +10,12 @@ let ws, seq = 0; const wait = new Map();
 const call = (method, params = {}) => { const id = ++seq; ws.send(JSON.stringify({ id, method, params })); return new Promise(ok => wait.set(id, ok)); };
 const ev = async expr => { const r = await call('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }); const x = r.result || {}; if (x.exceptionDetails) throw new Error(x.exceptionDetails.exception?.description || x.exceptionDetails.text); return x.result?.value; };
 (async () => {
-  const pages = await (await fetch(`http://localhost:${PORT}/json`)).json();
-  const p = pages.find(x => x.type === 'page' && /localhost:87\d\d/.test(x.url));
-  ws = new WebSocket(p.webSocketDebuggerUrl); await new Promise(ok => { ws.onopen = ok; });
+  // its own tab, so it never disturbs a run that's using the app page
+  const t = await (await fetch(`http://localhost:${PORT}/json/new?http://localhost:8791/`, { method: 'PUT' })).json();
+  ws = new WebSocket(t.webSocketDebuggerUrl); await new Promise(ok => { ws.onopen = ok; });
   ws.onmessage = m => { const r = JSON.parse(m.data); const f = wait.get(r.id); if (f) { wait.delete(r.id); f(r); } };
-  await ev(`(async()=>{for(const x of await navigator.serviceWorker.getRegistrations())await x.unregister();for(const k of await caches.keys())await caches.delete(k);location.reload();return 1})()`).catch(() => {});
+  await call('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
   await sleep(4000);
-  ws.close(); const p2 = (await (await fetch(`http://localhost:${PORT}/json`)).json()).find(x => x.type === 'page' && /localhost:87\d\d/.test(x.url));
-  ws = new WebSocket(p2.webSocketDebuggerUrl); await new Promise(ok => { ws.onopen = ok; });
-  ws.onmessage = m => { const r = JSON.parse(m.data); const f = wait.get(r.id); if (f) { wait.delete(r.id); f(r); } };
   await ev(`(async()=>{for(let i=0;i<40&&!(window.CANVAS&&CANVAS.docOf);i++)await new Promise(r=>setTimeout(r,250));await CANVAS.ready();return 1})()`);
   for (let i = 0; i < IDEAS.length; i++) {
     const file = path.join(__dirname, "out", TAG, (i + 1) + (IDEAS[i].then ? "-" + IDEAS[i].then.length : "") + ".html"); if (!fs.existsSync(file)) { console.log("#" + (i + 1), "no file"); continue; }
@@ -30,5 +27,5 @@ const ev = async expr => { const r = await call('Runtime.evaluate', { expression
     const r = await call('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: 390, height: h, scale: 1 } });
     fs.writeFileSync(path.join(OUT, `${i + 1}.png`), Buffer.from(r.result.data, 'base64')); console.log('#' + (i + 1), 'shot');
   }
-  await ev(`document.getElementById('shotF')?.remove()`); process.exit(0);
+  await fetch(`http://localhost:${PORT}/json/close/${t.id}`); process.exit(0);
 })();
