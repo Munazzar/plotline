@@ -74,7 +74,7 @@ function sayTime(e){if(e.includes('.'))return e;if(e.includes(':')){const[a,t]=e
 function sayMoney(e){const a=e[0]==='$'?'dollar':'pound';if(isNaN(Number(e.slice(1))))return`${e.slice(1)} ${a}s`;if(!e.includes('.'))return`${e.slice(1)} ${a}${e.slice(1)==='1'?'':'s'}`;
  const[t,r]=e.slice(1).split('.'),n=parseInt(r.padEnd(2,'0'),10);return`${t} ${a}${t==='1'?'':'s'} and ${n} ${e[0]==='$'?(n===1?'cent':'cents'):(n===1?'penny':'pence')}`}
 const sayPoint=e=>{const[a,t]=e.split('.');return`${a} point ${t.split('').join(' ')}`};
-function clean(e){return e.replace(/[‘’]/g,"'").replace(/«/g,'“').replace(/»/g,'”').replace(/[“”]/g,'"').replace(/\(/g,'«').replace(/\)/g,'»').replace(/[^\S \n]/g,' ').replace(/  +/,' ')
+function clean(e){return e.replace(/[^\p{L}\p{N}\s\u0000-ɏ -⁯₠-⃏]/gu,' ').replace(/[‘’]/g,"'").replace(/«/g,'“').replace(/»/g,'”').replace(/[“”]/g,'"').replace(/\(/g,'«').replace(/\)/g,'»').replace(/[^\S \n]/g,' ').replace(/  +/,' ')
  .replace(/\bD[Rr]\.(?= [A-Z])/g,'Doctor').replace(/\b(?:Mr\.|MR\.(?= [A-Z]))/g,'Mister').replace(/\b(?:Ms\.|MS\.(?= [A-Z]))/g,'Miss').replace(/\b(?:Mrs\.|MRS\.(?= [A-Z]))/g,'Mrs').replace(/\betc\.(?! [A-Z])/gi,'etc').replace(/\b(y)eah?\b/gi,"$1e'a")
  .replace(/\d*\.\d+|\b\d{4}s?\b|(?<!:)\b(?:[1-9]|1[0-2]):[0-5]\d\b(?!:)/g,sayTime).replace(/(?<=\d),(?=\d)/g,'').replace(/[$£]\d+(?:\.\d+)?(?: hundred| thousand| (?:[bm]|tr)illion)*\b|[$£]\d+\.\d\d?\b/gi,sayMoney)
  .replace(/\d*\.\d+/g,sayPoint).replace(/(?<=\d)-(?=\d)/g,' to ').replace(/(?<=\d)S/g,' S').replace(/(?<=[BCDFGHJ-NP-TV-Z])'?s\b/g,"'S").replace(/(?<=X')S\b/g,'s').replace(/(?:[A-Za-z]\.){2,} [a-z]/g,e=>e.replace(/\./g,'-')).replace(/(?<=[A-Z])\.(?=[A-Z])/gi,'-').trim()}
@@ -109,7 +109,8 @@ async function speak(text,o={}){if(NK)return nSpeak(text,o);stop();const tok=++K
  return true}
 function stop(){if(NK){KS.tok++;const w=KS.wait;KS.wait={};for(const k in w)w[k].ok(false);try{NK.stopSpeaking()}catch(e){}return}KS.tok++;const s=KS.src;KS.src=null;if(s)try{s.onended=null;s.stop()}catch(e){}}
 /* English text only (Latin letters); other scripts and languages go to the system voice */
-const can=(t,lang)=>KS.st==='have'&&(!lang||/^en\b/i.test(lang))&&!/[^\u0000-\u024F\u1E00-\u1EFF\u2000-\u206F\u20A0-\u20CF\u2100-\u218F\s]/.test(String(t||''));
+/* a symbol (\u2192, \u2248, \u23F0) no longer sends a whole sentence to the system voice: clean() drops it; only letters of other scripts do */
+const can=(t,lang)=>KS.st==='have'&&(!lang||/^en\b/i.test(lang))&&!/(?=\p{L})[^\u0000-\u024F\u1E00-\u1EFF]/u.test(String(t||''));
 window.KOKORO={VOICES,speak,stop,setup,remove,can,ev,tts,native:!!NK,mb:()=>NK?163:MB,
  warm:()=>{if(KS.st!=='have')return;if(NK){try{NK.kokoroWarm()}catch(e){}if(!window.Phonemizer)loadJS('lib/phonemizer/phonemizer.min.js').catch(()=>{})}else engine().catch(()=>{})},
  state:()=>({st:KS.st,p:KS.p,err:KS.err}),voice:v=>VOICES.find(x=>x[0]===v)||null};

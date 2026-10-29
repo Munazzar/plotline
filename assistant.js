@@ -300,9 +300,16 @@ function countTimes(topic,win){const days=win==='week'?7:win==='month'?30:win===
  return n?{say:`${n} time${n===1?'':'s'}${days?` in the last ${win}`:''}, from what I can find in your notes.`}:null}
 function listRead(L){const its=Object.values(L.items||{}).filter(i=>!i.del&&!i.done).sort((a,b)=>(!!b.pin-!!a.pin)||(a.o||0)-(b.o||0));
  return{say:its.length?`Your ${L.title} list has ${its.length} open item${its.length===1?'':'s'}: ${its.slice(0,8).map(i=>i.t).join(', ')}${its.length>8?', and more':''}.`:`Your ${L.title} list has nothing left on it.`,chips:[['Open list','~list/'+L.id]]}}
-function todayRead(){const td=today(),D=S.days.filter(x=>x.date===td&&!x.done).sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));const st=[];active().forEach(g=>(g.steps||[]).forEach(s=>{if(!s.done&&s.due===td)st.push(s.title)}));
- const all=[...D.map(x=>x.title+(x.time?' at '+fmtTime(x.time):'')),...st];
- return{say:all.length?`Today you have ${all.length} thing${all.length===1?'':'s'}: ${all.slice(0,8).join(', ')}.`:'Nothing is planned for today yet. Say “add a goal for today” to add one.',chips:[['Open today','~today']]}}
+/* everything still open today, straight from their data (never from search): today's goals and reminders, goal steps due,
+   habits not done yet, and what's overdue from the last week */
+function todayRead(){const td=today(),tn=dnum(td),cut=(L,n=8)=>L.slice(0,n).join(', ')+(L.length>n?`, and ${L.length-n} more`:'');
+ const live=x=>!x.tmr,D=S.days.filter(x=>live(x)&&!x.done&&x.date===td).sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));
+ const late=S.days.filter(x=>live(x)&&!x.done&&x.date<td&&dnum(x.date)>=tn-7).map(x=>x.title);
+ const st=[];active().forEach(g=>(g.steps||[]).forEach(s=>{if(s.done||!s.due)return;if(s.due===td)st.push(s.title);else if(s.due<td)late.push(s.title)}));
+ const H=[];let dn=S.days.filter(x=>live(x)&&x.done&&x.date===td).length;S.habits.forEach(h=>{if(h.status!=='active'||h.kind==='quit')return;try{if(hDone(h,td))dn++;else if(hDue(h,td)&&!(h.skip||{})[td])H.push(h.title)}catch(e){}});
+ const P=[D.length&&`For today, ${cut(D.map(x=>x.title+(x.time?' at '+fmtTime(x.time):'')))}`,st.length&&`Goal steps due, ${cut(st)}`,H.length&&`Habits not done yet, ${cut(H)}`,late.length&&`Overdue, ${cut(late,5)}`].filter(Boolean);
+ return{say:P.length?`Still open today. ${P.join('. ')}.${dn?` You’ve already done ${dn}.`:''}`:dn?`Everything for today is done: ${dn} finished.`:'Nothing is open for today. Say “add a goal for today” to add one.',chips:[['Open today','~today']]}}
+const OPEN_TODAY=/^(?:(?:so\s+)?what(?:'s|s| is| are| do i have| have i got| else)?|which|anything|is there anything|do i have anything|tell me|show me|list)\b.*\b(?:open|left|pending|remaining|outstanding|unfinished|not done|still|to do|todo|due|on my plate|agenda)\b.*\b(?:today|tonight|for the day|this evening|rest of the day)\b|^(?:what(?:'s| is) left|anything left|what do i still (?:have|need) to do|what(?:'s| is) (?:still )?(?:open|pending))\??$/i;
 function journalRead(when){const d=when==='yesterday'?addDays(-1):today();const E=S.entries.filter(e=>e.type==='note'&&ymd(new Date(e.t))===d).sort((a,b)=>a.t-b.t);
  if(!E.length)return{say:`There's nothing in your journal for ${when||'today'} yet.`};const pub=E.filter(e=>!e.private);
  return{say:pub.length?`${cap(when||'today')} you wrote: ${pub.map(e=>trunc(((e.title?e.title+'. ':'')+(e.text||'')).replace(/\s+/g,' '),220)).join(' … ')}`:'Your journal entries for that day are private, so I won’t read them out.',chips:[['Open journal','~day/'+d]]}}
@@ -354,6 +361,7 @@ function actAsk(t){const l=lcs(t);if(!/^(?:how|what|did|when|which|was|were|tell
 
 function localAsk(q){const t=strip(q);let m;
  {const a=actAsk(t);if(a)return a}
+ if(OPEN_TODAY.test(t))return todayRead();
  /* trackers: "how much water today", "how long did I meditate" */
  if(window.TRK&&TRK.list().length&&/^(?:how\s+(?:much|many|long|far)|what(?:'s| is)\s+my)\b/i.test(t)){const l=lcs(t),T=TRK.list().find(x=>l.includes(lcs(x.n)))||TRK.list().find(x=>toks(x.n).some(w=>w.length>3&&toks(t).some(y=>y.length>3&&(y.startsWith(w.slice(0,5))||w.startsWith(y.slice(0,5))))));
   if(T){const v=TRK.val(T.id,today());return{say:`${v?`${cap(T.n)}: ${TRK.fmt(v,T.u)} today`:`Nothing logged for ${T.n} today yet`}${T.g?`, your goal is ${TRK.fmt(T.g,T.u)}`:''}.`,chips:[['Open activity','~activity']]}}}
@@ -406,6 +414,7 @@ function asCtx(q,r,hint,big,small){const now=new Date(),tn=dnum(ymd()),lq=lcs(q)
  const head=`TODAY IS ${now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}, ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}.${S.settings.name?` The user's name is ${S.settings.name}.`:''} Words like "this Tuesday", "last week" or "yesterday" are dates relative to today. In habit rows, "last 7 days" runs oldest to today: ✓ done, ✗ missed, · not due, … due today and not done yet.`;
  const sec=[];const add=(title,lines,score)=>{lines=lines.filter(Boolean);if(lines.length)sec.push({title,lines,score})};
  if(hint)add('LOOKED UP BY THE APP (exact, trust this)',[hint],100);
+ if(/\b(?:today|tonight|left|open|pending|due)\b/i.test(q))add('STILL OPEN TODAY (exact, from the app: trust this over the notes)',[todayRead().say],95);
  add('THE DAYS ASKED ABOUT',days.map(daySummary),days.length?90:0);
  add('MENTIONED BY NAME',[...N.h.map(h=>habitLine(h,1)),...N.g.map(g=>goalLine(g,1)),...N.t.map(t=>{const U=thrUps(t).slice(0,8);return`- note ${t.title} (${t.status||'open'}): ${U.map(u=>tsDay(u.t)+' '+tr(u.x,140)).join(' · ')||'no updates'}`}),...N.l.map(l=>{const I=Object.values(l.items||{}).filter(x=>!x.del);return`- list ${l.title}: to do: ${I.filter(x=>!x.done).map(x=>x.t).join(', ')||'nothing'}; done: ${I.filter(x=>x.done).length}`})],85);
  const kw=(rx,b)=>rx.test(lq)?b:0;
@@ -484,7 +493,10 @@ function speedHTML(){const L=speedRows();if(!L.length)return'<p class="small mut
 const SQ={on:false,q:[],said:'',last:'',busy:false,end:false,done:null,first:null};
 const norm=s=>String(s||'').replace(/\s+/g,' ').trim();
 const spText=raw=>norm((window.AIX?AIX.hideActs:x=>x)(String(raw||'').replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'')).replace(/[*#_`]/g,''));
-function sqStart(o){Object.assign(SQ,{on:true,q:[],said:'',last:'',busy:false,end:false,done:o&&o.done||null,first:o&&o.first||null})}
+/* the wake word stays paused for the whole spoken answer: on Android its listener restarts between sentences otherwise, and
+   each restart mutes the media sound (to hide its beep), which the natural voice plays on, so sentences went silent.
+   afterSpeak, Stop and closing turn it back on. */
+function sqStart(o){wakePause(true);Object.assign(SQ,{on:true,q:[],said:'',last:'',busy:false,end:false,done:o&&o.done||null,first:o&&o.first||null})}
 function sqFeed(raw){if(!SQ.on||SQ.end)return;const v=spText(raw);if(/^\{|^A(?:G(?:E(?:N(?:T)?)?)?)?$|AGENT\s*:/i.test(v)){if(!SQ.said)SQ.on=false;return}
  const rest=v.slice(SQ.said.length);let cut=-1;const rx=/[.!?…]["”')\]]?(?= )/g;let m;while((m=rx.exec(rest)))cut=m.index+m[0].length;
  if(cut<0)return;const ch=rest.slice(0,cut);if(ch.trim().split(' ').length<3&&!SQ.said)return;SQ.said+=ch;SQ.last=ch.trim();SQ.q.push(ch.trim());sqPump()}
@@ -492,7 +504,9 @@ function sqPump(){if(SQ.busy)return;if(!SQ.q.length){if(SQ.end){SQ.on=false;cons
  SQ.busy=true;if(SQ.first){const f=SQ.first;SQ.first=null;f()}window.asHum(false);tmMark('say');speak(SQ.q.shift(),()=>{SQ.busy=false;sqPump()})}
 /* the answer is complete: speak what's left; false when nothing was streamed (the caller speaks it the usual way) */
 function sqEnd(final){if(!SQ.on||!SQ.said){SQ.on=false;return false}const f=norm(final).replace(/[“”]/g,'"'),s=SQ.said.replace(/[“”]/g,'"');let rem='';
- if(f.startsWith(s))rem=f.slice(s.length);else{const i=f.indexOf(SQ.last.replace(/[“”]/g,'"'));rem=i>=0?f.slice(i+SQ.last.length):''}
+ /* the final text can differ a little from what was streamed (a citation or symbol dropped, a quote changed): line them up
+    by letters and digits, so the rest is neither skipped nor said twice */
+ if(f.startsWith(s))rem=f.slice(s.length);else{const an=/[\p{L}\p{N}]/u,K=(s.replace(/\[\d+(?:,\s*\d+)*\]/g,'').match(/[\p{L}\p{N}]/gu)||[]).length;let n=0,i=0;for(;i<f.length&&n<K;i++)if(an.test(f[i]))n++;rem=n>=K?f.slice(i).replace(/^[^\p{L}\p{N}]+/u,''):''}
  rem=rem.trim();if(rem)SQ.q.push(rem);SQ.end=true;sqPump();return true}
 function sqStop(){SQ.on=false;SQ.q=[];SQ.done=null;SQ.first=null;SQ.busy=false}
 /* load the model while they're still talking: at the wake word, when the sheet opens */
@@ -539,7 +553,7 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
  if(AS.acts&&AS.acts.length&&window.AIX){const A=AS.acts;AS.acts=null;turn.chips.unshift(...A.map(a=>{const c={t:'+ '+AIX.actLabel(a),act:1};c.fn=()=>{let x;try{x=AIX.doAct(a)}catch(e){return toast('Couldn’t add that')}c.t='✓ '+AIX.actLabel(a);c.fn=()=>x&&x.go&&(asClose(),setTimeout(()=>go(x.go),380));paint();toast(esc((x&&x.say)||'Added'))};return c}))}
  AS.await=r.await||null;AS.busy=false;AS.ctl=null;paint(true);pushWidget2();
  const talk=!r.quiet&&(aset().speak==='always'||aset().speak==='voice'&&AS.spoken);AS.after=(r.listen||AS.await)&&AS.spoken?'listen':null;
- if(talk&&turn.a){if(!sqEnd(r.speak||turn.a))speak(r.speak||turn.a)}else{sqStop();afterSpeak()}tmEnd()}
+ if(talk&&turn.a){wakePause(true);if(!sqEnd(r.speak||turn.a))speak(r.speak||turn.a)}else{sqStop();afterSpeak()}tmEnd()}
 /* the assistant's AI asked for its agent (email, calendar, Drive, Notion): the agent's answer becomes this turn, its suggestions one-tap chips */
 async function agentRun(task,web){if(!window.AGENT)return{say:'The agent isn’t available here.'};
  if(!AGENT.connected().length)return{say:'I can read your email, calendar, Google Drive and Notion once you connect them on the Agent page.',chips:[['Connect on the Agent page','agent']]};
@@ -682,8 +696,8 @@ function openAsk(){asOpen();$('#asv')?.classList.add('full');asWarm()}
 Object.assign(ACT,{
  asCopy:async d=>{const t=AS.turns.find(x=>x.id===d.id);if(!t)return;toast(await copyText(String(t.a).replace(/\*\*/g,''))?'Copied':'Copy failed')},
  asSave:d=>{const t=AS.turns.find(x=>x.id===d.id);if(!t||!t.a)return;const html=cleanHTML(mdLite(t.a,0));S.entries.push({id:uid(),t:Date.now(),type:'note',goalId:null,title:'Insight · '+trunc(t.q,60),text:htmlText(html),html,mood:'',private:false,sid:null,img:null});save();toast('Saved to your journal')},
- asSrcs:d=>{const t=AS.turns.find(x=>x.id===d.id);if(!t||!t.srcs)return;AS.srcT=t;openSheet(`<h2>Notes used</h2><p class="small muted">From your own data, on this device.</p><ol class="ins-src-l">${t.srcs.map((x,i)=>`<li><button class="ins-si" data-act="asSrc" data-i="${i}"><span class="n">${i+1}</span><span class="t"><b>${esc(trunc(x.label||'',70))}</b><small>${esc(({entry:'Journal',goal:'Goal',habit:'Habit',day:'Day plan'})[x.kind]||'')}${(x.kind==='entry'||x.kind==='day')&&x.date?' · '+fmtDate(x.date):''}</small></span></button></li>`).join('')}</ol><div class="actions"><button class="btn" data-act="close">Done</button></div>`)},
- asSrc:d=>{const x=AS.srcT&&AS.srcT.srcs[+d.i];if(!x)return;closeSheet();asClose();setTimeout(()=>{if(x.kind==='entry'){if(S.entries.some(e=>e.id===x.ref))ACT.viewEntry({id:x.ref})}else if(x.kind==='goal')go('goal/'+x.ref);else if(x.kind==='habit')go('habit/'+x.ref);else if(x.kind==='day'){CAL.d=x.ref;S.settings.layout.cal='day';go('cal')}},380)},
+ asSrcs:d=>{const t=AS.turns.find(x=>x.id===d.id);if(!t||!t.srcs)return;AS.srcT=t;openSheet(`<h2>Notes used</h2><p class="small muted">From your own data, on this device.</p><ol class="ins-src-l">${t.srcs.map((x,i)=>`<li><button class="ins-si" data-act="asSrc" data-i="${i}"><span class="n">${i+1}</span><span class="t"><b>${esc(trunc(x.label||'',70))}</b><small>${esc(({entry:'Journal',goal:'Goal',habit:'Habit',day:'Day plan',list:'List'})[x.kind]||'')}${(x.kind==='entry'||x.kind==='day')&&x.date?' · '+fmtDate(x.date):''}</small></span></button></li>`).join('')}</ol><div class="actions"><button class="btn" data-act="close">Done</button></div>`)},
+ asSrc:d=>{const x=AS.srcT&&AS.srcT.srcs[+d.i];if(!x)return;closeSheet();asClose();setTimeout(()=>{if(x.kind==='entry'){if(S.entries.some(e=>e.id===x.ref))ACT.viewEntry({id:x.ref})}else if(x.kind==='goal')go('goal/'+x.ref);else if(x.kind==='habit')go('habit/'+x.ref);else if(x.kind==='day'){CAL.d=x.ref;S.settings.layout.cal='day';go('cal')}else if(x.kind==='list')go('list/'+x.ref);},380)},
  asPre:d=>{const p=typeof INS_PRE!=='undefined'&&INS_PRE.find(x=>x.k===d.k);if(p)run(p.q,{ask:1,pre:p,show:p.n})},
  asQsModel:()=>window.aiQuick?aiQuick():go('settings/voice'),
  askGo:()=>{asOpen();asWarm();setTimeout(()=>$('#asIn')?.focus(),300)},
