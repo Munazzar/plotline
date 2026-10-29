@@ -55,9 +55,10 @@ function plotData(){const td=ymd(),tn=dnum(td),priv=insSet().priv,from=tn-119;
   try{const h=window.hrOf?hrOf(o):null;if(Array.isArray(h))st=h.map(v=>v==null?null:Math.round(+v||0))}catch(e){}
   try{const x=SC&&SC.dayData(ds);if(x&&x.hrs){sh=x.hrs.map(m=>Math.round(Object.values(m).reduce((a,b)=>a+(+b||0),0)));un=x.un}
    if(x&&Object.keys(x.apps).length)apps=Object.entries(x.apps).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,m])=>({app:SC.lab?SC.lab(k):k,minutes:Math.round(m)}))}catch(e){}
-  const W=(o.w||[]).filter(Boolean);
+  /* the phone keeps a workout's type as Health Connect's number (56 = running): the page gets the name */
+  const W=(o.w||[]).filter(Boolean),wn=w=>(typeof ACT_EX!=='undefined'&&ACT_EX[w.k])||(typeof w.k==='string'&&w.k)||'Workout';
   activity.push({date:ds,steps:+o.s||0,stepsByHour:st,sleepMinutes:+o.z||0,sleep:(o.ss||[]).filter(x=>Array.isArray(x)&&x[1]>x[0]).map(([a,b])=>({start:hm(a),end:hm(b)})),
-   screenMinutes:o.m==null?null:+o.m,screenByHour:sh,unlocksByHour:un,apps,workouts:W.map(w=>w.k||'workout'),workoutDetails:W.map(w=>({type:w.k||'workout',minutes:+w.m||null,start:w.t?hm(w.t):''}))})}
+   screenMinutes:o.m==null?null:+o.m,screenByHour:sh,unlocksByHour:un,apps,workouts:W.map(wn),workoutDetails:W.map(w=>({type:wn(w),minutes:+w.m||null,start:w.t?hm(w.t):''}))})}
  return{today:td,name:S.settings.name||'',goals,habits,journal,plans,threads:threadsOut,lists,activity}}
 const DATA_SHAPE=`window.PLOT_DATA = {
   today: "YYYY-MM-DD", name: string,
@@ -66,12 +67,16 @@ const DATA_SHAPE=`window.PLOT_DATA = {
             history: [{date, due: bool, done: bool, value: number, skipped: bool}] (last 120 days, only days that were due or had a value), slips: [date] (quit habits)}],
   journal: [{date, time: "HH:MM", title, text, mood}] (newest first),
   plans: [{date, time, title, done}] (reminders and goals for a day, last 90 days to 60 days ahead),
-  threads: [{title, status, updates: [{date, text}]}],  (these are the user's Notes)
+  threads: [{title, status, updates: [{date, text}] (newest first)}],  (these are the user's Notes; updates[0] is the latest)
   lists: [{title, items: [{text, done}]}],
   activity: [{date, steps, stepsByHour: [24 numbers, null = not recorded] or null, sleepMinutes, sleep: [{start: "YYYY-MM-DD HH:MM", end}],
              screenMinutes, screenByHour: [24 minutes] or null, unlocksByHour: [24] or null, apps: [{app, minutes}] (top apps that day) or null,
              workouts: [string], workoutDetails: [{type, minutes, start}]}] (last 100 days, only days with a record, may be empty)
-}  (dates are "YYYY-MM-DD" strings)`;
+}  (dates are "YYYY-MM-DD" strings in the user's local time)
+What the fields mean:
+- A habit day with due: true and done: false (and skipped: false) is a MISSED day; skipped: true means the user chose to skip it. "Skipped" in everyday speech usually means missed or skipped.
+- A streak counts back from today, but today still counts as in progress: if today isn't done yet, start from yesterday.
+- A day or hour that has no record (missing from activity, or null) is "not recorded": show it as that (blank, striped or "–"), never as 0 and never guessed.`;
 function dataNow(){const D=plotData(),hab=D.habits.map(h=>h.title).slice(0,25),gl=D.goals.filter(g=>g.status!=='done').map(g=>g.title).slice(0,20);
  return`Right now: ${D.goals.length} goals${gl.length?' ('+gl.join('; ')+')':''}; ${D.habits.length} habits${hab.length?' ('+hab.join('; ')+')':''}; ${D.journal.length} journal entries; ${D.plans.length} plans; ${D.threads.length} notes; ${D.lists.length} lists; ${D.activity.length} days of phone activity.`}
 
@@ -111,8 +116,11 @@ function cvsLook(done,tries){
   if(!/(auto|scroll)/.test(ac.overflowX)&&(q.right>b.right+3||q.left<b.left-3)||!/(auto|scroll)/.test(ac.overflowY)&&(q.bottom>b.bottom+3||q.top<b.top-3))cut.push(nm(e)+' (cut off by '+nm(a).split(' ')[0]+')')});
  if(cut.length)P.push('Text is cut off: '+cut.join('; '));
  /* text on top of other text */
- var ov=[];for(var i=0;i<LEAF.length&&ov.length<4;i++){var a=R(LEAF[i]);for(var j=i+1;j<LEAF.length&&ov.length<4;j++){var b=R(LEAF[j]),x=Math.min(a.right,b.right)-Math.max(a.left,b.left),y=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);
-  if(x>2&&y>2&&x*y>.3*Math.min(a.width*a.height,b.width*b.height))ov.push(nm(LEAF[i])+' and '+nm(LEAF[j])+' at '+Math.round(b.left)+','+Math.round(b.top))}}
+ /* flip cards stack a front and a back face, one hidden with backface-visibility: not an overlap */
+ var face=function(e){for(var p=e;p&&p!==document.body;p=p.parentElement)if(getComputedStyle(p).backfaceVisibility==='hidden')return true;return false};
+ var OL=LEAF.filter(function(e){return !face(e)});
+ var ov=[];for(var i=0;i<OL.length&&ov.length<4;i++){var a=R(OL[i]);for(var j=i+1;j<OL.length&&ov.length<4;j++){var b=R(OL[j]),x=Math.min(a.right,b.right)-Math.max(a.left,b.left),y=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);
+  if(x>2&&y>2&&x*y>.3*Math.min(a.width*a.height,b.width*b.height))ov.push(nm(OL[i])+' and '+nm(OL[j])+' at '+Math.round(b.left)+','+Math.round(b.top))}}
  if(ov.length)P.push('Text overlaps other text: '+ov.join('; '));
  /* grids and rows of items whose rows don't line up */
  V.forEach(function(e){var c=getComputedStyle(e);if(!/grid/.test(c.display)&&!(/flex/.test(c.display)&&/wrap/.test(c.flexWrap)))return;var K=[].filter.call(e.children,vis);if(K.length<8)return;
@@ -130,6 +138,21 @@ function cvsLook(done,tries){
   var L=lr.map(cx),worst=0,wi=0,wl=0;cr.forEach(function(e,i){var x=cx(e),bi=0;L.forEach(function(v,j){if(Math.abs(v-x)<Math.abs(L[bi]-x))bi=j});var d=Math.abs(L[bi]-x);if(d>worst){worst=d;wi=i;wl=bi}});
   var w=Math.min.apply(null,cr.map(function(e){return R(e).width}));
   if(worst>Math.max(6,w*.5)){al++;P.push('A row of labels doesn’t line up with the row under it: '+lr.length+' labels ('+nm(lr[0].parentElement).split(' ')[0]+') over '+cr.length+' items ('+nm(cr[0].parentElement).split(' ')[0]+'). The item '+(wi+1)+' is centred at '+Math.round(cx(cr[wi]))+' px but the nearest label, “'+txt(lr[wl])+'”, is at '+Math.round(L[wl])+' px. Put the labels and the items in the same grid, or give both exactly the same column widths and gaps.')}});
+ /* text too dark or too light to read against what's behind it */
+ var rgb=function(c){var m=String(c).match(/[\d.]+/g);return m?{r:+m[0],g:+m[1],b:+m[2],a:m[3]==null?1:+m[3]}:null};
+ var lum=function(c){var f=function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(c.r)+.7152*f(c.g)+.0722*f(c.b)};
+ var root=getComputedStyle(document.documentElement),pageBg=rgb(root.getPropertyValue('--pl-bg').trim().replace(/^#(..)(..)(..)$/,function(_,a,b,c){return 'rgb('+parseInt(a,16)+','+parseInt(b,16)+','+parseInt(c,16)+')'}))||{r:255,g:255,b:255,a:1};
+ var bgOf=function(e){for(var p=e;p;p=p.parentElement){var c=getComputedStyle(p);if(c.backgroundImage!=='none')return null;var b=rgb(c.backgroundColor);if(b&&b.a>=.5)return b}return pageBg};
+ var low=[];LEAF.forEach(function(e){if(low.length>=3)return;var c=getComputedStyle(e),f=rgb(c.color),b=bgOf(e);if(!f||!b||f.a<.3)return;var L1=lum(f),L2=lum(b),cr=(Math.max(L1,L2)+.05)/(Math.min(L1,L2)+.05);
+  if(cr<2.2)low.push(nm(e)+' (text '+c.color+' on '+(b===pageBg?'the page background':'rgb('+b.r+','+b.g+','+b.b+')')+', contrast '+cr.toFixed(1)+':1)')});
+ if(low.length)P.push('Text is hard or impossible to read against what is behind it: '+low.join('; ')+(pageBg.r<60?'. The background here is dark, so text needs a light colour (var(--pl-text)).':''));
+ /* the page says there's nothing to show, but the data it reads has plenty */
+ var D=window.PLOT_DATA;if(D&&typeof D==='object'){var A=D.activity||[],cnt=function(f){return A.filter(f).length};
+  var have={step:cnt(function(a){return a.steps>0}),sleep:cnt(function(a){return a.sleepMinutes>0}),screen:cnt(function(a){return a.screenMinutes>0||a.screenByHour}),workout:cnt(function(a){return (a.workouts||[]).length}),
+   mood:(D.journal||[]).filter(function(j){return j.mood}).length,journal:(D.journal||[]).length,entr:(D.journal||[]).length,habit:(D.habits||[]).length,goal:(D.goals||[]).length,plan:(D.plans||[]).length,note:(D.threads||[]).length,list:(D.lists||[]).length};
+  var none=LEAF.map(txt).filter(function(t){return /\b(no|not any|nothing)\b.{0,40}\b(data|entries|entry|records?|recorded|available|found|yet|logged|matching)\b/i.test(t)&&t.length<140});
+  none.slice(0,2).forEach(function(t){var k=Object.keys(have).filter(function(k){return new RegExp('\\b'+k,'i').test(t)&&have[k]>=5})[0];
+   if(k)P.push('The page says “'+t+'”, but PLOT_DATA has '+have[k]+' '+(k==='step'||k==='sleep'||k==='screen'||k==='workout'?'days with '+k+' data':k+'s')+'. Check how the page reads, filters and dates the data: dates are "YYYY-MM-DD" strings in local time, and activity only lists days that have a record.')})}
  /* text too small to read */
  var tiny=LEAF.filter(function(e){return parseFloat(getComputedStyle(e).fontSize)<9}).slice(0,3);if(tiny.length)M.push('Text smaller than 9 px is hard to read: '+tiny.map(nm).join('; '));
  /* the outline: what's on screen, top to bottom */
@@ -488,8 +511,9 @@ const PT_IDEAS={
  moves:['Workouts per week, by type','A run pace calculator'],
  screen:['My busiest phone hours this week, as a heat map','A focus timer that logs my sessions']};
 const PT_VARS=['bg','bg-2','surface','surface-2','line','line-2','text','muted','dim','accent','on-accent'];
-function themeCSS(){const cs=getComputedStyle(document.documentElement),v=PT_VARS.map(k=>`--pl-${k}:${cs.getPropertyValue('--'+k).trim()||'initial'}`).join(';'),sch=/light/.test(cs.colorScheme||'')?'light':'dark';
- return`<style>:root{${v};--pl-font:${(cs.getPropertyValue('--f-body').trim()||'system-ui,sans-serif').replace(/[<>]/g,'')};color-scheme:${sch}}html,body{background:transparent;height:auto!important;min-height:0!important}body{margin:0;font-family:var(--pl-font);color:var(--pl-text)}</style>`}
+/* !important: a page that redeclares them ("--pl-text: var(--pl-text)", a loop that blanks the colour) can't undo the theme */
+function themeCSS(){const cs=getComputedStyle(document.documentElement),v=PT_VARS.map(k=>`--pl-${k}:${cs.getPropertyValue('--'+k).trim()||'initial'}!important`).join(';'),sch=/light/.test(cs.colorScheme||'')?'light':'dark';
+ return`<style>:root{${v};--pl-font:${(cs.getPropertyValue('--f-body').trim()||'system-ui,sans-serif').replace(/[<>]/g,'')}!important;color-scheme:${sch}}html,body{background:transparent;height:auto!important;min-height:0!important}body{margin:0;font-family:var(--pl-font);color:var(--pl-text)}</style>`}
 function partSys(c){return`
 THIS IS A PART OF THE APP, NOT A PAGE OF ITS OWN
 It sits inside the user's ${slotName(c.slot)} page in Plotlines, under the app's own cards, as one block the full width of that page (about 340 to 900 px wide).
@@ -555,7 +579,7 @@ Object.assign(ACT,{
 });
 
 /* others (the assistant, the agent, the How-to demos) can start a canvas */
-window.CANVAS={list:()=>CS.slice(),get,start:startWith,send:(id,q)=>{const c=get(id);if(c)send(c,q)},plotData,parse,applyEdits,ready:()=>LOADED,check,probList,busy:()=>!!RUN};
+window.CANVAS={list:()=>CS.slice(),get,start:startWith,send:(id,q)=>{const c=get(id);if(c)send(c,q)},plotData,parse,applyEdits,ready:()=>LOADED,check,probList,busy:()=>!!RUN,docOf};
 
 const css=document.createElement('style');css.textContent=`
 .cvs-start{margin:4px 0 10px}.cvs-start textarea{min-height:84px}

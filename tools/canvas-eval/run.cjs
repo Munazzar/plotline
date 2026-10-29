@@ -28,7 +28,7 @@ async function setup() {
   await sleep(4000); ws.close(); await connect();
   await ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms));for(let i=0;i<40&&!window.CANVAS;i++)await w(250);
     const ex=[...document.querySelectorAll('button')].find(b=>/Explore with examples/.test(b.textContent));if(ex){ex.click();await w(2500)}
-    document.startViewTransition=undefined;Object.assign(insSet(),{engine:'api',url:${J(AI)},model:${J(MODEL)}});delete insSet().cthink;save();return planEngine()})()`);
+    document.startViewTransition=undefined;if(!Object.keys(S.settings.actLog||{}).length)${fs.readFileSync(path.join(__dirname, 'seed.js'), 'utf8').replace(/^\/\/.*$/gm, '')};Object.assign(insSet(),{engine:'api',url:${J(AI)},model:${J(MODEL)}});delete insSet().cthink;save();return planEngine()})()`);
 }
 async function build(i, it) {
   const t0 = Date.now();
@@ -44,6 +44,7 @@ async function build(i, it) {
         errs:H?H.errs:[],probs:H&&H.look?H.look.probs:[],minor:H&&H.look?H.look.minor:[],outline:H&&H.look?H.look.outline:'',measured:!!(H&&H.look)}})()`);
     fs.writeFileSync(path.join(OUT, `${i + 1}${k ? '-' + k : ''}.html`), r.html); delete r.html;
     steps.push({ ask: asks[k], secs: Math.round((Date.now() - s0) / 1000), ...r });
+    if (!k && it.slot) await ev(`(()=>{const c=CANVAS.get(${J(id)});if(c&&c.html&&!c.keep){const b=document.querySelector('[data-act=ptKeep]');if(b)b.click()}return 1})()`); // keep it, as a person would, so a reload doesn't drop it
   }
   return { n: i + 1, q: it.q, slot: it.slot || '', secs: Math.round((Date.now() - t0) / 1000), steps };
 }
