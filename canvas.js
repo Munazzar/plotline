@@ -280,11 +280,11 @@ function errHTML(c){return FR_ERR&&FR_ERR.id===c.id&&FR_ERR.v===c.vi?`<div class
 function vEdit(id){const c=get(id);if(!c)return`<header class="ph"><div><a class="link" href="#/canvas">${ic('back','ico-s')} AI canvas</a><h1>Not found</h1></div></header><p class="muted">This canvas was deleted or is on another device.</p>`;
  const n=c.ver.length,busy=RUN&&RUN.id===c.id;
  return`<div class="cvs" data-tab="${TAB}" id="cvs" data-id="${c.id}">
- <div class="crumb cvs-top"><a href="#/canvas" class="ibtn" data-act="navBack" aria-label="Back">${ic('back')}</a><button class="cvs-ti" data-act="cvsRename" data-id="${c.id}" title="Rename"><b>${esc(c.title)}</b><small id="cvsVl">${n?`Version ${(c.vi??n-1)+1} of ${n}`:'New canvas'}</small></button>
+ <div class="crumb cvs-top"><a href="#/canvas" class="ibtn" data-act="navBack" aria-label="Back">${ic('back')}</a><button class="cvs-ti" data-act="cvsRename" data-id="${c.id}" title="Rename"><b>${esc(c.title)}</b><small id="cvsVl">${n?`Version ${(c.vi??n-1)+1} of ${n}`:c.slot?'New part':'New canvas'}</small></button>
  <div class="ph-r"><button class="ibtn" data-act="cvsUndo" data-id="${c.id}" aria-label="Back one version" title="Back one version" ${n>1&&(c.vi??n-1)>0&&!busy?'':'disabled'}>${ic('undo')}</button><button class="ibtn" data-act="cvsMore" data-id="${c.id}" aria-label="More">${ic('more')}</button></div></div>
  ${ptBar(c)}<div class="cvs-tabs" role="tablist">${[['chat','Chat','chat'],['view','Canvas','cvs'],['code','Code','code']].map(([k,t,i])=>`<button role="tab" class="${TAB===k?'on':''}" aria-selected="${TAB===k}" data-act="cvsTab" data-k="${k}">${ic(i,'ico-s')}${t}</button>`).join('')}</div>
  <div class="cvs-body">
-  <section class="cvs-chat"><div class="cvs-log" id="cvsLog">${logHTML(c)}</div>${engineHint()}
+  <section class="cvs-chat${window.AIX&&AIX.ready()?'':' noai'}"><div class="cvs-log" id="cvsLog">${logHTML(c)}</div>${engineHint()}
    <form class="cvs-in" data-form="cvsSend" data-id="${c.id}" autocomplete="off"><textarea id="cvsIn" name="q" rows="1" maxlength="6000" placeholder="${c.html?'What should change?':'What should we build?'}" aria-label="Message"></textarea>
    ${busy?`<button type="button" class="btn sm cvs-go" data-act="cvsStop" aria-label="Stop">${ic('stop')}</button>`:`<button class="btn pri sm cvs-go" aria-label="Send">${ic('send')}</button>`}</form>
    <div class="cvs-opts"><label class="cvs-data"><input type="checkbox" data-cvsdata="${c.id}" ${c.data?'checked':''}><span>Use my data</span><small>goals, habits, journal, plans, notes, lists</small></label>
@@ -301,12 +301,12 @@ VOICE_SEL.push('#cvsIn','#cvsFirst');
 
 /* targeted repaints: a full render reloads the frame, which would reset an app the user is trying out */
 function fillFrames(){const c=cur.p==='canvas'&&get(cur.id);if(!c)return;document.querySelectorAll('iframe.cvs-fr').forEach(f=>{const k=c.id+':'+(c.vi??'')+':'+c.html.length;if(f.dataset.k===k)return;f.dataset.k=k;f.srcdoc=docOf(c)})}
-function logPaint(stick){const el=$('#cvsLog'),c=get(cur.id);if(!el||!c)return;const near=stick||el.scrollHeight-el.scrollTop-el.clientHeight<120;el.innerHTML=logHTML(c);if(near)el.scrollTop=el.scrollHeight}
+function logPaint(stick){const el=$('#cvsLog'),c=get(cur.id);if(!el||!c)return;const near=stick||el.scrollHeight-el.scrollTop-el.clientHeight<120;el.innerHTML=logHTML(c);if(near)el.scrollTop=el.querySelector('.cvs-empty')?0:el.scrollHeight}
 let lpT=0;function livePaint(){if(lpT)return;lpT=setTimeout(()=>{lpT=0;const r=$('#cvsRun');if(!r||!RUN)return logPaint();const L=$('#cvsLog'),near=L.scrollHeight-L.scrollTop-L.clientHeight<120;r.outerHTML=runHTML();if(near)L.scrollTop=L.scrollHeight},160)}
 function errPaint(){const e=$('#cvsErr'),c=get(cur.id);if(e&&c)e.innerHTML=errHTML(c)}
 function paint(){if(cur.p!=='canvas')return;const inp=$('#cvsIn'),keep=inp&&inp.value,foc=document.activeElement===inp;render(false);const n=$('#cvsIn');if(n&&keep){n.value=keep;grow(n)}if(n&&foc)n.focus();logPaint(true)}
 const grow=t=>{t.style.height='auto';t.style.height=Math.min(180,t.scrollHeight)+'px'};
-{const _r=render;render=function(){const x=_r.apply(this,arguments);if(cur.p==='canvas'&&cur.id){fillFrames();const L=$('#cvsLog');if(L)L.scrollTop=L.scrollHeight}return x}}
+{const _r=render;render=function(){const x=_r.apply(this,arguments);if(cur.p==='canvas'&&cur.id){fillFrames();const L=$('#cvsLog');if(L)L.scrollTop=L.querySelector('.cvs-empty')?0:L.scrollHeight}return x}}
 document.addEventListener('input',e=>{if(e.target.id==='cvsIn')grow(e.target)});
 document.addEventListener('keydown',e=>{if(e.target.id==='cvsIn'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&wide()){e.preventDefault();e.target.form.requestSubmit()}
  if(e.key==='Escape'&&FULL){FULL=false;paint()}});
@@ -471,7 +471,9 @@ const css=document.createElement('style');css.textContent=`
 .cvs-thumb{width:48px;height:48px;flex:none;border-radius:14px;display:grid;place-items:center;color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,var(--surface))}.cvs-thumb svg{width:24px;height:24px}
 .cvs-cb{display:flex;flex-direction:column;gap:2px;min-width:0}.cvs-cb b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cvs-cb small{color:var(--muted);font-size:12.5px}
 .cvs-dot{position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--accent);animation:meBl 1s ease-in-out infinite}
-.cvs-hint{display:flex;gap:6px;align-items:flex-start;margin:6px 2px 8px}.cvs-hint .ico-s{flex:none;margin-top:2px}
+.cvs-hint{display:flex;gap:6px;align-items:flex-start;margin:6px 2px 8px}
+/* no AI yet: the setup card would squeeze the chat in its fixed-height box, so the page just scrolls instead */
+.cvs .cvs-chat.noai{height:auto!important;min-height:0}.cvs-chat.noai .cvs-log{flex:none;overflow:visible}.cvs-hint .ico-s{flex:none;margin-top:2px}
 .cvs-setup{margin-bottom:12px}
 .cvs-top{display:flex;align-items:center;gap:8px}.cvs-top .ph-r{margin-left:auto;display:flex;gap:4px}
 .cvs-ti{display:flex;flex-direction:column;align-items:flex-start;min-width:0;flex:1;background:none;border:0;color:var(--ink);text-align:left;cursor:pointer;padding:2px 4px;border-radius:10px}
