@@ -55,9 +55,10 @@ function plotData(){const td=ymd(),tn=dnum(td),priv=insSet().priv,from=tn-119;
   try{const h=window.hrOf?hrOf(o):null;if(Array.isArray(h))st=h.map(v=>v==null?null:Math.round(+v||0))}catch(e){}
   try{const x=SC&&SC.dayData(ds);if(x&&x.hrs){sh=x.hrs.map(m=>Math.round(Object.values(m).reduce((a,b)=>a+(+b||0),0)));un=x.un}
    if(x&&Object.keys(x.apps).length)apps=Object.entries(x.apps).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,m])=>({app:SC.lab?SC.lab(k):k,minutes:Math.round(m)}))}catch(e){}
-  const W=(o.w||[]).filter(Boolean);
+  /* the phone keeps a workout's type as Health Connect's number (56 = running): the page gets the name */
+  const W=(o.w||[]).filter(Boolean),wn=w=>(typeof ACT_EX!=='undefined'&&ACT_EX[w.k])||(typeof w.k==='string'&&w.k)||'Workout';
   activity.push({date:ds,steps:+o.s||0,stepsByHour:st,sleepMinutes:+o.z||0,sleep:(o.ss||[]).filter(x=>Array.isArray(x)&&x[1]>x[0]).map(([a,b])=>({start:hm(a),end:hm(b)})),
-   screenMinutes:o.m==null?null:+o.m,screenByHour:sh,unlocksByHour:un,apps,workouts:W.map(w=>w.k||'workout'),workoutDetails:W.map(w=>({type:w.k||'workout',minutes:+w.m||null,start:w.t?hm(w.t):''}))})}
+   screenMinutes:o.m==null?null:+o.m,screenByHour:sh,unlocksByHour:un,apps,workouts:W.map(wn),workoutDetails:W.map(w=>({type:wn(w),minutes:+w.m||null,start:w.t?hm(w.t):''}))})}
  return{today:td,name:S.settings.name||'',goals,habits,journal,plans,threads:threadsOut,lists,activity}}
 const DATA_SHAPE=`window.PLOT_DATA = {
   today: "YYYY-MM-DD", name: string,
@@ -66,36 +67,147 @@ const DATA_SHAPE=`window.PLOT_DATA = {
             history: [{date, due: bool, done: bool, value: number, skipped: bool}] (last 120 days, only days that were due or had a value), slips: [date] (quit habits)}],
   journal: [{date, time: "HH:MM", title, text, mood}] (newest first),
   plans: [{date, time, title, done}] (reminders and goals for a day, last 90 days to 60 days ahead),
-  threads: [{title, status, updates: [{date, text}]}],  (these are the user's Notes)
+  threads: [{title, status, updates: [{date, text}] (newest first)}],  (these are the user's Notes; updates[0] is the latest)
   lists: [{title, items: [{text, done}]}],
   activity: [{date, steps, stepsByHour: [24 numbers, null = not recorded] or null, sleepMinutes, sleep: [{start: "YYYY-MM-DD HH:MM", end}],
              screenMinutes, screenByHour: [24 minutes] or null, unlocksByHour: [24] or null, apps: [{app, minutes}] (top apps that day) or null,
              workouts: [string], workoutDetails: [{type, minutes, start}]}] (last 100 days, only days with a record, may be empty)
-}  (dates are "YYYY-MM-DD" strings)`;
+}  (dates are "YYYY-MM-DD" strings in the user's local time)
+What the fields mean:
+- A habit day with due: true and done: false (and skipped: false) is a MISSED day; skipped: true means the user chose to skip it. "Skipped" in everyday speech usually means missed or skipped.
+- A journal mood is a word, one of: Calm, Energized, Grateful, Okay, Low, Anxious, Frustrated, Tired (or empty). It is not a number: to chart it, choose and show a clear order or group (for example pleasant / neutral / unpleasant).
+- A streak counts back from today, but today still counts as in progress: if today isn't done yet, start from yesterday.
+- A day or hour that has no record (missing from activity, or null) is "not recorded": show it as that (blank, striped or "–"), never as 0 and never guessed.`;
 function dataNow(){const D=plotData(),hab=D.habits.map(h=>h.title).slice(0,25),gl=D.goals.filter(g=>g.status!=='done').map(g=>g.title).slice(0,20);
  return`Right now: ${D.goals.length} goals${gl.length?' ('+gl.join('; ')+')':''}; ${D.habits.length} habits${hab.length?' ('+hab.join('; ')+')':''}; ${D.journal.length} journal entries; ${D.plans.length} plans; ${D.threads.length} notes; ${D.lists.length} lists; ${D.activity.length} days of phone activity.`}
 
 /* ---------------- the page in its frame ---------------- */
 const J=o=>JSON.stringify(o).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
+/* 1.66: what the page really shows, measured inside its frame, for any page whatever it is. It runs in the hidden
+   check frame (never the one you use): it reports layout problems a person would see (wider than the screen, a
+   sideways-scrolling box whose far part is empty, text cut off or on top of other text, grid rows that don't line up,
+   text too small, buttons that change nothing when tapped) and a short outline of what's on screen, top to bottom.
+   The AI gets this so it can see what it built. Kept to plain ES2017: it's injected as source into the frame. */
+function cvsLook(done,tries){
+ /* a frame that has no size yet (the app is in the background, say) can't be measured: wait for it, then give up */
+ if(!innerWidth||!document.documentElement.clientHeight){if((tries||0)<12)setTimeout(function(){cvsLook(done,(tries||0)+1)},500);else done(null);return}
+ var W=innerWidth,P=[],M=[],N=[],R=function(e){return e.getBoundingClientRect()};
+ var txt=function(e){return String(e.innerText||e.textContent||'').replace(/\s+/g,' ').trim()};
+ var nm=function(e){var s=e.tagName.toLowerCase();if(e.id)s+='#'+e.id;else if(e.classList&&e.classList.length)s+='.'+[].slice.call(e.classList,0,2).join('.');var t=txt(e).slice(0,32);return s+(t?' "'+t+(txt(e).length>32?'…':'')+'"':'')};
+ var vis=function(e){var r=R(e);if(r.width<1||r.height<1)return false;var c=getComputedStyle(e);return c.visibility!=='hidden'&&c.display!=='none'&&+c.opacity>.05};
+ var ALL=[].slice.call(document.body?document.body.querySelectorAll('*'):[]).filter(function(e){return !/^(SCRIPT|STYLE|META|LINK|BR|TEMPLATE|NOSCRIPT|HEAD|TITLE)$/.test(e.tagName)&&!(e.closest&&e.closest('svg')&&e.tagName.toLowerCase()!=='svg')}).slice(0,4000);
+ var V=ALL.filter(vis),media=function(e){return /^(CANVAS|SVG|IMG|VIDEO|svg)$/.test(e.tagName)};
+ var painted=function(e){var c=getComputedStyle(e);return c.backgroundColor!=='rgba(0, 0, 0, 0)'&&c.backgroundColor!=='transparent'||c.backgroundImage!=='none'||parseFloat(c.borderTopWidth)>0};
+ var LEAF=V.filter(function(e){return !media(e)&&![].some.call(e.children,function(k){return vis(k)&&txt(k)})&&txt(e)}).slice(0,600);
+ var clipAnc=function(e){for(var p=e.parentElement;p&&p!==document.documentElement;p=p.parentElement){var c=getComputedStyle(p);if(/(auto|scroll|hidden|clip)/.test(c.overflowX+c.overflowY))return p}return null};
+ /* wider than the screen */
+ var sw=document.documentElement.scrollWidth;
+ if(sw>W+2){var out=V.filter(function(e){return R(e).right>W+2&&!clipAnc(e)});var top0=out.filter(function(e){return !out.some(function(o){return o!==e&&o.contains(e)})}),byP=new Map();top0.forEach(function(e){var p=e.parentElement;byP.set(p,(byP.get(p)||[]).concat([e]))});
+  var top=[];byP.forEach(function(K,p){if(K.length>=3&&p&&p!==document.body)top.push({n:nm(p).split(' ')[0]+' ('+K.length+' of its items go past the right edge, out to '+Math.round(Math.max.apply(null,K.map(function(k){return R(k).right})))+' px)'});else K.forEach(function(k){top.push({n:nm(k)+' (right edge at '+Math.round(R(k).right)+' px)'})})});top=top.slice(0,3);
+  P.push('The page is '+sw+' px wide but the screen is '+W+' px, so the whole page scrolls sideways. Sticking out: '+(top.map(function(x){return x.n}).join('; ')||'something positioned off the right edge'))}
+ /* boxes that scroll sideways: is there anything in the part you scroll to? */
+ V.forEach(function(e){var c=getComputedStyle(e);if(!/(auto|scroll)/.test(c.overflowX)||e.scrollWidth<=e.clientWidth+4)return;var r=R(e);
+  var far=[].slice.call(e.querySelectorAll('*')).filter(function(k){var q=R(k);return q.right>r.right+4&&q.width>0&&q.height>0&&(media(k)||painted(k)||k.children.length===0&&txt(k))});
+  if(!far.length)P.push(nm(e)+' scrolls sideways ('+e.scrollWidth+' px of content in a '+e.clientWidth+' px box), but the part you scroll to is empty');
+  else N.push(nm(e)+' scrolls sideways: '+e.scrollWidth+' px of content in a '+e.clientWidth+' px box')});
+ /* text cut off: by its own box, or by a box around it that hides overflow */
+ var cut=[],ell=[];LEAF.forEach(function(e){if(cut.length>=4)return;var c=getComputedStyle(e);
+  if(c.textOverflow==='ellipsis'&&e.scrollWidth>e.clientWidth+2){if(ell.length<3)ell.push(nm(e));return}
+  if(/(hidden|clip)/.test(c.overflowX)&&e.scrollWidth>e.clientWidth+2){cut.push(nm(e)+' (shows '+e.clientWidth+' of '+e.scrollWidth+' px)');return}
+  var a=clipAnc(e);if(!a)return;var ac=getComputedStyle(a);if(/(auto|scroll)/.test(ac.overflowX)&&/(auto|scroll)/.test(ac.overflowY))return;var q=R(e),b=R(a);
+  if(!/(auto|scroll)/.test(ac.overflowX)&&(q.right>b.right+3||q.left<b.left-3)||!/(auto|scroll)/.test(ac.overflowY)&&(q.bottom>b.bottom+3||q.top<b.top-3))cut.push(nm(e)+' (cut off by '+nm(a).split(' ')[0]+')')});
+ if(cut.length)P.push('Text is cut off: '+cut.join('; '));if(ell.length)M.push('Text is shortened with “…”: '+ell.join('; '));
+ /* text on top of other text */
+ /* flip cards stack a front and a back face, one hidden with backface-visibility: not an overlap */
+ var face=function(e){for(var p=e;p&&p!==document.body;p=p.parentElement)if(getComputedStyle(p).backfaceVisibility==='hidden')return true;return false};
+ var OL=LEAF.filter(function(e){return !face(e)});
+ var ov=[];for(var i=0;i<OL.length&&ov.length<4;i++){var a=R(OL[i]);for(var j=i+1;j<OL.length&&ov.length<4;j++){var b=R(OL[j]),x=Math.min(a.right,b.right)-Math.max(a.left,b.left),y=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);
+  if(x>2&&y>2&&x*y>.3*Math.min(a.width*a.height,b.width*b.height))ov.push(nm(OL[i])+' and '+nm(OL[j])+' at '+Math.round(b.left)+','+Math.round(b.top))}}
+ if(ov.length)P.push('Text overlaps other text: '+ov.join('; '));
+ /* grids and rows of items whose rows don't line up */
+ V.forEach(function(e){var c=getComputedStyle(e);if(!/grid/.test(c.display)&&!(/flex/.test(c.display)&&/wrap/.test(c.flexWrap)))return;var K=[].filter.call(e.children,vis);if(K.length<8)return;
+  var rows=[],key={};K.forEach(function(k){var t=Math.round(R(k).top/3);if(!(t in key)){key[t]=rows.length;rows.push([])}rows[key[t]].push(k)});if(rows.length<2)return;
+  var cnt=rows.map(function(r){return r.length}),body=cnt.slice(0,-1),uneven=body.some(function(n){return n!==body[0]});
+  var L0=rows[0].map(function(k){return Math.round(R(k).left)}),L1=rows[1].map(function(k){return Math.round(R(k).left)}),n=Math.min(L0.length,L1.length),off=0;for(var q=0;q<n;q++)if(Math.abs(L0[q]-L1[q])>3)off++;
+  if(/grid/.test(c.display)&&(uneven||off>n/3))P.push(nm(e).split(' ')[0]+' is a grid whose rows don’t line up: '+rows.length+' rows with '+cnt.slice(0,6).join(', ')+(cnt.length>6?', …':'')+' items'+(off?', and '+off+' of the first '+n+' columns sit at different positions in row 2 than in row 1':''))});
+ /* a row of short labels over a row of cells built apart from it (calendars, heat maps, tables): does every cell
+    sit under a label? Matched by nearest label, so a week that starts mid-row is fine. */
+ var SH=LEAF.filter(function(e){return txt(e).length<=3}),BX=V.filter(function(e){return e.children.length===0&&!txt(e)&&!media(e)&&painted(e)&&R(e).width*R(e).height<6400});
+ var rowsOf=function(L){var m={};L.forEach(function(e){var k=Math.round(R(e).top/6);(m[k]=m[k]||[]).push(e)});return Object.keys(m).map(Number).sort(function(x,y){return x-y}).map(function(k){return m[k]}).filter(function(r){return r.length>=5})};
+ var cx=function(e){var q=R(e);return(q.left+q.right)/2},LR=rowsOf(SH).filter(function(r){return r.length>=7}),CR=rowsOf(BX.concat(SH)),al=0;
+ LR.forEach(function(lr){if(al>=2)return;var y=Math.max.apply(null,lr.map(function(e){return R(e).bottom}));
+  var ext=function(r){return[Math.min.apply(null,r.map(function(e){return R(e).left})),Math.max.apply(null,r.map(function(e){return R(e).right}))]},le=ext(lr);
+  /* every row under the labels, not just the first: a row further down can drift too */
+  var crs=CR.filter(function(r){var t=R(r[0]).top,e2=ext(r),ov=Math.min(le[1],e2[1])-Math.max(le[0],e2[0]);return r!==lr&&t>=y-2&&t<y+900&&!r.some(function(e){return lr.indexOf(e)>=0})&&r[0].parentElement!==lr[0].parentElement&&r.length>=lr.length-1&&ov>=.75*Math.min(le[1]-le[0],e2[1]-e2[0])&&(e2[1]-e2[0])>=.6*(le[1]-le[0])});if(!crs.length)return;
+  var L=lr.map(cx),worst=0,wi=0,wl=0,cr=crs[0];crs.forEach(function(r){r.forEach(function(e,i){var x=cx(e),bi=0;L.forEach(function(v,j){if(Math.abs(v-x)<Math.abs(L[bi]-x))bi=j});var d=Math.abs(L[bi]-x);if(d>worst){worst=d;wi=i;wl=bi;cr=r}})});
+  var Ls=L.slice().sort(function(a,b){return a-b}),gaps=Ls.slice(1).map(function(v,i){return v-Ls[i]}).sort(function(a,b){return a-b}),pitch=gaps[Math.floor(gaps.length/2)]||40;
+  if(worst>Math.max(8,pitch*.3)){al++;P.push('A row of labels doesn’t line up with the row under it: '+lr.length+' labels ('+nm(lr[0].parentElement).split(' ')[0]+') over '+cr.length+' items ('+nm(cr[0].parentElement).split(' ')[0]+'). The item '+(wi+1)+' is centred at '+Math.round(cx(cr[wi]))+' px but the nearest label, “'+txt(lr[wl])+'”, is at '+Math.round(L[wl])+' px. Put the labels and the items in the same grid, or give both exactly the same column widths and gaps.')}});
+ /* text too dark or too light to read against what's behind it */
+ var rgb=function(c){var m=String(c).match(/[\d.]+/g);return m?{r:+m[0],g:+m[1],b:+m[2],a:m[3]==null?1:+m[3]}:null};
+ var lum=function(c){var f=function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(c.r)+.7152*f(c.g)+.0722*f(c.b)};
+ var root=getComputedStyle(document.documentElement),pageBg=rgb(root.getPropertyValue('--pl-bg').trim().replace(/^#(..)(..)(..)$/,function(_,a,b,c){return 'rgb('+parseInt(a,16)+','+parseInt(b,16)+','+parseInt(c,16)+')'}))||{r:255,g:255,b:255,a:1};
+ var bgOf=function(e){for(var p=e;p;p=p.parentElement){var c=getComputedStyle(p);if(c.backgroundImage!=='none')return null;var b=rgb(c.backgroundColor);if(b&&b.a>=.5)return b}return pageBg};
+ var low=[],dim=[];LEAF.forEach(function(e){if(low.length>=3)return;var c=getComputedStyle(e),f=rgb(c.color),b=bgOf(e);if(!f||!b||f.a<.3)return;var L1=lum(f),L2=lum(b),cr=(Math.max(L1,L2)+.05)/(Math.min(L1,L2)+.05);
+  if(cr<2.2)(cr<1.6||txt(e).length>3?low:dim).push(nm(e)+' (text '+c.color+' on '+(b===pageBg?'the page background':'rgb('+b.r+','+b.g+','+b.b+')')+', contrast '+cr.toFixed(1)+':1)')});
+ if(dim.length)M.push('Low contrast, hard to read: '+dim.slice(0,3).join('; '));if(low.length)P.push('Text is hard or impossible to read against what is behind it: '+low.join('; ')+(pageBg.r<60?'. The background here is dark, so text needs a light colour (var(--pl-text)).':''));
+ /* the page says there's nothing to show, but the data it reads has plenty */
+ var D=window.PLOT_DATA;if(D&&typeof D==='object'){var A=D.activity||[],cnt=function(f){return A.filter(f).length};
+  var have={step:cnt(function(a){return a.steps>0}),sleep:cnt(function(a){return a.sleepMinutes>0}),screen:cnt(function(a){return a.screenMinutes>0||a.screenByHour}),workout:cnt(function(a){return (a.workouts||[]).length}),
+   mood:(D.journal||[]).filter(function(j){return j.mood}).length,journal:(D.journal||[]).length,entr:(D.journal||[]).length,habit:(D.habits||[]).length,goal:(D.goals||[]).length,plan:(D.plans||[]).length,note:(D.threads||[]).length,list:(D.lists||[]).length};
+  var none=LEAF.map(txt).filter(function(t){return /\b(no|not any|nothing)\b.{0,40}\b(data|entries|entry|records?|recorded|available|found|yet|logged|matching)\b/i.test(t)&&t.length<140});
+  none.slice(0,2).forEach(function(t){var k=Object.keys(have).filter(function(k){return new RegExp('\\b'+k,'i').test(t)&&have[k]>=5})[0];
+   if(k)P.push('The page says “'+t+'”, but PLOT_DATA has '+have[k]+' '+(k==='step'||k==='sleep'||k==='screen'||k==='workout'?'days with '+k+' data':k+'s')+'. Check how the page reads, filters and dates the data: dates are "YYYY-MM-DD" strings in local time, and activity only lists days that have a record.')})}
+ /* rows of cells that should line up with each other (one row per habit, person, item...) but each starts at its own x */
+ var boxRows=[];V.forEach(function(e){var K=[].filter.call(e.children,function(k){return BX.indexOf(k)>=0});if(K.length>=7)boxRows.push({e:e,x:Math.min.apply(null,K.map(function(k){return R(k).left})),w:R(K[0]).width,n:K.length,t:R(e).top})});
+ boxRows.sort(function(p,q){return p.t-q.t});var runs=[],cur0=[];boxRows.forEach(function(b){var p=cur0[cur0.length-1];if(p&&Math.abs(p.w-b.w)<=Math.max(2,p.w*.2)&&b.n>=p.n*.5&&b.n<=p.n*2)cur0.push(b);else{if(cur0.length>=3)runs.push(cur0);cur0=[b]}});if(cur0.length>=3)runs.push(cur0);
+ runs.slice(0,1).forEach(function(r){var xs=r.map(function(b){return Math.round(b.x)}),sp=Math.max.apply(null,xs)-Math.min.apply(null,xs);
+  if(sp>Math.max(8,r[0].w))P.push(r.length+' rows of cells ('+nm(r[0].e).split(' ')[0]+') each start at a different place ('+xs.slice(0,6).join(', ')+' px), so their columns don’t line up from one row to the next. Give the row labels one fixed width, or put labels and cells in one grid with fixed columns.')});
+ /* values that leaked out of the code: NaN, undefined, [object Object], Invalid Date */
+ var junk=LEAF.filter(function(e){return /(^|[^\w])(NaN|undefined|null|\[object Object\]|Invalid Date|Infinity)([^\w]|$)/.test(txt(e))&&!/^(INPUT|TEXTAREA|CODE|PRE)$/.test(e.tagName)}).slice(0,3);
+ if(junk.length)P.push('The page shows values that came out of a calculation gone wrong: '+junk.map(nm).join('; ')+'. Find where they come from (dividing by zero, reading a field that does not exist, a number that is really text) and show a real value or "–".');
+ /* a grid that should have columns but lays everything out one per row: its columns didn't take (an invalid grid-template-columns, often built in code) */
+ V.forEach(function(e){var c=getComputedStyle(e),K=[].filter.call(e.children,vis);if(K.length<12)return;
+  /* any box (grid or not) whose many short labels or cells sit one per line: they were meant to sit side by side */
+  if(!/grid/.test(c.display)){var sh=K.every(function(k){var t=txt(k);return t.length<=4&&R(k).width<120}),lf={};K.forEach(function(k){lf[Math.round(R(k).left/4)]=1});
+   if(sh&&Object.keys(lf).length<=1)P.push(nm(e).split(' ')[0]+' stacks its '+K.length+' short labels or cells in one column, one per line (“'+K.slice(0,3).map(txt).join('”, “')+'”…). They look like they should sit side by side, as a row or the columns of a grid.');return}
+  var cols=c.gridTemplateColumns.split(' ').filter(Boolean).length;
+  var lefts={};K.forEach(function(k){lefts[Math.round(R(k).left/4)]=1});if(cols<=1&&Object.keys(lefts).length<=1)P.push(nm(e).split(' ')[0]+' is a grid, but its '+K.length+' items sit in one column, one per row (grid-template-columns is "'+c.gridTemplateColumns+'"). Its columns probably were not set or the value is invalid; set them so the items sit side by side as intended.')});
+ /* text too small to read */
+ var tiny=LEAF.filter(function(e){return parseFloat(getComputedStyle(e).fontSize)<9}).slice(0,3);if(tiny.length)M.push('Text smaller than 9 px is hard to read: '+tiny.map(nm).join('; '));
+ /* the outline: what's on screen, top to bottom */
+ var CELL=V.filter(function(e){return e.children.length===0&&!txt(e)&&!media(e)&&painted(e)&&R(e).width*R(e).height<6400});
+ var lines=[],bt={};LEAF.concat(V.filter(media),CELL).forEach(function(e){var r=R(e),k=Math.round(r.top/8);(bt[k]=bt[k]||[]).push([r.left,e])});
+ Object.keys(bt).map(Number).sort(function(a,b){return a-b}).forEach(function(k){var row=bt[k].sort(function(a,b){return a[0]-b[0]}),parts=[],run=0,cells=0,x0=1e9,x1=0;
+  row.forEach(function(x){var e=x[1],r=R(e);x0=Math.min(x0,r.left);x1=Math.max(x1,r.right);if(media(e)){parts.push('['+e.tagName.toLowerCase()+' '+Math.round(r.width)+'×'+Math.round(r.height)+']');return}if(!txt(e)){cells++;return}var t=txt(e);if(t.length<=3)run++;else parts.push((/^(BUTTON|A)$/.test(e.tagName)||e.closest('button')?'[button] ':'')+t.slice(0,40))});
+  if(run)parts.push(run+' short labels');if(cells)parts.push(cells+' coloured boxes');if(parts.length)lines.push('y'+(k*8)+' x'+Math.round(x0)+'–'+Math.round(x1)+': '+parts.slice(0,8).join(' | '))});
+ var ins=document.querySelectorAll('input,select,textarea').length,btn=document.querySelectorAll('button,[role=button],input[type=button],input[type=submit]').length;
+ var outline=lines.slice(0,30).join('\n')+(lines.length>30?'\n… '+(lines.length-30)+' more lines':'')+'\n('+btn+' buttons, '+ins+' inputs, page height '+document.documentElement.scrollHeight+' px)';
+ /* tap each button once (in this throwaway frame) and see that something changes */
+ var B=V.filter(function(e){return e.matches('button,[role=button],input[type=button],input[type=submit]')&&!e.disabled}).slice(0,8),dead=[],i2=0;
+ var snap=function(){return document.body.innerHTML.length+':'+txt(document.body).length+':'+txt(document.body).slice(0,2000)};
+ (function next(){if(i2>=B.length){if(dead.length)M.push('Tapping '+(dead.length===1?'this button':'these buttons')+' changed nothing on the page: '+dead.join('; '));var uq=function(A){return A.filter(function(x,i){return A.indexOf(x)===i})};done({probs:uq(P),minor:uq(M),notes:N,outline:outline});return}
+  var b=B[i2++];if(!b.isConnected)return next();var s=snap();try{b.click()}catch(x){}setTimeout(function(){if(snap()===s)dead.push(nm(b));next()},180)})()}
 /* runs first inside the frame: the data, a localStorage that's kept with the canvas, and errors reported back */
 function boot(c,data,live,o){return(c.slot?themeCSS():'')+`<script>(function(){['PlotlineNative','PlotlineAssist','PlotTalk'].forEach(function(k){try{delete window[k]}catch(e){}try{if(window[k])window[k]=undefined}catch(e){}})})();window.PLOT_DATA=${data?J(data):'null'};(function(){var S=${J(c.store||{})},live=${live?1:0},send=function(){if(live)try{parent.postMessage({cvs:${J(c.id)},store:S},'*')}catch(e){}};
 var L={getItem:function(k){k=String(k);return Object.prototype.hasOwnProperty.call(S,k)?String(S[k]):null},setItem:function(k,v){S[String(k)]=String(v);send()},removeItem:function(k){delete S[String(k)];send()},clear:function(){for(var k in S)delete S[k];send()},key:function(i){return Object.keys(S)[i]||null}};
 Object.defineProperty(L,'length',{get:function(){return Object.keys(S).length}});try{Object.defineProperty(window,'localStorage',{value:L,configurable:true})}catch(e){}
 var E=[],chk=${J(o&&o.chk||'')},post=function(m){try{parent.postMessage(m,'*')}catch(x){}};
+/* the check frame is thrown away: dialogs, new windows and form posts would only block or break it */
+if(chk){window.alert=function(){};window.confirm=function(){return true};window.prompt=function(){return null};window.open=function(){return null};window.print=function(){};addEventListener('submit',function(e){e.preventDefault()},true)}
 var bad=function(m){m=String(m||'Script error');if(E.length<5)E.push(m);if(live)post({cvs:${J(c.id)},err:m})};
-window.addEventListener('error',function(e){if(e.target&&e.target!==window&&(e.target.src||e.target.href))bad('Couldn’t load '+(e.target.src||e.target.href));else bad(String(e.message||'Script error')+(e.lineno?' (line '+e.lineno+')':''))},true);
+window.addEventListener('error',function(e){if(e.target&&e.target!==window&&(e.target.src||e.target.href))bad('Couldn’t load '+(e.target.src||e.target.href));else bad(String(e.message||'Script error')+(e.lineno?' (line '+Math.max(1,e.lineno-/*LOFF*/0)+')':''))},true);
 window.addEventListener('unhandledrejection',function(e){bad('Unhandled error: '+String(e.reason&&e.reason.message||e.reason))});
 /* a health check once the page has settled: did it throw, and does it show anything? */
 ${o&&o.part?`if(live){var lh=0,rp=function(){var b=document.body;if(!b)return;var s=getComputedStyle(b),h=Math.ceil(b.getBoundingClientRect().height+parseFloat(s.marginTop)+parseFloat(s.marginBottom));if(Math.abs(h-lh)>1){lh=h;post({cvs:${J(c.id)},h:h})}};document.addEventListener('DOMContentLoaded',rp);window.addEventListener('load',function(){rp();try{new ResizeObserver(rp).observe(document.body)}catch(x){}setTimeout(rp,500)})}`:''}
 if(chk)window.addEventListener('load',function(){setTimeout(function(){var b=document.body||document.documentElement,t=(b.innerText||'').trim().length,m=document.querySelectorAll('canvas,svg,img,video,iframe,input,button').length,v=0;
- try{var r=b.getBoundingClientRect();v=r.width*r.height}catch(x){}post({cvsChk:chk,errs:E,txt:t,media:m,area:v})},900)});})();</`+`script>`}
+ try{var r=b.getBoundingClientRect();v=r.width*r.height}catch(x){}var fin=function(L){post({cvsChk:chk,errs:E,txt:t,media:m,area:v,look:L})};try{(${cvsLook})(fin)}catch(x){fin(null)}},900)});})();</`+`script>`}
 /* 1.50.1: a page that reads your data is kept off the network. It gets PLOT_DATA only if its code uses it, and then
    a Content Security Policy lets it load code, styles and fonts from jsDelivr (and Google Fonts) and nothing else:
    no fetch to other sites, no outside images, no frames, no forms. The app's Android bridges are removed from every
    frame first, so page code can't reach them. */
 const LOCK=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src data: blob:; media-src data: blob:; connect-src data: blob: https://cdn.jsdelivr.net; worker-src blob: https://cdn.jsdelivr.net; frame-src 'none'; form-action 'none'; base-uri 'none'">`;
 const usesData=h=>/PLOT_DATA/.test(h);
-function docOf(c,o={}){const h=o.html!=null?o.html:(c.html||''),withData=!!(c.data&&o.data!==false&&usesData(h)),b=(withData?LOCK:'')+boot(c,withData?(o.D||plotData()):null,!o.file&&!o.chk,o);
+function docOf(c,o={}){const h=o.html!=null?o.html:(c.html||''),withData=!!(c.data&&o.data!==false&&usesData(h)),b0=(withData?LOCK:'')+boot(c,withData?(o.D||plotData()):null,!o.file&&!o.chk,o),b=b0.replace('/*LOFF*/0',String((b0.match(/\n/g)||[]).length));
  if(/<head[^>]*>/i.test(h))return h.replace(/<head[^>]*>/i,m=>m+b);if(/<html[^>]*>/i.test(h))return h.replace(/<html[^>]*>/i,m=>m+'<head>'+b+'</head>');return'<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+b+h}
 const SANDBOX='allow-scripts allow-forms allow-modals allow-popups allow-downloads';
 let FR_ERR=null;
@@ -103,7 +215,8 @@ let FR_ERR=null;
 const CHK=new Map();
 function check(c,html){return new Promise(res=>{const id=uid(),f=document.createElement('iframe');let done=false;
  const end=r=>{if(done)return;done=true;CHK.delete(id);clearTimeout(t);f.remove();res(r)};
- CHK.set(id,d=>end({errs:d.errs||[],blank:!d.txt&&!d.media,ok:true}));const t=setTimeout(()=>end({errs:[],blank:false,ok:false,slow:true}),9000);
+ const at=n=>{const L=String(html).split('\n')[n-1];return L?': '+L.trim().slice(0,160):''};
+ CHK.set(id,d=>end({errs:(d.errs||[]).map(e=>{const m=/\(line (\d+)\)$/.exec(e);return m?e+at(+m[1]):e}),blank:!d.txt&&!d.media,ok:true,look:d.look&&typeof d.look==='object'?d.look:null}));const t=setTimeout(()=>end({errs:[],blank:false,ok:false,slow:true,look:null}),14000);
  f.setAttribute('sandbox',SANDBOX);f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-10000px;top:0;width:390px;height:700px;border:0;opacity:0;pointer-events:none';
  f.srcdoc=docOf(c,{html,chk:id});document.body.appendChild(f)})}
 addEventListener('message',e=>{const d=e.data;if(d&&d.cvsChk&&CHK.has(d.cvsChk)){CHK.get(d.cvsChk)(d);return}if(!d||!d.cvs)return;const fr=[...document.querySelectorAll('iframe.cvs-fr')].find(f=>f.contentWindow===e.source);if(!fr||fr.dataset.id!==d.cvs)return;const c=get(d.cvs);if(!c)return;
@@ -129,6 +242,8 @@ B) or, when a page already exists and the change is small, only the changes, as 
 >>>>>>> REPLACE
 The SEARCH part must match the current page character for character and be unique. If you are not sure, send the whole page.
 If the user only asks a question or wants ideas, just answer, with no code.
+Prefer the whole page. Use SEARCH/REPLACE only for a small change of text, colour or a value; anything about layout or behaviour gets the whole page.
+You can't see the page yourself, so after you send it the app runs it on a phone-sized screen and, when something looks wrong, sends you a report of what is really on screen. Fix exactly what it reports.
 
 THE PAGE
 - One self-contained HTML file with inline <style> and <script>. It is shown in a frame that can be phone-sized or full width, so make it responsive. Make it polished and modern: generous spacing, clear type (system-ui font), a calm palette, rounded cards, and both light and dark (prefers-color-scheme).
@@ -145,7 +260,23 @@ ${c.slot?partSys(c):''}
 ${window.AIX?AIX.safety():''}`;
 /* earlier turns, without their code: the current page is always sent in full instead */
 function history(c){return c.msgs.filter(m=>!m.err&&m.st!=='retry'&&m.st!=='stop').slice(-8).map(m=>({role:m.r==='u'?'user':'assistant',content:m.r==='u'?m.x:(m.x||'(updated the page)')+(m.v!=null?'\n(page updated)':'')}))}
-function userMsg(c,q){const n=c.ver.length;return(c.html?`CURRENT PAGE (version ${n}):\n\`\`\`html\n${c.html}\n\`\`\`\n\n`:'There is no page yet.\n\n')+'REQUEST: '+q}
+/* 1.66: "start over" really starts over: no page and no chat, just what they've asked for so far. A request to fix
+   something gets the whole page back, never a patch on a broken layout. The last check's report rides along, so the AI
+   knows what the page looks like now. */
+const FRESH=/\b(start(ing)? (it |this |all )?(over|fresh|again|anew|from scratch)|from scratch|begin again|redo (it|this|everything|the whole)|rebuild (it|this|everything)|scrap (it|this|that)|throw (it|this) away|completely new)\b/i;
+const FIXY=/\b(fix|broken|break|bug|wrong|layout|align|overlap|cut off|scroll|messed|worse|ugly|doesn'?t work|does not work|not working|doesn'?t show|not show|nothing (shows|happens))/i;
+const isFresh=(c,q)=>!!c.html&&FRESH.test(q);
+function lookOf(c){const v=c.ver[c.vi??c.ver.length-1];return v&&v.html===c.html&&v.look||''}
+function userMsg(c,q){if(isFresh(c,q)){const A=c.msgs.filter(m=>m.r==='u'&&m.x!==q).slice(-10).map(m=>'- '+tr(m.x,400)).join('\n');
+  return`The user wants to START OVER. Ignore any earlier page and build a brand-new one from scratch, as one whole page in a \`\`\`html block.${A?`\nWhat they have asked for in this canvas so far, oldest first:\n${A}`:''}\n\nLATEST REQUEST: ${q}`}
+ const n=c.ver.length,lk=c.html&&lookOf(c);
+ return(c.html?`CURRENT PAGE (version ${n}):\n\`\`\`html\n${c.html}\n\`\`\`\n\n`:'There is no page yet.\n\n')+(lk?`HOW IT LOOKS NOW (automatic check on a 390 px wide screen):\n${lk}\n\n`:'')+'REQUEST: '+q+(c.html&&FIXY.test(q)?'\n\nSend the whole updated page as one ```html block, not SEARCH/REPLACE edits.':'')}
+/* the check's findings, in words */
+const probList=H=>[...(H.errs||[]).map(e=>'JavaScript error: '+e),...(H.blank?['The page shows nothing at all.']:[]),...(H.look?H.look.probs:[])];
+const needFix=H=>probList(H).length>0;
+const badness=H=>(H.errs||[]).length*10+(H.blank?10:0)+(H.look?H.look.probs.length*3+H.look.minor.length:0);
+const lookTxt=H=>{if(!H||!H.look)return'';const P=probList(H),Mi=H.look.minor;return(P.length?'Problems:\n'+P.map(x=>'- '+x).join('\n')+'\n':'No layout problems found.\n')+(Mi.length?Mi.map(x=>'- '+x).join('\n')+'\n':'')+'On screen, top to bottom (y = px from the top, x = left–right extent):\n'+H.look.outline};
+function fixMsg(c,html,H,q){return`CURRENT PAGE:\n\`\`\`html\n${html}\n\`\`\`\n\nWHAT THE USER ASKED FOR: ${q}\n\nAN AUTOMATIC CHECK ran this page on a phone-sized screen (390 px wide) and found what a person would see:\n${lookTxt(H)||probList(H).map(x=>'- '+x).join('\n')}\n\nFix every problem and keep everything the user asked for. Find the cause first (for example a header row built apart from the rows under it, widths that add up to more than the screen, a fixed size that is too small for its text, or content placed outside its box). Send the whole corrected page as one \`\`\`html block, then one short line saying what you fixed.`}
 
 /* reading the answer */
 const unthink=s=>String(s||'').replace(/<think>[\s\S]*?(<\/think>|$)/g,'');
@@ -176,7 +307,7 @@ const MORE='Your last reply stopped before it was finished. Continue it from exa
 async function stream(msgs,ctl,more){let tries=0,cold=0;
  for(;;){const base=RUN.out;let got='';RUN.think='';
   const ask=base?[...msgs,{role:'assistant',content:base},{role:'user',content:more?MORE:CONT}]:msgs;
-  try{await AIX.chat(ask,t=>{if(RUN&&RUN.ctl===ctl){got+=t;RUN.out=base?join(base,got):got;livePaint()}},{max_tokens:planEngine()==='api'?16000:3000,temperature:.35,ctl,reading:'Reading the canvas…',onThink:t=>{if(RUN&&RUN.ctl===ctl){RUN.think+=t;livePaint()}}});return}
+  try{await AIX.chat(ask,t=>{if(RUN&&RUN.ctl===ctl){got+=t;RUN.out=base?join(base,got):got;livePaint()}},{max_tokens:planEngine()==='api'?16000:3000,temperature:.35,ctl,think:insSet().cthink==='off'?'off':'on',reading:'Reading the canvas…',onThink:t=>{if(RUN&&RUN.ctl===ctl){RUN.think+=t;livePaint()}}});return}
   catch(e){if(ctl.signal.aborted||planEngine()!=='api'||!/network|fetch|load|reset|abort|terminated|stream/i.test(String(e&&e.message||e)))throw e;
    if(RUN.out){if(++tries>4)throw e}else if(++cold>1)throw e;
    RUN.drops=(RUN.drops||0)+1;livePaint();await new Promise(r=>setTimeout(r,1500))}}}
@@ -208,7 +339,7 @@ async function send(c,q,o={}){if(RUN)return toast('Still working on the last one
  if(!c.named&&!c.html&&c.msgs.filter(m=>m.r==='u').length===1)c.title=tr(q,48);
  const gen=c.gen=(c.gen||0)+1,live_=()=>CS.includes(c)&&c.gen===gen;/* deleted or reset meanwhile: drop the result quietly */
  const ctl=new AbortController();RUN={id:c.id,ctl,out:o.part||'',t:Date.now(),phase:'ask'};touch(c);if(TAB==='code')TAB='view';paint();
- const msgs=[{role:'system',content:SYS(c)},...history(c).slice(0,o.retry?undefined:-1),{role:'user',content:o.retry?o.retry:userMsg(c,q)}];
+ const msgs=[{role:'system',content:SYS(c)},...(isFresh(c,q)?[]:history(c).slice(0,o.retry?undefined:-1)),{role:'user',content:o.retry?o.retry:userMsg(c,q)}];
  let err='',cuts=0;wake(true);
  try{await stream(msgs,ctl);
   /* ran out of room mid-page (max tokens or context): ask it to finish, twice at most */
@@ -233,10 +364,19 @@ async function send(c,q,o={}){if(RUN)return toast('Still working on the last one
   return done({x:(note||tr(unthink(raw),2000))+(care?'\n\n'+care:''),st:claims?'none':''})}
  if(html===c.html)return done({x:note||'',st:'same'});
  /* a new version: run it once before calling it ready */
- RUN.phase='check';livePaint();const H=await check(c,html);
+ /* 1.66: run it on a phone-sized screen. While the check finds problems a person would see, show the AI what is
+    really on screen and let it repair them, twice at most; the best try is the one kept. */
+ RUN.phase='check';livePaint();let H=await check(c,html),best={html,H},rounds=0;
+ while(live_()&&!ctl.signal.aborted&&RUN&&needFix(best.H)&&rounds<2){rounds++;Object.assign(RUN,{phase:'fix',round:rounds,probs:probList(best.H).length,out:'',think:'',more:0});livePaint();
+  const fm=[{role:'system',content:SYS(c)},{role:'user',content:fixMsg(c,best.html,best.H,q)}];
+  try{await stream(fm,ctl);if(RUN&&RUN.out&&cutOff(RUN.out)&&!ctl.signal.aborted)await stream(fm,ctl,true)}catch(e){break}
+  if(!live_()||ctl.signal.aborted||!RUN||!RUN.out||cutOff(RUN.out))break;
+  const P2=parse(RUN.out),h2=P2.html||(P2.edits.length?applyEdits(best.html,P2.edits):null);if(!h2||h2===best.html)continue;
+  RUN.phase='check';livePaint();const H2=await check(c,h2);if(badness(H2)<badness(best.H))best={html:h2,H:H2}}
  if(!live_()){RUN=null;return}
- commit(c,html,note||q);FR_ERR=null;const v=c.vi;
- const m={x:note||'',v,st:H.errs.length?'err':H.blank?'blank':H.slow?'slow':'ok',...(H.errs.length?{chk:tr(H.errs[0],200)}:{})};
+ html=best.html;H=best.H;
+ commit(c,html,note||q);FR_ERR=null;const v=c.vi;c.ver[v].look=lookTxt(H);const left=(H.look?H.look.probs:[]);
+ const m={x:note||'',v,fixed:rounds,looked:!!H.look,st:H.errs.length?'err':H.blank?'blank':left.length?'warn':H.slow?'slow':'ok',...(H.errs.length?{chk:tr(H.errs[0],200)}:left.length?{chk:left.slice(0,4).map(x=>tr(x,240)).join('\n')}:{})};
  if(m.st==='err')FR_ERR={id:c.id,v,x:m.chk};
  done(m);if(m.st!=='err'&&TAB==='chat'&&!wide()){TAB='view';paint()}
  if(cur.p!=='canvas'||cur.id!==c.id)toast(m.st==='ok'?`“${esc(tr(c.title,40))}” is ready`:`“${esc(tr(c.title,40))}” needs a look`)}
@@ -257,7 +397,8 @@ function vList(){return`<header class="ph"><div><h1>AI canvas</h1><div class="da
  <p class="small muted me-priv">${ic('lock','ico-s')} Canvases are kept on this device and, with sync on, in your own Google Drive. Pages run in a closed box: they can read a snapshot of your data when you allow it, and can’t change anything in the app.${planEngine()==='api'?' Your requests and the page go to the AI server you picked.':''}</p>`}
 const md_=x=>window.AIX&&AIX.md?AIX.md(x):esc(x);
 function stHTML(c,m){const V=`Version ${(m.v??0)+1}`,ok=c.ver[m.v];switch(m.st){
- case'ok':return`<p class="cvs-s ok">${ic('check','ico-s')}${V} is ready</p>`;
+ case'ok':return`<p class="cvs-s ok">${ic('check','ico-s')}${V} is ready${m.fixed?` · the check found problems and the AI fixed them`:m.looked?` · checked on a phone-sized screen`:''}</p>`;
+ case'warn':return`<p class="cvs-s warn">${ic('flag','ico-s')}${V} is saved, but the check still sees ${m.chk.split('\n').length===1?'a problem':'problems'}${m.fixed?` after ${m.fixed} ${m.fixed===1?'try':'tries'} to fix ${m.chk.split('\n').length===1?'it':'them'}`:''}:</p><ul class="cvs-pl">${m.chk.split('\n').map(x=>`<li>${esc(x)}</li>`).join('')}</ul>${ok?`<div class="cvs-sa"><button class="btn sm" data-act="cvsFixMsg" data-id="${c.id}" data-k="warn" data-x="${esc(m.chk)}">Try again</button>${m.v>0?`<button class="btn sm ghost" data-act="cvsVer" data-id="${c.id}" data-v="${m.v-1}">Go back to version ${m.v}</button>`:''}</div>`:''}`;
  case'slow':return`<p class="cvs-s ok">${ic('check','ico-s')}${V} is saved. It was still loading when checked, so look it over.</p>`;
  case'blank':return`<p class="cvs-s warn">${ic('flag','ico-s')}${V} is saved, but the page shows nothing.</p>${ok?`<div class="cvs-sa"><button class="btn sm" data-act="cvsFixMsg" data-id="${c.id}" data-k="blank">Fix it</button>${m.v>0?`<button class="btn sm ghost" data-act="cvsVer" data-id="${c.id}" data-v="${m.v-1}">Go back to version ${m.v}</button>`:''}</div>`:''}`;
  case'err':return`<p class="cvs-s warn">${ic('flag','ico-s')}${V} is saved, but it hits an error when it runs: ${esc(m.chk||'')}</p>${ok?`<div class="cvs-sa"><button class="btn sm" data-act="cvsFixMsg" data-id="${c.id}" data-k="err" data-x="${esc(m.chk||'')}">Fix it</button>${m.v>0?`<button class="btn sm ghost" data-act="cvsVer" data-id="${c.id}" data-v="${m.v-1}">Go back to version ${m.v}</button>`:''}</div>`:''}`;
@@ -269,7 +410,7 @@ function msgHTML(c,m){if(m.r==='u')return`<div class="cv-q"><p>${esc(m.x).replac
  return`<div class="cv-a${m.err?' cvs-err':''}${m.st==='retry'||m.st==='stop'?' cvs-sys':''}"><span class="cv-av" aria-hidden="true"></span><div>${m.err?`<p class="small err">${esc(m.x)}</p>`:`${head}${m.x?`<div class="ai-md">${md_(m.x)}</div>`:''}${m.v==null?'':''}`}
  ${m.part&&c.msgs[c.msgs.length-1]===m?`<button class="btn sm pri cvs-res" data-act="cvsResume" data-id="${c.id}" data-m="${m.id}">${ic('play')}Continue where it stopped</button>`:''}${m.v!=null&&c.ver[m.v]?`<button class="cvs-vtag" data-act="cvsVer" data-id="${c.id}" data-v="${m.v}">${ic('cvs','ico-s')}Version ${m.v+1}${c.vi===m.v?' · showing':''}</button>`:''}${m.st==='ok'&&m.v===c.vi&&!wide()?`<button class="cvs-vtag" data-act="cvsTab" data-k="view">${ic('eye','ico-s')}See it</button>`:''}</div></div>`}
 function runHTML(){if(!RUN)return'';const L=live(RUN.out),secs=Math.round((Date.now()-RUN.t)/1e3),t=secs>=60?Math.floor(secs/60)+'m '+(secs%60)+'s':secs+'s';
- const st=RUN.phase==='check'?'Checking the new version runs…':RUN.more?`The answer was cut short, asking the AI to finish it (${RUN.more} of 2)… · ${L.lines} lines`
+ const st=RUN.phase==='check'?'Checking how it looks on a phone-sized screen…':RUN.phase==='fix'?(L.lines?`Fixing ${RUN.probs} problem${RUN.probs===1?'':'s'} the check found (try ${RUN.round} of 2) · ${L.lines} lines`:`The check found ${RUN.probs} problem${RUN.probs===1?'':'s'}, so the AI is fixing ${RUN.probs===1?'it':'them'} (try ${RUN.round} of 2)${L.thinking||RUN.think?' · thinking':''}`):RUN.more?`The answer was cut short, asking the AI to finish it (${RUN.more} of 2)… · ${L.lines} lines`
   :L.lines?(L.edit?`Writing the change · ${L.lines} lines`:`Writing the page · ${L.lines} lines`):L.thinking||RUN.think&&!RUN.out?'Thinking':RUN.out?'Writing its answer':secs>4?'Waiting for the AI':'Sending your request';
  return`<div class="cv-a cvs-run" id="cvsRun"><span class="cv-av" aria-hidden="true"></span><div><p class="cvs-st"><i></i><span>${RUN.drops?`Reconnected ${RUN.drops===1?'once':RUN.drops+' times'} · `:''}${st} · ${t}</span></p><p class="small muted cvs-st2">Nothing changes on the page until it’s finished and checked.</p></div></div>`}
 function logHTML(c){const L=c.msgs.map(m=>msgHTML(c,m)).join('')+runHTML();
@@ -288,7 +429,7 @@ function vEdit(id){const c=get(id);if(!c)return`<header class="ph"><div><a class
    <form class="cvs-in" data-form="cvsSend" data-id="${c.id}" autocomplete="off"><textarea id="cvsIn" name="q" rows="1" maxlength="6000" placeholder="${c.html?'What should change?':'What should we build?'}" aria-label="Message"></textarea>
    ${busy?`<button type="button" class="btn sm cvs-go" data-act="cvsStop" aria-label="Stop">${ic('stop')}</button>`:`<button class="btn pri sm cvs-go" aria-label="Send">${ic('send')}</button>`}</form>
    <div class="cvs-opts"><label class="cvs-data"><input type="checkbox" data-cvsdata="${c.id}" ${c.data?'checked':''}><span>Use my data</span><small>goals, habits, journal, plans, notes, lists</small></label>
-   ${planEngine()==='api'?`<button type="button" class="cvs-think${insSet().think?' on':''}" data-act="cvsThink" title="Thinking: model default, off (faster) or on (deeper)">${ic('ai','ico-s')}Thinking: ${({off:'Off',on:'On'})[insSet().think]||'Default'}</button>`:''}</div></section>
+   ${planEngine()==='api'?`<button type="button" class="cvs-think${insSet().cthink!=='off'?' on':''}" data-act="cvsThink" title="Thinking while building: on makes better pages and takes longer. Chat and voice aren’t affected.">${ic('ai','ico-s')}Thinking: ${insSet().cthink==='off'?'Off':'On'}</button>`:''}</div></section>
   <section class="cvs-view"><div class="cvs-bar"><div class="seg-s">${[['full','desk','Full width'],['phone','phone','Phone size']].map(([k,i,t])=>`<button class="ibtn sm ${(c.w||'full')===k?'on':''}" data-act="cvsW" data-id="${c.id}" data-w="${k}" aria-label="${t}" title="${t}">${ic(i)}</button>`).join('')}</div>
    <span class="cvs-sp"></span><button class="ibtn sm" data-act="cvsReload" data-id="${c.id}" aria-label="Run again" title="Run again" ${c.html?'':'disabled'}>${ic('reset')}</button><button class="ibtn sm" data-act="cvsFull" data-id="${c.id}" aria-label="Full screen" title="Full screen" ${c.html?'':'disabled'}>${ic('full')}</button></div>
    <div id="cvsErr">${errHTML(c)}</div><div class="cvs-stage" id="cvsStage">${frameHTML(c)}</div></section>
@@ -334,8 +475,8 @@ Object.assign(ACT,{
  cvsOpen:d=>{TAB=get(d.id)&&get(d.id).html&&!wide()?'view':'chat';go('canvas/'+d.id)},
  cvsTab:d=>{TAB=d.k;const r=$('#cvs');if(!r)return;r.dataset.tab=TAB;r.querySelectorAll('.cvs-tabs button').forEach(b=>{const on=b.dataset.k===TAB;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});if(TAB==='code'){const c=get(cur.id),t=$('#cvsCode');if(c&&t&&!t.matches(':focus'))t.value=c.html||''}if(TAB==='chat')logPaint(true)},
  cvsStop:()=>{if(RUN)RUN.ctl.abort()},
- cvsFixMsg:d=>{const c=get(d.id);if(!c||RUN)return;send(c,d.k==='blank'?'The page shows nothing when it runs. Please find out why and fix it.':`The page hits this error when it runs: “${d.x}”. Please fix it.`)},
- cvsThink:(d,el)=>{const s=insSet(),n={'':'off',off:'on',on:''}[s.think||''];s.think=n;save();if(el){el.classList.toggle('on',!!n);el.innerHTML=ic('ai','ico-s')+'Thinking: '+(({off:'Off',on:'On'})[n]||'Default')}toast(n==='off'?'Thinking off: answers come sooner':n==='on'?'Thinking on: slower, more careful':'Thinking: the model’s default')},
+ cvsFixMsg:d=>{const c=get(d.id);if(!c||RUN)return;send(c,d.k==='blank'?'The page shows nothing when it runs. Please find out why and fix it.':d.k==='warn'?`The automatic check still sees these problems. Please fix them:\n${d.x}`:`The page hits this error when it runs: “${d.x}”. Please fix it.`)},
+ cvsThink:(d,el)=>{const s=insSet(),n=s.cthink==='off'?'':'off';s.cthink=n;save();if(el){el.classList.toggle('on',n!=='off');el.innerHTML=ic('ai','ico-s')+'Thinking: '+(n==='off'?'Off':'On')}toast(n==='off'?'Thinking off while building: quicker, rougher pages':'Thinking on while building: slower, better pages')},
  cvsResume:d=>{const c=get(d.id),m=c&&c.msgs.find(x=>x.id===d.m);if(c&&m&&m.part&&!RUN)resume(c,m)},
  cvsW:d=>{const c=get(d.id);if(!c)return;c.w=d.w;touch(c);const w=$('.cvs-fw');if(w)w.classList.toggle('ph',c.w==='phone');document.querySelectorAll('[data-act=cvsW]').forEach(b=>b.classList.toggle('on',b.dataset.w===c.w))},
  cvsReload:()=>{document.querySelectorAll('iframe.cvs-fr').forEach(x=>x.dataset.k='');FR_ERR=null;errPaint();fillFrames()},
@@ -390,14 +531,16 @@ const PT_IDEAS={
  moves:['Workouts per week, by type','A run pace calculator'],
  screen:['My busiest phone hours this week, as a heat map','A focus timer that logs my sessions']};
 const PT_VARS=['bg','bg-2','surface','surface-2','line','line-2','text','muted','dim','accent','on-accent'];
-function themeCSS(){const cs=getComputedStyle(document.documentElement),v=PT_VARS.map(k=>`--pl-${k}:${cs.getPropertyValue('--'+k).trim()||'initial'}`).join(';'),sch=/light/.test(cs.colorScheme||'')?'light':'dark';
- return`<style>:root{${v};--pl-font:${(cs.getPropertyValue('--f-body').trim()||'system-ui,sans-serif').replace(/[<>]/g,'')};color-scheme:${sch}}html,body{background:transparent;height:auto!important;min-height:0!important}body{margin:0;font-family:var(--pl-font);color:var(--pl-text)}</style>`}
+/* !important: a page that redeclares them ("--pl-text: var(--pl-text)", a loop that blanks the colour) can't undo the theme */
+function themeCSS(){const cs=getComputedStyle(document.documentElement),v=PT_VARS.map(k=>`--pl-${k}:${cs.getPropertyValue('--'+k).trim()||'initial'}!important`).join(';'),sch=/light/.test(cs.colorScheme||'')?'light':'dark';
+ return`<style>:root{${v};--pl-font:${(cs.getPropertyValue('--f-body').trim()||'system-ui,sans-serif').replace(/[<>]/g,'')}!important;color-scheme:${sch}}html,body{background:transparent;height:auto!important;min-height:0!important}body{margin:0;font-family:var(--pl-font);color:var(--pl-text)}</style>`}
 function partSys(c){return`
 THIS IS A PART OF THE APP, NOT A PAGE OF ITS OWN
 It sits inside the user's ${slotName(c.slot)} page in Plotlines, under the app's own cards, as one block the full width of that page (about 340 to 900 px wide).
 It can be anything the user asks for: a view of their data (chart, table, summary), or a tool they use right there (tracker or log they fill in, checklist, timer, counter, calculator, planner, quiz, game, notes board...). Build exactly what they describe; don't turn it into a chart unless they ask for one. Whatever the user enters is kept with localStorage, which is saved with the part. A part can read their Plotlines data but can't change it (their goals, habits, journal...): if they ask for that, say so in one line and keep the part's own record instead. So:
 - No page header, hero, navigation or footer: at most a small title row. The app already shows the part's name above it.
 - Never use 100vh, position:fixed or a fixed height on html or body: the frame grows to fit what you show. Nothing scrolls inside it.
+- Charts drawn by a library (Chart.js and others) can't read CSS variables: read the colours first, e.g. getComputedStyle(document.documentElement).getPropertyValue('--pl-accent').trim(), and pass them in for lines, bars, labels and grid lines, or the chart comes out black on a dark page.
 - Keep html and body transparent, and use the app's colours, which are set on :root and follow the user's theme: var(--pl-surface) and var(--pl-surface-2) for cards, var(--pl-line) for borders, var(--pl-text), var(--pl-muted), var(--pl-accent) (with var(--pl-on-accent) for text on it), and font-family var(--pl-font). Don't use prefers-color-scheme, the theme already decides light or dark.
 - When it shows data over time, give it a small switch for the span (for example Today, This week, This month, Last month) or to step back and forward, and remembers the choice with localStorage.
 - Show only what the data really has. A day or hour with no record is "not recorded" (null), never a guessed or spread-out number.`}
@@ -457,7 +600,7 @@ Object.assign(ACT,{
 });
 
 /* others (the assistant, the agent, the How-to demos) can start a canvas */
-window.CANVAS={list:()=>CS.slice(),get,start:startWith,send:(id,q)=>{const c=get(id);if(c)send(c,q)},plotData,parse,applyEdits,ready:()=>LOADED};
+window.CANVAS={list:()=>CS.slice(),get,start:startWith,send:(id,q)=>{const c=get(id);if(c)send(c,q)},plotData,parse,applyEdits,ready:()=>LOADED,check,probList,busy:()=>!!RUN,docOf};
 
 const css=document.createElement('style');css.textContent=`
 .cvs-start{margin:4px 0 10px}.cvs-start textarea{min-height:84px}
@@ -523,6 +666,7 @@ html.cvs-typing .tabbar{display:none!important}html.cvs-typing .cvs-opts{display
 .upt-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 4px;padding:9px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-size:13.5px;color:var(--muted)}.upt-bar span{flex:1;min-width:160px}.upt-bar .ico-s{flex:none;color:#e0803a}.upt-bar.on .ico-s{color:#2fae7a}.upt-bar .btn{flex:none}
 .upt-ideas{justify-content:center;margin:14px 0 0}
 .upt-pv{background:var(--bg)}.cvs-fw.upt-pv{padding:14px;overflow:auto}.upt-pv .cvs-fr{background:transparent}
+.cvs-pl{margin:0 0 8px;padding-left:20px;font-size:13px;color:var(--muted)}.cvs-pl li{margin:2px 0}
 @media(prefers-reduced-motion:reduce){.cvs-orb,.cvs-st i,.cvs-dot{animation:none}}
 `;document.head.appendChild(css);
 })();
