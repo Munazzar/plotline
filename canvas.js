@@ -200,7 +200,11 @@ window.addEventListener('unhandledrejection',function(e){bad('Unhandled error: '
 /* a health check once the page has settled: did it throw, and does it show anything? */
 ${o&&o.part?`if(live){var lh=0,rp=function(){var b=document.body;if(!b)return;var s=getComputedStyle(b),h=Math.ceil(b.getBoundingClientRect().height+parseFloat(s.marginTop)+parseFloat(s.marginBottom));if(Math.abs(h-lh)>1){lh=h;post({cvs:${J(c.id)},h:h})}};document.addEventListener('DOMContentLoaded',rp);window.addEventListener('load',function(){rp();try{new ResizeObserver(rp).observe(document.body)}catch(x){}setTimeout(rp,500)})}`:''}
 if(chk)window.addEventListener('load',function(){setTimeout(function(){var b=document.body||document.documentElement,t=(b.innerText||'').trim().length,m=document.querySelectorAll('canvas,svg,img,video,iframe,input,button').length,v=0;
- try{var r=b.getBoundingClientRect();v=r.width*r.height}catch(x){}var fin=function(L){post({cvsChk:chk,errs:E,txt:t,media:m,area:v,look:L})};try{(${cvsLook})(fin)}catch(x){fin(null)}},900)});})();</`+`script>`}
+ try{var r=b.getBoundingClientRect();v=r.width*r.height}catch(x){}var snap=function(cb){var once=0,go=function(x){if(!once++)cb(x)};if(!${o&&o.shot?1:0})return go(null);var to=setTimeout(function(){go(null)},7000),s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js';s.onerror=function(){go(null)};
+ s.onload=function(){try{var R=document.documentElement,bg=getComputedStyle(R).getPropertyValue('--pl-bg').trim()||getComputedStyle(document.body).backgroundColor;if(!bg||bg==='rgba(0, 0, 0, 0)'||bg==='transparent')bg='#ffffff';
+  htmlToImage.toJpeg(R,{quality:.8,pixelRatio:2,backgroundColor:bg,width:innerWidth,height:Math.min(R.scrollHeight,1100),skipFonts:true}).then(function(u){clearTimeout(to);go(u)},function(){go(null)})}catch(x){go(null)}};document.head.appendChild(s)};
+/* the picture first: tapping the buttons afterwards changes the page */
+snap(function(img){var fin=function(L){post({cvsChk:chk,errs:E,txt:t,media:m,area:v,look:L,img:img})};try{(${cvsLook})(fin)}catch(x){fin(null)}})},${o&&o.shot?1600:900})});})();</`+`script>`}
 /* 1.50.1: a page that reads your data is kept off the network. It gets PLOT_DATA only if its code uses it, and then
    a Content Security Policy lets it load code, styles and fonts from jsDelivr (and Google Fonts) and nothing else:
    no fetch to other sites, no outside images, no frames, no forms. The app's Android bridges are removed from every
@@ -213,12 +217,13 @@ const SANDBOX='allow-scripts allow-forms allow-modals allow-popups allow-downloa
 let FR_ERR=null;
 /* Before saying a version is ready, run it once in a hidden frame and see that it loads, doesn't throw, and shows something. */
 const CHK=new Map();
-function check(c,html){return new Promise(res=>{const id=uid(),f=document.createElement('iframe');let done=false;
+function check(c,html,shot){return new Promise(res=>{const id=uid(),f=document.createElement('iframe');let done=false;
  const end=r=>{if(done)return;done=true;CHK.delete(id);clearTimeout(t);f.remove();res(r)};
  const at=n=>{const L=String(html).split('\n')[n-1];return L?': '+L.trim().slice(0,160):''};
- CHK.set(id,d=>end({errs:(d.errs||[]).map(e=>{const m=/\(line (\d+)\)$/.exec(e);return m?e+at(+m[1]):e}),blank:!d.txt&&!d.media,ok:true,look:d.look&&typeof d.look==='object'?d.look:null}));const t=setTimeout(()=>end({errs:[],blank:false,ok:false,slow:true,look:null}),14000);
- f.setAttribute('sandbox',SANDBOX);f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-10000px;top:0;width:390px;height:700px;border:0;opacity:0;pointer-events:none';
- f.srcdoc=docOf(c,{html,chk:id});document.body.appendChild(f)})}
+ CHK.set(id,d=>end({errs:(d.errs||[]).map(e=>{const m=/\(line (\d+)\)$/.exec(e);return m?e+at(+m[1]):e}),blank:!d.txt&&!d.media,ok:true,look:d.look&&typeof d.look==='object'?d.look:null,img:typeof d.img==='string'&&/^data:image\/jpeg;base64,/.test(d.img)?d.img:null}));const t=setTimeout(()=>end({errs:[],blank:false,ok:false,slow:true,look:null}),shot?22000:14000);
+ f.setAttribute('sandbox',SANDBOX);f.setAttribute('aria-hidden','true');f.tabIndex=-1;/* on screen but invisible and behind everything: a frame placed off-screen gets no animation frames, so charts never draw */
+ f.style.cssText='position:fixed;left:0;top:0;width:390px;height:700px;border:0;opacity:0;pointer-events:none;z-index:-1';
+ f.srcdoc=docOf(c,{html,chk:id,shot});document.body.appendChild(f)})}
 addEventListener('message',e=>{const d=e.data;if(d&&d.cvsChk&&CHK.has(d.cvsChk)){CHK.get(d.cvsChk)(d);return}if(!d||!d.cvs)return;const fr=[...document.querySelectorAll('iframe.cvs-fr')].find(f=>f.contentWindow===e.source);if(!fr||fr.dataset.id!==d.cvs)return;const c=get(d.cvs);if(!c)return;
  if(d.store&&typeof d.store==='object'){c.store=d.store;persist()}
  if(fr.classList.contains('upt-fr')){ptMsg(fr,c,d);return}
@@ -271,12 +276,26 @@ function userMsg(c,q){if(isFresh(c,q)){const A=c.msgs.filter(m=>m.r==='u'&&m.x!=
   return`The user wants to START OVER. Ignore any earlier page and build a brand-new one from scratch, as one whole page in a \`\`\`html block.${A?`\nWhat they have asked for in this canvas so far, oldest first:\n${A}`:''}\n\nLATEST REQUEST: ${q}`}
  const n=c.ver.length,lk=c.html&&lookOf(c);
  return(c.html?`CURRENT PAGE (version ${n}):\n\`\`\`html\n${c.html}\n\`\`\`\n\n`:'There is no page yet.\n\n')+(lk?`HOW IT LOOKS NOW (automatic check on a 390 px wide screen):\n${lk}\n\n`:'')+'REQUEST: '+q+(c.html&&FIXY.test(q)?'\n\nSend the whole updated page as one ```html block, not SEARCH/REPLACE edits.':'')}
+/* (the check frame draws itself with html-to-image: an SVG of the page, no extra frame, so the sandbox allows it) */
+/* 1.67: an AI server that can see (a vision model, like Qwen 3.5 with its mmproj) also gets a picture of the page: it
+   reviews it when the measurements found nothing, and sees it while repairing. A server that can't take images is
+   noticed on the first refusal and not sent pictures again. */
+const VIS_NO=new Set();
+const visOK=()=>planEngine()==='api'&&!VIS_NO.has(insSet().url)&&insSet().cvis!=='off';
+const visBad=e=>/image|vision|multimodal|mmproj|modalit/i.test(String(e&&e.message||e));
+async function see(c,H,q,ctl){if(!H.img||!visOK()||ctl.signal.aborted)return;let out='';
+ const ask=`A page an AI built is shown on a phone screen (390 px wide). The user asked for: "${tr(q,600)}".\nFirst, under DESCRIBE, say in 2 to 4 plain sentences exactly what you see: the layout, what the data looks like, and how readable the text and marks are.\nThen, under JUDGE, check each of these and answer yes or no: (1) Is anything empty, blank or missing where the request needs content? (2) Is any text or chart mark hard to read, for example dark on dark or tiny? (3) Is anything overlapping, cut off, squashed or jumbled? (4) Is the main thing the user asked for missing or clearly different?\nFinally, on the last line, JSON only: {"ok": true} if all four are no, else {"ok": false, "problems": ["one short specific sentence each"]}.`;
+ try{await AIX.chat([{role:'user',content:[{type:'text',text:ask},{type:'image_url',image_url:{url:H.img}}]}],t=>{out+=t},{max_tokens:700,temperature:.2,think:'off',ctl})}
+ catch(e){if(visBad(e))VIS_NO.add(insSet().url);return}
+ const m=unthink(out).match(/\{\s*"ok"[\s\S]*\}/g);let j=null;try{j=m&&JSON.parse(m[m.length-1])}catch(e){}
+ if(j&&j.ok===false&&Array.isArray(j.problems)&&j.problems.length){H.look=H.look||{probs:[],minor:[],notes:[],outline:''};H.seen=j.problems.slice(0,4).map(p=>tr(p,240));H.look.probs.push(...H.seen.map(p=>'Seen in a screenshot of the page: '+p))}}
 /* the check's findings, in words */
 const probList=H=>[...(H.errs||[]).map(e=>'JavaScript error: '+e),...(H.blank?['The page shows nothing at all.']:[]),...(H.look?H.look.probs:[])];
 const needFix=H=>probList(H).length>0;
 const badness=H=>(H.errs||[]).length*10+(H.blank?10:0)+(H.look?H.look.probs.length*3+H.look.minor.length:0);
 const lookTxt=H=>{if(!H||!H.look)return'';const P=probList(H),Mi=H.look.minor;return(P.length?'Problems:\n'+P.map(x=>'- '+x).join('\n')+'\n':'No layout problems found.\n')+(Mi.length?Mi.map(x=>'- '+x).join('\n')+'\n':'')+'On screen, top to bottom (y = px from the top, x = left–right extent):\n'+H.look.outline};
-function fixMsg(c,html,H,q){return`CURRENT PAGE:\n\`\`\`html\n${html}\n\`\`\`\n\nWHAT THE USER ASKED FOR: ${q}\n\nAN AUTOMATIC CHECK ran this page on a phone-sized screen (390 px wide) and found what a person would see:\n${lookTxt(H)||probList(H).map(x=>'- '+x).join('\n')}\n\nFix every problem and keep everything the user asked for. Find the cause first (for example a header row built apart from the rows under it, widths that add up to more than the screen, a fixed size that is too small for its text, or content placed outside its box). Send the whole corrected page as one \`\`\`html block, then one short line saying what you fixed.`}
+function fixMsg(c,html,H,q){const t=fixTxt(c,html,H,q);return H.img&&visOK()?[{type:'text',text:t+'\n\nA screenshot of the page as it looks now is attached.'},{type:'image_url',image_url:{url:H.img}}]:t}
+function fixTxt(c,html,H,q){return`CURRENT PAGE:\n\`\`\`html\n${html}\n\`\`\`\n\nWHAT THE USER ASKED FOR: ${q}\n\nAN AUTOMATIC CHECK ran this page on a phone-sized screen (390 px wide) and found what a person would see:\n${lookTxt(H)||probList(H).map(x=>'- '+x).join('\n')}\n\nFix every problem and keep everything the user asked for. Find the cause first (for example a header row built apart from the rows under it, widths that add up to more than the screen, a fixed size that is too small for its text, or content placed outside its box). Send the whole corrected page as one \`\`\`html block, then one short line saying what you fixed.`}
 
 /* reading the answer */
 const unthink=s=>String(s||'').replace(/<think>[\s\S]*?(<\/think>|$)/g,'');
@@ -366,13 +385,15 @@ async function send(c,q,o={}){if(RUN)return toast('Still working on the last one
  /* a new version: run it once before calling it ready */
  /* 1.66: run it on a phone-sized screen. While the check finds problems a person would see, show the AI what is
     really on screen and let it repair them, twice at most; the best try is the one kept. */
- RUN.phase='check';livePaint();let H=await check(c,html),best={html,H},rounds=0;
+ RUN.phase='check';livePaint();let H=await check(c,html,visOK()),best={html,H},rounds=0;
+ if(!needFix(H)&&H.img){RUN.phase='look';livePaint();await see(c,H,q,ctl)}
  while(live_()&&!ctl.signal.aborted&&RUN&&needFix(best.H)&&rounds<2){rounds++;Object.assign(RUN,{phase:'fix',round:rounds,probs:probList(best.H).length,out:'',think:'',more:0});livePaint();
   const fm=[{role:'system',content:SYS(c)},{role:'user',content:fixMsg(c,best.html,best.H,q)}];
-  try{await stream(fm,ctl);if(RUN&&RUN.out&&cutOff(RUN.out)&&!ctl.signal.aborted)await stream(fm,ctl,true)}catch(e){break}
+  try{await stream(fm,ctl);if(RUN&&RUN.out&&cutOff(RUN.out)&&!ctl.signal.aborted)await stream(fm,ctl,true)}
+  catch(e){if(!visBad(e)||!Array.isArray(fm[1].content))break;VIS_NO.add(insSet().url);fm[1].content=fixTxt(c,best.html,best.H,q);RUN.out='';try{await stream(fm,ctl)}catch(e2){break}}
   if(!live_()||ctl.signal.aborted||!RUN||!RUN.out||cutOff(RUN.out))break;
   const P2=parse(RUN.out),h2=P2.html||(P2.edits.length?applyEdits(best.html,P2.edits):null);if(!h2||h2===best.html)continue;
-  RUN.phase='check';livePaint();const H2=await check(c,h2);if(badness(H2)<badness(best.H))best={html:h2,H:H2}}
+  RUN.phase='check';livePaint();const H2=await check(c,h2,visOK());if(!needFix(H2)&&H2.img){RUN.phase='look';livePaint();await see(c,H2,q,ctl)}if(badness(H2)<badness(best.H))best={html:h2,H:H2}}
  if(!live_()){RUN=null;return}
  html=best.html;H=best.H;
  commit(c,html,note||q);FR_ERR=null;const v=c.vi;c.ver[v].look=lookTxt(H);const left=(H.look?H.look.probs:[]);
@@ -410,7 +431,7 @@ function msgHTML(c,m){if(m.r==='u')return`<div class="cv-q"><p>${esc(m.x).replac
  return`<div class="cv-a${m.err?' cvs-err':''}${m.st==='retry'||m.st==='stop'?' cvs-sys':''}"><span class="cv-av" aria-hidden="true"></span><div>${m.err?`<p class="small err">${esc(m.x)}</p>`:`${head}${m.x?`<div class="ai-md">${md_(m.x)}</div>`:''}${m.v==null?'':''}`}
  ${m.part&&c.msgs[c.msgs.length-1]===m?`<button class="btn sm pri cvs-res" data-act="cvsResume" data-id="${c.id}" data-m="${m.id}">${ic('play')}Continue where it stopped</button>`:''}${m.v!=null&&c.ver[m.v]?`<button class="cvs-vtag" data-act="cvsVer" data-id="${c.id}" data-v="${m.v}">${ic('cvs','ico-s')}Version ${m.v+1}${c.vi===m.v?' · showing':''}</button>`:''}${m.st==='ok'&&m.v===c.vi&&!wide()?`<button class="cvs-vtag" data-act="cvsTab" data-k="view">${ic('eye','ico-s')}See it</button>`:''}</div></div>`}
 function runHTML(){if(!RUN)return'';const L=live(RUN.out),secs=Math.round((Date.now()-RUN.t)/1e3),t=secs>=60?Math.floor(secs/60)+'m '+(secs%60)+'s':secs+'s';
- const st=RUN.phase==='check'?'Checking how it looks on a phone-sized screen…':RUN.phase==='fix'?(L.lines?`Fixing ${RUN.probs} problem${RUN.probs===1?'':'s'} the check found (try ${RUN.round} of 2) · ${L.lines} lines`:`The check found ${RUN.probs} problem${RUN.probs===1?'':'s'}, so the AI is fixing ${RUN.probs===1?'it':'them'} (try ${RUN.round} of 2)${L.thinking||RUN.think?' · thinking':''}`):RUN.more?`The answer was cut short, asking the AI to finish it (${RUN.more} of 2)… · ${L.lines} lines`
+ const st=RUN.phase==='check'?'Checking how it looks on a phone-sized screen…':RUN.phase==='look'?'Looking at a picture of the page…':RUN.phase==='fix'?(L.lines?`Fixing ${RUN.probs} problem${RUN.probs===1?'':'s'} the check found (try ${RUN.round} of 2) · ${L.lines} lines`:`The check found ${RUN.probs} problem${RUN.probs===1?'':'s'}, so the AI is fixing ${RUN.probs===1?'it':'them'} (try ${RUN.round} of 2)${L.thinking||RUN.think?' · thinking':''}`):RUN.more?`The answer was cut short, asking the AI to finish it (${RUN.more} of 2)… · ${L.lines} lines`
   :L.lines?(L.edit?`Writing the change · ${L.lines} lines`:`Writing the page · ${L.lines} lines`):L.thinking||RUN.think&&!RUN.out?'Thinking':RUN.out?'Writing its answer':secs>4?'Waiting for the AI':'Sending your request';
  return`<div class="cv-a cvs-run" id="cvsRun"><span class="cv-av" aria-hidden="true"></span><div><p class="cvs-st"><i></i><span>${RUN.drops?`Reconnected ${RUN.drops===1?'once':RUN.drops+' times'} · `:''}${st} · ${t}</span></p><p class="small muted cvs-st2">Nothing changes on the page until it’s finished and checked.</p></div></div>`}
 function logHTML(c){const L=c.msgs.map(m=>msgHTML(c,m)).join('')+runHTML();
