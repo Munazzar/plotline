@@ -6,7 +6,8 @@
    is on. An app the AI builds can keep its own things with localStorage: the frame's copy is stored with the canvas.
    Every change is a version you can go back to. Canvases are saved on this device (IndexedDB key "canvases"),
    with rename, reset, delete, full screen, code view (editable) and download as an .html file.
-   Works with any AI the app can use, and best with a big model on your own AI server (Ollama, LM Studio). */
+   Works with any AI the app can use, and best with a big model on your own AI server (Ollama, LM Studio).
+   1.65: a canvas can also be a part of one of the app's own pages ("parts", near the end). */
 (()=>{
 'use strict';
 const nm=()=>(window.PLOT_ASSIST&&PLOT_ASSIST.aname)?PLOT_ASSIST.aname():'Plot';
@@ -20,7 +21,9 @@ Object.assign(IC,{cvs:'<rect x="3" y="4" width="18" height="14" rx="2.5"/><path 
 
 /* ---------------- the store ---------------- */
 let CS=[],saveT=0;
-const LOADED=DB.get('canvases').then(v=>{if(Array.isArray(v))CS=[...CS,...v.filter(c=>c&&c.id&&!CS.some(x=>x.id===c.id))].sort((a,b)=>b.t1-a.t1);if(cur.p==='canvas')render(false)}).catch(()=>{});
+/* a part that was never kept lasts until the app closes: the ones left from an earlier run are dropped here */
+const SESS=uid(),stale=c=>c.slot&&!c.keep&&c.sess!==SESS;
+const LOADED=DB.get('canvases').then(v=>{if(Array.isArray(v))CS=[...CS,...v.filter(c=>c&&c.id&&!CS.some(x=>x.id===c.id))].sort((a,b)=>b.t1-a.t1);if(CS.some(stale)){CS=CS.filter(c=>!stale(c));persist()}if(cur.p==='canvas'||SLOTS[cur.p])render(false)}).catch(()=>{});
 const persist=quiet=>{clearTimeout(saveT);saveT=setTimeout(()=>{DB.set('canvases',CS).catch(()=>toast('Couldn’t save the canvas on this device'))},300);if(!quiet&&window.syncTouch)syncTouch()};
 /* 1.53: canvases sync through your own Drive file: the page, its chat and its saved data; the version history stays on
    each device, and a page that arrives from another device becomes a new version here */
@@ -46,7 +49,15 @@ function plotData(){const td=ymd(),tn=dnum(td),priv=insSet().priv,from=tn-119;
  const plans=S.days.filter(x=>dnum(x.date)>=tn-90&&dnum(x.date)<=tn+60).map(x=>({date:x.date,time:x.time||'',title:x.title,done:!!x.done}));
  const threadsOut=threads().filter(t=>t.status!=='archived').map(t=>({title:t.title,status:t.status||'active',updates:thrUps(t).slice(0,30).map(u=>({date:dayOf(u.t),text:clip(u.x,400)}))}));
  const lists=(S.lists||[]).map(l=>({title:l.title,items:Object.values(l.items||{}).filter(x=>!x.del).map(x=>({text:x.t,done:!!x.done}))}));
- const AL=S.settings.actLog||{},activity=[];for(let k=tn-60;k<=tn;k++){const o=AL[fromN(k)];if(o)activity.push({date:fromN(k),steps:+o.s||0,sleepMinutes:+o.z||0,screenMinutes:o.m==null?null:+o.m,workouts:(o.w||[]).filter(Boolean).map(w=>w.k||'workout')})}
+ /* 1.65: by the hour too, as measured only: an hour or a day with no record is null ("not recorded"), never a guess */
+ const AL=S.settings.actLog||{},activity=[],SC=window.SCREEN,hm=t=>{const d=new Date(t);return isNaN(d)?'':ymd(d)+' '+d.toTimeString().slice(0,5)};
+ for(let k=tn-100;k<=tn;k++){const ds=fromN(k),o=AL[ds];if(!o)continue;let st=null,sh=null,un=null,apps=null;
+  try{const h=window.hrOf?hrOf(o):null;if(Array.isArray(h))st=h.map(v=>v==null?null:Math.round(+v||0))}catch(e){}
+  try{const x=SC&&SC.dayData(ds);if(x&&x.hrs){sh=x.hrs.map(m=>Math.round(Object.values(m).reduce((a,b)=>a+(+b||0),0)));un=x.un}
+   if(x&&Object.keys(x.apps).length)apps=Object.entries(x.apps).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,m])=>({app:SC.lab?SC.lab(k):k,minutes:Math.round(m)}))}catch(e){}
+  const W=(o.w||[]).filter(Boolean);
+  activity.push({date:ds,steps:+o.s||0,stepsByHour:st,sleepMinutes:+o.z||0,sleep:(o.ss||[]).filter(x=>Array.isArray(x)&&x[1]>x[0]).map(([a,b])=>({start:hm(a),end:hm(b)})),
+   screenMinutes:o.m==null?null:+o.m,screenByHour:sh,unlocksByHour:un,apps,workouts:W.map(w=>w.k||'workout'),workoutDetails:W.map(w=>({type:w.k||'workout',minutes:+w.m||null,start:w.t?hm(w.t):''}))})}
  return{today:td,name:S.settings.name||'',goals,habits,journal,plans,threads:threadsOut,lists,activity}}
 const DATA_SHAPE=`window.PLOT_DATA = {
   today: "YYYY-MM-DD", name: string,
@@ -57,7 +68,9 @@ const DATA_SHAPE=`window.PLOT_DATA = {
   plans: [{date, time, title, done}] (reminders and goals for a day, last 90 days to 60 days ahead),
   threads: [{title, status, updates: [{date, text}]}],  (these are the user's Notes)
   lists: [{title, items: [{text, done}]}],
-  activity: [{date, steps, sleepMinutes, screenMinutes, workouts: [string]}] (last 60 days, may be empty)
+  activity: [{date, steps, stepsByHour: [24 numbers, null = not recorded] or null, sleepMinutes, sleep: [{start: "YYYY-MM-DD HH:MM", end}],
+             screenMinutes, screenByHour: [24 minutes] or null, unlocksByHour: [24] or null, apps: [{app, minutes}] (top apps that day) or null,
+             workouts: [string], workoutDetails: [{type, minutes, start}]}] (last 100 days, only days with a record, may be empty)
 }  (dates are "YYYY-MM-DD" strings)`;
 function dataNow(){const D=plotData(),hab=D.habits.map(h=>h.title).slice(0,25),gl=D.goals.filter(g=>g.status!=='done').map(g=>g.title).slice(0,20);
  return`Right now: ${D.goals.length} goals${gl.length?' ('+gl.join('; ')+')':''}; ${D.habits.length} habits${hab.length?' ('+hab.join('; ')+')':''}; ${D.journal.length} journal entries; ${D.plans.length} plans; ${D.threads.length} notes; ${D.lists.length} lists; ${D.activity.length} days of phone activity.`}
@@ -65,7 +78,7 @@ function dataNow(){const D=plotData(),hab=D.habits.map(h=>h.title).slice(0,25),g
 /* ---------------- the page in its frame ---------------- */
 const J=o=>JSON.stringify(o).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
 /* runs first inside the frame: the data, a localStorage that's kept with the canvas, and errors reported back */
-function boot(c,data,live,o){return`<script>(function(){['PlotlineNative','PlotlineAssist','PlotTalk'].forEach(function(k){try{delete window[k]}catch(e){}try{if(window[k])window[k]=undefined}catch(e){}})})();window.PLOT_DATA=${data?J(data):'null'};(function(){var S=${J(c.store||{})},live=${live?1:0},send=function(){if(live)try{parent.postMessage({cvs:${J(c.id)},store:S},'*')}catch(e){}};
+function boot(c,data,live,o){return(c.slot?themeCSS():'')+`<script>(function(){['PlotlineNative','PlotlineAssist','PlotTalk'].forEach(function(k){try{delete window[k]}catch(e){}try{if(window[k])window[k]=undefined}catch(e){}})})();window.PLOT_DATA=${data?J(data):'null'};(function(){var S=${J(c.store||{})},live=${live?1:0},send=function(){if(live)try{parent.postMessage({cvs:${J(c.id)},store:S},'*')}catch(e){}};
 var L={getItem:function(k){k=String(k);return Object.prototype.hasOwnProperty.call(S,k)?String(S[k]):null},setItem:function(k,v){S[String(k)]=String(v);send()},removeItem:function(k){delete S[String(k)];send()},clear:function(){for(var k in S)delete S[k];send()},key:function(i){return Object.keys(S)[i]||null}};
 Object.defineProperty(L,'length',{get:function(){return Object.keys(S).length}});try{Object.defineProperty(window,'localStorage',{value:L,configurable:true})}catch(e){}
 var E=[],chk=${J(o&&o.chk||'')},post=function(m){try{parent.postMessage(m,'*')}catch(x){}};
@@ -73,6 +86,7 @@ var bad=function(m){m=String(m||'Script error');if(E.length<5)E.push(m);if(live)
 window.addEventListener('error',function(e){if(e.target&&e.target!==window&&(e.target.src||e.target.href))bad('Couldn’t load '+(e.target.src||e.target.href));else bad(String(e.message||'Script error')+(e.lineno?' (line '+e.lineno+')':''))},true);
 window.addEventListener('unhandledrejection',function(e){bad('Unhandled error: '+String(e.reason&&e.reason.message||e.reason))});
 /* a health check once the page has settled: did it throw, and does it show anything? */
+${o&&o.part?`if(live){var lh=0,rp=function(){var b=document.body;if(!b)return;var s=getComputedStyle(b),h=Math.ceil(b.getBoundingClientRect().height+parseFloat(s.marginTop)+parseFloat(s.marginBottom));if(Math.abs(h-lh)>1){lh=h;post({cvs:${J(c.id)},h:h})}};document.addEventListener('DOMContentLoaded',rp);window.addEventListener('load',function(){rp();try{new ResizeObserver(rp).observe(document.body)}catch(x){}setTimeout(rp,500)})}`:''}
 if(chk)window.addEventListener('load',function(){setTimeout(function(){var b=document.body||document.documentElement,t=(b.innerText||'').trim().length,m=document.querySelectorAll('canvas,svg,img,video,iframe,input,button').length,v=0;
  try{var r=b.getBoundingClientRect();v=r.width*r.height}catch(x){}post({cvsChk:chk,errs:E,txt:t,media:m,area:v})},900)});})();</`+`script>`}
 /* 1.50.1: a page that reads your data is kept off the network. It gets PLOT_DATA only if its code uses it, and then
@@ -81,7 +95,7 @@ if(chk)window.addEventListener('load',function(){setTimeout(function(){var b=doc
    frame first, so page code can't reach them. */
 const LOCK=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src data: blob:; media-src data: blob:; connect-src data: blob: https://cdn.jsdelivr.net; worker-src blob: https://cdn.jsdelivr.net; frame-src 'none'; form-action 'none'; base-uri 'none'">`;
 const usesData=h=>/PLOT_DATA/.test(h);
-function docOf(c,o={}){const h=o.html!=null?o.html:(c.html||''),withData=!!(c.data&&o.data!==false&&usesData(h)),b=(withData?LOCK:'')+boot(c,withData?plotData():null,!o.file&&!o.chk,o);
+function docOf(c,o={}){const h=o.html!=null?o.html:(c.html||''),withData=!!(c.data&&o.data!==false&&usesData(h)),b=(withData?LOCK:'')+boot(c,withData?(o.D||plotData()):null,!o.file&&!o.chk,o);
  if(/<head[^>]*>/i.test(h))return h.replace(/<head[^>]*>/i,m=>m+b);if(/<html[^>]*>/i.test(h))return h.replace(/<html[^>]*>/i,m=>m+'<head>'+b+'</head>');return'<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+b+h}
 const SANDBOX='allow-scripts allow-forms allow-modals allow-popups allow-downloads';
 let FR_ERR=null;
@@ -94,6 +108,7 @@ function check(c,html){return new Promise(res=>{const id=uid(),f=document.create
  f.srcdoc=docOf(c,{html,chk:id});document.body.appendChild(f)})}
 addEventListener('message',e=>{const d=e.data;if(d&&d.cvsChk&&CHK.has(d.cvsChk)){CHK.get(d.cvsChk)(d);return}if(!d||!d.cvs)return;const fr=[...document.querySelectorAll('iframe.cvs-fr')].find(f=>f.contentWindow===e.source);if(!fr||fr.dataset.id!==d.cvs)return;const c=get(d.cvs);if(!c)return;
  if(d.store&&typeof d.store==='object'){c.store=d.store;persist()}
+ if(fr.classList.contains('upt-fr')){ptMsg(fr,c,d);return}
  if(d.err){FR_ERR={id:c.id,v:c.vi,x:tr(d.err,200)};errPaint()}});
 
 /* ---------------- talking to the AI ---------------- */
@@ -126,6 +141,7 @@ Only when they ask for something built from their data (a report, chart, summary
 ${DATA_SHAPE}
 ${dataNow()}`:`
 The user turned off "Use my data" for this canvas: window.PLOT_DATA is null. Don't build from their Plotlines data.`}
+${c.slot?partSys(c):''}
 ${window.AIX?AIX.safety():''}`;
 /* earlier turns, without their code: the current page is always sent in full instead */
 function history(c){return c.msgs.filter(m=>!m.err&&m.st!=='retry'&&m.st!=='stop').slice(-8).map(m=>({role:m.r==='u'?'user':'assistant',content:m.r==='u'?m.x:(m.x||'(updated the page)')+(m.v!=null?'\n(page updated)':'')}))}
@@ -237,7 +253,7 @@ function vList(){return`<header class="ph"><div><h1>AI canvas</h1><div class="da
  ${engineHint()}
  <form class="cvs-start rv" data-form="cvsStart" autocomplete="off"><div class="field"><textarea id="cvsFirst" name="q" rows="3" maxlength="4000" placeholder="What should we build? “A report of my habits this month”, “a budget app”, “a website for my bakery”…" aria-label="What should we build?"></textarea></div><div class="actions left"><button class="btn pri">${ic('ai')}Start building</button></div></form>
  <div class="cvs-ideas rv">${IDEAS.map(([t,k])=>`<button class="cvs-idea" data-act="cvsIdea" data-q="${esc(t)}">${ic(KIND_IC[k],'ico-s')}<span>${esc(t)}</span></button>`).join('')}</div>
- ${CS.length?`<h4 class="cv-g cvs-gh">Your canvases<button class="link" data-act="cvsDelAll">Delete all</button></h4><div class="cvs-grid rv">${CS.map(c=>`<button class="cvs-card" data-act="cvsOpen" data-id="${c.id}"><span class="cvs-thumb">${c.html?ic('cvs'):ic('ai')}</span><span class="cvs-cb"><b>${esc(c.title)}</b><small>${c.ver.length?`${c.ver.length} version${c.ver.length===1?'':'s'}`:'Nothing built yet'} · ${ago(c.t1)}</small></span>${RUN&&RUN.id===c.id?'<i class="cvs-dot" title="Working"></i>':''}</button>`).join('')}</div>`:''}
+ ${ptList()}${CS.some(c=>!c.slot)?`<h4 class="cv-g cvs-gh">Your canvases<button class="link" data-act="cvsDelAll">Delete all</button></h4><div class="cvs-grid rv">${CS.filter(c=>!c.slot).map(c=>`<button class="cvs-card" data-act="cvsOpen" data-id="${c.id}"><span class="cvs-thumb">${c.html?ic('cvs'):ic('ai')}</span><span class="cvs-cb"><b>${esc(c.title)}</b><small>${c.ver.length?`${c.ver.length} version${c.ver.length===1?'':'s'}`:'Nothing built yet'} · ${ago(c.t1)}</small></span>${RUN&&RUN.id===c.id?'<i class="cvs-dot" title="Working"></i>':''}</button>`).join('')}</div>`:''}
  <p class="small muted me-priv">${ic('lock','ico-s')} Canvases are kept on this device and, with sync on, in your own Google Drive. Pages run in a closed box: they can read a snapshot of your data when you allow it, and can’t change anything in the app.${planEngine()==='api'?' Your requests and the page go to the AI server you picked.':''}</p>`}
 const md_=x=>window.AIX&&AIX.md?AIX.md(x):esc(x);
 function stHTML(c,m){const V=`Version ${(m.v??0)+1}`,ok=c.ver[m.v];switch(m.st){
@@ -257,16 +273,16 @@ function runHTML(){if(!RUN)return'';const L=live(RUN.out),secs=Math.round((Date.
   :L.lines?(L.edit?`Writing the change · ${L.lines} lines`:`Writing the page · ${L.lines} lines`):L.thinking||RUN.think&&!RUN.out?'Thinking':RUN.out?'Writing its answer':secs>4?'Waiting for the AI':'Sending your request';
  return`<div class="cv-a cvs-run" id="cvsRun"><span class="cv-av" aria-hidden="true"></span><div><p class="cvs-st"><i></i><span>${RUN.drops?`Reconnected ${RUN.drops===1?'once':RUN.drops+' times'} · `:''}${st} · ${t}</span></p><p class="small muted cvs-st2">Nothing changes on the page until it’s finished and checked.</p></div></div>`}
 function logHTML(c){const L=c.msgs.map(m=>msgHTML(c,m)).join('')+runHTML();
- return L||`<div class="cvs-empty"><span class="cvs-orb"></span><p><b>Tell ${esc(nm())} what to build.</b></p><p class="small muted">Then keep going one step at a time: “make the chart weekly”, “add a dark mode”, “put my streaks at the top”.</p></div>`}
+ return L||(c.slot?ptEmpty(c):'')||`<div class="cvs-empty"><span class="cvs-orb"></span><p><b>Tell ${esc(nm())} what to build.</b></p><p class="small muted">Then keep going one step at a time: “make the chart weekly”, “add a dark mode”, “put my streaks at the top”.</p></div>`}
 function frameHTML(c){if(!c.html)return`<div class="cvs-blank">${RUN&&RUN.id===c.id?`<span class="cvs-orb"></span><p class="muted">Building…</p>`:`${ic('cvs')}<p class="muted">The page shows up here.</p>`}</div>`;
- return`<div class="cvs-fw ${c.w==='phone'?'ph':''}"><iframe class="cvs-fr" data-id="${c.id}" sandbox="${SANDBOX}" title="${esc(c.title)}" referrerpolicy="no-referrer"></iframe></div>`}
+ return`<div class="cvs-fw ${c.w==='phone'?'ph':''}${c.slot?' upt-pv':''}"><iframe class="cvs-fr" data-id="${c.id}" sandbox="${SANDBOX}" title="${esc(c.title)}" referrerpolicy="no-referrer"></iframe></div>`}
 function errHTML(c){return FR_ERR&&FR_ERR.id===c.id&&FR_ERR.v===c.vi?`<div class="cvs-ferr"><span>${ic('flag','ico-s')}The page hit an error: ${esc(FR_ERR.x)}</span><button class="btn sm" data-act="cvsFix" data-id="${c.id}">Fix it</button></div>`:''}
 function vEdit(id){const c=get(id);if(!c)return`<header class="ph"><div><a class="link" href="#/canvas">${ic('back','ico-s')} AI canvas</a><h1>Not found</h1></div></header><p class="muted">This canvas was deleted or is on another device.</p>`;
  const n=c.ver.length,busy=RUN&&RUN.id===c.id;
  return`<div class="cvs" data-tab="${TAB}" id="cvs" data-id="${c.id}">
  <div class="crumb cvs-top"><a href="#/canvas" class="ibtn" data-act="navBack" aria-label="Back">${ic('back')}</a><button class="cvs-ti" data-act="cvsRename" data-id="${c.id}" title="Rename"><b>${esc(c.title)}</b><small id="cvsVl">${n?`Version ${(c.vi??n-1)+1} of ${n}`:'New canvas'}</small></button>
  <div class="ph-r"><button class="ibtn" data-act="cvsUndo" data-id="${c.id}" aria-label="Back one version" title="Back one version" ${n>1&&(c.vi??n-1)>0&&!busy?'':'disabled'}>${ic('undo')}</button><button class="ibtn" data-act="cvsMore" data-id="${c.id}" aria-label="More">${ic('more')}</button></div></div>
- <div class="cvs-tabs" role="tablist">${[['chat','Chat','chat'],['view','Canvas','cvs'],['code','Code','code']].map(([k,t,i])=>`<button role="tab" class="${TAB===k?'on':''}" aria-selected="${TAB===k}" data-act="cvsTab" data-k="${k}">${ic(i,'ico-s')}${t}</button>`).join('')}</div>
+ ${ptBar(c)}<div class="cvs-tabs" role="tablist">${[['chat','Chat','chat'],['view','Canvas','cvs'],['code','Code','code']].map(([k,t,i])=>`<button role="tab" class="${TAB===k?'on':''}" aria-selected="${TAB===k}" data-act="cvsTab" data-k="${k}">${ic(i,'ico-s')}${t}</button>`).join('')}</div>
  <div class="cvs-body">
   <section class="cvs-chat"><div class="cvs-log" id="cvsLog">${logHTML(c)}</div>${engineHint()}
    <form class="cvs-in" data-form="cvsSend" data-id="${c.id}" autocomplete="off"><textarea id="cvsIn" name="q" rows="1" maxlength="6000" placeholder="${c.html?'What should change?':'What should we build?'}" aria-label="Message"></textarea>
@@ -278,7 +294,7 @@ function vEdit(id){const c=get(id);if(!c)return`<header class="ph"><div><a class
    <div id="cvsErr">${errHTML(c)}</div><div class="cvs-stage" id="cvsStage">${frameHTML(c)}</div></section>
   <section class="cvs-code"><p class="small muted">The page’s code. Edit it by hand if you like; applying it makes a new version.</p><textarea id="cvsCode" spellcheck="false" autocapitalize="off" aria-label="Page code">${esc(c.html||'')}</textarea>
    <div class="actions left"><button class="btn sm pri" data-act="cvsCodeSave" data-id="${c.id}">Apply my edits</button><button class="btn sm" data-act="cvsCopy" data-id="${c.id}">${ic('copy')}Copy</button></div></section>
- </div></div>${FULL?`<div class="cvs-full" id="cvsFull"><button class="ibtn cvs-fx" data-act="cvsFullX" aria-label="Close full screen">${ic('unfull')}</button><iframe class="cvs-fr" data-id="${c.id}" sandbox="${SANDBOX}" title="${esc(c.title)}"></iframe></div>`:''}`}
+ </div></div>${FULL?`<div class="cvs-full${c.slot?' upt-pv':''}" id="cvsFull"><button class="ibtn cvs-fx" data-act="cvsFullX" aria-label="Close full screen">${ic('unfull')}</button><iframe class="cvs-fr" data-id="${c.id}" sandbox="${SANDBOX}" title="${esc(c.title)}"></iframe></div>`:''}`}
 function vCanvas(id){if(id)return vEdit(id);if(TAB==='code')TAB='chat';FULL=false;return vList()}
 VIEWS.canvas=vCanvas;
 VOICE_SEL.push('#cvsIn','#cvsFirst');
@@ -342,14 +358,102 @@ Object.assign(ACT,{
  cvsReset:d=>{const c=get(d.id);if(!c)return;askConfirm('Reset this canvas?','The page, the chat, every version and anything its app saved are cleared. The name stays.','Reset',()=>{if(RUN&&RUN.id===c.id)RUN.ctl.abort();Object.assign(c,{html:'',ver:[],vi:undefined,msgs:[],store:{}});FR_ERR=null;TAB='chat';touch(c);closeSheet();paint();toast('Canvas reset')})},
  cvsDelAll:()=>askConfirm('Delete every canvas?','Every page, its versions and its chat are deleted from all your devices.','Delete all',()=>{if(RUN)try{RUN.ctl.abort()}catch(e){}CS=[];persist();render(false);toast('All canvases deleted')}),
  cvsDel:d=>{const c=get(d.id);if(!c)return;askConfirm('Delete this canvas?','The page, its versions and its chat are deleted from all your devices.','Delete',()=>{if(RUN&&RUN.id===c.id)RUN.ctl.abort();const i=CS.indexOf(c);CS=CS.filter(x=>x!==c);persist();closeSheet();if(cur.p==='canvas'&&cur.id===c.id)go('canvas');else render(false);
-  toast('Canvas deleted',()=>{CS.splice(Math.max(0,i),0,c);persist();if(cur.p==='canvas')render(false)})})},
+  toast(c.slot?'Part deleted':'Canvas deleted',()=>{CS.splice(Math.max(0,i),0,c);persist();if(cur.p==='canvas'||SLOTS[cur.p])render(false)})})},
  cvsCodeSave:d=>{const c=get(d.id),t=$('#cvsCode');if(!c||!t)return;const v=t.value;if(v===c.html)return toast('No changes');commit(c,v,'Your edit','you');FR_ERR=null;c.msgs.push({id:uid(),r:'a',x:'You edited the code by hand.',v:c.vi,t:Date.now()});ACT.cvsTab({k:wide()?'chat':'view'});fillFrames();logPaint(true);const vl=$('#cvsVl');if(vl)vl.textContent=`Version ${c.vi+1} of ${c.ver.length}`;toast('Applied')},
  cvsCopy:async d=>{const c=get(d.id);if(!c)return;toast(await copyText(c.html||'')?'Code copied':'Copy failed')}
 });
 Object.assign(FORM,{
  cvsStart:f=>startWith(new FormData(f).get('q')),
  cvsSend:f=>{const c=get(f.dataset.id),t=f.querySelector('textarea'),q=String(t.value||'').trim();if(!c||!q)return;if(window.VC&&VC.el===t&&typeof voiceStop==='function')voiceStop(true);t.value='';grow(t);send(c,q)},
- cvsName:f=>{const c=get(f.dataset.id),t=String(new FormData(f).get('t')||'').trim();if(!c||!t)return;c.title=tr(t,80);c.named=true;touch(c);closeSheet();paint()}
+ cvsName:f=>{const c=get(f.dataset.id),t=String(new FormData(f).get('t')||'').trim();if(!c||!t)return;c.title=tr(t,80);c.named=true;touch(c);closeSheet();paint();if(SLOTS[cur.p])render(false)}
+});
+
+/* ---------------- parts: build onto the app's own pages (1.65) ----------------
+   "Build something here" at the foot of a page starts a canvas tied to that page (c.slot), in the same editor, with the
+   same versions and Fix it. It's a draft until you tap Keep: a draft is dropped the next time the app starts. A kept part
+   shows on its page in the app's colours (the theme's colours reach the frame as --pl-* variables), sized to what it
+   shows, and reads a fresh snapshot of your data each time the page draws. A part that hits an error says so on the
+   page, with Fix with AI. The ••• on a part: edit, move up or down, take it off the page (it stays in AI canvas), delete. */
+const SLOTS={today:'Home',habits:'Habits',goals:'Goals',cal:'Calendar',journal:'Journal',threads:'Notes',lists:'Lists',bills:'Bills',activity:'Activity',moves:'Activity in detail',screen:'Screen time'};
+const slotName=k=>SLOTS[k]||'app';
+/* a mix on purpose: views of your data, and tools you use right there */
+const PT_IDEAS={
+ today:['A water tracker I tap through the day','This week at a glance: plans, habits done and steps','A quote that changes every day'],
+ habits:['A 3-month heat map of all my habits','A breathing timer for my meditation habit','My best and worst weekdays for habits'],
+ goals:['Progress bars for my active goals and their steps','A savings jar I add money to','Days left until each goal’s target date'],
+ cal:['My busiest days of the week, from my plans','A countdown to a date I pick','A study timetable I can fill in'],
+ journal:['My moods across the month as a chart','A gratitude log: three things a day','A random old entry to look back on'],
+ threads:['A quick idea inbox','My notes, by when I last added to them'],
+ lists:['A meal planner for the week','Progress on each of my lists','A shopping total calculator'],
+ bills:['A monthly budget I fill in','A tip and split calculator'],
+ activity:['My peak step hours, with Today, This week, This month and Last month','A workout log with sets and reps','Sleep each night this month against my goal'],
+ moves:['Workouts per week, by type','A run pace calculator'],
+ screen:['My busiest phone hours this week, as a heat map','A focus timer that logs my sessions']};
+const PT_VARS=['bg','bg-2','surface','surface-2','line','line-2','text','muted','dim','accent','on-accent'];
+function themeCSS(){const cs=getComputedStyle(document.documentElement),v=PT_VARS.map(k=>`--pl-${k}:${cs.getPropertyValue('--'+k).trim()||'initial'}`).join(';'),sch=/light/.test(cs.colorScheme||'')?'light':'dark';
+ return`<style>:root{${v};--pl-font:${(cs.getPropertyValue('--f-body').trim()||'system-ui,sans-serif').replace(/[<>]/g,'')};color-scheme:${sch}}html,body{background:transparent;height:auto!important;min-height:0!important}body{margin:0;font-family:var(--pl-font);color:var(--pl-text)}</style>`}
+function partSys(c){return`
+THIS IS A PART OF THE APP, NOT A PAGE OF ITS OWN
+It sits inside the user's ${slotName(c.slot)} page in Plotlines, under the app's own cards, as one block the full width of that page (about 340 to 900 px wide).
+It can be anything the user asks for: a view of their data (chart, table, summary), or a tool they use right there (tracker or log they fill in, checklist, timer, counter, calculator, planner, quiz, game, notes board...). Build exactly what they describe; don't turn it into a chart unless they ask for one. Whatever the user enters is kept with localStorage, which is saved with the part. A part can read their Plotlines data but can't change it (their goals, habits, journal...): if they ask for that, say so in one line and keep the part's own record instead. So:
+- No page header, hero, navigation or footer: at most a small title row. The app already shows the part's name above it.
+- Never use 100vh, position:fixed or a fixed height on html or body: the frame grows to fit what you show. Nothing scrolls inside it.
+- Keep html and body transparent, and use the app's colours, which are set on :root and follow the user's theme: var(--pl-surface) and var(--pl-surface-2) for cards, var(--pl-line) for borders, var(--pl-text), var(--pl-muted), var(--pl-accent) (with var(--pl-on-accent) for text on it), and font-family var(--pl-font). Don't use prefers-color-scheme, the theme already decides light or dark.
+- When it shows data over time, give it a small switch for the span (for example Today, This week, This month, Last month) or to step back and forward, and remembers the choice with localStorage.
+- Show only what the data really has. A day or hour with no record is "not recorded" (null), never a guessed or spread-out number.`}
+const parts=k=>CS.filter(c=>c.slot===k&&c.keep).sort((a,b)=>(a.ord||0)-(b.ord||0)||a.t0-b.t0);
+const PH={};/* each part's last height, so a redraw doesn't jump */
+function zoneHTML(k){return`<section class="upz" data-slot="${k}" aria-label="Your parts">${parts(k).map(c=>`<div class="upt" data-id="${c.id}"><div class="upt-h"><b>${esc(c.title)}</b><button class="ibtn sm" data-act="ptMenu" data-id="${c.id}" aria-label="Options for ${esc(c.title)}">${ic('more')}</button></div>
+ ${c.html?`<iframe class="cvs-fr upt-fr" data-id="${c.id}" sandbox="${SANDBOX}" title="${esc(c.title)}" referrerpolicy="no-referrer" style="height:${PH[c.id]||180}px"></iframe>`:`<p class="small muted">Nothing built yet. <button class="link" data-act="cvsOpen" data-id="${c.id}">Build it</button></p>`}<div class="upt-err" hidden></div></div>`).join('')}
+ <button class="upt-add" data-act="ptNew" data-slot="${k}">${ic('plus','ico-s')}Build something here</button></section>`}
+/* every page that can hold parts gets them at its foot; done when the page first draws, because other files wrap
+   these views after this one loads */
+{const _r=render;render=function(){const k=cur.p,f=VIEWS[k];
+ if(SLOTS[k]&&f&&!f.upt){const g=function(id){const h=f.apply(this,arguments);return id||typeof h!=='string'||h.includes('class="upz"')?h:h+zoneHTML(k)};g.upt=1;VIEWS[k]=g}
+ const x=_r.apply(this,arguments);fillParts();return x}}
+/* The parts sit beside the page inside #view (#vpg holds the page, #upzH the parts), so a redraw of the page (ticking
+   a habit, say) doesn't reload them. The parts are only rebuilt when they, their order or the theme change; when just
+   your data changed, a fresh copy of a part loads behind the one showing and takes its place once it's ready. */
+const zoneKey=()=>{const cs=getComputedStyle(document.documentElement);return[cur.p,cs.getPropertyValue('--surface'),cs.getPropertyValue('--accent'),cs.getPropertyValue('--text'),
+ ...parts(cur.p).map(c=>[c.id,c.title,c.vi,c.html.length,c.data?1:0].join(':'))].join('|')};
+{const _vs=viewSet;viewSet=function(v,h){const i=typeof h==='string'?h.lastIndexOf('<section class="upz"'):-1;if(i<0)return _vs(v,h);
+ let pg=v.querySelector(':scope>#vpg'),z=v.querySelector(':scope>#upzH');
+ if(!pg||!z){v.innerHTML='<div id="vpg"></div><div id="upzH"></div>';pg=v.firstElementChild;z=v.lastElementChild}
+ _vs(pg,h.slice(0,i));const k=zoneKey();if(z.dataset.k!==k){z.innerHTML=h.slice(i);z.dataset.k=k}}}
+function fillParts(){let D,ds;const data=()=>{if(D===undefined){D=plotData();ds=JSON.stringify(D)}};
+ document.querySelectorAll('#view iframe.upt-fr').forEach(f=>{const c=get(f.dataset.id);if(!c||f.dataset.swap)return;const uses=c.data&&usesData(c.html);if(uses)data();
+  if(!f.dataset.k){f.dataset.k='1';f._dv=uses?ds:'';f.srcdoc=docOf(c,{part:1,D:uses?D:null});return}
+  if(!uses||f._dv===ds)return;
+  const n=f.cloneNode(false),box=f.parentNode;n.removeAttribute('srcdoc');n._dv=ds;f.dataset.swap='1';box.style.position='relative';
+  Object.assign(n.style,{position:'absolute',left:'0',top:f.offsetTop+'px',opacity:'0',pointerEvents:'none'});
+  let done=false;const take=()=>{if(done)return;done=true;Object.assign(n.style,{position:'',left:'',top:'',opacity:'',pointerEvents:''});if(f.isConnected)f.remove()};
+  n.addEventListener('load',()=>setTimeout(take,150));setTimeout(take,4000);f.after(n);n.srcdoc=docOf(c,{part:1,D})})}
+function ptMsg(fr,c,d){if(d.h){const h=Math.max(48,Math.min(2400,Math.ceil(+d.h)||0));PH[c.id]=h;fr.style.height=h+'px'}
+ if(d.err){const e=fr.parentNode&&fr.parentNode.querySelector('.upt-err');if(!e||!e.hidden)return;e.hidden=false;
+  e.innerHTML=`<span>${ic('flag','ico-s')}This part hit an error: ${esc(tr(d.err,160))}</span><button class="btn sm" data-act="ptFix" data-id="${c.id}" data-x="${esc(tr(d.err,200))}">${ic('ai','ico-s')}Fix with AI</button>`}}
+function ptBar(c){if(!c.slot)return'';const n=slotName(c.slot);
+ return c.keep?`<div class="upt-bar on">${ic('check','ico-s')}<span>On your ${n} page</span><a class="btn sm" href="#/${c.slot}">Open ${n}</a></div>`
+  :`<div class="upt-bar">${ic('flag','ico-s')}<span>A part for your ${n} page. Not kept yet: it goes away when the app closes.</span><button class="btn sm pri" data-act="ptKeep" data-id="${c.id}" ${c.html&&!(RUN&&RUN.id===c.id)?'':'disabled'}>${ic('pin','ico-s')}Keep on ${n}</button></div>`}
+function ptEmpty(c){const I=PT_IDEAS[c.slot]||[];return`<div class="cvs-empty"><span class="cvs-orb"></span><p><b>Build a part for your ${slotName(c.slot)} page.</b></p><p class="small muted">Anything you like: a chart of your data, a tracker you fill in, a timer, a calculator, a small app. It appears on the right (on a phone, under Canvas). Tap Keep when you like it.</p>
+ ${I.length?`<div class="cvs-ideas upt-ideas">${I.map(q=>`<button class="cvs-idea" data-act="ptIdea" data-id="${c.id}" data-q="${esc(q)}">${ic('ai','ico-s')}<span>${esc(q)}</span></button>`).join('')}</div>`:''}</div>`}
+function ptList(){const P=CS.filter(c=>c.slot&&(c.keep||c.sess===SESS));if(!P.length)return'';
+ return`<h4 class="cv-g cvs-gh">Parts on your pages</h4><div class="cvs-grid rv">${P.map(c=>`<button class="cvs-card" data-act="cvsOpen" data-id="${c.id}"><span class="cvs-thumb">${ic('cvs')}</span><span class="cvs-cb"><b>${esc(c.title)}</b><small>${c.keep?esc(slotName(c.slot)):'Not kept yet'} · ${ago(c.t1)}</small></span>${RUN&&RUN.id===c.id?'<i class="cvs-dot" title="Working"></i>':''}</button>`).join('')}</div>`}
+function ptMove(c,by){const P=parts(c.slot),i=P.indexOf(c),j=i+by;if(i<0||j<0||j>=P.length)return;[P[i],P[j]]=[P[j],P[i]];P.forEach((x,n)=>x.ord=n);persist();closeSheet();render(false)}
+Object.assign(ACT,{
+ ptNew:d=>{if(!SLOTS[d.slot])return;const c=make();Object.assign(c,{title:'New part for '+slotName(d.slot),slot:d.slot,keep:false,sess:SESS});persist();TAB='chat';go('canvas/'+c.id);setTimeout(()=>$('#cvsIn')?.focus(),300)},
+ ptIdea:d=>{const c=get(d.id);if(c)send(c,d.q)},
+ ptKeep:d=>{const c=get(d.id);if(!c||!c.html)return;const P=parts(c.slot);c.keep=true;c.ord=P.length?Math.max(...P.map(x=>x.ord||0))+1:0;touch(c);paint();
+  toast(`Kept on your ${slotName(c.slot)} page`,()=>{c.keep=false;c.sess=SESS;touch(c);paint()})},
+ ptMenu:d=>{const c=get(d.id);if(!c)return;const P=parts(c.slot),i=P.indexOf(c);openSheet(`<h2>${esc(c.title)}</h2><div class="cv-menu">
+  <button class="btn" data-act="cvsOpen" data-id="${c.id}">${ic('ai')}Change it with AI</button>
+  <button class="btn" data-act="cvsRename" data-id="${c.id}">${ic('edit')}Rename</button>
+  ${P.length>1?`<button class="btn" data-act="ptUp" data-id="${c.id}" ${i>0?'':'disabled'}>${ic('up')}Move up</button><button class="btn" data-act="ptDown" data-id="${c.id}" ${i<P.length-1?'':'disabled'}>${ic('down')}Move down</button>`:''}
+  <button class="btn" data-act="ptOff" data-id="${c.id}">${ic('x')}Take it off ${esc(slotName(c.slot))}</button>
+  <button class="btn danger" data-act="cvsDel" data-id="${c.id}">${ic('trash')}Delete</button></div>`)},
+ ptUp:d=>{const c=get(d.id);if(c)ptMove(c,-1)},ptDown:d=>{const c=get(d.id);if(c)ptMove(c,1)},
+ ptOff:d=>{const c=get(d.id);if(!c)return;const k=c.slot;delete c.slot;delete c.keep;delete c.ord;delete c.sess;touch(c);closeSheet();render(false);
+  toast('Moved to AI canvas',()=>{c.slot=k;c.keep=true;touch(c);render(false)})},
+ ptFix:d=>{const c=get(d.id);if(!c)return;if(RUN)return toast('Still working on the last one');TAB='chat';go('canvas/'+c.id);setTimeout(()=>send(c,`The page shows this error: “${d.x}”. Please fix it.`),80)}
 });
 
 /* others (the assistant, the agent, the How-to demos) can start a canvas */
@@ -408,6 +512,15 @@ html.cvs-typing .tabbar{display:none!important}html.cvs-typing .cvs-opts{display
  .cvs[data-tab=chat] .cvs-view{display:flex}
  .cvs-stage{height:calc(100dvh - 215px)}.cvs-code textarea{height:calc(100dvh - 275px)}
 }
+.upz{display:flex;flex-direction:column;gap:14px;margin:22px 0 8px;clear:both}
+.upt{min-width:0}.upt-h{display:flex;align-items:center;gap:8px;margin:0 0 6px}.upt-h b{flex:1;min-width:0;font:600 15px/1.3 var(--f-body);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.upt-h .ibtn{flex:none}
+.upt-fr{display:block;width:100%;border:0;background:transparent;transition:height .25s var(--ease)}
+.upt-err{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding:10px 14px;border-radius:14px;background:color-mix(in srgb,#ff7a7a 14%,var(--surface));font-size:13.5px;color:var(--text)}.upt-err[hidden]{display:none}.upt-err span{flex:1;min-width:180px;display:flex;gap:6px;align-items:flex-start}
+.upt-add{align-self:center;display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:999px;border:1px dashed var(--line-2);background:none;color:var(--muted);font:500 13.5px var(--f-body);cursor:pointer;opacity:.75;transition:opacity .2s,color .2s,border-color .2s}
+.upt-add:hover,.upt-add:focus-visible{opacity:1;color:var(--text);border-color:var(--accent)}
+.upt-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 4px;padding:9px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-size:13.5px;color:var(--muted)}.upt-bar span{flex:1;min-width:160px}.upt-bar .ico-s{flex:none;color:#e0803a}.upt-bar.on .ico-s{color:#2fae7a}.upt-bar .btn{flex:none}
+.upt-ideas{justify-content:center;margin:14px 0 0}
+.upt-pv{background:var(--bg)}.cvs-fw.upt-pv{padding:14px;overflow:auto}.upt-pv .cvs-fr{background:transparent}
 @media(prefers-reduced-motion:reduce){.cvs-orb,.cvs-st i,.cvs-dot{animation:none}}
 `;document.head.appendChild(css);
 })();
