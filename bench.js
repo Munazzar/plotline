@@ -699,11 +699,15 @@ function pmove(e){const b=WB.B,G=WB.G;if(!b)return;if(PTS.has(e.pointerId))PTS.s
  if(G.k==='mq'){const x=Math.min(p.x,G.p0.x),y=Math.min(p.y,G.p0.y),w=Math.abs(p.x-G.p0.x),h=Math.abs(p.y-G.p0.y),v=b.vp,mq=$('#wbmq');
   Object.assign(mq.style,{display:'block',left:v.x+x*v.z+'px',top:v.y+y*v.z+'px',width:w*v.z+'px',height:h*v.z+'px'});
   WB.sel=new Set(G.base);Object.keys(b.nodes).forEach(id=>{const r=rectOf(id);if(r.x<x+w&&r.x+r.w>x&&r.y<y+h&&r.y+r.h>y&&b.nodes[id].type!=='frame')WB.sel.add(id)});drawSel()}}
+/* a dropped item never sits on or against another one: it moves down past anything closer than a grid step.
+   Frames hold items on purpose, so they are left out on both sides. */
+function unstack(b,ids){const M=new Set(ids),N=Object.values(b.nodes),hit=(a,o)=>a.x<o.x+o.w+GRID&&o.x<a.x+a.w+GRID&&a.y<o.y+o.h+GRID&&o.y<a.y+a.h+GRID;
+ ids.forEach(id=>{const a=b.nodes[id];if(!a||a.type==='frame')return;for(let k=0;k<40;k++){const o=N.find(o=>!M.has(o.id)&&o.type!=='frame'&&hit(a,o));if(!o)break;a.y=snapv(o.y+o.h+GRID)}})}
 function pup(e){PTS.delete(e.pointerId);const t0=WB.tap0;WB.tap0=null;if(t0&&WB.panel&&Math.hypot(e.clientX-t0.x,e.clientY-t0.y)<6)panelClose();const b=WB.B,G=WB.G;if(!b||!G)return;const cv=$('#wbcv');cv.classList.remove('panning');
  if(G.k==='pinch'){if(PTS.size===0)WB.G=null;else{const[q]=[...PTS.values()];WB.G={k:'pan',s:q,v:{...b.vp}}}return}
  WB.G=null;
  if(G.k==='pan'&&G.tap&&e.pointerType==='touch'){WB.sel.clear();WB.esel.clear();drawSel()}
- if(G.k==='drag'&&G.moved)commit(G.before);
+ if(G.k==='drag'&&G.moved){unstack(b,G.ids);commit(G.before)}
  if(G.k==='resize')commit(G.before);
  if(G.k==='link'){$('#wbtmp').setAttribute('d','');WB.els.forEach(el=>el.classList.remove('drop'));const hov=document.elementFromPoint(e.clientX,e.clientY),t=hov&&hov.closest('.wn'),before=snap(b);
   if(t&&t.dataset.id!==G.from){if(!Object.values(b.edges).some(x=>x.a===G.from&&x.b===t.dataset.id))link(b,G.from,t.dataset.id);commit(before)}

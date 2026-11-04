@@ -20,9 +20,11 @@ let BL=[],saveT=0;
 const onPage=()=>cur.p==='bills'||cur.p==='bill';
 const sortB=()=>BL.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.t||0)-(a.t||0));
 const BLL=DB.get('bills').then(v=>{if(Array.isArray(v))BL=[...BL,...v.filter(b=>b&&b.id&&!BL.some(x=>x.id===b.id))];sortB();if(onPage())render(false)}).catch(()=>{});
-const persist=quiet=>{clearTimeout(saveT);saveT=setTimeout(()=>{DB.set('bills',BL).catch(()=>toast('Couldn’t save on this device'))},300);if(!quiet&&window.syncTouch)syncTouch()};
+const persist=quiet=>{clearTimeout(saveT);if(window.autoApp)setTimeout(window.autoApp,400);saveT=setTimeout(()=>{DB.set('bills',BL).catch(()=>toast('Couldn’t save on this device'))},300);if(!quiet&&window.syncTouch)syncTouch()};
 if(window.syncList)syncList('bills',{load:BLL,get:()=>BL,set:x=>{BL=x;sortB();persist(1);if(onPage()&&!document.activeElement?.matches('input,textarea,select'))render(false)}});
 const BY=id=>BL.find(b=>b.id===id);
+/* for automatic check-offs (sched.js): bills marked paid, with when */
+window.BILLS_PAID=()=>BL.filter(b=>b.paid&&b.paidAt).map(b=>({id:b.id,m:b.m||'',at:+b.paidAt}));
 const imgKey=id=>'billimg:'+id;
 const IMG=new Map();// id -> photo on this device (data URL), or '' when there is none
 const imgOf=id=>{if(IMG.has(id))return IMG.get(id);IMG.set(id,'');DB.get(imgKey(id)).then(v=>{if(v){IMG.set(id,v);if(cur.p==='bill'&&cur.id===id)render(false)}}).catch(()=>{});return''};

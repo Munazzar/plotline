@@ -206,10 +206,190 @@ function trendsHTML(){const tn=dnum(ymd()),N=14,K=[...Array(N)].map((_,i)=>fromN
  if(G.length)cards.push(`<div class="tr-c"><div class="tr-h"><span class="data">Goal progress</span><b>${Math.round(G.reduce((a,g)=>a+pct(g),0)/G.length)}%</b><small>average of ${G.length}</small></div><ul class="tr-g">${G.map(g=>`<li style="${typeof cvar==='function'?cvar(g):''}"><span>${esc(g.title)}</span><i><u style="width:${pct(g)}%"></u></i><b>${pct(g)}%</b></li>`).join('')}</ul></div>`);
  if(!cards.length)return'';
  return`<section class="rv hcharts"><div class="st-h"><h3>Trends</h3><a class="link" href="#/activity">More</a></div><div class="tr-w">${cards.join('')}</div></section>`}
-if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){let a='',b='';try{a=schedHTML()}catch(e){}try{b=trendsHTML()}catch(e){}return _ht()+a+b}}
+if(typeof homeTop==='function'){const _ht=homeTop;homeTop=function(){let b='';try{b=trendsHTML()}catch(e){}return _ht()+b}}
+
+/* ---------------- Home: one Today (2026-11-04) ----------------
+   "Your day", "Today's goals", "Scheduled" and "Habits" were four cards that repeated each other (a day goal with a
+   reminder showed in three). Now one card holds all of it, each thing once: the add box, everything due today in time
+   order (habits, day goals, goal steps, and reminders, timers, check-ins and agent tasks that aren't one of those),
+   what's still open from earlier, what's scheduled next, and the habit week grid. "See everything for today" opens the
+   day page, which shows the same plan. */
+let HTO_ALL=false;
+function todayItems(){const td=ymd(),now=Date.now();
+ /* goals and steps come from the calendar's own list (calItems), so Home and the day page always agree: day goals,
+    steps due, repeating steps that fall on today and goal target dates */
+ const tn=dnum(td),ci=(calItems(tn,tn)[tn]||[]),seen=new Set();
+ const hs=S.habits.filter(h=>h.status==='active'&&h.kind!=='quit'&&hDue(h,td)&&!(h.skip&&h.skip[td])&&!((h.ck||{})[td]||{}).sk),dg=ci.filter(x=>x.k==='day').map(x=>x.x),
+  st=ci.filter(x=>(x.k==='step'||x.k==='rep')&&x.g&&x.g.status==='active'&&!seen.has(x.s.id)&&seen.add(x.s.id)).map(x=>({g:x.g,s:x.s,rep:x.k==='rep'})),tg=ci.filter(x=>x.k==='target');
+ const I=[...hs.map(h=>({k:'h',done:hDone(h,td),t:hIcon(h)+' '+h.title,tm:h.time||'',h})),...dg.map(x=>({k:'d',done:!!x.done,t:x.title,tm:x.time||'',x})),...st.map(o=>({k:'s',done:!o.rep&&!!o.s.done,t:o.s.title,tm:o.s.time||'',o})),...tg.map(x=>({k:'t',done:x.done,t:x.g.title,tm:'',o:{g:x.g}}))];
+ /* scheduled things for the rest of today that aren't already a row above */
+ const have=x=>x.k==='habit'?hs.some(h=>h.id===x.hid):(x.k==='day'||x.k==='rem')&&x.id?dg.some(d=>d.id===x.id):x.k==='step'?st.some(o=>o.s.id===x.s):false;
+ const U=rows(upcoming(now,48*36e5)),eod=new Date(td+'T23:59:59').getTime();
+ U.filter(x=>x.at<=eod&&!have(x)).forEach(x=>{const d=new Date(x.at);I.push({k:'r',done:false,t:x.title,tm:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),r:x})});
+ const carry=S.days.filter(x=>!x.done&&x.date<td&&daysUntil(x.date)>=-14).sort((a,b)=>a.date<b.date?1:-1);
+ const late=active().flatMap(g=>g.steps.filter(s=>!s.done&&s.due&&s.due<td&&daysUntil(s.due)>=-14).map(s=>({g,s})));
+ const later=U.filter(x=>x.at>eod);
+ return{I,carry,late,later}}
+/* v 'day': the day page's Plan for today (it has its own habit list below, so no habit rows, week grid or link to itself) */
+function todayCard(v){const td=ymd(),T=todayItems(),{carry,late,later}=T,I=v==='day'?T.I.filter(i=>i.k!=='h'):T.I;
+ const tick=I.filter(i=>i.k!=='r'&&i.k!=='t'),dn=tick.filter(i=>i.done).length,p=tick.length?dn/tick.length:0;
+ const open=I.filter(i=>!i.done).sort((a,b)=>(a.tm||'99').localeCompare(b.tm||'99')),done=I.filter(i=>i.done);
+ const tog=i=>i.k==='h'?(i.h.kind==='routine'&&i.h.steps&&i.h.steps.length&&!i.done?'data-act="routineGo" data-id="'+i.h.id+'"':'data-act="hTap" data-id="'+i.h.id+'"'):i.k==='d'?'data-act="toggleDay" data-id="'+i.x.id+'"':'data-act="toggleStep" data-g="'+i.o.g.id+'" data-s="'+i.o.s.id+'"';
+ const opn=i=>i.k==='h'?'data-act="openHabit" data-id="'+i.h.id+'"':i.k==='d'?'data-act="editDay" data-id="'+i.x.id+'"':i.k==='s'||i.k==='t'?'data-act="open" data-id="'+i.o.g.id+'"':'data-act="schedAll"';
+ const col=i=>i.k==='h'?cvar(i.h):i.k==='s'||i.k==='t'?cvar(i.o.g):i.k==='d'?'--c:'+colOf(i.x.goalId&&G(i.x.goalId)):'';
+ const sub=i=>{if(i.k==='s')return esc(i.o.g.title)+(i.o.rep?' · repeats':'');if(i.k==='t')return i.done?'Goal achieved':'Goal target date · '+pct(i.o.g)+'% there';if(i.k==='d'){const g=i.x.goalId&&G(i.x.goalId);return g?esc(g.title):''}
+  if(i.k==='r'){const x=i.r.id&&(i.r.k==='rem'||i.r.k==='day')?S.days.find(y=>y.id===i.r.id):null,lab=x&&x.tmr?'Timer':(KIND[i.r.k]||['','Reminder'])[1];return esc(lab+(i.r.body&&i.r.k!=='rem'&&i.r.k!=='day'?' · '+i.r.body:''))}
+  if(i.k==='h'){const n=hTarget(i.h);return n>1&&!i.done?Math.min(n,+hVal(i.h,td)||0)+' of '+n+(i.h.unit?' '+esc(i.h.unit):''):''}return''};
+ const tail=i=>i.k==='d'&&!i.done?(i.x.auto&&i.x.auto.type?autoBtn('day','data-id="'+i.x.id+'"',i.x,'ic'):'')+dayBell(i.x,'ic'):i.k==='r'&&i.r.id&&(i.r.k==='rem'||i.r.k==='day')?'<button class="ibtn sm hto-off" data-act="schedOff" data-id="'+i.r.id+'" aria-label="Cancel '+esc(i.t)+'">'+ic('plus')+'</button>':'';
+ const row=i=>{const sb=sub(i);return'<div class="ud-r hto-r'+(i.done?' d':'')+'" data-k="'+i.k+'" style="'+col(i)+'">'+(i.k==='r'||i.k==='t'?'<span class="hto-i">'+ic(i.k==='t'?'flag':(KIND[i.r.k]||['bell'])[0])+'</span>':'<button class="chk'+(i.done?' on':'')+'" '+tog(i)+' aria-label="'+(i.done?'Mark not done':'Mark done')+': '+esc(i.t)+'">'+ic('check')+'</button>')+'<button class="ud-x" '+opn(i)+'><span class="hto-tt"><span class="ell">'+esc(i.t)+'</span>'+(sb?'<small class="ell">'+sb+'</small>':'')+'</span>'+(i.tm?'<small class="data">'+fmtTime(i.tm)+'</small>':'')+'</button>'+tail(i)+'</div>'};
+ const N=6,shown=HTO_ALL?open:open.slice(0,N),hid=open.length-shown.length;
+ const seg=tick.length?(tick.length<=14?'<div class="ud-seg">'+[...tick.filter(i=>i.done),...tick.filter(i=>!i.done)].map(i=>'<i class="'+(i.done?'on':'')+'"></i>').join('')+'</div>':'<div class="ud-bar"><i style="width:'+Math.round(p*100)+'%"></i></div>'):'';
+ const pz=+S.settings.remPause>Date.now()?'<p class="small rm-pzl">'+ic('bell','ico-s')+' Reminders paused until '+esc(tWhen(+S.settings.remPause).day+' '+tWhen(+S.settings.remPause).time)+' · <button class="link" data-act="remPause" data-m="0">Resume</button></p>':'';
+ const earlier=carry.length||late.length?'<div class="hto-sub data">Still open from earlier</div><div class="hto-l">'
+  +carry.slice(0,5).map(x=>'<div class="ud-r hto-r" style="--c:'+colOf(x.goalId&&G(x.goalId))+'"><button class="chk" data-act="toggleDay" data-id="'+x.id+'" aria-label="Mark done: '+esc(x.title)+'">'+ic('check')+'</button><button class="ud-x" data-act="editDay" data-id="'+x.id+'"><span class="hto-tt"><span class="ell">'+esc(x.title)+'</span><small class="ell">'+esc(dayName(x.date))+'</small></span></button><button class="chip sm" data-act="dayMove" data-id="'+x.id+'">Move to today</button></div>').join('')
+  +late.slice(0,4).map(({g,s})=>'<div class="ud-r hto-r" style="'+cvar(g)+'"><button class="chk" data-act="toggleStep" data-g="'+g.id+'" data-s="'+s.id+'" aria-label="Mark done: '+esc(s.title)+'">'+ic('check')+'</button><button class="ud-x" data-act="open" data-id="'+g.id+'"><span class="hto-tt"><span class="ell">'+esc(s.title)+'</span><small class="ell">'+esc(g.title)+' · was due '+esc(dayName(s.due))+'</small></span></button></div>').join('')+'</div>':'';
+ const nx=later.slice(0,3),lat=nx.length?'<div class="hto-sub data">Next up<button class="link" data-act="schedAll">'+(later.length>3?'All '+later.length:'This week')+'</button></div><ul class="sc-l hto-sc">'+nx.map(rowHTML).join('')+'</ul>':'';
+ let grid='';try{grid=HSN_GRID?HSN_GRID():''}catch(e){}
+ const t=dayRatio(td),wo=!!S.settings.htoWk,wk=grid?'<div class="hto-wk'+(wo?' on':'')+'"><button class="hto-sub data hto-wkb" data-act="htoWk" aria-expanded="'+wo+'">Habits this week'+(t.due?'<span>'+t.dn+' of '+t.due+' today</span>':'')+ic('down','ico-s')+'</button>'+(wo?grid.replace(/^<section class="hsnap rv"/,'<div class="hsnap"').replace(/<div class="st-h">[\s\S]*?All habits<\/a><\/div>/,'').replace(/<\/section>$/,'</div>')+'<a class="link hto-allh" href="#/habits">All habits</a>':'')+'</div>':'';
+ const empty=!I.length&&!carry.length&&!late.length;
+ return'<section class="hday ud hto rv"><div class="ud-h"><div><div class="data">Today · '+esc(new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}))+'</div><b class="ud-t">'+(empty?'A clear day':p>=1&&tick.length?'All done today':tick.length?dn+' of '+tick.length+' done':'Nothing to tick yet')+'</b></div><span class="hto-hl"><a class="link" href="#/cal">Calendar</a><button class="link" data-act="remMgr">Reminders</button></span></div>'+seg+pz
+  +'<div class="tg-box hto-box"><form class="tg-add" data-form="dayAdd" autocomplete="off"><input name="t" maxlength="90" placeholder="Add something for today…" aria-label="Add a goal for today"><button aria-label="Add">'+ic('plus')+'</button></form>'
+  +(p>=1&&tick.length?'<p class="ud-done">Everything for today is done. Well played.</p>':'')
+  +'<div class="ud-l hto-l">'+shown.map(row).join('')+(hid>0?'<button class="hto-more" data-act="htoAll">Show '+hid+' more</button>':HTO_ALL&&open.length>N?'<button class="hto-more" data-act="htoAll">Show less</button>':'')+(done.length?'<div class="hto-dn">'+done.map(row).join('')+'</div>':'')+'</div></div>'
+  +earlier+lat+(v==='day'?'':wk+'<button class="ud-go" data-act="dayToday"><span>See everything for today</span>'+ic('next','ico-s')+'</button>')+'</section>'}
+/* the day page for today shows the same plan, with what's open from earlier and what's scheduled */
+{const _vd=vDay;vDay=function(ds){let o=_vd.apply(this,arguments);const d0=validDate(ds)||ymd();if(d0!==ymd())return o;
+ const i=o.indexOf('<section class="rv dy-sec" id="dyG">'),j=i<0?-1:o.indexOf('</section>',i);if(j<0)return o;
+ const c=todayCard('day').replace('<section class="hday ud hto rv">','<section class="rv dy-sec hto hto-day" id="dyG">').replace(/<div class="data">Today · [^<]*<\/div>/,'<h3 class="hto-ph">Plan</h3>');
+ return o.slice(0,i)+c+o.slice(j+10)};VIEWS.day=vDay}
+Object.assign(ACT,{htoAll:()=>{HTO_ALL=!HTO_ALL;render(false)},htoWk:()=>{S.settings.htoWk=!S.settings.htoWk;save();render(false);if(S.settings.htoWk)setTimeout(()=>{try{hsnScroll()}catch(e){}},60)}});
+let HSN_GRID=null;
+if(typeof homeDay==='function'){HSN_GRID=habitsStrip;homeDay=todayCard;todayGoals=()=>'';habitsStrip=()=>'';}
+
+
+/* ---------------- Notifications page (#/notifs, 2026-11-04) ----------------
+   Coming up: every notification due in the next 7 days, by day, each with Edit (its text and time, in the item's own
+   editor), an on/off switch (Off has the same effect as in Reminders, and can be switched back on here) and Delete for
+   reminders. History: what this device showed (kept on the device, the latest 300) plus, in the Android app, the phone's
+   own log (sent, reminded again, done or replied from the notification). Clear history empties this device's list. */
+const NLK='plotline.nlog',nlog=()=>{try{return JSON.parse(localStorage.getItem(NLK)||'[]')}catch(e){return[]}};
+{const _n2=notify;notify=function(t,b){const paused=PZ()&&t!=='Focus session complete',r=_n2.apply(this,arguments);
+ if(!paused)try{const L=nlog();L.unshift({t:Date.now(),title:String(t||'').slice(0,140),body:String(b||'').slice(0,240),kind:'shown'});localStorage.setItem(NLK,JSON.stringify(L.slice(0,300)))}catch(e){}return r}}
+let NTAB='up';const NOFF={};
+function ntHist(){const A=nlog(),P=typeof nhist==='function'?nhist('*').filter(e=>e&&e.t).map(e=>({t:+e.t,title:e.title||'',body:(typeof NH_TXT!=='undefined'&&NH_TXT[e.kind]||e.kind||'')+(e.text?' · '+e.text:''),kind:e.kind||'sent',ph:1})):[];
+ return[...A,...P].sort((a,b)=>b.t-a.t)}
+function ntEdit(r){return r.k==='habit'?`data-act="editHabit" data-id="${r.hid}"`:(r.k==='rem'||r.k==='day')&&r.id?`data-act="editDay" data-id="${r.id}"`:r.k==='step'?`data-act="editStep" data-g="${r.g}" data-s="${r.s}"`:r.k==='checkin'?`data-act="remEdit" data-k="goal" data-id="${r.g}"`:''}
+function ntRow(r,off){const[icon,lab]=KIND[r.k]||['bell','Reminder'],w=tWhen(r.at),key=rkey(r),can=!!(off||remOffOf(key)),ed=ntEdit(r),x=(r.k==='rem'||r.k==='day')&&r.id&&S.days.find(y=>y.id===r.id);
+ return`<li class="sc-r nt-r${off?' off':''}"><span class="sc-i">${ic(icon)}</span><span class="sd-t"><b>${esc(r.title)}</b><small>${esc(off?'Off':lab+(r.body&&r.k!=='rem'&&r.k!=='day'?' · '+r.body:''))}</small></span><span class="sc-w"><b>${esc(w.time)}</b><small>${esc(w.day)}</small></span>
+  <span class="nt-a">${ed&&!off?`<button class="btn sm" ${ed}>Edit</button>`:''}${x&&!off?`<button class="btn sm ghost" data-act="schedOff" data-id="${x.id}">${x.src==='plot'?'Delete':'Remove'}</button>`:''}${r.k==='agent'?`<a class="btn sm ghost" href="#/agent">Open</a>`:''}${can?`<label class="sw nt-sw" title="${off?'Turn back on':'Turn off'}"><input type="checkbox" data-ntoff="${esc(key)}" ${off?'':'checked'} aria-label="${off?'Turn on':'Turn off'} ${esc(r.title)}"><i></i></label>`:''}</span></li>`}
+function vNotifs(){const now=Date.now(),R=rows(upcoming(now,7*864e5)),H0=ntHist(),p=PZ();
+ const seg=`<div class="seg-c nt-seg" role="tablist">${[['up',`Coming up · ${R.length}`],['hist',`History · ${H0.length}`]].map(([k,n])=>`<button role="tab" aria-selected="${NTAB===k}" class="${NTAB===k?'on':''}" data-act="ntTab" data-v="${k}">${n}</button>`).join('')}</div>`;
+ const head=`<header class="ph"><div><h1>Notifications</h1><div class="data">${p?'Paused until '+esc(tWhen(p).day+' '+tWhen(p).time):R.length?`${R.length} in the next 7 days`:'Nothing due in the next 7 days'}</div></div><div class="ph-r"><button class="btn" data-act="remMgr">${ic('tune')}<span>Manage</span></button>${gear()}</div></header>`;
+ let body='';
+ if(NTAB==='up'){let last='';const off=Object.values(NOFF);
+  body=(p?`<div class="panel rm-pz on rv">${ic('bell')}<span><b>Paused until ${esc(tWhen(p).day+' '+tWhen(p).time)}</b><small>Nothing will notify you before then.</small></span><button class="btn sm pri" data-act="remPause" data-m="0">Resume</button></div>`:'')
+   +(R.length?`<ul class="sc-l nt-l panel rv">${R.map(r=>{const d=tWhen(r.at).day,h=d!==last?`<li class="sc-d data">${esc(d)}</li>`:'';last=d;return h+ntRow(r)}).join('')}</ul>`:`<p class="muted rv">Nothing is set to notify you in the next 7 days. Turn on a reminder from a habit, goal step or day goal (the bell), or tell your assistant “remind me at 6 to stretch”.</p>`)
+   +(off.length?`<div class="st-h rv" style="margin-top:22px"><h3>Turned off here</h3></div><ul class="sc-l nt-l panel rv">${off.map(o=>ntRow(o.r,true)).join('')}</ul>`:'')}
+ else{let last='';body=H0.length?`<ul class="sc-l nt-l panel rv">${H0.slice(0,300).map(e=>{const d=tWhen(e.t).day,h=d!==last?`<li class="sc-d data">${esc(d)}</li>`:'';last=d;return h+`<li class="sc-r nt-h"><span class="sc-i">${ic(e.kind==='done'?'check':/^reply/.test(e.kind)?'chat':'bell')}</span><span class="sd-t"><b>${esc(e.title||'Notification')}</b>${e.body?`<small>${esc(e.body)}</small>`:''}</span><span class="sc-w"><b>${esc(tWhen(e.t).time)}</b><small>${e.ph?'Phone':'This device'}</small></span></li>`}).join('')}</ul>${nlog().length?`<div class="actions left rv"><button class="btn ghost sm" data-act="ntClear">${ic('trash')}Clear this device’s history</button></div>`:''}`
+  :`<p class="muted rv">No notifications yet. The ones you get show here${NATIVE&&NATIVE.notifLog?'':', with the time and what they said'}.</p>`}
+ return head+seg+body}
+VIEWS.notifs=vNotifs;
+Object.assign(ACT,{ntTab:d=>{NTAB=d.v;render(false)},
+ ntClear:()=>askConfirm('Clear notification history?','This empties the list on this device. Coming-up reminders are not touched.','Clear',()=>{const old=localStorage.getItem(NLK);localStorage.removeItem(NLK);render(false);toast('History cleared',()=>{if(old)localStorage.setItem(NLK,old);render(false)})})});
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||t.dataset.ntoff==null)return;const key=t.dataset.ntoff;
+ if(!t.checked){const o=remOffOf(key),r=remSrcs().find(x=>x.key===key);if(!o||!r){t.checked=true;return}const[x,ch,par]=o,prev={};for(const k in ch)prev[k]=x[k];Object.assign(x,ch);x.u=Date.now();if(par)par.u=Date.now();NOFF[key]={x,prev,par,r};save();sync();render(false);toast(`Turned off “${esc(r.title)}”`)}
+ else{const o=NOFF[key];if(!o)return;Object.assign(o.x,o.prev);o.x.u=Date.now();if(o.par)o.par.u=Date.now();delete NOFF[key];save();sync();render(false);toast(`“${esc(o.r.title)}” is back on`)}});
+
+
+/* ---------------- More ways to check things off by themselves (2026-11-04) ----------------
+   The ⚡ sheet on any habit, goal step or day goal now also offers sources the app itself sees, on the web as well as
+   on the phone: a focus session finished, a journal entry written, a note added to, a bill marked paid, a calendar
+   event over (your own timed day goals, and Google Calendar when it's connected), a code scanned or an NFC tag tapped,
+   and "ask me" at a time. Each fires once a day, only on something that really happened (nothing is estimated), says so
+   with Undo, and manual check-off keeps working. Steps, workouts, sleep, places and screen time stay with the phone. */
+Object.assign(AUTO_T,{
+ focus:{n:'Focus session',e:'⏱️',x:'When I finish focus time',kinds:['habit','step','day'],app:1},
+ journal:{n:'Journal entry',e:'📓',x:'When I write in my journal',kinds:['habit','step','day'],app:1},
+ note:{n:'Note update',e:'📝',x:'When I add to a note',kinds:['habit','step','day'],app:1},
+ bill:{n:'Bill paid',e:'🧾',x:'When I mark a bill paid',kinds:['habit','step','day'],app:1},
+ event:{n:'Calendar event',e:'📅',x:'When an event with these words is over',kinds:['habit','step','day'],app:1},
+ tag:{n:'Code or NFC tag',e:'🏷️',x:'When I scan a code or tap a tag',kinds:['habit','step','day'],app:1},
+ ask:{n:'Ask me',e:'💬',x:'At a time, ask whether I did it',kinds:['habit','step','day'],app:1}});
+const APP_T=k=>!!(AUTO_T[k]&&AUTO_T[k].app);
+{const _g=autoGuess;autoGuess=function(t){const s=String(t||'').toLowerCase();if(/focus|deep work|study|revise|practi[cs]e/.test(s))return'focus';if(/journal|diary|gratitude|reflect|write/.test(s))return'journal';if(/bill|rent|pay /.test(s))return'bill';if(/meeting|class|lecture|appointment/.test(s))return'event';return _g.apply(this,arguments)}}
+{const _l=autoLabel;autoLabel=function(a){if(!a||!APP_T(a.type))return _l.apply(this,arguments);const q=a.q?` “${a.q}”`:'';
+ return a.type==='focus'?`${a.mins||25} min focus`:a.type==='journal'?'Journal entry'+q:a.type==='note'?(a.note&&TH(a.note)?'Note: '+TH(a.note).title:'Any note update'):a.type==='bill'?'Bill paid'+q:a.type==='event'?'Event over'+q:a.type==='tag'?'Code or tag':a.type==='ask'?'Ask at '+fmtTime(a.at||'21:00'):''}}
+/* the phone only gets the rules it can check */
+{const _r=autoRules;autoRules=function(){return _r.apply(this,arguments).filter(x=>!APP_T(x.type))}}
+const tagCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>b.toString(16).padStart(2,'0')).join('');
+const tagUrl=c=>(PLOTLINE_CFG.webUrl||location.origin+location.pathname).replace(/#.*$/,'')+'#/tap/'+c;
+const canScan=()=>'BarcodeDetector'in window&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
+function appFields(t,D,o){const q=(ph,lab)=>`<div class="field"><label>${lab}</label><input type="text" data-au="q" maxlength="60" value="${esc(D.q||'')}" placeholder="${esc(ph)}"></div>`;
+ if(t==='focus')return`<div class="field"><label>At least, in a day</label>${auChips('mins',[[10,'10 min'],[15,'15 min'],[25,'25 min'],[45,'45 min'],[60,'1 hour']],D.mins||25)}</div>${AU.k==='step'?`<label class="sw"><span>Only focus on this step<small>Off: any focus session counts</small></span><input type="checkbox" data-au="own" ${D.own?'checked':''}><i></i></label>`:''}<p class="small muted">Counts the focus timer’s finished sessions today.</p>`;
+ if(t==='journal')return q('Any entry','Containing these words · optional')+`<p class="small muted">Any journal entry you write today, or only one that mentions these words.</p>`;
+ if(t==='note'){const N=threads().filter(x=>x.status!=='done').slice(0,30);return`<div class="field"><label>Which note</label><select data-au="note"><option value="">Any note</option>${N.map(x=>`<option value="${x.id}" ${D.note===x.id?'selected':''}>${esc(trunc(x.title,50))}</option>`).join('')}</select></div><p class="small muted">When you add to it today, here or from the note.</p>`}
+ if(t==='bill')return q('Any bill','From · optional (like “rent” or the shop)')+`<p class="small muted">When a bill is marked paid on the Bills page today.</p>`;
+ if(t==='event')return q('like gym, class, standup','Event title has')+`<p class="small muted">Your own timed day goals, and Google Calendar events when it’s connected (Agent › Connections). It checks off once the event has ended.</p>`;
+ if(t==='tag'){if(!D.code)D.code=tagCode();const u=tagUrl(D.code);return`<div class="field"><label>Its link</label><div class="au-tag"><code>${esc(u)}</code><button type="button" class="btn sm" data-act="auCopy" data-v="${esc(u)}">Copy</button></div></div>
+  <p class="small muted">Put this link on an NFC tag (any NFC tag-writing app) or turn it into a QR code, and stick it where you do the thing: the gym bag, the pill box, the desk. Tapping or scanning it opens Plotlines and checks this off. With sync on it reaches all your devices.</p>
+  ${canScan()?`<button type="button" class="btn sm" data-act="auScanSet">${ic('camera')}Use a code you already have</button>${D.raw?'<p class="small muted">Linked to a scanned code.</p>':''}`:''}`}
+ if(t==='ask')return`<div class="field"><label>Ask at</label><input type="time" data-au="at" value="${esc(D.at||'21:00')}"></div><p class="small muted">At this time, if it isn’t done yet, Plotlines asks “Did you do it?” and checks it off when you say yes. While the app is closed it asks the next time you open it that day.</p>`;
+ return''}
+{const _ab=autoBody;autoBody=function(){const o=auItem();if(!o)return'';const a=o.auto&&o.auto.type?o.auto:null,D=AU.d||{},t=AU.pick||D.type||'',K=AU.k;
+ if(NATIVE&&t&&!APP_T(t))return _ab.apply(this,arguments);
+ const types=Object.entries(AUTO_T).filter(([k,v])=>v.kinds.includes(K)&&(NATIVE||v.app)&&!(k==='screen'&&o.kind==='routine'));
+ let b=`<div class="au-types">${types.map(([k,v])=>`<button class="au-t${t===k?' on':''}${!a&&k===autoGuess(o.title)?' ai':''}" data-act="autoPick" data-t="${k}"><span>${v.e}</span><b>${v.n}</b><small>${v.x}</small></button>`).join('')}</div>`;
+ if(!NATIVE)b+=`<p class="small muted" style="margin-top:10px">Steps, workouts, sleep, places and screen time check things off in the Android app, from the phone’s sensors.</p>`;
+ if(!t)return b+`<p class="small muted" style="margin-top:12px">Pick what should check it off. You can still tick it yourself any time.</p>`;
+ if(!APP_T(t))return b+`<p class="small muted">${esc(AUTO_T[t]?AUTO_T[t].n:'This')} works in the Android app. Set it up there.</p>`;
+ const cur=auDraft();cur.type=t;b+=appFields(t,cur,o);
+ b+=`<label class="sw"><span>Tell me when it’s done<small>A note with Undo</small></span><input type="checkbox" data-au="tell" ${cur.tell===false?'':'checked'}><i></i></label>`;
+ return b+`<div class="actions">${a?`<button class="btn danger" data-act="autoOff">Turn off</button>`:''}<button class="btn pri" data-act="autoSave">${a?'Save':'Turn on'}</button></div>`}}
+Object.assign(ACT,{auCopy:async d=>{try{await navigator.clipboard.writeText(d.v);toast('Link copied')}catch(e){toast('Couldn’t copy. Press and hold the link to copy it.')}},
+ auScanSet:()=>scanCode(v=>{const D=auDraft();D.raw=v;autoPaintD();toast('Code linked')}),
+ auScan:()=>scanCode(v=>{if(!autoTap(null,v))toast('No item is linked to that code yet')})});
+/* scanning with the camera where the browser can (BarcodeDetector); the camera is used only while the scanner is open */
+async function scanCode(done){if(!canScan())return toast('This browser can’t scan codes. Use the link on an NFC tag or in a QR code instead.');let st=null,stop=false;
+ openSheet(`<div class="data">Scan</div><h2 style="margin-top:6px">Point at the code</h2><video id="auVid" playsinline muted style="width:100%;border-radius:16px;background:#000;aspect-ratio:4/3;object-fit:cover"></video><div class="actions"><button class="btn" data-act="close">Cancel</button></div>`);
+ try{st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const v=$('#auVid');if(!v){st.getTracks().forEach(x=>x.stop());return}v.srcObject=st;await v.play();const det=new BarcodeDetector();
+  const end=()=>{stop=true;st&&st.getTracks().forEach(x=>x.stop())};const obs=new MutationObserver(()=>{if(!document.getElementById('auVid')){end();obs.disconnect()}});obs.observe(document.body,{childList:true,subtree:true});
+  while(!stop){const r=await det.detect(v).catch(()=>[]);if(r&&r[0]&&r[0].rawValue){end();obs.disconnect();closeSheet();const raw=String(r[0].rawValue),m=/#\/tap\/([0-9a-f]{12})/.exec(raw);done(m?'tap:'+m[1]:raw.slice(0,500));return}await new Promise(x=>setTimeout(x,250))}}
+ catch(e){st&&st.getTracks().forEach(x=>x.stop());toast('Couldn’t open the camera')}}
+/* every item with a rule, with how to check it off */
+function autoItems(){const td=ymd(),L=[];
+ S.habits.forEach(h=>{if(h.status==='active'&&h.auto&&APP_T(h.auto.type)&&hDue(h,td))L.push({a:h.auto,o:h,title:h.title,done:()=>hDone(h,td),set:on=>{const was=hDone(h,td);hSetVal(h,td,on?hTarget(h):0);if(typeof ckH==='function')ckH(h,td,was)}})});
+ S.goals.forEach(g=>{if(g.status!=='active')return;g.steps.forEach(s=>{if(s.auto&&APP_T(s.auto.type))L.push({a:s.auto,o:s,g,title:s.title,done:()=>!!s.done,set:on=>{if(!!s.done!==on)ACT.toggleStep({g:g.id,s:s.id})}})})});
+ S.days.forEach(x=>{if(x.auto&&APP_T(x.auto.type)&&x.date===td)L.push({a:x.auto,o:x,title:x.title,done:()=>!!x.done,set:on=>{x.done=on;x.doneAt=on?Date.now():null}})});
+ return L}
+const fire=(it,why)=>{const td=ymd();it.a.fired=td;it.o.u=Date.now();if(it.g)it.g.u=Date.now();it.set(true);save();render(false);if(it.a.tell!==false)toast(`⚡ ${esc(it.title)} checked off · ${esc(why)}`,()=>{it.set(false);save();render(false)});return true};
+const has=(s,q)=>!q||String(s||'').toLowerCase().includes(String(q).toLowerCase().trim());
+let CALT=0,CALE=null;
+function autoApp(){if(typeof S==='undefined'||!S.habits)return;const td=ymd(),now=Date.now(),day0=new Date(td+'T00:00').getTime();
+ const L=autoItems().filter(it=>it.a.fired!==td&&!it.done());if(!L.length)return;
+ const ents=S.entries.filter(e=>e.t>=day0);
+ if(L.some(it=>it.a.type==='event')&&now-CALT>15*6e4&&window.AGENT&&AGENT.calToday){CALT=now;AGENT.calToday().then(E=>{CALE=E;if(E&&E.length)setTimeout(autoApp,50)}).catch(()=>{})}
+ for(const it of L){const a=it.a;
+  if(a.type==='focus'){const F=ents.filter(e=>e.type==='focus'&&(!a.own||e.sid===it.o.id)),m=F.reduce((x,e)=>x+(+e.m||+((/(\d+)\s*min/.exec(e.text||'')||[])[1])||0),0);if(m>=(+a.mins||25)&&fire(it,`${m} min of focus today`))return}
+  if(a.type==='journal'){const e=ents.find(e=>e.type==='note'&&has((e.title||'')+' '+(e.text||''),a.q)&&String(e.text||e.title||'').trim());if(e&&fire(it,'you wrote in your journal'))return}
+  if(a.type==='note'){const N=a.note?[TH(a.note)].filter(Boolean):threads();if(N.some(t=>thrUps(t).some(u=>+u.t>=day0)||(+t.created>=day0&&t.ups.length))&&fire(it,'you added to your note'))return}
+  if(a.type==='bill'&&window.BILLS_PAID){const b=BILLS_PAID().find(b=>b.at>=day0&&has(b.m,a.q));if(b&&fire(it,`${b.m||'a bill'} marked paid`))return}
+  if(a.type==='event'&&a.q){const own=S.days.find(x=>x.date===td&&x.time&&x!==it.o&&has(x.title,a.q)&&new Date(td+'T'+x.time).getTime()+(+x.dur||30)*6e4<=now);
+   const g=(CALE||[]).find(e=>!e.all&&e.end&&has(e.title,a.q)&&Date.parse(e.end)<=now);if((own||g)&&fire(it,`“${(own||g).title}” is over`))return}
+  if(a.type==='ask'&&a.asked!==td&&(a.at||'21:00')<=new Date().toTimeString().slice(0,5)&&!$('#sheet').classList.contains('on')){a.asked=td;save();askDid(it);return}}}
+function askDid(it){try{notify('Did you do it?',it.title)}catch(e){}
+ openSheet(`<div class="data">⚡ Quick check</div><h2 style="margin-top:6px">Did you ${esc(it.title.charAt(0).toLowerCase()+it.title.slice(1))}?</h2><p class="muted">Say yes and it’s checked off for today.</p><div class="actions"><button class="btn" data-act="close">Not yet</button><button class="btn pri" data-act="auYes">Yes, done</button></div>`);
+ ACT.auYes=()=>{closeSheet();fire(it,'you said you did')}}
+/* a code or tag: from the link (#/tap/<code>) or the scanner */
+function autoTap(code,raw){const td=ymd(),k=code?'tap:'+code:raw,it=autoItems().find(x=>x.a.type==='tag'&&('tap:'+x.a.code===k||x.a.raw&&x.a.raw===k));
+ if(!it)return false;if(it.done()){toast(`${esc(it.title)} is already done today`);return true}return fire(it,'code scanned')}
+window.autoApp=autoApp;
+addEventListener('hashchange',()=>{const m=/^#\/tap\/([0-9a-f]{12})$/.exec(location.hash);if(!m)return;history.replaceState(null,'','#/today');go('today');setTimeout(()=>{if(!autoTap(m[1]))toast('No item is linked to that tag on this device yet. With sync on, open the app once so the rule arrives.')},300)});
+if(/^#\/tap\//.test(location.hash))setTimeout(()=>dispatchEvent(new HashChangeEvent('hashchange')),1500);
+{const _sv=save;let AT=0;save=function(){const r=_sv.apply(this,arguments);clearTimeout(AT);AT=setTimeout(autoApp,600);return r}}
+setInterval(autoApp,30000);setTimeout(autoApp,3000);
 
 window.remFind=()=>remSrcs().map(r=>({t:r.title,s:remSub(r)}));
-window.SCHED={make,remind,timer,checkin,fromText,words,occ,upcoming};
+window.SCHED={make,remind,timer,checkin,fromText,words,occ,upcoming,todayItems};
 
 const css=document.createElement('style');css.textContent=`
 .rm-h{display:flex;gap:14px}
