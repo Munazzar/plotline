@@ -118,7 +118,7 @@ function snapFix(o){const t=td();
  return o.replace(/<button class="hsn-h" data-act="openHabit" data-id="([^"]+)">/g,(m,id)=>{const h=H(id);if(!h||h.kind==='quit')return m;const c=((h.ck||{})[t]||{});return`<button class="hsn-h${c.n?' cm':''}" data-act="hDaySheet" data-id="${id}" data-d="${t}" title="Check off today, skip or add a comment">`})
  .replace(/<button class="hsn-x ([^"]*)" data-act="hsnTap" data-id="([^"]+)" data-d="([^"]+)"/g,(m,c,id,ds)=>{const h=H(id),n=h&&((h.ck||{})[ds]||{}).n;return n?`<button class="hsn-x ${c} cm" data-act="hsnTap" data-id="${id}" data-d="${ds}"`:m})
  .replace('Tap a box: done → skipped → cleared. Tap a habit to open it.','Tap a box to check it off (tap again to skip, then clear). Tap a habit for today’s check-off, a skip or a comment.')}
-{const _hs=habitsStrip;habitsStrip=function(){return snapFix(_hs.apply(this,arguments))}}
+{const _hs=habitsStrip;habitsStrip=function(){return snapFix(_hs.apply(this,arguments))}}window.snapFix=snapFix;
 {const _vh=vHabits;vHabits=function(){return snapFix(_vh.apply(this,arguments))};VIEWS.habits=vHabits}
 {const _ds=ACT.hDaySheet;ACT.hDaySheet=function(d){_ds.apply(this,arguments);const h=H(d.id),sh=$('#sheet');if(!h||!sh||!sh.classList.contains('on'))return;
  const a=sh.querySelector('.actions');if(a&&!sh.querySelector('.hds-open')&&!(cur.p==='habit'&&cur.id===h.id))a.insertAdjacentHTML('beforebegin',`<button class="link small hds-open" data-act="hdsOpen" data-id="${h.id}">Open ${esc(h.title)}</button>`)}}

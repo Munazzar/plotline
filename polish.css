@@ -264,3 +264,65 @@ html[data-bgp=image] body::after{background:var(--bgimg) center/cover no-repeat}
 @media(max-width:560px){.crumb .ph-r .lv-btn{display:none!important}.crumb .ph-r,.ph .ph-r{gap:6px}.crumb .ph-r>.ibtn,.ph .ph-r>.ibtn,.crumb .ph-r>.bell{width:36px;height:36px;min-width:36px}}
 /* goal cards on a phone: the area and time span wrap to two lines instead of being cut to "HEALT…" */
 @media(max-width:560px){.fc-top .data{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;overflow-wrap:anywhere}}
+
+/* ===================== 2026-11-04: owner's UI batch ===================== */
+/* Up next deck: the cards are measured against the scroller itself (offsetLeft used to include the Home column's x, so on
+   wide screens the lit dot was two cards behind), and the scroller's edges fade out instead of cutting the glow and the
+   neighbouring cards into a hard box */
+.udk-t{position:relative;-webkit-mask-image:linear-gradient(90deg,transparent,#000 18px,#000 calc(100% - 18px),transparent),linear-gradient(180deg,transparent,#000 24px,#000 calc(100% - 30px),transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent,#000 18px,#000 calc(100% - 18px),transparent),linear-gradient(180deg,transparent,#000 24px,#000 calc(100% - 30px),transparent);mask-composite:intersect}
+@media(max-width:820px){.udk-t{-webkit-mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 12px),transparent),linear-gradient(180deg,transparent,#000 20px,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 12px),transparent),linear-gradient(180deg,transparent,#000 20px,#000 calc(100% - 26px),transparent)}}
+/* writer: the journal-look switch in the top corner */
+.wr-bk svg{width:17px;height:17px}
+.wr-bk.on{color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+/* spacing: a card, panel or section never sits against the block above it, in whatever order the page puts them (Home
+   sections moved in Customize Home, pinned sections, parts). Zero specificity, so a page's own larger spacing wins, and
+   vertical margins collapse, so nothing that already had room moves. */
+:where(#view,#vpg)>:where(*)+:where(section,.panel,.empty,.list,.hcust){margin-top:16px}
+/* Home › Today: one card for the day (sched.js todayCard). The add box sits in the card without a second box around it. */
+.hto .hto-hl{display:flex;gap:14px;align-items:center}
+.hto .hto-box{background:none!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border-radius:0;overflow:visible;margin-top:6px}
+.hto .tg-add{padding:4px 4px 4px 14px;margin:6px 0 4px;border-radius:16px;background:color-mix(in srgb,var(--text) 5%,transparent)}
+.hto .tg-add button{width:36px;height:36px;border-radius:12px}
+.hto-r .ud-x{align-items:center}
+.hto-tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.hto-tt small{font:500 12px var(--f-body);color:var(--muted);text-decoration:none}
+.ud-r.d .hto-tt small{display:none}
+.hto-r .bell,.hto-r .hto-off{flex:none}
+.hto-off svg{transform:rotate(45deg)}
+.hto-i{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:10px;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}.hto-i svg{width:16px;height:16px}
+.hto-more{display:block;width:100%;margin:2px 0 0;padding:10px 0;border:0;border-top:1px solid var(--line);background:none;color:var(--accent);font:600 13.5px var(--f-body);cursor:pointer;text-align:left}
+.hto-dn{border-top:1px solid var(--line)}
+.hto-sub{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 4px;color:var(--muted)}
+.hto-sub .link{margin:0}
+.hto-sc .sc-r{padding:9px 0}.hto-sc .sc-i{width:28px;height:28px;border-radius:10px}.hto-sc .sc-i svg{width:16px;height:16px}
+.hto-wkb{width:100%;border:0;background:none;padding:12px 0 4px;cursor:pointer;border-top:1px solid var(--line);margin-top:14px}
+.hto-wkb span{margin-left:auto;margin-right:8px;color:var(--muted)}
+.hto-wkb svg{width:14px;height:14px;transition:transform .25s}
+.hto-wk.on .hto-wkb svg{transform:rotate(180deg)}
+.hto .hsnap{margin:8px 0 0}.hto .hsn-card{background:none!important;border:0!important;box-shadow:none!important;padding:0}
+.hto-allh{display:inline-flex;margin:8px 0 2px}
+html body .hto .tg-box.hto-box{box-shadow:none!important;background:none!important;border:0!important}
+.hto .ud-h{flex-wrap:wrap;align-items:flex-end;row-gap:10px}.hto .ud-h>div:first-child{flex:1 1 170px;min-width:0}
+.hto-day .hto-ph{margin:0 0 2px;font:800 22px/1.2 var(--f-display)}
+.hto-day .ud-t{font:600 13px var(--f-mono);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+/* write in place (notes.js): a plain writing area on the page, no box and no background */
+.ip{margin:6px 0 22px}
+html .ip-t,html .ip-t:focus,html .ip-t:focus-visible{display:block;width:100%;min-height:56px;padding:6px 0;margin:0;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border-radius:0;resize:none;overflow:hidden;color:var(--text);font:400 18px/1.6 var(--f-body);caret-color:var(--accent)}
+.ip-t::placeholder{color:color-mix(in srgb,var(--muted) 75%,transparent)}
+.ip-f{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;min-height:18px;font-size:12.5px;color:var(--muted)}
+.ip-f .link{margin:0;font-size:12.5px}
+.ip-lab{margin:22px 0 0;color:var(--muted)}
+/* phone page headers with seven or more buttons (Journal): the buttons get their own row instead of running over the title */
+@media(max-width:560px){header.ph:has(>.ph-r>:nth-child(7)){grid-template-columns:minmax(0,1fr)!important;row-gap:12px}header.ph:has(>.ph-r>:nth-child(7))>.ph-r{justify-self:start;grid-column:1;grid-row:auto}}
+.ip-t{min-height:44px}
+/* Notifications page (sched.js) */
+.nt-seg{margin:0 0 16px}
+.nt-l{padding:4px 16px}
+.nt-r{flex-wrap:wrap}.nt-r .sd-t{min-width:140px}
+.nt-a{display:flex;align-items:center;gap:8px;margin-left:auto}
+.nt-r.off .sd-t b{color:var(--muted)}
+.nt-sw{margin:0;padding:0;gap:0}
+@media(max-width:560px){.nt-a{width:100%;justify-content:flex-end;padding-left:46px}}
+ul.sc-l.nt-l.panel{padding:6px 18px!important;margin:0;list-style:none}
+.au-tag{display:flex;gap:8px;align-items:center}.au-tag code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 12px var(--f-mono);padding:9px 10px;border-radius:10px;background:color-mix(in srgb,var(--text) 6%,transparent)}
+.au-types+p.small{margin-bottom:16px}

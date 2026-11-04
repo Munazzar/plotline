@@ -17,8 +17,10 @@ const B={open:false,P:[],i:0,busy:false,ix:false,focus:'',sp:false};
 const wide=()=>innerWidth>=900&&S.settings.book?.spread!==false;
 const dayOf=t=>ymd(new Date(t));
 /* ---------------- look and feel (1.59.3): the book's own settings, kept on this device like the rest of the looks ---------------- */
-const BDEF={paper:'auto',lines:'none',grain:true,font:'serif',size:18,lh:'normal',cover:'leather',turn:'curl',speed:'normal',sound:false,spread:true,moments:true,drop:true,open:'today',last:'',wsync:true};
-const BS=()=>S.settings.book=Object.assign({},BDEF,S.settings.book||{});
+const BDEF={paper:'auto',lines:'none',grain:true,font:'serif',size:18,lh:'normal',cover:'leather',turn:'curl',speed:'normal',sound:false,spread:true,moments:true,drop:true,open:'today',last:'',wsync:false};
+/* 2026-11-04: the writer follows the app theme unless the book look is picked (the book button in the writer's top corner,
+   or Writing looks like the book here). Earlier versions saved wsync on, so it is reset once. */
+const BS=()=>{const b=S.settings.book=Object.assign({},BDEF,S.settings.book||{});if(!b.wsv2){b.wsync=false;b.wsv2=1}return b};
 const PAPERS=[['app','App theme'],['auto','Auto'],['cream','Cream'],['white','White'],['sepia','Sepia'],['grey','Stone'],['dark','Night'],['black','Black']];
 const COVERS=[['leather','Leather','#5a3a2a'],['navy','Navy','#1f2d4a'],['forest','Forest','#24392c'],['wine','Wine','#4d1f2a'],['ink','Black','#1b1a1a'],['sand','Sand','#9a7b55'],['accent','Theme colour','']];
 const FONTS=[['serif','Book'],['sans','Clean'],['mono','Typewriter'],['hand','Handwritten']];
@@ -240,7 +242,8 @@ Object.assign(ACT,{
  bkWrite:d=>{B.focus=d.d||ymd();writeSheet(null,null,B.focus);sheetLook(true)},
  bkEdit:d=>{const e=S.entries.find(x=>x.id===d.id);if(!e)return;B.focus=dayOf(e.t);writeSheet(e);sheetLook(true)}});
 /* every journal entry is written on the book's paper (unless turned off in Aa) */
-{const _ws=writeSheet;writeSheet=function(){const r=_ws.apply(this,arguments);try{sheetLook(true)}catch(e){}return r}}
+{const _ws=writeSheet;writeSheet=function(){const r=_ws.apply(this,arguments);try{const fs=document.querySelector('#sheet .wr-fs'),on=!!BS().wsync;if(fs&&!document.querySelector('#sheet .wr-bk'))fs.insertAdjacentHTML('beforebegin',`<button type="button" class="ibtn sm wr-bk${on?' on':''}" data-act="wrBook" aria-pressed="${on}" aria-label="Journal look" title="${on?'Journal look on: tap for the app theme':'Write on the journal paper'}">${ic('book')}</button>`);sheetLook(true)}catch(e){}return r}}
+ACT.wrBook=(d,el)=>{const s=BS();s.wsync=!s.wsync;S.settings.book=s;save();sheetLook(s.wsync);if(el){el.classList.toggle('on',s.wsync);el.setAttribute('aria-pressed',s.wsync);el.title=s.wsync?'Journal look on: tap for the app theme':'Write on the journal paper'}};
 /* the writer takes the book's paper, ink, font, size and lines while you write from the book */
 const LOOKV=['--pp','--pp2','--ink','--ink2','--acc','--rule','--bkf','--bks','--bkl','--grain'];
 function sheetLook(on){const sh=$('#sheet');if(!sh)return;let bk=document.getElementById('book'),tmp=null;if(on&&BS().wsync===false)on=false;

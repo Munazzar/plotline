@@ -157,5 +157,52 @@ const css=document.createElement('style');css.textContent=`
 .bl-busy{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted)}.bl-busy i{width:16px;height:16px;flex:none;border-radius:50%;border:2px solid var(--accent);border-top-color:transparent;animation:mmSpin .8s linear infinite}
 .bl-warn{padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--danger,#e66) 12%,transparent);border:1px solid color-mix(in srgb,var(--danger,#e66) 35%,transparent);margin:8px 0}
 `;document.head.appendChild(css);
+
+/* ---------------- write in place (2026-11-04) ----------------
+   Notes, the journal and a habit's note for the day each have a plain writing area on the page itself: no box, no
+   background, no editor to open first. Start typing and it saves as you go (a note on the Notes page, an entry for today
+   in the journal, the day's note on a habit). Clearing the text removes what it made. The full editors are still one tap
+   away (New note, Write, the habit's day sheet). */
+const IP={};let IPP='';
+const ipGet=k=>IP[k]||(IP[k]={id:'',x:''});
+const IPK={
+ note:{ph:'Start typing a note…',hint:'Saves as you type. The first line is the title.',
+  open:st=>st.id&&TH(st.id)?`<button class="link" data-act="thrOpen" data-id="${st.id}">Open note</button>`:'',
+  save(st,x){let t=st.id&&TH(st.id);const v=x.trim();
+   if(!v){if(t){S.threads=threads().filter(y=>y.id!==t.id);S.dead=S.dead||{};S.dead[t.id]=now();st.id=''}return}
+   const ls=v.split('\n'),first=plain(ls[0]).trim(),short=first&&first.length<=60,title=short?first:titleFrom(v),body=short?ls.slice(1).join('\n').trim():v;
+   if(!t){t=make(title,body);st.id=t.id;return}
+   t.title=title;t.u=now();if(body){if(t.ups[0]){t.ups[0].x=body;t.ups[0].u=now()}else t.ups.push({id:uid(),t:now(),k:'note',x:body,u:now()})}else t.ups=t.ups.slice(1)}},
+ jr:{ph:'Write about today…',hint:'Saves to today’s journal as you type. Write opens the full editor with moods, photos and formatting.',
+  open:st=>st.id&&S.entries.some(e=>e.id===st.id)?`<button class="link" data-act="jvEdit" data-id="${st.id}">Open entry</button>`:'',
+  save(st,x){const v=x.trim();let e=st.id&&S.entries.find(y=>y.id===st.id);
+   if(!v){if(e){S.entries=S.entries.filter(y=>y.id!==e.id);S.dead=S.dead||{};S.dead[e.id]=now();st.id=''}return}
+   if(!e){e={id:uid(),t:now(),type:'note',goalId:null,title:'',text:v,html:'',mood:'',private:false,sid:null,img:null};S.entries.push(e);st.id=e.id}else e.text=v}},
+ hn:{ph:'A note about today…',hint:'Saves to this day’s check-in as you type.',open:()=>'',
+  save(st,x,k){const[,id,ds]=k.split(':'),h=H(id);if(!h)return;h.ck=h.ck||{};const c={...(h.ck[ds]||{})},v=x.trim();if(v)c.n=v.slice(0,2000);else delete c.n;if(Object.keys(c).length)h.ck[ds]=c;else delete h.ck[ds]}}};
+const ipKind=k=>k.split(':')[0];
+function ipHTML(k,init){const st=ipGet(k);if(init!=null&&!st.touched)st.x=init;const K=IPK[ipKind(k)];
+ return`<div class="ip" data-ipk="${esc(k)}"><textarea class="ip-t" data-inplace="${esc(k)}" rows="1" maxlength="10000" placeholder="${esc(K.ph)}" aria-label="${esc(K.ph)}">${esc(st.x)}</textarea><div class="ip-f" aria-live="polite">${ipFoot(k)}</div></div>`}
+function ipFoot(k){const st=ipGet(k),K=IPK[ipKind(k)];if(st.busy)return'<span>Saving…</span>';if(st.saved&&st.x.trim())return`<span>Saved</span>${K.open(st)}${ipKind(k)==='hn'?'':'<button class="link" data-act="ipNew" data-k="'+esc(k)+'">Start another</button>'}`;return st.x.trim()?'':`<span>${esc(K.hint)}</span>`}
+function ipSave(k){const st=ipGet(k);clearTimeout(st.tm);st.tm=0;try{IPK[ipKind(k)].save(st,st.x,k);save()}catch(e){console.warn('[inplace]',e)}st.busy=false;st.saved=true;const f=document.querySelector(`[data-ipk="${CSS.escape(k)}"] .ip-f`);if(f)f.innerHTML=ipFoot(k)}
+const ipFit=t=>{t.style.height='auto';t.style.height=Math.max(56,t.scrollHeight)+'px'};
+document.addEventListener('input',e=>{const t=e.target;if(!t.dataset||!t.dataset.inplace)return;const k=t.dataset.inplace,st=ipGet(k);st.x=t.value;st.touched=true;ipFit(t);
+ if(!st.busy){st.busy=true;const f=t.parentElement.querySelector('.ip-f');if(f)f.innerHTML=ipFoot(k)}clearTimeout(st.tm);st.tm=setTimeout(()=>ipSave(k),650)});
+document.addEventListener('focusout',e=>{const t=e.target;if(t.dataset&&t.dataset.inplace&&ipGet(t.dataset.inplace).tm)ipSave(t.dataset.inplace)});
+ACT.ipNew=d=>{const st=ipGet(d.k);if(st.tm)ipSave(d.k);IP[d.k]={id:'',x:''};render(false);setTimeout(()=>{const t=document.querySelector(`[data-inplace="${CSS.escape(d.k)}"]`);if(t)t.focus()},30)};
+if(!ACT.jvEdit)ACT.jvEdit=d=>{const e=S.entries.find(x=>x.id===d.id);if(e)writeSheet(e)};
+/* put the areas on their pages after each draw, keeping the cursor where it was when a redraw happens mid-sentence */
+{const _r=render;render=function(){const a=document.activeElement,ak=a&&a.dataset&&a.dataset.inplace,pos=ak?a.selectionStart:0;
+ const pg=cur.p+'/'+(cur.id||'');if(pg!==IPP){IPP=pg;for(const k in IP)if(!IP[k].tm)delete IP[k]}
+ const r=_r.apply(this,arguments);try{ipMount()}catch(e){console.warn('[inplace]',e)}
+ if(ak){const n=document.querySelector(`[data-inplace="${CSS.escape(ak)}"]`);if(n&&n!==a){n.focus({preventScroll:true});try{n.setSelectionRange(pos,pos)}catch(e){}}}return r}}
+function ipMount(){const v=document.getElementById('vpg')||document.getElementById('view');if(!v||v.querySelector('.ip'))return;let at=null,html='';
+ if(cur.p==='threads'&&!NQ.q){const q=v.querySelector('.nt-quick');at=q||v.querySelector('.jbar');html=ipHTML('note');if(q){q.insertAdjacentHTML('afterend',html);q.remove();at=null}
+  if(!threads().length)v.querySelectorAll(':scope>.empty').forEach(x=>x.remove())}
+ else if(cur.p==='journal'){at=v.querySelector(':scope>.jbar')||v.querySelector(':scope>header');html=ipHTML('jr')}
+ else if(cur.p==='habit'){const h=H(cur.id);if(h){const ds=ymd();at=v.querySelector('.hhero');html=`<div class="ip-lab data">Today’s note</div>`+ipHTML('hn:'+h.id+':'+ds,((h.ck||{})[ds]||{}).n||'')}}
+ if(at)at.insertAdjacentHTML('afterend',html);v.querySelectorAll('.ip-t').forEach(ipFit)}
+window.INPLACE={html:ipHTML,mount:ipMount};
+
 if(typeof booted!=='undefined'&&booted&&/^#\/(threads?|notes?)(\/|$)/.test(location.hash))route();
 })();

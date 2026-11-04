@@ -101,7 +101,18 @@ async function build(o={}){if(BUSY)return;if(!(window.AIX&&AIX.ready())){if(!o.q
   if(!o.quiet&&cur.p!=='me')toast('Your picture of you is updated')}
  catch(err){if(!(CTL&&CTL.signal.aborted))ERR=String(err&&err.message||err)}
  finally{BUSY=false;CTL=null;OUT='';if(cur.p==='me')render(false)}}
-function outPaint(){if(paintT)return;paintT=setTimeout(()=>{paintT=0;const el=$('#meLive');if(!el)return;const P=parse(OUT);el.innerHTML=picHTML(P,true)},220)}
+/* streaming: the live picture is patched in place (text that grew is updated, new sections and paragraphs are appended),
+   so the sections already on screen are never rebuilt and don't flash or replay their entrance */
+function morph(a,b){const A=[...a.childNodes],B=[...b.childNodes];
+ B.forEach((n,i)=>{const o=A[i];
+  if(!o){a.appendChild(n);return}
+  if(o.nodeType!==n.nodeType||o.nodeName!==n.nodeName||(n.nodeType===1&&o.className!==n.className)){a.replaceChild(n,o);return}
+  if(n.nodeType===3){if(o.nodeValue!==n.nodeValue)o.nodeValue=n.nodeValue;return}
+  if(n.nodeType===1){for(const at of n.attributes)if(o.getAttribute(at.name)!==at.value)o.setAttribute(at.name,at.value);morph(o,n)}});
+ for(let i=A.length-1;i>=B.length;i--)A[i].remove()}
+function outPaint(){if(paintT)return;paintT=setTimeout(()=>{paintT=0;const el=$('#meLive');if(!el)return;const P=parse(OUT),t=document.createElement('div');t.innerHTML=picHTML(P,false).replace(/<button class="ibtn sm" data-act="meFix"[\s\S]*?<\/button>/g,'');
+ /* the text goes in its own box and the "Writing…" line stays after it, so a new section never replaces the cursor */
+ let box=el.querySelector(':scope>.me-lvc');if(!box){el.innerHTML='<div class="me-lvc"></div><p class="me-cur"><i></i>Writing…</p>';box=el.firstChild}morph(box,t)},220)}
 
 /* ---------------- the page ---------------- */
 const md=t=>window.AIX&&AIX.md?`<div class="ai-md">${AIX.md(t)}</div>`:`<p>${esc(t).replace(/\n+/g,'<br>')}</p>`;
