@@ -1,10 +1,18 @@
 # Plotlines handover
 
-Written 2026-10-24 (updated the same day for 1.52.0 and 1.53.0) for a fresh Claude (new account, no project memory) picking up this project. Read this file
+Written 2026-10-24 (last updated 2026-11-04) for a fresh Claude (new account, no project memory) picking up this project. Read this file
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
 Current state: **v1.67.1 is on main and released** (versionCode 175). **The next versionCode is 176.** (`tools/apk/build.cjs` needs old and new versionName of the same length, so after 1.59.9 came 1.60.0.)
+
+**Where we stopped (checked 2026-11-04):** nothing has changed since 1.67.1 (2026-10-30), and no Plotline work is in
+progress or half-built. There are no open PRs. Next work comes from section 8 or from the owner. On the owner's PC
+the local AI server (llama-server, Qwen 3.5 35B-A3B on port 8080) is running again. PC test pitfalls: when the
+owner's phone is also on adb over Wi-Fi, export `ANDROID_SERIAL=emulator-5554`. Always run `adb emu kill` after an
+emulator run, because the emulator takes the GPU that llama-server needs and its speed drops from ~40 to ~0.3 tok/s.
+The untracked `ab*.sh`, `site-bugs.sh` and `fps-*.js` files in `tools/android-test/` are for the owner's other app
+(Lamhaat), not Plotline.
 
 **Product rules for every change (section 7 has the full list):** sync everything except looks and device-only
 things (section 2a); obvious features (delete, delete all, undo, search) must exist wherever data lives; secure and
