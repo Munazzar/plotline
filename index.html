@@ -3604,7 +3604,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.68.0';
+const APP_VER='1.68.1';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -5685,18 +5685,25 @@ function askBlocked(q,msg){const R=IN.res,t={q,a:msg||OFF_LINE,done:true,err:'',
    SGLang), plus Qwen3's /no_think switch when off. A server that refuses the extra fields gets the request again without
    them, and isn't sent them again. */
 const THINK_BAD=new Set();
-function thinkOpts(s,o){const v=o.think!=null?o.think:s.think;if(v!=='on'&&v!=='off'||THINK_BAD.has(s.url))return null;const on=v==='on';
+/* short replies (a token cap under 1000: chat, Live, quick commands) never think, even with Thinking on: the thinking
+   alone fills the cap and no answer is left (2026-11-04, chat said "Hmm, I'm not sure" every time) */
+const thinkV=(s,o)=>{const v=o.think!=null?o.think:s.think;return v==='on'&&o.think==null&&o.max_tokens&&o.max_tokens<1000?'off':v};
+function thinkOpts(s,o){const v=thinkV(s,o);if(v!=='on'&&v!=='off'||THINK_BAD.has(s.url))return null;const on=v==='on';
  return{think:on,reasoning_effort:on?'medium':'none',chat_template_kwargs:{enable_thinking:on}}}
-function thinkMsgs(msgs,s,o){const v=o.think!=null?o.think:s.think;if(v!=='off'||THINK_BAD.has(s.url))return msgs;const m=msgs.map(x=>({...x})),i=m.findIndex(x=>x.role==='system');
+function thinkMsgs(msgs,s,o){const v=thinkV(s,o);if(v!=='off'||THINK_BAD.has(s.url))return msgs;const m=msgs.map(x=>({...x})),i=m.findIndex(x=>x.role==='system');
  if(i>=0)m[i].content+='\n/no_think';else m.unshift({role:'system',content:'/no_think'});return m}
 async function apiChat(msgs,onTok,signal,opts={}){const s=insSet(),key=aiKey();if(!s.url)throw new Error('Add your AI server address first');
  const call=th=>fetch(s.url.replace(/\/+$/,'')+'/chat/completions',{method:'POST',signal,headers:{'Content-Type':'application/json',...(key?{Authorization:'Bearer '+key}:{})},body:JSON.stringify({model:s.model,messages:th?thinkMsgs(msgs,s,opts):msgs,stream:true,temperature:opts.temperature??.4,...(opts.max_tokens?{max_tokens:opts.max_tokens}:{}),...(opts.schema?{response_format:{type:'json_object'}}:{}),...(th||{})})});
  const th=thinkOpts(s,opts);let r=await call(th);
  if(th&&(r.status===400||r.status===422)){THINK_BAD.add(s.url);try{toast('Your AI server doesn’t accept the thinking switch, so it uses the model’s default')}catch(e){}r=await call(null)}
  if(!r.ok)throw new Error(`The server said ${r.status}. ${(await r.text().catch(()=>'')).slice(0,160)}`);
- if(!r.body||!(r.headers.get('content-type')||'').includes('event-stream')){const j=await r.json();onTok(j.choices?.[0]?.message?.content||'');return}
- const rd=r.body.getReader(),dec=new TextDecoder();let buf='';for(;;){const{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
-  while((i=buf.indexOf('\n'))>=0){const ln=buf.slice(0,i).trim();buf=buf.slice(i+1);if(!ln.startsWith('data:'))continue;const d=ln.slice(5).trim();if(d==='[DONE]')return;try{const dl=JSON.parse(d).choices?.[0]?.delta||{},t=dl.content;if(t)onTok(t);else if(opts.onThink&&(dl.reasoning_content||dl.reasoning))opts.onThink(dl.reasoning_content||dl.reasoning)}catch(e){}}}}
+ /* 2026-11-04: a reply that spent its whole token limit thinking and wrote no answer (Qwen with Thinking on and a short
+    limit, e.g. chat's 400) is asked again once with thinking off, instead of showing "Hmm, I'm not sure". */
+ let said=false,thought=false;const again=()=>!said&&thought&&!opts._again&&!(signal&&signal.aborted)?apiChat(msgs,onTok,signal,{...opts,think:'off',_again:1}):undefined;
+ if(!r.body||!(r.headers.get('content-type')||'').includes('event-stream')){const j=await r.json(),m=j.choices?.[0]?.message||{};if(m.content){said=true;onTok(m.content)}else thought=!!(m.reasoning_content||m.reasoning);return again()}
+ const rd=r.body.getReader(),dec=new TextDecoder();let buf='';rd:for(;;){const{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
+  while((i=buf.indexOf('\n'))>=0){const ln=buf.slice(0,i).trim();buf=buf.slice(i+1);if(!ln.startsWith('data:'))continue;const d=ln.slice(5).trim();if(d==='[DONE]')break rd;try{const dl=JSON.parse(d).choices?.[0]?.delta||{},t=dl.content;if(t){said=true;onTok(t)}else if(dl.reasoning_content||dl.reasoning){thought=true;if(opts.onThink)opts.onThink(dl.reasoning_content||dl.reasoning)}}catch(e){}}}
+ return again()}
 /* 1.63.4: your AI server, with the downloaded on-device model behind it. When the server can't be reached or errors before
    saying anything, the same request goes to the model on this device, with a quiet note (at most once a minute). Every
    feature that uses the server goes through here, so they all fall back. Stopping a reply doesn't fall back. */

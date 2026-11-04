@@ -312,8 +312,8 @@ html .ip-t,html .ip-t:focus,html .ip-t:focus-visible{display:block;width:100%;mi
 .ip-f{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;min-height:18px;font-size:12.5px;color:var(--muted)}
 .ip-f .link{margin:0;font-size:12.5px}
 .ip-lab{margin:22px 0 0;color:var(--muted)}
-/* phone page headers with seven or more buttons (Journal): the buttons get their own row instead of running over the title */
-@media(max-width:560px){header.ph:has(>.ph-r>:nth-child(7)){grid-template-columns:minmax(0,1fr)!important;row-gap:12px}header.ph:has(>.ph-r>:nth-child(7))>.ph-r{justify-self:start;grid-column:1;grid-row:auto}}
+/* phone: the Journal header has seven buttons, so they get their own row instead of running over the title (other pages keep theirs beside it) */
+@media(max-width:560px){html[data-pg=journal] :is(#view,#vpg)>header.ph{grid-template-columns:minmax(0,1fr)!important;row-gap:12px}html[data-pg=journal] :is(#view,#vpg)>header.ph>.ph-r{justify-self:start;grid-column:1;grid-row:auto}}
 .ip-t{min-height:44px}
 /* Notifications page (sched.js) */
 .nt-seg{margin:0 0 16px}
@@ -326,3 +326,5 @@ html .ip-t,html .ip-t:focus,html .ip-t:focus-visible{display:block;width:100%;mi
 ul.sc-l.nt-l.panel{padding:6px 18px!important;margin:0;list-style:none}
 .au-tag{display:flex;gap:8px;align-items:center}.au-tag code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 12px var(--f-mono);padding:9px 10px;border-radius:10px;background:color-mix(in srgb,var(--text) 6%,transparent)}
 .au-types+p.small{margin-bottom:16px}
+/* phone headers: an icon-only main button (Journal's Write, Notes' New note) is the same size as the buttons beside it */
+@media(max-width:560px){:is(#view,#vpg)>:is(header.ph,.crumb) .ph-r>.btn{width:36px;height:36px;min-width:36px;padding:0;border-radius:13px;justify-content:center}:is(#view,#vpg)>:is(header.ph,.crumb) .ph-r>.btn svg{margin:0}}
