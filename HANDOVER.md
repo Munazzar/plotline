@@ -4,10 +4,12 @@ Written 2026-10-24 (last updated 2026-11-04) for a fresh Claude (new account, no
 first, then save the important parts into your own project memory. Nothing secret is in here: no keys, passwords or
 tokens. Where a secret is needed, this file says where the owner keeps it.
 
-Current state: **v1.67.1 is on main and released** (versionCode 175). **1.68.0 (versionCode 176) is built on branch `ui-batch-1.68.0`, not merged or released yet.** **The next versionCode is 177.** (`tools/apk/build.cjs` needs old and new versionName of the same length, so after 1.59.9 came 1.60.0.)
+Current state: **v1.68.0 is on main and released** (versionCode 176, PR #95, 2026-11-04). **The next versionCode is 177.** (`tools/apk/build.cjs` needs old and new versionName of the same length, so after 1.59.9 came 1.60.0.)
 
-**Where we stopped (checked 2026-11-04):** nothing has changed since 1.67.1 (2026-10-30), and no Plotline work is in
-progress or half-built. There are no open PRs. Next work comes from section 8 or from the owner. On the owner's PC
+**Where we stopped (checked 2026-11-04):** 1.68.0 (the owner's 11-item UI batch, see section 3) shipped on 2026-11-04
+and no Plotline work is in progress or half-built. It was checked in headless Chrome at 390 and 1280 px, but not yet on
+the emulator or a phone: run `tools/android-test/run.sh` before the next release. Next work comes from section 8 or from
+the owner. On the owner's PC
 the local AI server (llama-server, Qwen 3.5 35B-A3B on port 8080) is running again. PC test pitfalls: when the
 owner's phone is also on adb over Wi-Fi, export `ANDROID_SERIAL=emulator-5554`. Always run `adb emu kill` after an
 emulator run, because the emulator takes the GPU that llama-server needs and its speed drops from ~40 to ~0.3 tok/s.
@@ -203,7 +205,7 @@ unless noted.
 
 1.38.0=98 … 1.40.2=108, 1.41.0=109, 1.41.1=110, 1.43.0=116, 1.44.0=117, 1.45.0=118, 1.45.1=119, 1.45.2=120,
 1.45.4=122, 1.46.0=123, 1.46.1=124, 1.46.2=125, 1.46.3=126, 1.47.0=127, 1.48.0=128, 1.48.1=129, 1.49.0=130 …
-1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148, 1.58.0=149, 1.59.0=150, 1.59.1=151, 1.59.2=152, 1.59.3=153, 1.59.4=154, 1.59.5=155, 1.59.6=156, 1.59.7=157, 1.59.8=158, 1.59.9=159, 1.60.0=160, 1.60.1=161, 1.61.0=162, 1.62.0=163, 1.63.0=164, 1.63.1=165, 1.63.2=166, 1.63.3=167, 1.63.4=168, 1.64.0=169, 1.64.1=170 (built, not released; shipped inside 1.65.0), 1.65.0=171, 1.65.1=172, 1.66.0=173, 1.67.0=174, 1.67.1=175, 1.68.0=176 (branch ui-batch-1.68.0). **Next: 177.**
+1.49.6=136, 1.50.0=137, 1.51.0=138, 1.51.1=139, 1.52.0=140, 1.52.1=141 (#59, built but not released when 1.53.0 shipped), 1.53.0=142, 1.54.0=143, 1.55.0=144, 1.55.1=145, 1.56.0=146, 1.56.1=147, 1.57.0=148, 1.58.0=149, 1.59.0=150, 1.59.1=151, 1.59.2=152, 1.59.3=153, 1.59.4=154, 1.59.5=155, 1.59.6=156, 1.59.7=157, 1.59.8=158, 1.59.9=159, 1.60.0=160, 1.60.1=161, 1.61.0=162, 1.62.0=163, 1.63.0=164, 1.63.1=165, 1.63.2=166, 1.63.3=167, 1.63.4=168, 1.64.0=169, 1.64.1=170 (built, not released; shipped inside 1.65.0), 1.65.0=171, 1.65.1=172, 1.66.0=173, 1.67.0=174, 1.67.1=175, 1.68.0=176. **Next: 177.**
 
 ## 4. Building the APK (cloud, no Android SDK)
 
