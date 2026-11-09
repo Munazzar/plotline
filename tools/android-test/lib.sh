@@ -84,7 +84,7 @@ write_entry() {
 
 # Press the writer's Done like a person: close the keyboard first (it hides the bottom Done), then tap a Done on screen.
 kb_hide() { adb shell dumpsys input_method | grep -q 'mInputShown=true' && { adb shell input keyevent BACK; sleep 0.6; }; return 0; }
-wr_done() { kb_hide; tapel '#sheet [data-act=wrDone]:not(.wr-done)'; sleep 1.2; }
+wr_done() { kb_hide; tapel '#sheet [data-act=wrDone]'; sleep 1.2; }
 
 # Close the first-run setup guide and the "Take a quick tour?" prompt if either is showing (they can pop up later,
 # over the book or the writer). Taps their own buttons.
