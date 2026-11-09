@@ -45,11 +45,33 @@ eq 'location.hash.startsWith("#/bill/")' true "bill saved and opened"; shot smok
 log "=== Notes"
 js 'location.hash="#/notes";1' >/dev/null; sleep 2
 eq '(()=>{const t=document.querySelector(".bk-tab"),p=t.parentElement.getBoundingClientRect(),r=t.getBoundingClientRect();return r.right<=p.right+1})()' true "Book tab fits on the Notes page"
-tapel 'textarea[name=x]'; sleep 0.4; adb shell input text 'Buy%soat%smilk%sand%sbatteries'; kb_hide; tapel 'form[data-form=ntQuick] button[type=submit]'; sleep 1.5
-eq 'document.body.innerText.includes("Buy oat milk")' true "quick note saved"
+tapel 'textarea[data-inplace=note]'; sleep 0.4; adb shell input text 'Buy%soat%smilk%sand%sbatteries'; kb_hide; sleep 1.5
+eq 'threads().some(t=>t.title.includes("Buy oat milk"))' true "note written in place saved"
+js 'render(false);1' >/dev/null; sleep 1
 tapel 'input[placeholder*="Search every"]'; sleep 0.3; adb shell input text 'zzzqqq'; sleep 1.2
 eq '[...document.querySelectorAll(".thr-jb, .tint")].filter(e=>e.getBoundingClientRect().height&&e.innerText.includes("oat")).length' 0 "search hides notes that don't match"
 kb_hide; js 'location.hash="#/today";1' >/dev/null; sleep 1
+
+log "=== Writing page and menu"
+js 'location.hash="#/journal";1' >/dev/null; sleep 2
+tapel '[data-act=addEntry]'; sleep 1.5; kb_hide; sleep 0.5
+eq '(()=>{const s=document.querySelector("#sheet"),r=s.getBoundingClientRect();return s.classList.contains("wc")&&r.left===0&&Math.round(r.width)===innerWidth})()' true "journal opens as a full page"
+eq 'getComputedStyle(document.querySelector("#wrEd")).borderTopWidth+getComputedStyle(document.querySelector("#wrEd")).backgroundColor' '0pxrgba(0, 0, 0, 0)' "no box round the text"
+eq 'getComputedStyle(document.querySelector("#view")).visibility' hidden "page behind is hidden"
+tapel '#sheet .wm-b'; sleep 2.6
+eq '(()=>{const p=document.querySelector("#sheet .wm-p"),r=p.getBoundingClientRect();return document.querySelector("#sheet .wm").classList.contains("on")&&r.left>=0&&r.right<=innerWidth})()' true "menu opens on screen"
+tapel '#sheet [data-act=wrMood]'; sleep 1
+eq 'document.querySelector("#sheet .wc-d").textContent.includes(document.querySelector("#sheet .wr-m.on").dataset.m)' true "mood from the menu"
+tapel '#sheet .wm-b'; sleep 1.2
+eq 'document.querySelector("#sheet .wm-p").hidden' true "menu rolls back in"
+tapel '#wrEd'; sleep 0.8
+eq 'document.documentElement.classList.contains("wc-typing")' true "bottom bar makes way while typing"
+adb shell input text 'Page%stest%sentry'; sleep 1; kb_hide; sleep 0.5
+tapel '#sheet [data-act=wcBack]'; sleep 1.5
+eq 'S.entries.some(e=>e.text==="Page test entry")&&!document.querySelector("#sheet").classList.contains("wc")&&getComputedStyle(document.querySelector("#view")).visibility' visible "back saves the entry and shows the page again"
+js 'thrNewSheet();1' >/dev/null; sleep 1.2; tapel '#sheet textarea'; sleep 0.5; adb shell input text 'Note%sby%sback%sbutton'; sleep 0.5; kb_hide; sleep 0.5; adb shell input keyevent 4; sleep 1.8
+eq 'threads().some(t=>(t.title+" "+t.ups.map(u=>u.x).join(" ")).includes("Note by back button"))' true "Android back saves a note"
+js 'location.hash="#/today";1' >/dev/null; sleep 1
 
 log "=== Readable cards (dark text on a dark card)"
 for page in journal notes; do

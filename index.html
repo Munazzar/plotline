@@ -3604,7 +3604,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.68.3';
+const APP_VER='1.69.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -4509,7 +4509,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!SHEET_LOCK)closeSh
    quick flick. Touch events, not pointer events, so the browser's own scrolling can't cancel the drag. */
 (()=>{const sh=$('#sheet'),sc=$('#scrim');let D=null;const mob=()=>matchMedia('(max-width:820px)').matches;
  const scrolled=t=>{for(let n=t;n&&n!==sh.parentNode;n=n.parentNode){if(n.nodeType===1&&n.scrollTop>0&&n.scrollHeight>n.clientHeight)return true;if(n===sh)break}return false};
- const begin=(x,y,t)=>{if(SHEET_LOCK||!mob()||!sh.classList.contains('on'))return;const top=y-sh.getBoundingClientRect().top<64;
+ const begin=(x,y,t)=>{if(SHEET_LOCK||!mob()||!sh.classList.contains('on')||sh.classList.contains('wc'))return;const top=y-sh.getBoundingClientRect().top<64;
   if(!top&&(scrolled(t)||(t.closest&&t.closest('input[type=range],canvas,.wb,#map,.pl-map,.hs,[data-nodrag]'))))return;
   D={x,y,top,on:false,dy:0,t:performance.now(),v:0,ly:y,lt:performance.now()}};
  const move=(x,y,e)=>{if(!D)return;const dy=y-D.y,dx=x-D.x;
@@ -9136,5 +9136,6 @@ window.smStop=stop;
 <script src="notes.js"></script>
 <script src="bills.js"></script>
 <script src="book.js"></script>
+<script src="writer.js"></script>
 </body>
 </html>
