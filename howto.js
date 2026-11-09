@@ -239,7 +239,9 @@ function find(sel,txt){if(sel.includes('||')){for(const one of sel.split('||')){
  if(txt){const t=String(txt).toLowerCase().trim(),ex=L.filter(e=>(e.innerText||'').toLowerCase().trim()===t);if(ex.length)L=ex.concat(L.filter(e=>!ex.includes(e)))}
  const sh=sheetOn();if(sh){const inS=L.filter(e=>sh.contains(e));if(inS.length)return inS[0]}
  return L[0]||null}
-async function need(sel,txt,ms=4500){const end=performance.now()+ms*(FAST?.5:1);for(;;){const e=find(sel,txt);if(e)return e;if(performance.now()>end){console.warn('[howto] missing',DEMO,sel,txt||'');post({t:'miss',sel});return null}await wait(90)}}
+async function need(sel,txt,ms=4500){const end=performance.now()+ms*(FAST?.5:1);for(;;){const e=find(sel,txt);if(e)return e;
+  /* page buttons live in the header menu: open it for a step that needs one */
+  const w=sel.split('||').flatMap(s=>[...document.querySelectorAll(s.trim())]).map(x=>x.closest('.wm:not(.on)')).find(Boolean);if(w){w.querySelector('.wm-b').click();await wait(FAST?250:900);continue}if(performance.now()>end){console.warn('[howto] missing',DEMO,sel,txt||'');post({t:'miss',sel});return null}await wait(90)}}
 function inView(e){const r=e.getBoundingClientRect();return r.top>=60&&r.bottom<=innerHeight-100}
 async function show(e){if(inView(e))return;e.scrollIntoView({block:'center',inline:'nearest',behavior:FAST?'auto':'smooth'});await wait(520)}
 function ptrTo(x,y){P.style.transform=`translate(${x}px,${y}px)`;P.classList.add('on')}

@@ -22,7 +22,7 @@ function wmOpen(m){if(OPEN&&OPEN!==m)wmShut(true);clearTimeout(SHUT);const p=m.q
  /* offsets, not rects: an item's rect would include the transform it is parked with */
  X.forEach((x,i)=>{x.style.setProperty('--i',i);x.style.setProperty('--dx',Math.round(ox-x.offsetLeft-x.offsetWidth/2)+'px');x.style.setProperty('--dy',Math.round(oy-x.offsetTop-x.offsetHeight/2)+'px')});
  /* read the parked state first, or a panel that was just display:none has nothing to transition from */
- p.querySelectorAll('.wm-x,.wm-r').forEach(n=>getComputedStyle(n).transform);m.classList.add('on');b.setAttribute('aria-expanded','true');OPEN=m}
+ p.querySelectorAll('.wm-x,.wm-r,.wm-h>:first-child').forEach(n=>getComputedStyle(n).transform);m.classList.add('on');b.setAttribute('aria-expanded','true');OPEN=m}
 function wmShut(now){const m=OPEN;if(!m)return false;OPEN=null;clearTimeout(SHUT);m.classList.remove('on');const p=m.querySelector('.wm-p'),b=m.querySelector('.wm-b');b.setAttribute('aria-expanded','false');if(now)p.hidden=true;else SHUT=setTimeout(()=>{if(!m.classList.contains('on'))p.hidden=true},620);return true}
 ACT.wmTog=(d,b)=>{const m=b.closest('.wm');if(OPEN===m)wmShut();else wmOpen(m)};
 document.addEventListener('click',e=>{if(!OPEN)return;const m=e.target.closest&&e.target.closest('.wm');if(m!==OPEN)wmShut();else if(e.target.closest('[data-wm-c]'))setTimeout(wmShut,0)},true);
@@ -107,18 +107,24 @@ const typing=t=>t&&t.matches&&t.matches('textarea,[contenteditable=true],input:n
 sh.addEventListener('focusin',e=>{if(open()&&typing(e.target))root.classList.add('wc-typing')});
 sh.addEventListener('focusout',()=>setTimeout(()=>{if(!typing(document.activeElement))root.classList.remove('wc-typing')},60));
 
-/* ---------------- a note's page: the header buttons go in the menu, writing opens the page ---------------- */
-{const _vt=vThread;vThread=function(id){const o=_vt(id),t=TH(id);if(!t)return o;const tp=document.createElement('template');tp.innerHTML=o;const r=tp.content.querySelector('.crumb .ph-r');
- if(r){const L=[...r.children];r.innerHTML=burger();const P=r.querySelector('.wm-p');
-  /* printBtn adds its own button to this header unless it finds one here */
-  L.push(el('x',`<button data-act="printIt" data-k="thread" data-id="${esc(id)}" aria-label="Print or save as PDF">${ic('print')}</button>`).firstChild);
-  L.forEach(c=>{const on=c.classList.contains('on'),svg=c.querySelector('svg'),tx=c.getAttribute('aria-label')||c.textContent.trim();c.classList.remove('ibtn','sm');c.classList.add('wm-i');c.classList.toggle('on',on);c.dataset.wmC=1;c.innerHTML=`<span class="wm-r">${svg?svg.outerHTML:''}</span><span>${esc(tx)}</span>`;const x=el('wm-x');x.append(c);P.append(x)})}
+/* ---------------- every page's header: its buttons go in the menu ----------------
+   Each button stays the same element (its act, its icon, whatever updates it later), only moved. Runs from a
+   MutationObserver because some buttons are added after the page is drawn (print, pin, the gear); the observer fires
+   before the browser paints, so the row of buttons never shows. */
+function rollHeads(){document.querySelectorAll('#view .ph>.ph-r,#view .crumb>.ph-r').forEach(r=>{let m=r.querySelector(':scope>.wm');const had=!!m,L=[...r.children].filter(c=>c!==m);if(!L.length||(!m&&L.length<2))return;
+ if(!m){r.insertAdjacentHTML('beforeend',burger());m=r.lastElementChild;r.classList.add('wm-host')}
+ const P=m.querySelector('.wm-p');L.forEach(c=>{c.classList.add('wm-h');c.dataset.wl=c.getAttribute('aria-label')||c.title||c.textContent.trim();c.dataset.wmC=1;const x=el('wm-x');x.append(c);if(had)P.prepend(x);else P.append(x)})})}
+new MutationObserver(rollHeads).observe($('#view'),{childList:true,subtree:true});rollHeads();
+/* a note's page: writing opens the page */
+{const _vt=vThread;vThread=function(id){const o=_vt(id),t=TH(id);if(!t)return o;const tp=document.createElement('template');tp.innerHTML=o;
  const ed=tp.content.querySelector('form.thr-ed');if(ed){const b=document.createElement('button');b.type='button';b.className='wc-write rv';b.dataset.act='thrAddSheet';b.dataset.id=id;b.innerHTML=`${ic('edit')}<span>Write an update…</span>`;ed.replaceWith(b)}
  return tp.innerHTML};VIEWS.thread=vThread}
 
 document.head.appendChild(Object.assign(document.createElement('style'),{textContent:`
 /* the page */
 html.wc-on #scrim{opacity:0!important;pointer-events:none!important;transition:none}
+/* opacity as well: a flipped journal card sets its own visibility, which outlives visibility:hidden on #view */
+html.wc-on #view{opacity:0;pointer-events:none}
 html.wc-on #view,html.wc-on #fnav,html.wc-on .ai-mini{visibility:hidden}
 html.wc-on .tabbar{z-index:62}
 html.wc-full .rail{visibility:hidden}html.wc-full .tabbar{display:none}
@@ -201,7 +207,18 @@ html #sheet.wc .wc-scroll>textarea{flex:1 1 0;min-height:120px}
 .wc-write:hover{color:var(--text);border-color:var(--accent)}
 .wc-write svg{width:18px;height:18px}
 .thr-ws:has(>.wc-write){grid-template-columns:minmax(0,1fr)}
-.crumb:has(.wm){position:relative;z-index:50}
-@media(prefers-reduced-motion:reduce){#sheet.wc.on{animation:none}.wm-b,.wm-b i,.wm-p,.wm.on .wm-p,.wm-x,.wm.on .wm-x,.wm-r,.wm.on .wm-r{transition-duration:.01s!important;transition-delay:0s!important}}
+#view .ph:has(>.wm-host),#view .crumb:has(>.wm-host){position:relative;z-index:50}
+/* .crumb>.ph-r scrolls sideways, which would cut the panel off */
+#view .ph-r.wm-host{flex:none;overflow:visible;padding:0;margin:0 0 0 auto;max-width:none;-webkit-mask:none;mask:none}
+#view .wm-p .wm-h{display:flex!important;align-items:center;justify-content:flex-start;gap:14px;width:100%!important;height:auto!important;min-height:46px;margin:0;padding:6px 8px 6px 14px!important;border:0!important;border-radius:14px!important;background:none!important;box-shadow:none!important;color:var(--text)!important;font:600 14.5px var(--f-body);text-align:left;text-decoration:none;cursor:pointer;transition:background-color .2s}
+#view .wm-p .wm-h:hover{background:var(--surface)!important}
+#view .wm-p .wm-h.on{color:var(--accent)!important}
+#view .wm-p .wm-h::after{content:attr(data-wl)}
+#view .wm-p .btn.wm-h>span{display:none}
+#view .wm-p .wm-h>svg{flex:none;width:18px;height:18px;margin:0}
+.wm-h>:first-child{transform:rotate(-320deg);transition:transform .46s cubic-bezier(.5,0,.8,.3) calc((var(--n,1) - var(--i,0))*14ms)}
+.wm.on .wm-h>:first-child{transform:none;transition:transform .92s var(--ease) calc(var(--i,0)*44ms + 70ms)}
+@media(max-width:820px){#view .wm-x:has(>[data-act=focusMode]){display:none}}
+@media(prefers-reduced-motion:reduce){#sheet.wc.on{animation:none}.wm-b,.wm-b i,.wm-p,.wm.on .wm-p,.wm-x,.wm.on .wm-x,.wm-r,.wm.on .wm-r,.wm-h>:first-child,.wm.on .wm-h>:first-child{transition-duration:.01s!important;transition-delay:0s!important}}
 `}));
 })();

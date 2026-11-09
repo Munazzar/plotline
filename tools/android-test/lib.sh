@@ -28,7 +28,9 @@ xy() {
 }
 tap() { adb shell input tap "$1" "$2"; }
 # Tap an element by selector (and optional text). Fails loudly if it isn't on screen.
-tapel() { local p; p=$(xy "$1" "${2:-}"); [ -n "$p" ] || { log "NOT FOUND: $1 ${2:-}"; return 1; }; tap $p; }
+# Page buttons live in the header menu: open it first when the target is inside a closed one.
+wm_open() { [ "$(js "(()=>{const e=document.querySelector($(q "$1")),m=e&&!e.matches('.wm-b')&&e.closest('.wm:not(.on)');if(m){m.querySelector('.wm-b').click();return 1}return 0})()")" = 1 ] && sleep 2.6; true; }
+tapel() { local p; wm_open "$1"; p=$(xy "$1" "${2:-}"); [ -n "$p" ] || { log "NOT FOUND: $1 ${2:-}"; return 1; }; tap $p; }
 swipe() { adb shell input swipe "$@"; }   # x1 y1 x2 y2 [ms]
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; echo "$OUT/$1.png"; }
 
