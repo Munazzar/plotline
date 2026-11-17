@@ -1344,6 +1344,7 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .ask-orb svg{width:30px;height:30px}
 .ask-hero h2{font:800 clamp(28px,6vw,40px)/1 var(--f-display);text-transform:uppercase}
 .ask-hero p{max-width:440px;margin:10px auto 0;font-size:15px;line-height:1.5}
+.ask-plain{margin:14px 0 6px;padding:12px 14px;border:1px solid var(--line);border-radius:18px;background:var(--surface)}.ask-plain .sw{margin:0}.ask-plain .chips{display:flex;flex-wrap:wrap;gap:6px}
 .ask-sugs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:8px}
 .ask-sug{display:block;text-align:left;padding:14px 16px;border-radius:18px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;cursor:pointer;transition:border-color .2s,transform .45s var(--spring)}
 .ask-sug:hover{border-color:var(--line-2)}.ask-sug:active{transform:scale(.97)}
@@ -3604,7 +3605,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.69.1';
+const APP_VER='1.70.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -5791,8 +5792,17 @@ async function localChat(msgs,onTok,onP,tries=0,reset,cpuOnly,opts={}){if(isLrtM
 let NAT_ST=null;const natSt=()=>{try{return NAT_ST=JSON.parse(NATIVE.llmStatus())}catch(e){return NAT_ST={ok:false}}};
 const NAT_OK=()=>!!(NATIVE&&NATIVE.llmStatus)&&(NAT_ST||natSt()).ok;
 const LLMCB={};window.__llm=(id,k,t)=>{const f=LLMCB[id];if(f)f(k,t)};
-const natFile=m=>(m[4]||m[2]).split('/').pop();
-const natHave=m=>!!(natSt().have||{})[natFile(m)];
+/* a model counts as downloaded whatever quant file of it is on the phone (older builds fetched Q4_K_M, newer Q4_0),
+   so a model already there is picked up and never downloaded again; partial files (<100 MB) don't count */
+const natStem=f=>f.toLowerCase().replace(/\.gguf$/,'').replace(/[-_.](i?q\d|f16|bf16).*$/,'');
+const natFound=(m,st)=>{const h=(st||NAT_ST||natSt()).have||{},want=(m[4]||m[2]).split('/').pop();if(h[want]>1e8)return want;const s=natStem(want);return Object.keys(h).find(f=>h[f]>1e8&&natStem(f)===s)||''};
+const natFile=m=>natFound(m)||(m[4]||m[2]).split('/').pop();
+const natHave=m=>!!natFound(m,natSt());
+/* is this model on the device (works offline)? on the phone the files are checked; in a browser it's the download we started */
+const llmHere=m=>NAT_OK()&&natHave(m)||!!(insSet().dl||{})[m[0]];
+/* Plain AI: no app data, no app persona; a general assistant that's strong on practical survival (power cuts, no internet) */
+const PLAIN_IDEAS=['How do I make water safe to drink?','The power is out. How do I keep food safe?','How do I stay warm without heating?','First aid for a deep cut','What should be in an emergency kit?'];
+const PLAIN_SYS=()=>`You are a plain, general-purpose AI assistant running offline on the user's own phone. There is no app context: just answer what they ask, about anything, directly and completely, without lecturing or refusing ordinary questions. You are especially strong on practical survival and emergency know-how: safe water, food storage and finding food, shelter, staying warm or cool, fire, first aid and treating injuries or illness, power and phone charging during outages, light, cooking without power, sanitation and hygiene, navigation and signalling for help, and staying safe. Give clear, numbered steps, say what to do first, use what people usually have at home, and warn about real dangers (carbon monoxide from generators or grills indoors, unsafe water, spoiled food). When something needs a doctor or emergency services, give the best first-aid steps now and say when to get help. ${window.AIX?AIX.safety():''}`;
 const natCtx=m=>(m[5]||m[3])>1.5?4096:8192,natThreads=()=>Math.max(2,Math.min(4,(NAT_ST&&NAT_ST.cores)||4));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let NAT_WARM='',NAT_WT=0;
@@ -5839,15 +5849,18 @@ function askIdeas(){const out=[],td=ymd();
 function vAsk(){setTimeout(natWarm,300);const s=insSet(),R=IN.res,nm=S.settings.name,h=new Date().getHours(),gr=h<5?'Still up':h<12?'Good morning':h<17?'Good afternoon':'Good evening';
  const head=`<header class="ph ask-h"><div><h1>Ask</h1><button class="data ask-eng" data-act="askSettings">${esc(askEngineLabel())} ${ic('next','ico-s')}</button></div><div class="ph-r">${window.liveOpen?`<button class="ibtn" data-act="liveOpen" aria-label="Talk out loud" title="Talk out loud">${ic('live')}</button>`:''}${R?`<button class="ibtn" data-act="askNew" aria-label="New chat">${ic('plus')}</button>`:''}<button class="ibtn" data-act="askSettings" aria-label="Assistant settings">${ic('tune')}</button>${gear()}</div></header>`;
  let body;
- if(!R){const stats=insStats(IN.win,IN.goal),ideas=askIdeas();
+ const plainBar=`<div class="ask-plain rv"><label class="sw"><span>Plain AI<small>${s.plain?'Just the model: it doesn’t read your goals, habits or journal. Good for anything, survival know-how included.':'Answers use your goals, habits and journal when the question is about you.'}</small></span><input type="checkbox" data-ins="plain" ${s.plain?'checked':''}><i></i></label>${s.plain&&s.engine==='local'?`<div class="small muted" style="margin-top:10px">Model · ✓ means it’s on this device and works offline</div><div class="chips" style="margin-top:6px">${LLMS.map(m=>`<button class="chip ${llmOf(s.llm)[0]===m[0]?'on':''}" data-act="askModel" data-k="${m[0]}">${esc(m[1].split(' · ')[0])}${llmHere(m)?' ✓':''}</button>`).join('')}</div>`:''}</div>`;
+ if(!R&&s.plain)body=`<div class="ask-hero rv"><div class="ask-orb">${ic('ai')}</div><h2>${gr}${nm?', '+esc(nm):''}.</h2><p class="muted">Ask anything. ${s.engine==='local'?'Answers are made on this device, no internet needed once the model is downloaded.':''}</p></div>${plainBar}
+  <div class="ask-sugs rv">${PLAIN_IDEAS.map(q=>`<button class="ask-sug idea" data-act="askIdea" data-q="${esc(q)}"><b>${esc(q)}</b><small>Survival</small></button>`).join('')}</div>`;
+ else if(!R){const stats=insStats(IN.win,IN.goal),ideas=askIdeas();
   body=`<div class="ask-hero rv"><div class="ask-orb">${ic('ai')}</div><h2>${gr}${nm?', '+esc(nm):''}.</h2><p class="muted">Ask about anything: your goals, habits and journal, or whatever’s on your mind.${s.engine==='local'?' Answers are made on this device.':''}</p></div>${window.AIX&&s.engine!=='api'&&!AIX.ready()?AIX.modelCard('ask'):''}
-  ${typeof aiPlanCard==='function'?aiPlanCard('ask'):''}<div class="ask-sugs rv">${INS_PRE.map(p=>`<button class="ask-sug" data-act="askPre" data-k="${p.k}"><b>${p.n}</b><small>${p.d}</small></button>`).join('')}${ideas.map(q=>`<button class="ask-sug idea" data-act="askIdea" data-q="${esc(q)}"><b>${esc(q)}</b><small>From your plan</small></button>`).join('')}</div>
+  ${plainBar}${typeof aiPlanCard==='function'?aiPlanCard('ask'):''}<div class="ask-sugs rv">${INS_PRE.map(p=>`<button class="ask-sug" data-act="askPre" data-k="${p.k}"><b>${p.n}</b><small>${p.d}</small></button>`).join('')}${ideas.map(q=>`<button class="ask-sug idea" data-act="askIdea" data-q="${esc(q)}"><b>${esc(q)}</b><small>From your plan</small></button>`).join('')}</div>
   <div class="ask-sig rv"><div class="small muted">Signals${IN.win?` · last ${IN.win} days`:''}</div><div class="ins-stats">${stats.map(x=>`<div class="ins-st ${x.hl?'hl':''}" title="${esc(x.t)}"><b>${esc(String(x.v))}</b><span>${esc(x.k)}</span>${x.hl?`<small>${esc(x.t)}</small>`:''}</div>`).join('')}</div></div>`}
  else body=`<div class="ask-thread">${R.turns.map((t,i)=>askTurn(R,t,i)).join('')}</div>`;
  const scope=`${(INS_WIN.find(w=>w[0]===IN.win)||INS_WIN[3])[1]}${IN.goal&&G(IN.goal)?' · '+esc(trunc(G(IN.goal).title,22)):''}`;
  return`<section class="ask ${R?'has':''}">${head}${body}
- <div class="ask-comp"><button class="ask-scope" data-act="askScope" aria-label="Search scope">${ic('search','ico-s')}<span>${scope}</span></button>
-  <div class="ask-row"><textarea id="askIn" rows="1" placeholder="${R?'Ask a follow-up…':'Ask anything about your life…'}" aria-label="Ask">${esc(IN.q)}</textarea>
+ <div class="ask-comp">${s.plain||(R&&R.plain)?'':`<button class="ask-scope" data-act="askScope" aria-label="Search scope">${ic('search','ico-s')}<span>${scope}</span></button>`}
+  <div class="ask-row"><textarea id="askIn" rows="1" placeholder="${R?'Ask a follow-up…':s.plain?'Ask anything…':'Ask anything about your life…'}" aria-label="Ask">${esc(IN.q)}</textarea>
   ${IN.busy?`<button class="ask-go stop" data-act="insStop" aria-label="Stop"><i></i></button>`:`<button class="ask-go" data-act="askSend" aria-label="Send">${ic('up')}</button>`}</div>${window.AIX?AIX.note():''}</div></section>`}
 function askTurn(R,t,i){const last=i===R.turns.length-1,n=R.srcs.length,done=R.turns.every(x=>x.done);
  let a='';
@@ -5880,7 +5893,7 @@ function insTop(R){const top=R.srcs.slice(0,3);if(!top.length)return'';const q=R
 function insEngineHTML(){const s=insSet();return`<div class="ins-eng" id="askSet">
  <p class="small muted">Plotlines builds a short overview of your plan and finds the notes that match your question on this device. Only that goes to the engine you pick.</p>
  <div class="field"><label>Answer engine</label><div class="radios sm wrap">${Object.entries(ENG_N).map(([k,n])=>`<label><input type="radio" name="insE" data-ins="engine" value="${k}" ${s.engine===k?'checked':''}><span>${n}</span></label>`).join('')}</div></div>
- ${s.engine==='local'?`<p class="small muted">An open-source model runs ${NAT_OK()?'natively on this phone with llama.cpp':'inside '+(NATIVE?'the app':'this browser')+' with llama.cpp (wllama)'}. It downloads once, then works offline. Nothing leaves this device. Smaller models answer faster; bigger ones understand more.</p><div class="field"><label>Model</label><select data-ins="llm">${LLMS.map(([k,n])=>`<option value="${k}" ${llmOf(s.llm)[0]===k?'selected':''}>${n}${NAT_OK()&&natHave(llmOf(k))||isLrtM(llmOf(k))&&(s.dl||{})[k]?' · downloaded':''}${isLrtM(llmOf(k))&&!NAT_OK()&&LRT_OK===false?' · needs a GPU':''}</option>`).join('')}</select></div>${isLrtM(llmOf(s.llm))?`<p class="small muted">${lrtOn()?'Gemma 4 runs on this device’s GPU with Google’s LiteRT-LM, the fastest way to run it.':'Gemma 4 runs on this phone’s CPU with llama.cpp.'}</p>${NAT_OK()&&LRT_OK?`<label class="sw"><span>Run Gemma on the GPU<small>Much faster answers with Google’s LiteRT-LM. Turn it off if answers come out garbled or the phone stutters.</small></span><input type="checkbox" data-ins="lgpu" ${s.lgpu?'checked':''}><i></i></label>`:''}`:''}${window.AIX?AIX.modelCard('set'):''}`:''}
+ ${s.engine==='local'?`<p class="small muted">An open-source model runs ${NAT_OK()?'natively on this phone with llama.cpp':'inside '+(NATIVE?'the app':'this browser')+' with llama.cpp (wllama)'}. It downloads once, then works offline. Nothing leaves this device. Smaller models answer faster; bigger ones understand more.</p><div class="field"><label>Model</label><select data-ins="llm">${LLMS.map(([k,n])=>`<option value="${k}" ${llmOf(s.llm)[0]===k?'selected':''}>${n}${llmHere(llmOf(k))?' · downloaded':''}${isLrtM(llmOf(k))&&!NAT_OK()&&LRT_OK===false?' · needs a GPU':''}</option>`).join('')}</select></div>${isLrtM(llmOf(s.llm))?`<p class="small muted">${lrtOn()?'Gemma 4 runs on this device’s GPU with Google’s LiteRT-LM, the fastest way to run it.':'Gemma 4 runs on this phone’s CPU with llama.cpp.'}</p>${NAT_OK()&&LRT_OK?`<label class="sw"><span>Run Gemma on the GPU<small>Much faster answers with Google’s LiteRT-LM. Turn it off if answers come out garbled or the phone stutters.</small></span><input type="checkbox" data-ins="lgpu" ${s.lgpu?'checked':''}><i></i></label>`:''}`:''}${window.AIX?AIX.modelCard('set'):''}`:''}
  ${s.engine==='copy'?`<p class="small muted">You copy a ready-made prompt into Claude, ChatGPT, Gemini or any assistant. Plotlines itself sends nothing.</p>`:''}
  ${s.engine==='api'?`<p class="small muted">Any OpenAI-compatible server. Open-source models on your own computer with Ollama or LM Studio keep everything at home. The key stays on this device and, with sync on, in your own Drive’s hidden app folder so your other devices can use it. It’s never put in backups.</p>
   <div class="chips" style="margin:10px 0">${API_PRE.map(([n,u,m])=>`<button class="chip ${s.url===u?'on':''}" data-act="insApiPre" data-u="${u}" data-m="${m}">${n}</button>`).join('')}</div>
@@ -5893,19 +5906,20 @@ function insEngineHTML(){const s=insSet();return`<div class="ins-eng" id="askSet
  ${s.engine==='local'&&!NAT_OK()?`<label class="sw"><span>Use the GPU<small>Faster on laptops. Off on phones by default, where it can freeze the device or garble answers.</small></span><input type="checkbox" data-ins="gpu" ${useGPU()?'checked':''}><i></i></label>`:''}
  <label class="sw"><span>Smart search<small>Finds notes by meaning, not just words. Downloads a 23 MB open-source model (all-MiniLM-L6-v2) once.</small></span><input type="checkbox" data-ins="smart" ${s.smart?'checked':''}><i></i></label>
  <label class="sw"><span>Include private entries<small>Off by default. Private journal entries stay out of every search and prompt.</small></span><input type="checkbox" data-ins="priv" ${s.priv?'checked':''}><i></i></label>
+ <label class="sw"><span>Plain AI<small>Just the model, like any chat AI: it never reads your app data. Good for anything, survival know-how included.</small></span><input type="checkbox" data-ins="plain" ${s.plain?'checked':''}><i></i></label>
  <label class="sw"><span>Family-safe mode<small>For when children use Plotlines: answers stay age-appropriate. Off, the AI talks about anything except a couple of hard limits.</small></span><input type="checkbox" data-ins="family" ${s.family?'checked':''}><i></i></label>
  <div class="actions left">${s.smart?`<button class="btn sm ghost" data-act="insReindex">Rebuild search index</button>`:''}<button class="btn sm ghost" data-act="insAbout">See what the AI knows about you</button></div></div>`}
 async function insRun(){const R=IN.res,t=R.turns[R.turns.length-1];if(R.engine==='copy'){IN.busy=false;insProg('');render(false);return}
  ASK_SHOWN=0;insProg(R.engine==='local'?(LLM&&LLM_ID.startsWith(llmOf(insSet().llm)[0]+':')?'Thinking on this device…':'Starting the on-device model…'):'Asking your AI server…');render(false);askScroll(true);
  const onTok=x=>{if(!t.a)insProg('');t.a+=x;insPaint()};
  /* email, calendar, Drive or Notion: the AI decides, and the agent (agent.js) looks it up */
- if(window.AGENT&&!IN.ctl.signal.aborted){insProg('Thinking…');const d=await AGENT.decide(t.q,R.turns.slice(0,-1).filter(x=>x.done&&x.a));
+ if(window.AGENT&&!R.plain&&!IN.ctl.signal.aborted){insProg('Thinking…');const d=await AGENT.decide(t.q,R.turns.slice(0,-1).filter(x=>x.done&&x.a));
   if(d&&d.agent)return insAgent(R,t,d.agent,d.web);
   if(d&&d.items&&window.PlotDo){const x=PlotDo.doItems(d.items);if(x){t.a=x.say;R.msgs.push({role:'assistant',content:t.a});t.done=true;IN.busy=false;insProg('');if(insPage())render(false);return}}}
  try{if(R.engine==='api')await apiChat(insMsgs(R),onTok,IN.ctl.signal);else if(NAT_OK())await natChat(insMsgs(R),onTok,insProg,()=>{t.a='';insPaint()});else await localChat(insMsgs(R),onTok,insProg,0,()=>{t.a='';insPaint()});if(!t.a.trim()&&!IN.ctl.signal.aborted)t.err='The model returned an empty answer.'}
  catch(e){if(e.name!=='AbortError')t.err=(e&&e.message||'Something went wrong')+(R.engine==='api'&&/fetch|network|load/i.test(e.message||'')?' · Check the address, that the server is running, and that it allows this app (CORS).':R.engine==='local'&&/fetch|network|download/i.test(e.message||'')?' · The model couldn’t download. Check your connection and try again.':R.engine==='local'&&/memory|alloc|oom|abort|range/i.test(e.message||'')?' · This device may not have enough free memory for this model. Close other apps, or pick Llama 3.2 1B in the assistant settings.':'')}
  if(t.a&&!IN.ctl.signal.aborted)await askDrain();
- {const tk=window.AGENT&&t.a&&AGENT.parse(t.a);if(tk)return insAgent(R,t,tk)}
+ {const tk=window.AGENT&&!R.plain&&t.a&&AGENT.parse(t.a);if(tk)return insAgent(R,t,tk)}
  if(t.a&&window.AIX){const P=AIX.parseActs(t.a.replace(/<think>[\s\S]*?<\/think>/g,''));t.acts=AIX.keepActs(P.acts);t.a=P.clean;const c=AIX.care(t.q,t.a);if(c)t.a+='\n\n'+c}
  if(t.a)R.msgs.push({role:'assistant',content:t.a.replace(/<think>[\s\S]*?<\/think>/g,'').trim()});t.done=true;IN.busy=false;insProg('');if(insPage())render(false)}
 async function insAgent(R,t,task,web){t.a='';t.err='';insProg('Asking your agent…');insPaint();
@@ -5914,6 +5928,7 @@ async function insAgent(R,t,task,web){t.a='';t.err='';insProg('Asking your agent
  if(t.a)R.msgs.push({role:'assistant',content:t.a});t.done=true;IN.busy=false;insProg('');if(insPage())render(false)}
 Object.assign(ACT,{
  askSend:()=>{const q=(IN.q||'').trim();if(!q||IN.busy)return;const follow=!!(IN.res&&!IN.res.pending&&!IN.res.offOnly);{const b=window.AIX&&AIX.block(q);if(b)return askBlocked(q,b)}if(follow){IN.q='';ACT.insFollow(null,null,null,q)}else ACT.insAsk(null,null,null,q)},
+ askModel:d=>{const s=insSet();if(llmOf(d.k)[0]===s.llm)return;s.llm=d.k;save();NAT_WARM='';try{natWarm()}catch(_){}render(false);toast(llmOf(d.k)[1].split(' · ')[0]+(llmHere(llmOf(d.k))?' is ready':' downloads the first time you ask'))},
  askPre:d=>{const p=INS_PRE.find(x=>x.k===d.k);if(!p)return;IN.pre=p.k;ACT.insAsk(null,null,null,p.q)},
  askIdea:d=>ACT.insAsk(null,null,null,d.q),
  askPlan:()=>{AI.tab='new';go('ai')},
@@ -5922,11 +5937,15 @@ Object.assign(ACT,{
  askSettings:()=>openSheet(`<h2>Assistant settings</h2>${insEngineHTML()}<div class="actions"><button class="btn" data-act="close">Done</button></div>`),
  askScope:()=>openSheet(`<h2>What to search</h2><p class="small muted">Answers use notes from this time range. Goals and habits are always included.</p><div class="field"><label>Time range</label><div class="radios sm wrap">${INS_WIN.map(([v,n])=>`<label><input type="radio" name="insWin" data-ins="win" value="${v}" ${IN.win===v?'checked':''}><span>${n}</span></label>`).join('')}</div></div><div class="field"><label>Focus</label><select data-ins="goal"><option value="">Whole plan</option>${treeOrder(S.goals).filter(t=>t.d<2).map(t=>`<option value="${t.g.id}" ${IN.goal===t.g.id?'selected':''}>${'· '.repeat(t.d||0)}${esc(trunc(t.g.title,48))}</option>`).join('')}</select></div><div class="actions"><button class="btn pri" data-act="close">Done</button></div>`),
  askSources:()=>{const R=IN.res;if(!R)return;openSheet(`<h2>Sources</h2><p class="small muted">${R.mode==='smart'?'Smart + keyword search':'Keyword search'}${R.total?` over ${R.total} passages`:''}, plus an overview of your plan.</p><ol class="ins-src-l">${R.srcs.map((d,i)=>`<li><button class="ins-si" data-act="insSrc" data-i="${i}"><span class="n">${i+1}</span><span class="t"><b>${esc(trunc(d.label,70))}</b><small>${esc(({entry:'Journal',goal:'Goal',habit:'Habit',day:'Day plan',list:'List'})[d.kind])}${d.kind==='entry'||d.kind==='day'?' · '+fmtDate(d.date):''}${d.mood?' · '+esc(d.mood):''}</small></span></button></li>`).join('')}</ol><div class="actions"><button class="btn" data-act="close">Done</button></div>`)},
- insFollow:async(d,el,ev,qq)=>{const R=IN.res,q=String(qq||'').trim();if(!R||IN.busy||!q)return;IN.busy=true;IN.paste='';IN.ctl=new AbortController();R.turns.push({q,a:'',done:false,err:''});insProg('Searching your notes…');render(false);askScroll(true);
+ insFollow:async(d,el,ev,qq)=>{const R=IN.res,q=String(qq||'').trim();if(!R||IN.busy||!q)return;IN.busy=true;IN.paste='';IN.ctl=new AbortController();R.turns.push({q,a:'',done:false,err:''});
+  if(R.plain){R.msgs.push({role:'user',content:q});R.prompt=q;render(false);askScroll(true);return insRun()}
+  insProg('Searching your notes…');render(false);askScroll(true);
   let fresh=[];try{const r=await ragRetrieve(q,R.opt,insProg);const have=new Set(R.srcs.map(d=>d.id));fresh=r.srcs.filter(d=>!have.has(d.id)).slice(0,R.engine==='local'?4:8)}catch(e){}
   const msg=insFollowMsg(q,fresh,R.srcs.length);R.srcs.push(...fresh);R.msgs.push({role:'user',content:msg});R.prompt=msg;await insRun()},
  insAsk:async(d,el,ev,qq)=>{if(IN.busy)return;const q=String(qq||IN.q||'').trim(),p=INS_PRE.find(x=>x.k===IN.pre&&x.q===q);if(!q)return toast('Ask a question or pick one of the suggestions');
   {const s=insSet(),m=llmOf(s.llm),gb=NAT_OK()&&!lrtOn()?(m[5]||m[3]):m[3];if(s.engine==='local'&&(gb||0)>=1&&!(s.dl||{})[m[0]]&&!(NAT_OK()&&natHave(m)))return askConfirm('Download '+esc(m[1].split(' · ')[0])+'?',`This downloads ${gb} GB once from Hugging Face, then answers work offline. Use Wi-Fi.${isLrtM(m)?' Once it’s loaded, answers start in a few seconds.':gb>1.5?' It needs about 3 GB of free memory, and on a phone each answer can take a minute or more.':''}`,'Download',()=>{s.dl={...(s.dl||{}),[m[0]]:1};save();closeSheet();ACT.insAsk(null,null,null,q)},false)}
+  if(insSet().plain){const s=insSet();IN.busy=true;IN.paste='';IN.q='';IN.pre='';IN.ctl=new AbortController();
+   IN.res={plain:1,srcs:[],engine:s.engine,prompt:q,msgs:[{role:'system',content:PLAIN_SYS()},{role:'user',content:q}],turns:[{q,a:'',done:false,err:''}],opt:{}};render(false);askScroll(true);return insRun()}
   if(!S.entries.length&&!S.goals.length&&!S.habits.length)return toast('Add a goal, habit or journal entry first');
   const s=insSet();IN.busy=true;IN.paste='';IN.q='';IN.pre='';IN.ctl=new AbortController();IN.res={srcs:[],turns:[{q,a:'',done:false,err:''}],engine:s.engine,msgs:[],pending:1};insProg('Searching your notes…');render(false);askScroll(true);
   try{const W=p?p.win:IN.win,r=await ragRetrieve(p?p.q+' '+(p.kw||''):q,{win:W,goal:IN.goal,all:p&&p.all,kinds:p&&p.kinds,broad:!!p||insFocus(q).broad},insProg);const stats=insStats(W,IN.goal),prompt=insPrompt(q,r,stats,W);
@@ -5951,7 +5970,7 @@ document.addEventListener('input',e=>{const t=e.target;if(t.id==='askIn'){IN.q=t
 document.addEventListener('keydown',e=>{if(e.target&&e.target.id==='askIn'&&e.key==='Enter'&&!e.shiftKey&&(!IS_PHONE||e.ctrlKey||e.metaKey)){e.preventDefault();ACT.askSend()}});
 document.addEventListener('change',e=>{const t=e.target,k=t.dataset&&t.dataset.ins;if(!k||k==='url'||k==='model'||k==='key')return;const s=insSet();
  if(k==='win'){IN.win=+t.value;if(insPage())render(false);return}if(k==='goal'){IN.goal=t.value;if(insPage())render(false);return}
- if(k==='engine'||k==='llm'||k==='think')s[k]=t.value;else if(k==='smart'||k==='priv'||k==='gpu'||k==='lgpu'||k==='family')s[k]=t.checked;save();if(k==='engine'||k==='llm'){NAT_WARM='';try{natWarm()}catch(_){}}
+ if(k==='engine'||k==='llm'||k==='think')s[k]=t.value;else if(k==='smart'||k==='priv'||k==='gpu'||k==='lgpu'||k==='family'||k==='plain')s[k]=t.checked;if(k==='plain'&&IN.res&&!IN.busy)IN.res=null;save();if(k==='engine'||k==='llm'){NAT_WARM='';try{natWarm()}catch(_){}}
  if(k==='smart'&&t.checked){toast('Preparing smart search…');ensureVecs(ragDocs(),()=>{}).then(()=>toast('Smart search is ready')).catch(()=>toast('Couldn’t load the search model. Keyword search still works'))}
  const sh=$('#sheet'),inSheet=sh&&sh.classList.contains('on')&&sh.contains(t);if(insPage()||!inSheet)render(false);askSetRefresh()});
 /* account-switch choices (helpers live with the sync code) */
