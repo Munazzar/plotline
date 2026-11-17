@@ -256,10 +256,16 @@ document.addEventListener('input',e=>{if(e.target&&e.target.id==='lvIn'&&LV.open
 function lvSay(text,then){const t=String(text||'').trim();if(!t||!LV.open)return then?then():lvListen();lvState('speak');
  if(window.PLOT_ASSIST&&PLOT_ASSIST.say)PLOT_ASSIST.say(t,()=>{if(!LV.open)return;if(LV.st==='speak')(then||lvListen)()});else(then||lvListen)()}
 async function lvHeard(text){const g=++LV.gen,t=String(text).trim(),PA=window.PLOT_ASSIST||{},SP=PA.stream;if(!t)return lvListen();LV.you=t;LV.retry='';LV.ai='';lvCap();lvState('think');
- const done=(say,acts,extra,full)=>{if(g!==LV.gen||!LV.open)return;LV.ai=say;if(acts)LV.pend=keepActs(acts);lvCap();LV.hist.push({role:'user',content:t},{role:'assistant',content:full||say});LV.hist=LV.hist.slice(-12);
+ const done=(say,acts,extra,full)=>{if(g!==LV.gen||!LV.open)return;LV.ai=say;if(acts)LV.pend=keepActs(acts);lvCap();{const pl=!!LV.plainTurn;LV.plainTurn=0;LV.hist.push({role:'user',content:t,plain:pl},{role:'assistant',content:full||say,plain:pl})}LV.hist=LV.hist.slice(-12);
   try{PLOT_ASSIST.addTurn(t,full||say)}catch(e){}if(extra==='bye'){lvSay(say,()=>liveClose());return}if(extra==='retry'){lvSay(say,()=>{lvState('idle','');lvCap()});return}if(SP&&SP.end(say))return;lvSay(say)};
  if(BYE.test(t))return done(['Bye for now.','Talk soon.','Okay, bye!'][Math.floor(Math.random()*3)],[],'bye');
  const blocked=aiBlock(t);if(blocked)return done(blocked,[]);
+ /* Plain AI: just the model, no app data, commands, agent or things to add */
+ if(PLAIN()){if(!aiReady())return done('Plain AI needs a model. Pick one and download it once, then it works offline.',[]);const ctl=LV.ctl=new AbortController();let out='';
+  try{if(SP)SP.start({first:()=>{if(g===LV.gen&&LV.open)lvState('speak')},done:()=>{if(LV.open&&g===LV.gen&&LV.st==='speak')lvListen()}});
+   await aiChat([{role:'system',content:PLAIN_SYS()+' Your answer is read aloud: short, natural sentences, no lists or markdown. Give the most important steps first.'},...LV.hist.filter(m=>m.plain).slice(-8).map(m=>({role:m.role,content:m.content})),{role:'user',content:t}],x=>{if(g!==LV.gen)return;out+=x;if(SP)SP.feed(out);const v=out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'');if(v){LV.ai=v;const c=$('#lvCap');const p=c&&c.querySelector('.lv-ai');if(p)p.textContent=v;else lvCap()}},{ctl,max_tokens:planEngine()==='api'?600:360,temperature:.6,reading:'Thinking…',onP:x=>{if(x&&g===LV.gen)lvState('think',x)},reset:()=>{out=''}})}
+  catch(e){if(g!==LV.gen)return;if(e&&e.name==='AbortError')return;LV.retry=t;return done('Sorry, I couldn’t think that through: '+(e&&e.message||e),[],'retry')}
+  if(g!==LV.gen)return;LV.plainTurn=1;return done(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/[*#_`]/g,'').trim()||'Hmm, I’m not sure. Can you say that another way?',[])}
  /* "yes" to what was offered */
  const open=LV.pend.filter(a=>!a.st);if(open.length&&YES.test(t)){const said=[];open.forEach(a=>{try{const r=doAct(a);said.push(actLabel(a).toLowerCase())}catch(e){}});LV.pend=[...LV.pend];return done(`Done. I added the ${said.join(' and the ')}.`,LV.pend)}
  if(open.length&&NO.test(t)&&t.split(/\s+/).length<=4){LV.pend=[];return done('Okay, I’ll leave it.',[])}
