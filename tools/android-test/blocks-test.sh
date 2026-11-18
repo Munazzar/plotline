@@ -39,12 +39,28 @@ J 'render(false),1' >/dev/null; sleep 1.5
 J 'document.querySelector("#view").innerText' | grep -q "Two permissions" && bug "permission card still there after access" || ok "permission card gone"
 n=$(J 'JSON.parse(PlotlineAssist.blockApps()).filter(a=>a.i).length'); [ "${n:-0}" -ge 5 ] && ok "$n apps with icons" || bug "app list: $n with icons"
 
+# 1b. Never blocked, with real taps: the section on the page, Add apps, tick Maps, Done
+J '(()=>{BLOCKS.cfg().allow=[];save();render(false);return 1})()' >/dev/null; sleep 1.5
+tapel '#blkAllow [data-act=blkPick]' && sleep 2
+p=$(xy '.blk-pa' 'Maps'); [ -n "$p" ] && tap $p; sleep 1; tapel '[data-act=blkPickOk]'; sleep 2
+J 'JSON.stringify(BLOCKS.cfg().allow)' | grep -q maps && ok "Never blocked: Maps added with real taps" || bug "Never blocked: Maps not added ($(J 'JSON.stringify(BLOCKS.cfg().allow)'))"
+J 'document.querySelector("#blkAllow").innerText' | grep -q Maps && ok "Never blocked list shows Maps" || bug "Never blocked list doesn't show Maps"
+shot blk-01b-allow >/dev/null
+tapel '#blkAllow [data-act=blkAllowDel]'; sleep 1.5; J 'BLOCKS.cfg().allow.length' | grep -q "^0$" && ok "Never blocked: removed with ×" || bug "remove from Never blocked failed"
+# 1c. its own place: Home card and Settings entry
+J '(()=>{go("today");return 1})()' >/dev/null; sleep 3; J '!!document.querySelector(".hblk")' | grep -q true && ok "Home has a Blocks card" || bug "no Blocks card on Home"
+shot blk-01c-home >/dev/null
+J '(()=>{go("settings");return 1})()' >/dev/null; sleep 2.5; J '[...document.querySelectorAll(".shub-r b")].map(b=>b.textContent).join()' | grep -q Blocks && ok "Settings lists Blocks" || bug "Settings has no Blocks entry"
+J '(()=>{go("blocks");return 1})()' >/dev/null; sleep 2
+
 # 2. focus over Chrome: shown, Close goes home, Back goes home
 J '(()=>{const c=BLOCKS.cfg();c.distract=["com.android.chrome","com.google.android.youtube"];c.rules=[];save();return !BLOCKS.startFocus({min:20,mode:"apps"}).err})()' | grep -q true || bug "focus didn't start"
 sleep 2; open_app $CHROME
 [ "$(shield)" = 1 ] && ok "focus blocks Chrome" || bug "focus: no block screen over Chrome"
 shot blk-02-focus >/dev/null
 ui | grep -q 'Focus until' || bug "block screen doesn't say why"
+fr=$(adb shell dumpsys window windows | grep -a -A25 "adjust=resize" | grep -ao ' frame=\[[0-9,]*\]\[[0-9,]*\]' | head -1)
+echo "$fr" | grep -qF "[0,0][1080,2340]" && ok "block screen covers the whole screen ($fr)" || bug "block screen not edge to edge: $fr"
 uitap "Close Chrome" && sleep 2.5; top | grep -q launcher && ok "Close goes home" || bug "Close: top is $(top)"
 [ "$(shield)" = 0 ] || bug "block screen still up after Close"
 open_app $CHROME; adb shell input keyevent BACK; sleep 2.5
