@@ -542,6 +542,8 @@ async function run(raw,o={}){const text=String(raw||'').trim().replace(new RegEx
   /* a question from Ask's suggestions, Home insights or "Ask about this": straight to the AI with their notes (a suggestion reads a wider slice) */
   if(!r&&o.ask&&aiReady()){const P=o.pre;if(P)AS.rag={q:text,p:ragRetrieve(text+' '+(P.kw||''),{win:P.win||0,goal:'',all:P.all,kinds:P.kinds,broad:true},null).catch(()=>null)};status('Searching your notes…');const a=await aiAnswer(text,status).catch(e=>{if(e&&e.name==='AbortError')throw e;return null});r=a?{say:a}:{say:'Sorry, I couldn’t answer that right now.'}}
   if(aw&&!r)r=answerAwait(aw,text);
+  /* Blocks: "block Instagram for an hour", "focus for 25 minutes", "limit YouTube to 30 minutes a day" */
+  if(!r&&window.BLOCKS){try{r=BLOCKS.voice(text)}catch(e){}}
   if(!r){const p=parse(text);if(p)r=exec(p,text)}
   if(!r&&fastOn()&&aiReady())r=quickAsk(text);
   if(!r&&!aiReady())r=localAsk(text);
@@ -798,7 +800,7 @@ setTimeout(()=>{if(cur.p==='ask'&&!document.documentElement.classList.contains('
 window.addEventListener('app-resume',()=>{setTimeout(()=>{bgCheck();wakeSync();takePending()},300)});
 window.PLOT_ASSIST={quickHTML,run,asCtx,askMsg,parse,parseWhen,localAsk,aname,ctx:asCtx,
  /* for the live conversation (ai.js) */
- command:t=>{const p=parse(t);if(!p||['hello','thanks','cancel','help','whoami','live'].includes(p.k))return null;if(p.k==='done'){const r=exec(p,t);return r&&r.undo?r:null}const r=exec(p,t);return r&&!r.await?r:null},
+ command:t=>{if(window.BLOCKS){try{const b=BLOCKS.voice(t);if(b)return b}catch(e){}}const p=parse(t);if(!p||['hello','thanks','cancel','help','whoami','live'].includes(p.k))return null;if(p.k==='done'){const r=exec(p,t);return r&&r.undo?r:null}const r=exec(p,t);return r&&!r.await?r:null},
  lookup:t=>localAsk(t),say:(t,done,ov)=>speak(t,done||(()=>{}),ov),hush:()=>hush(),close:()=>{if(AS.open)asClose()},
  addTurn:(q,a)=>{AS.turns.push({q,a,chips:[],t:Date.now(),id:uid(),live:1});AS.turns=AS.turns.slice(-30);convSync();pushWidget2()},
  /* conversations: talk mode joins the one on screen if it was just used, else starts its own; resume loads a saved one */

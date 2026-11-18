@@ -64,7 +64,7 @@ public class Assist {
         if (hooked) return;
         hooked = true;
         a.getApplication().registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
-            public void onActivityResumed(Activity x) { if (x instanceof MainActivity) { act = new WeakReference<MainActivity>((MainActivity) x); resumed = true; overLock(x); apply(x); } }
+            public void onActivityResumed(Activity x) { if (x instanceof MainActivity) { act = new WeakReference<MainActivity>((MainActivity) x); resumed = true; overLock(x); apply(x); try { Blocker.ensure(x); } catch (Throwable e) { } } }
             public void onActivityPaused(Activity x) { if (x instanceof MainActivity) { resumed = false; apply(x); } }
             public void onActivityCreated(Activity x, Bundle b) { if (x instanceof MainActivity) overLock(x); }
             public void onActivityStarted(Activity x) { if (x instanceof MainActivity) overLock(x); }
@@ -288,6 +288,28 @@ public class Assist {
        usage access. 1.54. */
     @JavascriptInterface
     public String usageHours(int days) { return UsageHours.json(c, days); }
+
+    /* Blocks (1.71.0, Blocker): blockSet(json) saves the rules and starts or stops the blocker, then returns
+       blockState(): {usage, overlay, running, used:{pkg:minutes today}, grants, once, log}. blockApps(): the apps you
+       can open, [{p, l, i: PNG icon base64, cat, sys}]. blockOpen("usage"|"overlay"): Android's setting for it. */
+    @JavascriptInterface
+    public String blockSet(String json) { Blocker.set(c, json == null ? "{}" : json); return Blocker.state(c); }
+    @JavascriptInterface
+    public String blockState() { return Blocker.state(c); }
+    @JavascriptInterface
+    public String blockApps() { return Blocker.apps(c); }
+    @JavascriptInterface
+    public void blockOpen(String what) {
+        try {
+            Intent i = "overlay".equals(what)
+                ? new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + c.getPackageName()))
+                : new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            c.startActivity(i);
+        } catch (Exception e) {
+            try { Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + c.getPackageName())); i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); c.startActivity(i); } catch (Exception x) { }
+        }
+    }
 
     /* bgAgent([{at}]): when agent tasks are due, so they run by themselves (BgAgent). "exact" or "no". 1.57. */
     @JavascriptInterface

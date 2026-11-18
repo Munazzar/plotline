@@ -47,6 +47,8 @@ public class StepHours {
 
     /* one reading of the counter, kept with its time */
     static synchronized void tick(Context c) {
+        /* 1.71.0: this ~15-minute tick also brings Blocks back after a reboot or if Android stopped the service */
+        try { Blocker.ensure(c); } catch (Throwable e) { }
         try {
             if (!perm(c)) return;
             SensorManager sm = (SensorManager) c.getSystemService(Context.SENSOR_SERVICE);
