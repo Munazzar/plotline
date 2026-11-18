@@ -590,7 +590,10 @@ public class Blocker extends Service {
                 PixelFormat.OPAQUE);
             lp.gravity = Gravity.TOP | Gravity.START;
             lp.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
-            if (Build.VERSION.SDK_INT >= 28) lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            if (Build.VERSION.SDK_INT >= 28) lp.layoutInDisplayCutoutMode = Build.VERSION.SDK_INT >= 30 ? WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS : WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            /* edge to edge: by default an overlay window is laid out inside the status and navigation bars, which left
+               the blocked app showing under the gesture bar. With no insets to fit it covers the whole screen. */
+            if (Build.VERSION.SDK_INT >= 30) { lp.setFitInsetsTypes(0); lp.setFitInsetsSides(0); lp.setFitInsetsIgnoringVisibility(true); }
             wm.addView(root, lp);
         }
 
