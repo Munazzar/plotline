@@ -1602,6 +1602,7 @@ html,body,*{scrollbar-width:none}::-webkit-scrollbar{width:0;height:0;display:no
 .has-mic>input,.has-mic>textarea{padding-right:46px}
 .mic{position:absolute;right:6px;bottom:6px;z-index:2;width:34px;height:34px;border-radius:11px;border:0;display:grid;place-items:center;background:transparent;color:var(--muted);cursor:pointer;transition:color .2s,background-color .2s}
 .has-mic>input+.mic{top:50%;bottom:auto;transform:translateY(-50%)}
+.mic.busy{animation:micBusy 1.1s ease-in-out infinite}@keyframes micBusy{50%{opacity:.45}}
 .mic svg{width:18px;height:18px;position:relative;z-index:1}
 .mic:hover{color:var(--text);background:color-mix(in srgb,var(--text) 7%,transparent)}
 .mic.rec{color:var(--on-accent);background:var(--accent)}
@@ -3610,7 +3611,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.73.0';
+const APP_VER='1.74.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -3716,7 +3717,13 @@ window.addEventListener('storage',e=>{if(e.key==='plotline.authmsg'&&e.newValue)
 function webAuth(prompt){const p=authWait(180000);const st='web'+uid();const w=window.open(authUrl(st,prompt),'plotline-auth','width=500,height=660');if(!w){sessionStorage.setItem('plotline.after','sync');location.href=authUrl(st,prompt)}return p}
 function nativeAuth(interactive){const p=authWait(interactive?180000:25000);try{NATIVE.googleToken(!!interactive)}catch(e){authDone({err:String(e&&e.message||e)})}return p}
 function browserAuthFromApp(){const c=cfg();if(!c.webUrl)return Promise.reject(new Error('Add your web app address in Sync settings first'));const p=authWait(300000);NATIVE.openUrl(authUrl('app'+uid(),'consent'));return p}
+/* 1.74.0: agent tasks run in an invisible copy of the app (BgAgent.java) that has no PlotlineNative; it asks the phone's
+   account for a token itself, so a task at 7am doesn't fail with "sign in again" once the app's one-hour token ran out */
+const BGT=()=>window.PlotlineBg&&PlotlineBg.googleToken?PlotlineBg:null;
+function bgTok(old){const b=BGT();let x='';try{x=b.googleToken(old||'')||''}catch(e){}if(x)tokSet(x,3300);return x}
+window.bgTok=bgTok;
 async function token(interactive){const t=tokGet();if(t)return t;
+ if(BGT()){const x=bgTok();if(x)return x;throw{auth:true}}
  if(NATIVE&&S.settings.sync.native){try{return await nativeAuth(interactive)}catch(e){
   /* signed in before sharing needed the email permission: keep syncing quietly, and ask for it in Sharing instead */
   if(!interactive&&/needs_consent/.test(String(e&&e.message))&&DRIVE_SCOPE!==SCOPE_APP){S.settings.share={...shset(),lite:true,allow:true};scopeSync();save();try{return await nativeAuth(false)}catch(e2){}}
@@ -6406,25 +6413,47 @@ Object.assign(ACT,{
  is used only after you allow it once. Tap the mic to talk, tap again to stop; words appear as you speak. */
 const VOICE_DEF={on:true,cloud:null,lang:'',pause:5000};
 const vset=()=>({...VOICE_DEF,...(S.settings.voice||{})});
-const VOICE_SEL=['#askIn','.tg-add input','#wrEd','#aiText','#aiChange','form[data-form=saveGoal] input[name=title]','form[data-form=saveGoal] textarea[name=why]','form[data-form=saveDay] input[name=title]','form[data-form=saveStep] input[name=title]','form[data-form=saveStep] textarea[name=note]','form[data-form=saveHabit] input[name=title]','form[data-form=saveHabit] textarea[name=why]'];
+const VOICE_SEL=['#askIn','.ip-t','.tg-add input','#wrEd','#aiText','#aiChange','form[data-form=saveGoal] input[name=title]','form[data-form=saveGoal] textarea[name=why]','form[data-form=saveDay] input[name=title]','form[data-form=saveStep] input[name=title]','form[data-form=saveStep] textarea[name=note]','form[data-form=saveHabit] input[name=title]','form[data-form=saveHabit] textarea[name=why]'];
 let VC=null;
 function vstate(){if(NATIVE&&NATIVE.voiceState){try{return JSON.parse(NATIVE.voiceState())}catch(e){}return{}}return{web:!!(window.SpeechRecognition||window.webkitSpeechRecognition)}}
-function voiceAvail(){const v=vstate();return NATIVE?!!(v.onDevice||v.any):!!v.web}
+/* 1.74.0: Whisper on the phone (Whisper.java). Once a model is downloaded every mic listens with it: offline, any
+   language, and much better with names, accents and long thoughts than the phone's speech service. */
+const WH=()=>!window.PLOT_DEMO&&NATIVE&&window.PlotlineAssist&&PlotlineAssist.whisperListen?PlotlineAssist:null;
+function whSt(){try{return JSON.parse(WH().whisperState())||{}}catch(e){return{}}}
+let WHBAD=false;const whOn=()=>{if(!WH()||WHBAD)return false;const s=whSt();return!!s.use&&s.on!==false};
+function voiceAvail(){if(whOn())return true;const v=vstate();return NATIVE?!!(v.onDevice||v.any):!!v.web}
 function voiceSub(){const s=insSet(),v=vset(),st=vstate();const ai=s.engine==='local'?'On-device AI':s.engine==='api'?'Your AI server':'Copy prompt';return ai+' · voice '+(!v.on?'off':NATIVE?(st.onDevice?'on this phone':v.cloud?'online speech':'needs your OK'):(st.web?(v.cloud?'browser speech':'needs your OK'):'not in this browser'))}
 function voiceHTML(){const v=vset(),st=vstate();
  return`<section class="panel wide rv"><h3>Assistant</h3>${insEngineHTML()}</section>
  <section class="panel rv" id="voicePanel"><h3>Voice</h3><p class="small muted">${NATIVE?(st.onDevice?'This phone turns speech into text on the device, so your voice never leaves it.':'This phone has no on-device speech recognition. Its regular speech service (usually Google’s) sends audio online to turn it into text.'):'Your browser’s speech service usually sends audio online to turn it into text.'}</p>
- <label class="sw"><span>Mic buttons<small>Talk instead of typing in the journal, Ask, goals and habits</small></span><input type="checkbox" data-voice="on" ${v.on?'checked':''}><i></i></label>
+ <label class="sw"><span>Mic buttons<small>Talk instead of typing in the journal, notes, Ask, goals and habits</small></span><input type="checkbox" data-voice="on" ${v.on?'checked':''}><i></i></label>
+ ${whHTML()}
  ${(NATIVE&&!st.onDevice)||!NATIVE?`<label class="sw"><span>Allow online speech<small>${v.cloud?'Allowed':'Asked the first time you tap a mic'}</small></span><input type="checkbox" data-voice="cloud" ${v.cloud?'checked':''}><i></i></label>`:''}
  <div class="field"><label>Room to think while you talk</label><select data-voice="pause">${[['1500','Quick · 1.5 seconds'],['3000','Short · 3 seconds'],['5000','Relaxed · 5 seconds'],['8000','Long · 8 seconds'],['12000','Very long · 12 seconds'],['20000','Take your time · 20 seconds']].map(([k,n])=>`<option value="${k}" ${String(v.pause||5000)===k?'selected':''}>${n}</option>`).join('')}</select><small class="muted">How long you can pause mid-thought before the mic closes. Before you start talking it waits even longer. Tap the mic (or the orb) to finish sooner.</small></div>
  <div class="field"><label>Language</label><select data-voice="lang">${[['','Same as my phone'],['en-US','English (US)'],['en-GB','English (UK)'],['en-IN','English (India)'],['ur-PK','Urdu'],['hi-IN','Hindi'],['ar-SA','Arabic'],['es-ES','Spanish'],['fr-FR','French']].map(([k,n])=>`<option value="${k}" ${v.lang===k?'selected':''}>${n}</option>`).join('')}</select></div></section>`}
+/* the Whisper card (phone only): download a model once, then every mic listens with it */
+const WHM=[['turbo','Whisper Turbo','Most accurate, any language',989],['base','Whisper Base','Quicker on older phones',161]];
+function whHTML(){if(!WH())return'';const s=whSt(),h=s.have||{},g=s.getting,on=s.on!==false;
+ const row=([k,n,d,mb])=>{const have=h[k],use=s.use===k;
+  return`<div class="vp-r wh-r"><span><b>${n}</b><small>${d} · ${mb} MB${have?' · on this phone':''}</small></span>${g===k?`<span class="small muted" id="whPct">${s.total?Math.floor(s.got/s.total*100):0}%</span>`:have?(use&&on?`<span class="kk-tag">Listening</span>`:`<button class="btn sm" data-act="whUse" data-k="${k}">Use</button>`)+`<button class="ibtn sm" data-act="whDel" data-k="${k}" aria-label="Remove ${n}">${ic('trash')}</button>`:`<button class="btn sm${k==='turbo'?' pri':''}" data-act="whGet" data-k="${k}" ${g?'disabled':''}>Download</button>`}</div>`};
+ return`<div class="kk" id="whCard"><div class="kk-h"><b>Whisper listening</b><span class="kk-tag">On this phone · offline</span></div>
+ <p class="small muted">OpenAI’s Whisper writes down what you say right on this phone: better with names, accents, mixed languages and long thoughts than the phone’s speech service, and your voice never leaves the phone. Every mic uses it once a model is here. Download once, on Wi-Fi.</p>
+ ${g?`<div class="kk-bar"><i id="whBar" style="width:${s.total?Math.floor(s.got/s.total*100):0}%"></i></div>`:''}${s.err&&!g?`<p class="small kk-err">${esc(s.err)}. Tap Download to carry on where it stopped.</p>`:''}
+ <div class="vp-l">${WHM.map(row).join('')}</div>
+ ${s.use?`<label class="sw"><span>Listen with Whisper<small>${on?'Every mic uses it':'Off: the phone’s speech service listens'}</small></span><input type="checkbox" data-wh="on" ${on?'checked':''}><i></i></label>`:''}</div>`}
+let WHT=0;function whPoll(){clearInterval(WHT);WHT=setInterval(()=>{const s=whSt();if(!s.getting){clearInterval(WHT);WHT=0;render(false);if(s.use&&!s.err)toast('Whisper is ready. Every mic listens with it now');return}const p=s.total?Math.floor(s.got/s.total*100):0,b=document.getElementById('whBar'),t=document.getElementById('whPct');if(b)b.style.width=p+'%';if(t)t.textContent=p+'%'},700)}
+Object.assign(ACT,{whGet:d=>{try{WH().whisperGet(d.k)}catch(e){}WHBAD=false;render(false);whPoll()},
+ whUse:d=>{try{WH().whisperUse(d.k,true);WH().whisperWarm()}catch(e){}WHBAD=false;render(false)},
+ whDel:d=>{const n=(WHM.find(x=>x[0]===d.k)||[])[1]||'Whisper';askConfirm('Remove '+n+'?','It comes off this phone. The mics go back to the phone’s speech service unless another Whisper model is here.','Remove',()=>{try{WH().whisperRemove(d.k)}catch(e){}setTimeout(()=>render(false),400)})}});
+if(WH()&&whSt().getting)whPoll();
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||t.dataset.wh!=='on')return;try{WH().whisperUse(whSt().use,!!t.checked)}catch(e){}render(false)});
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.voice)return;const k=t.dataset.voice;S.settings.voice={...vset(),[k]:t.type==='checkbox'?t.checked:t.value};save();render(false)});
 /* put a mic in each place you write (once per element) */
 function micDecorate(root){if(!vset().on||!voiceAvail())return;const L=[...(root||document).querySelectorAll(VOICE_SEL.join(','))].filter(el=>!el.dataset.mic&&el.parentElement);
  /* read every host's layout first, then change the page, so the browser works out styles once instead of once per field */
  const fl=L.map(el=>/flex|grid/.test(getComputedStyle(el.parentElement).display));L.forEach((el,i)=>{el.dataset.mic=1;const host=el.parentElement;host.classList.add('has-mic');if(fl[i])host.classList.add('mic-flow');
  const b=document.createElement('button');b.type='button';b.className='mic';b.setAttribute('aria-label','Speak instead of typing');b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><i></i>';
- b.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();VC&&VC.el===el?voiceStop():voiceStart(el,b)});if(el.nextSibling)host.insertBefore(b,el.nextSibling);else host.appendChild(b)})}
+ b.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();VC&&VC.el===el?(VC.wh?voiceStop(false,true):voiceStop()):voiceStart(el,b)});if(el.nextSibling)host.insertBefore(b,el.nextSibling);else host.appendChild(b)})}
 /* the phone's mic: PlotlineAssist.listen (1.45.1+) lets go of the wake word's recognizer first, retries a busy speech service and
    falls back to online speech (when allowed) if on-device speech can't do the language. Older app builds use NATIVE.voiceStart. */
 const natL=()=>!window.PLOT_DEMO&&window.PlotlineAssist&&PlotlineAssist.listen?PlotlineAssist:null;
@@ -6434,17 +6463,24 @@ const VERR={perm:'Allow the microphone to use voice',9:'Allow the microphone to 
  8:'The phone’s speech service is busy. Try again in a moment',10:'The phone’s speech service is busy. Try again in a moment',11:'The phone’s speech service stopped. Tap the mic to try again',12:'Speech isn’t available for your language on this phone',13:'Speech isn’t available on this phone right now'};
 function vInsert(el,base,text){if(el.isContentEditable){el.dataset.vbase=el.dataset.vbase||'';return}const sep=base&&!/\s$/.test(base)&&text?' ':'';el.value=base+sep+text;el.dispatchEvent(new Event('input',{bubbles:true}))}
 async function voiceStart(el,btn){const v=vset(),st=vstate();voiceStop(true);
- const needCloud=NATIVE?!st.onDevice:true;
+ const W=whOn(),needCloud=W?false:NATIVE?!st.onDevice:true;
  if(needCloud&&!v.cloud){const ok=await voiceConsent();if(!ok)return}
  if(NATIVE){if(!(await permAsk('mic','android.permission.RECORD_AUDIO')))return toast('Plotlines needs the microphone to hear you. You can allow it in Android settings.')}
- const id='v'+uid(),base=el.isContentEditable?'':el.value;VC={el,btn,id,base,txt:'',acc:'',qt:0};if(el.id==='asIn'&&window.asCue)asCue('start');btn.classList.add('rec');el.classList.add('listening');
+ const id='v'+uid(),base=el.isContentEditable?'':el.value;VC={el,btn,id,base,txt:'',acc:'',qt:0,wh:W};if(el.id==='asIn'&&window.asCue)asCue('start');btn.classList.add('rec');el.classList.add('listening');
  if(el.isContentEditable){el.focus();const s=getSelection();if(!s.rangeCount||!el.contains(s.anchorNode)){const r=document.createRange();r.selectNodeContents(el);r.collapse(false);s.removeAllRanges();s.addRange(r)}VC.mark=document.createElement('span');VC.mark.className='vlive';s.getRangeAt(0).insertNode(VC.mark)}
  /* people pause to think: a recognizer round that ends after a short silence doesn't close the mic. What was heard is
     kept and a new round starts; the mic closes only after the chosen pause (Settings › Voice) with nothing new heard. */
  const pause=Math.max(1000,+v.pause||5000),grace=Math.max(pause*2,el.id==='lvIn'||el.id==='asIn'?12000:8000),join=(a,b)=>a&&b?a+(/\s$/.test(a)?'':' ')+b:a||b;VC.t0=Date.now();
  const quiet=()=>{clearTimeout(VC.qt);VC.qt=setTimeout(()=>{if(VC&&VC.id===id){VC.txt=VC.acc;voiceStop(false,true)}},pause)};
  const again=()=>{if(!VC||VC.id!==id)return;if(Date.now()-(VC.ag||0)<250)return;VC.ag=Date.now();try{if(NATIVE)natListen(id,v,st);else{const r=VC.r=mkR();r.start()}}catch(e){voiceStop(false,true)}};
- const on=(k,t)=>{if(!VC||VC.id!==id)return;if(k==='partial'||k==='final'){const all=join(VC.acc,t);VC.txt=all;if(t){quiet();VC.heard=Date.now()}if(VC.mark)VC.mark.textContent=(VC.mark.previousSibling&&!/\s$/.test(VC.mark.previousSibling.textContent||'')?' ':'')+all;else vInsert(el,base,all);if(k==='final'){VC.acc=all;VC.fin=1;/* a complete command ("add milk to groceries") closes the mic at once instead of waiting out the pause */if(all&&window.__vDone&&window.__vDone(el,all)){vInsert(el,base,all);voiceStop(false,true);return}if(all)again();else voiceStop(false,true)}return}
+ const show=all=>{if(VC.mark)VC.mark.textContent=(VC.mark.previousSibling&&!/\s$/.test(VC.mark.previousSibling.textContent||'')?' ':'')+all;else vInsert(el,base,all)};
+ /* Whisper: the phone decides when you've finished (the pause from Settings › Voice), so no timers here. "partial" carries
+    everything written so far, "busy" means it's writing the last part down, "final" closes the mic. */
+ const onW=(k,t)=>{if(k==='level')lvLevel(btn,Math.max(0,Math.min(1,(+t+2)/12)));else if(k==='busy')btn.classList.add('busy');
+  else if(k==='partial'){VC.txt=t;show(t)}else if(k==='final'){VC.txt=t;if(t)show(t);VC.done=1;voiceStop(false,!!t);if(!t)toast('Didn’t catch that. Tap the mic and try again')}
+  else if(k==='err'){const s=String(t);if(/^whisper:/.test(s)){/* the model wouldn't load: use the phone's speech for now */console.warn('[voice] whisper',s);WHBAD=true;VC.done=1;voiceStop(true);toast('Whisper couldn’t start, so this time the phone’s speech is listening');voiceStart(el,btn);return}
+   VC.done=1;voiceStop(false,!!VC.txt);toast(VERR[s]||(s==='6'?'Didn’t hear anything':'Couldn’t start listening. Tap the mic to try again'))}};
+ const on=(k,t)=>{if(!VC||VC.id!==id)return;if(VC.wh)return onW(k,t);if(k==='partial'||k==='final'){const all=join(VC.acc,t);VC.txt=all;if(t){quiet();VC.heard=Date.now()}if(VC.mark)VC.mark.textContent=(VC.mark.previousSibling&&!/\s$/.test(VC.mark.previousSibling.textContent||'')?' ':'')+all;else vInsert(el,base,all);if(k==='final'){VC.acc=all;VC.fin=1;/* a complete command ("add milk to groceries") closes the mic at once instead of waiting out the pause */if(all&&window.__vDone&&window.__vDone(el,all)){vInsert(el,base,all);voiceStop(false,true);return}if(all)again();else voiceStop(false,true)}return}
   if((k==='end'||(k==='err'&&/^(6|7|no-speech|no-match|aborted)$/.test(String(t))))&&VC.acc){if(!VC.fin){again()}VC.fin=0;return}
   /* nothing final yet: keep what was half-heard and keep listening, so a slow start or a long think doesn't close the mic */
   if((k==='end'||(k==='err'&&/^(6|7|no-speech|no-match)$/.test(String(t))))&&Date.now()-VC.t0<grace){if(VC.txt)VC.acc=VC.txt;VC.fin=0;again();return}
@@ -6453,6 +6489,7 @@ async function voiceStart(el,btn){const v=vset(),st=vstate();voiceStop(true);
   if(k==='err'&&(t==='lang'||t==='dl')){clearTimeout(VC.qt);const had=!!VC.txt;voiceStop(false,had);if(had)return;if(!vset().cloud)voiceConsent().then(ok=>{if(ok)voiceStart(el,btn);else toast(t==='dl'?'Your phone is getting speech for your language. Try the mic again in a few minutes.':'This phone’s on-device speech doesn’t know your language. Allow online speech, or pick another language in Settings › Voice.')});else toast('Speech isn’t available for your language on this phone right now');return}
   if(k==='err'){clearTimeout(VC.qt);const m=VERR[t]||(t&&!/^(6|7|no-speech|no-match|aborted)$/.test(String(t))?`Couldn’t start listening (${String(t).slice(0,40)}). Tap the mic to try again`:{7:'Didn’t catch that. Tap the mic and try again',6:'Didn’t hear anything'}[t]);voiceStop(false,!!VC.txt);if(m)toast(m)}
   else if(k==='end'){clearTimeout(VC.qt);voiceStop(false,true)}};
+ if(W){window.__voice=(i,k,t)=>on(k,t);try{WH().whisperListen(id,v.lang||'',pause,grace)}catch(e){WHBAD=true;VC.wh=false;natListen(id,v,st)}return}
  if(NATIVE){window.__voice=(i,k,t)=>on(k,t);natListen(id,v,st);return}
  const R=window.SpeechRecognition||window.webkitSpeechRecognition;
  function mkR(){const r=new R();r.lang=v.lang||navigator.language||'en-US';r.interimResults=true;r.continuous=false;
@@ -6460,7 +6497,10 @@ async function voiceStart(el,btn){const v=vset(),st=vstate();voiceStop(true);
  const r=VC.r=mkR();try{r.start()}catch(e){voiceStop()}}
 /* mic level → --lv, eased every frame instead of jumping on each (irregular) level event, so the orb and mic glow move smoothly */
 function lvLevel(btn,v){btn._lvT=v;if(btn._lvR)return;const tick=()=>{const c=btn._lvC||0,t=btn._lvT||0,n=c+(t-c)*(t>c?.35:.12);btn._lvC=Math.abs(n-t)<.004?t:n;btn.style.setProperty('--lv',btn._lvC.toFixed(3));btn._lvR=btn._lvC===t?0:requestAnimationFrame(tick)};btn._lvR=requestAnimationFrame(tick)}
-function voiceStop(silent,keep){if(!VC)return;const c=VC;VC=null;clearTimeout(c.qt);lvLevel(c.btn,0);if(c.el.id==='asIn'&&!silent&&window.asCue)asCue('stop');c.btn.classList.remove('rec');c.el.classList.remove('listening');try{if(NATIVE){const L=natL();if(L)L.listenStop();else NATIVE.voiceStop()}else c.r&&c.r.stop()}catch(e){}
+function voiceStop(silent,keep){if(!VC)return;const c=VC;
+ /* Whisper and "finish": stop recording and let it write down what was said; the "final" event closes the mic */
+ if(c.wh&&keep&&!c.done){if(!c.fin2){c.fin2=1;c.btn.classList.add('busy');try{WH().whisperStop()}catch(e){}setTimeout(()=>{if(VC===c){c.done=1;voiceStop(false,true)}},90000)}return}
+ VC=null;clearTimeout(c.qt);lvLevel(c.btn,0);if(c.el.id==='asIn'&&!silent&&window.asCue)asCue('stop');c.btn.classList.remove('rec','busy');c.el.classList.remove('listening');try{if(c.wh){if(!c.done)WH().whisperCancel()}else if(NATIVE){const L=natL();if(L)L.listenStop();else NATIVE.voiceStop()}else c.r&&c.r.stop()}catch(e){}
  if(c.mark){const t=c.mark.textContent;if(keep&&t){c.mark.replaceWith(document.createTextNode(t));c.el.dispatchEvent(new Event('input',{bubbles:true}))}else c.mark.remove()}else if(!keep&&!silent&&!c.txt)vInsert(c.el,c.base,'')}
 function permAsk(key,perms){if(!NATIVE||!NATIVE.askPerm)return Promise.resolve(true);if(perms.split(',').every(p=>NATIVE.hasPerm(p)))return Promise.resolve(true);return new Promise(res=>{const prev=window.__perm;window.__perm=(k,ok)=>{if(k!==key){prev&&prev(k,ok);return}window.__perm=prev;res(!!ok)};NATIVE.askPerm(key,perms)})}
 function voiceConsent(){return new Promise(res=>{VCONS=res;const d=document.createElement('div');d.className='vdlg';d.innerHTML=`<div class="vdlg-b" role="dialog" aria-modal="true"><h3>Use online speech?</h3><p class="small muted">${NATIVE?'This phone can’t turn speech into text on the device. Its speech service (usually Google’s) can, but it sends what you say online to do it.':'Your browser turns speech into text with an online service, so what you say is sent to it.'} Plotlines itself never stores or sends your audio.</p><div class="actions"><button class="btn ghost" data-act="vcNo">Not now</button><button class="btn pri" data-act="vcYes">Allow</button></div></div>`;document.body.appendChild(d)})}

@@ -160,6 +160,23 @@ public class BgAgent extends Service {
             } });
         }
         @JavascriptInterface public void finish() { H.post(stop); }
+        /* the run books the next ones itself (same list format as PlotlineAssist.bgAgent) */
+        @JavascriptInterface public String schedule(String json) { return BgAgent.schedule(BgAgent.this, json); }
+        /* 1.74.0: a Google token for the invisible run, from the account the app signed in with (MainActivity keeps it in
+           "plotline_auth": acct and scopes). Without this the page's one-hour token ran out and tasks said to sign in again.
+           old: a token Google refused, dropped from the phone's cache first. Empty when the phone needs the user (consent). */
+        @JavascriptInterface public String googleToken(String old) {
+            try {
+                SharedPreferences p = getSharedPreferences("plotline_auth", 0);
+                String a = p.getString("acct", null);
+                if (a == null || a.length() == 0) return "";
+                android.accounts.AccountManager am = android.accounts.AccountManager.get(BgAgent.this);
+                if (old != null && old.length() > 0) am.invalidateAuthToken("com.google", old);
+                String t = am.blockingGetAuthToken(new android.accounts.Account(a, "com.google"),
+                    "oauth2:" + p.getString("scopes", "https://www.googleapis.com/auth/drive.appdata"), true);
+                return t == null ? "" : t;
+            } catch (Exception e) { return ""; }
+        }
         /* one chat completion from the on-device model (OpenAI-style request and answer, as JSON text) */
         @JavascriptInterface public String llm(String body, int timeoutSec) {
             try {

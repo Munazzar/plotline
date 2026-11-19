@@ -201,7 +201,7 @@ function ipMount(){const v=document.getElementById('vpg')||document.getElementBy
   if(!threads().length)v.querySelectorAll(':scope>.empty').forEach(x=>x.remove())}
  else if(cur.p==='journal'){at=v.querySelector(':scope>.jbar')||v.querySelector(':scope>header');html=ipHTML('jr')}
  else if(cur.p==='habit'){const h=H(cur.id);if(h){const ds=ymd();at=v.querySelector('.hhero');html=`<div class="ip-lab data">Today’s note</div>`+ipHTML('hn:'+h.id+':'+ds,((h.ck||{})[ds]||{}).n||'')}}
- if(at)at.insertAdjacentHTML('afterend',html);v.querySelectorAll('.ip-t').forEach(ipFit)}
+ if(at)at.insertAdjacentHTML('afterend',html);if(html&&typeof micDecorate==='function')micDecorate(v);v.querySelectorAll('.ip-t').forEach(ipFit)}
 window.INPLACE={html:ipHTML,mount:ipMount};
 
 if(typeof booted!=='undefined'&&booted&&/^#\/(threads?|notes?)(\/|$)/.test(location.hash))route();

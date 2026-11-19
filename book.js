@@ -17,10 +17,10 @@ const B={open:false,P:[],i:0,busy:false,ix:false,focus:'',sp:false};
 const wide=()=>innerWidth>=900&&S.settings.book?.spread!==false;
 const dayOf=t=>ymd(new Date(t));
 /* ---------------- look and feel (1.59.3): the book's own settings, kept on this device like the rest of the looks ---------------- */
-const BDEF={paper:'auto',lines:'none',grain:true,font:'serif',size:18,lh:'normal',cover:'leather',turn:'curl',speed:'normal',sound:false,spread:true,moments:true,drop:true,open:'today',last:'',wsync:false};
+const BDEF={paper:'app',lines:'none',grain:true,font:'serif',size:18,lh:'normal',cover:'leather',turn:'curl',speed:'normal',sound:false,spread:true,moments:true,drop:true,open:'today',last:'',wsync:false};
 /* 2026-11-04: the writer follows the app theme unless the book look is picked (the book button in the writer's top corner,
    or Writing looks like the book here). Earlier versions saved wsync on, so it is reset once. */
-const BS=()=>{const b=S.settings.book=Object.assign({},BDEF,S.settings.book||{});if(!b.wsv2){b.wsync=false;b.wsv2=1}return b};
+const BS=()=>{const b=S.settings.book=Object.assign({},BDEF,S.settings.book||{});if(!b.wsv2){b.wsync=false;b.wsv2=1}/* 1.74.0: the book follows the app theme by default; Auto (the old default) moves over once */if(!b.ppv2){if(b.paper==='auto')b.paper='app';b.ppv2=1}return b};
 const PAPERS=[['app','App theme'],['auto','Auto'],['cream','Cream'],['white','White'],['sepia','Sepia'],['grey','Stone'],['dark','Night'],['black','Black']];
 const COVERS=[['leather','Leather','#5a3a2a'],['navy','Navy','#1f2d4a'],['forest','Forest','#24392c'],['wine','Wine','#4d1f2a'],['ink','Black','#1b1a1a'],['sand','Sand','#9a7b55'],['accent','Theme colour','']];
 const FONTS=[['serif','Book'],['sans','Clean'],['mono','Typewriter'],['hand','Handwritten']];

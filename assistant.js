@@ -511,7 +511,7 @@ function sqFeed(raw){if(!SQ.on||SQ.end)return;const v=spText(raw);if(/^\{|^A(?:G
    makes each next sentence while the current one plays. Sentence by sentence, the phone opened and closed an audio stream
    per sentence with a gap to make it: the answer broke up, with a "tub" pop at each sentence end. */
 function sqPump(){if(SQ.busy)return;if(!SQ.q.length){if(SQ.end){SQ.on=false;clearTimeout(SQ.tw);const f=SQ.done;SQ.done=null;if(f)f();else afterSpeak()}return}
- const kk=/^kokoro:/.test(aset().voice||'');if(kk&&SQ.n>0&&!SQ.end&&!SQ.go){if(!SQ.tw)SQ.tw=setTimeout(()=>{SQ.tw=0;SQ.go=1;sqPump();SQ.go=0},4000);return}
+ const kk=/^(kokoro|eleven):/.test(aset().voice||'');if(kk&&SQ.n>0&&!SQ.end&&!SQ.go){if(!SQ.tw)SQ.tw=setTimeout(()=>{SQ.tw=0;SQ.go=1;sqPump();SQ.go=0},4000);return}
  clearTimeout(SQ.tw);SQ.tw=0;SQ.busy=true;if(SQ.first){const f=SQ.first;SQ.first=null;f()}window.asHum(false);tmMark('say');const t=kk&&SQ.n>0?SQ.q.splice(0).join(' '):SQ.q.shift();SQ.n=(SQ.n||0)+1;speak(t,()=>{SQ.busy=false;sqPump()})}
 /* the answer is complete: speak what's left; false when nothing was streamed (the caller speaks it the usual way) */
 function sqEnd(final){if(!SQ.on||!SQ.said){SQ.on=false;return false}const f=norm(final).replace(/[“”]/g,'"'),s=SQ.said.replace(/[“”]/g,'"');let rem='';
@@ -583,6 +583,9 @@ let SPK=null,SPK_CB=null;
 /* the voice, speed and pitch picked in Settings › Voice; done (optional) runs instead of the assistant's own follow-up */
 function speak(text,done,ov){const t=String(text).replace(/[“”]/g,'"').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu,'').replace(/[*#_`]/g,'').trim();SPK_CB=done||null;if(!t)return spoke();const id='s'+uid();SPK=id;paintHead();tmMark('say');
  const A={...aset(),...(ov||{})},rate=+A.rate||1,pitch=+A.pitch||1;let voice=A.voice||'';
+ /* 1.74.0: an ElevenLabs voice speaks any language; if it can't (offline, out of credits) Kokoro or the system voice does */
+ if(/^eleven:/.test(voice)&&window.ELEVEN&&ELEVEN.on()){const ev=voice.slice(7);ELEVEN.speak(t,{voice:ev,rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},e=>{if(SPK!==id)return;console.warn('[voice] eleven',e&&e.message);const kv=window.KOKORO&&KOKORO.state().st==='have'&&KOKORO.can(t,vset().lang);if(kv)KOKORO.speak(t,{voice:'af_heart',rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},()=>{if(SPK===id)sysSpeak(id,t,rate,pitch,'')});else sysSpeak(id,t,rate,pitch,'')});return}
+ if(/^eleven:/.test(voice))voice='';
  /* a natural (Kokoro) voice speaks English; anything else, or if it fails before a word, the system voice does */
  if(/^kokoro:/.test(voice)){const kv=voice.slice(7);voice='';if(window.KOKORO&&KOKORO.can(t,vset().lang)){KOKORO.speak(t,{voice:kv,rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},()=>{if(SPK===id)sysSpeak(id,t,rate,pitch,'')});return}}
  sysSpeak(id,t,rate,pitch,voice)}
@@ -592,7 +595,7 @@ function sysSpeak(id,t,rate,pitch,voice){
  if(window.speechSynthesis){try{const u=new SpeechSynthesisUtterance(t);if(vset().lang)u.lang=vset().lang;const v=voice&&speechSynthesis.getVoices().find(x=>x.name===voice);if(v){u.voice=v;u.lang=v.lang}u.rate=rate;u.pitch=pitch;u.onend=u.onerror=()=>{if(SPK===id){SPK=null;spoke()}};speechSynthesis.cancel();speechSynthesis.speak(u);return}catch(e){}}
  SPK=null;spoke()}
 function spoke(){const f=SPK_CB;SPK_CB=null;if(f){paintHead();f();return}afterSpeak()}
-function hush(){sqStop();SPK=null;SPK_CB=null;try{if(window.KOKORO)KOKORO.stop()}catch(e){}try{if(NA&&NA.stopSpeaking)NA.stopSpeaking();else if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}paintHead()}
+function hush(){sqStop();SPK=null;SPK_CB=null;try{if(window.KOKORO)KOKORO.stop()}catch(e){}try{if(window.ELEVEN)ELEVEN.stop()}catch(e){}try{if(NA&&NA.stopSpeaking)NA.stopSpeaking();else if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}paintHead()}
 function afterSpeak(){paintHead();const a=AS.after;AS.after=null;if(AS.q.length&&!AS.busy){const[x,y]=AS.q.shift();setTimeout(()=>run(x,y),250);return}if(a==='listen'&&AS.open)setTimeout(()=>listen(),250);else{wakePause(false);handsOff()}}
 /* woken by "Hey Plot" while Plotlines was closed or the phone locked: once the answer is spoken and nothing follows, step aside again */
 function handsOff(){if(!AS.bg||!NA||!NA.background)return;clearTimeout(AS.bgT);AS.bgT=setTimeout(()=>{if(!AS.bg||AS.busy||AS.listening||AS.await||SPK)return;AS.bg=false;asClose();try{NA.background()}catch(e){}},2500)}

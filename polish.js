@@ -230,6 +230,8 @@ function gearScroll(){if(!GEAR_H||cur.p!=='settings')return;const h=[...document
 let MO=null;
 /* titles fit again once this layer has added its header buttons (index.html fits them before), so none is cut off on a phone */
 function afterPaint(){canvasMark();udkInit();gearScroll();if(typeof fitH1==='function')fitH1()}
+/* Home with the studio on draws into #vin inside #view, which the observer below never saw: run after every draw too */
+{const _vs=viewSet;viewSet=function(v,h){const r=_vs.apply(this,arguments);try{afterPaint()}catch(e){}return r}}
 function boot(){const v=$('#view');if(v&&!MO){MO=new MutationObserver(()=>afterPaint());MO.observe(v,{childList:true})}afterPaint();
  try{applyTheme()}catch(e){}
  if(document.querySelector('#rail .nav')){buildChrome();if(typeof navMark==='function')navMark()}}
