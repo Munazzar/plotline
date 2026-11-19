@@ -3611,7 +3611,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.75.0';
+const APP_VER='1.76.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -6484,7 +6484,7 @@ async function voiceStart(el,btn){const v=vset(),st=vstate();voiceStop(true);
  const show=all=>{if(VC.mark)VC.mark.textContent=(VC.mark.previousSibling&&!/\s$/.test(VC.mark.previousSibling.textContent||'')?' ':'')+all;else vInsert(el,base,all)};
  /* Whisper: the phone decides when you've finished (the pause from Settings › Voice), so no timers here. "partial" carries
     everything written so far, "busy" means it's writing the last part down, "final" closes the mic. */
- const onW=(k,t)=>{if(k==='level')lvLevel(btn,Math.max(0,Math.min(1,(+t+2)/12)));else if(k==='busy')btn.classList.add('busy');
+ const onW=(k,t)=>{if(k==='level')lvLevel(btn,Math.max(0,Math.min(1,(+t+2)/12)));else if(k==='busy'){btn.classList.add('busy');lvLevel(btn,0);try{window.__vBusy&&window.__vBusy(el)}catch(e){}}
   else if(k==='partial'){VC.txt=t;show(t)}else if(k==='final'){VC.txt=t;if(t)show(t);VC.done=1;voiceStop(false,!!t);if(!t)toast('Didn’t catch that. Tap the mic and try again')}
   else if(k==='err'){const s=String(t);if(/^whisper:/.test(s)){/* the model wouldn't load: use the phone's speech for now */console.warn('[voice] whisper',s);WHBAD=true;VC.done=1;voiceStop(true);toast('Whisper couldn’t start, so this time the phone’s speech is listening');voiceStart(el,btn);return}
    VC.done=1;voiceStop(false,!!VC.txt);toast(VERR[s]||(s==='6'?'Didn’t hear anything':'Couldn’t start listening. Tap the mic to try again'))}};

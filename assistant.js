@@ -502,7 +502,29 @@ const spText=raw=>norm((window.AIX?AIX.hideActs:x=>x)(String(raw||'').replace(/<
 /* the wake word stays paused for the whole spoken answer: on Android its listener restarts between sentences otherwise, and
    each restart mutes the media sound (to hide its beep), which the natural voice plays on, so sentences went silent.
    afterSpeak, Stop and closing turn it back on. */
-function sqStart(o){wakePause(true);clearTimeout(SQ.tw);Object.assign(SQ,{on:true,q:[],said:'',last:'',busy:false,end:false,n:0,tw:0,done:o&&o.done||null,first:o&&o.first||null})}
+function sqStart(o){wakePause(true);clearTimeout(SQ.tw);Object.assign(SQ,{on:true,q:[],said:'',last:'',busy:false,end:false,n:0,tw:0,ss:null,done:o&&o.done||null,first:o&&o.first||null})}
+/* ---- 1.76.0: an answer flows as one stream ----
+   Every sentence goes on as soon as the AI has written it, instead of the first one alone and then a wait for the whole
+   answer. Natural voices on the phone (Kokoro, Supertonic) play through one native stream (Speech.java) that trims each
+   sentence's own silence and puts a short natural pause in its place; the phone's own voice queues sentences behind each
+   other (QUEUE_ADD) instead of restarting; ElevenLabs and Your voice server fetch the next sentences while one plays. */
+const spClean=t=>String(t).replace(/[“”]/g,'"').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu,'').replace(/[*#_`]/g,'').trim();
+const NS=()=>NA&&NA.speechStart?NA:null,NSONE={};
+const vEng=v=>/^kokoro:/.test(v)?'kokoro':/^st:/.test(v)?'st':/^(eleven|oss):/.test(v)?'net':'sys';
+const gapOf=t=>/[.!?…]["”')\]]?$/.test(t)?170:/[,;:–—-]$/.test(t)?80:140;
+const WAIT={};const sayDone=id=>new Promise(r=>{WAIT[id]=r});
+/* a native stream for Kokoro or Supertonic; null when this voice can't (the old way speaks then) */
+function nsOpen(v,first,rate){const e=vEng(v);if(!NS()||(e!=='kokoro'&&e!=='st'))return null;
+ if(e==='kokoro'&&!(window.KOKORO&&KOKORO.ids&&KOKORO.state().st==='have'&&KOKORO.can(first,vset().lang)))return null;
+ if(e==='st'&&!(window.SUPERTONIC&&SUPERTONIC.can(first)))return null;
+ const s={id:'q'+uid(),e,v:v.slice(e==='st'?3:7),chain:Promise.resolve(),all:''};
+ try{NS().speechStart(s.id,e,s.v,e==='st'?SUPERTONIC.lang(first):'en',rate)}catch(x){return null}return s}
+function nsAdd(s,t){t=spClean(t);if(!t)return;s.all+=(s.all?' ':'')+t;const g=gapOf(t);
+ if(s.e==='st'){try{NS().speechAdd(s.id,t,'',g)}catch(x){}return}
+ s.chain=s.chain.then(async()=>{const ids=await KOKORO.ids(t,s.v);if(ids.length)NS().speechAdd(s.id,'',JSON.stringify(ids),g)}).catch(()=>{})}
+function nsEnd(s){if(s.ended)return;s.ended=1;s.chain.then(()=>{try{NS().speechEnd(s.id)}catch(x){}})}
+/* whole text at once (not streamed) through a native stream, sentence by sentence */
+const sentences=t=>String(t).replace(/\s+/g,' ').trim().split(/(?<=[.!?…]["”')\]]?)\s+/).filter(Boolean);
 function sqFeed(raw){if(!SQ.on||SQ.end)return;const v=spText(raw);if(/^\{|^A(?:G(?:E(?:N(?:T)?)?)?)?$|AGENT\s*:/i.test(v)){if(!SQ.said)SQ.on=false;return}
  const rest=v.slice(SQ.said.length);let cut=-1;const rx=/[.!?…]["”')\]]?(?= )/g;let m;while((m=rx.exec(rest)))cut=m.index+m[0].length;
  if(cut<0)return;const ch=rest.slice(0,cut);if(ch.trim().split(' ').length<3&&!SQ.said)return;SQ.said+=ch;SQ.last=ch.trim();SQ.q.push(ch.trim());sqPump()}
@@ -510,7 +532,7 @@ function sqFeed(raw){if(!SQ.on||SQ.end)return;const v=spText(raw);if(/^\{|^A(?:G
    rest goes in one call once the answer is complete (or after 4 s of waiting). Kokoro then plays it as one stream and
    makes each next sentence while the current one plays. Sentence by sentence, the phone opened and closed an audio stream
    per sentence with a gap to make it: the answer broke up, with a "tub" pop at each sentence end. */
-function sqPump(){if(SQ.busy)return;if(!SQ.q.length){if(SQ.end){SQ.on=false;clearTimeout(SQ.tw);const f=SQ.done;SQ.done=null;if(f)f();else afterSpeak()}return}
+function sqPump(){if(SQ.ss!==false&&ssPump())return;if(SQ.busy)return;if(!SQ.q.length){if(SQ.end){SQ.on=false;clearTimeout(SQ.tw);const f=SQ.done;SQ.done=null;if(f)f();else afterSpeak()}return}
  const kk=/^(kokoro|eleven|oss|st):/.test(aset().voice||'');if(kk&&SQ.n>0&&!SQ.end&&!SQ.go){if(!SQ.tw)SQ.tw=setTimeout(()=>{SQ.tw=0;SQ.go=1;sqPump();SQ.go=0},4000);return}
  clearTimeout(SQ.tw);SQ.tw=0;SQ.busy=true;if(SQ.first){const f=SQ.first;SQ.first=null;f()}window.asHum(false);tmMark('say');const t=kk&&SQ.n>0?SQ.q.splice(0).join(' '):SQ.q.shift();SQ.n=(SQ.n||0)+1;speak(t,()=>{SQ.busy=false;sqPump()})}
 /* the answer is complete: speak what's left; false when nothing was streamed (the caller speaks it the usual way) */
@@ -519,7 +541,38 @@ function sqEnd(final){if(!SQ.on||!SQ.said){SQ.on=false;return false}const f=norm
     by letters and digits, so the rest is neither skipped nor said twice */
  if(f.startsWith(s))rem=f.slice(s.length);else{const an=/[\p{L}\p{N}]/u,K=(s.replace(/\[\d+(?:,\s*\d+)*\]/g,'').match(/[\p{L}\p{N}]/gu)||[]).length;let n=0,i=0;for(;i<f.length&&n<K;i++)if(an.test(f[i]))n++;rem=n>=K?f.slice(i).replace(/^[^\p{L}\p{N}]+/u,''):''}
  rem=rem.trim();if(rem)SQ.q.push(rem);SQ.end=true;sqPump();return true}
-function sqStop(){SQ.on=false;SQ.q=[];SQ.done=null;SQ.first=null;SQ.busy=false;clearTimeout(SQ.tw);SQ.tw=0}
+function sqStop(){SQ.on=false;SQ.q=[];SQ.done=null;SQ.first=null;SQ.busy=false;clearTimeout(SQ.tw);SQ.tw=0;if(SQ.ss&&SQ.ss.stop)SQ.ss.stop();SQ.ss=null}
+/* the streamed answer, for whichever voice: true when it handled this pump */
+function ssFinish(){SQ.on=false;clearTimeout(SQ.tw);const f=SQ.done;SQ.done=null;SQ.ss=null;if(f)f();else afterSpeak()}
+function ssPump(){const A=aset(),v=A.voice||'',e=vEng(v),rate=+A.rate||1,pitch=+A.pitch||1;
+ if(!SQ.ss){if(!SQ.q.length){if(SQ.end){SQ.on=false;const f=SQ.done;SQ.done=null;if(f)f();else afterSpeak()}return true}
+  const first=SQ.q[0];let ss=null;
+  if(e==='kokoro'||e==='st'){const n=nsOpen(v,first,rate);if(n){ss={k:'ns',n,stop(){}};SPK=n.id;SPK_CB=()=>{if(SQ.ss===ss)ssFinish()}}}
+  else if(e==='sys'&&NA&&NA.speak3){ss={k:'sys',n:0,idle:true,stop(){}}}
+  else if(e==='net'&&(/^eleven:/.test(v)?window.ELEVEN&&ELEVEN.on():window.VSRV&&VSRV.base())){ss=netOpen(v,rate)}
+  if(!ss){SQ.ss=false;return false}
+  SQ.ss=ss;if(SQ.first){const f=SQ.first;SQ.first=null;f()}window.asHum(false);tmMark('say');paintHead()}
+ const ss=SQ.ss;
+ if(ss.k==='ns'){while(SQ.q.length)nsAdd(ss.n,SQ.q.shift());if(SQ.end)nsEnd(ss.n);return true}
+ if(ss.k==='sys'){
+  while(SQ.q.length){const t=spClean(SQ.q.shift());if(!t)continue;const id='y'+uid(),add=!ss.idle;ss.idle=false;ss.last=id;SPK=id;paintHead();
+   SPK_CB=()=>{if(SQ.ss!==ss)return;if(SQ.end&&!SQ.q.length)ssFinish();else ss.idle=true};
+   try{NA.speak3(id,t,vset().lang||'',rate,pitch,v,add)}catch(x){}}
+  if(SQ.end&&ss.idle&&!SQ.q.length)ssFinish();return true}
+ if(ss.k==='net'){while(SQ.q.length){const t=spClean(SQ.q.shift());if(t)ss.add(t)}if(SQ.end)ss.end();return true}
+ return false}
+/* ElevenLabs / Your voice server: each sentence's audio is fetched as soon as it's written (two at a time) and they play
+   back to back; one that fails is said by Kokoro or the phone's voice in its place */
+function netOpen(v,rate){const id='n'+uid(),el=/^eleven:/.test(v),vv=v.slice(el?7:4),items=[];let ended=false,playing=false,dead=false,cur=null;
+ const fetchOne=t=>(el?ELEVEN.fetchSpeech(t,{voice:vv,rate}):VSRV.fetchSpeech(t,{voice:vv,rate})).then(r=>r.blob()).then(b=>({url:URL.createObjectURL(b)}),()=>({t}));
+ const ss={k:'net',add(t){items.push({t,p:null});pre();next()},end(){ended=true;next()},stop(){dead=true;if(cur){try{cur.pause()}catch(e){}}items.length=0}};
+ function pre(){let n=0;for(const it of items){if(!it.p)it.p=fetchOne(it.t);if(++n>=2)break}}
+ async function next(){if(playing||dead)return;if(!items.length){if(ended&&SQ.ss===ss&&SPK===id){SPK=null;ssFinish()}return}
+  playing=true;const it=items.shift();pre();const r=await it.p;if(dead)return;
+  if(r.url){await new Promise(ok=>{const a=cur=new Audio(r.url);a.onended=a.onerror=()=>{URL.revokeObjectURL(r.url);ok()};a.play().catch(ok)})}
+  else{const sid='w'+uid();const kv=window.KOKORO&&KOKORO.state().st==='have'&&KOKORO.can(r.t,vset().lang);if(kv)await KOKORO.speak(r.t,{voice:'af_heart',rate}).catch(()=>{});else if(NA&&NA.speak2){const w=sayDone(sid);try{NA.speak2(sid,r.t,vset().lang||'',rate,1,'')}catch(e){}await w}}
+  playing=false;if(!dead)next()}
+ SPK=id;return ss}
 /* load the model while they're still talking: at the wake word, when the sheet opens */
 function asWarm(){try{if(/^kokoro:/.test(aset().voice||'')&&window.KOKORO)KOKORO.warm()}catch(e){}if(!fastOn())return;try{if(typeof natWarm==='function')natWarm()}catch(e){}}
 
@@ -583,6 +636,8 @@ let SPK=null,SPK_CB=null;
 /* the voice, speed and pitch picked in Settings › Voice; done (optional) runs instead of the assistant's own follow-up */
 function speak(text,done,ov){const t=String(text).replace(/[“”]/g,'"').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu,'').replace(/[*#_`]/g,'').trim();SPK_CB=done||null;if(!t)return spoke();const id='s'+uid();SPK=id;paintHead();tmMark('say');
  const A={...aset(),...(ov||{})},rate=+A.rate||1,pitch=+A.pitch||1;let voice=A.voice||'';
+ /* 1.76.0: a natural voice on the phone says a whole text as one stream too (no stop at every sentence) */
+ if(/^(kokoro|st):/.test(voice)){const n=nsOpen(voice,t,rate);if(n){NSONE[n.id]=n;SPK=n.id;sentences(t).forEach(x=>nsAdd(n,x));nsEnd(n);return}}
  /* 1.74.0: an ElevenLabs voice speaks any language; if it can't (offline, out of credits) Kokoro or the system voice does */
  /* 1.74.1: Your voice server (open-source voices on your computer), same fallbacks */
  if(/^oss:/.test(voice)&&window.VSRV&&VSRV.base()){const ov=voice.slice(4);VSRV.speak(t,{voice:ov,rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},e=>{if(SPK!==id)return;console.warn('[voice] server',e&&e.message);const kv=window.KOKORO&&KOKORO.state().st==='have'&&KOKORO.can(t,vset().lang);if(kv)KOKORO.speak(t,{voice:'af_heart',rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},()=>{if(SPK===id)sysSpeak(id,t,rate,pitch,'')});else sysSpeak(id,t,rate,pitch,'')});return}
@@ -610,13 +665,16 @@ function handsOff(){if(!AS.bg||!NA||!NA.background)return;clearTimeout(AS.bgT);A
 /* ---------------- listening (the same mic as the rest of the app) ---------------- */
 function listen(pre){if(!(AS.min&&$('#asv')))asOpen();const el=$('#asIn'),b=$('#asv .as-mic');if(!el||!b)return;if(typeof voiceAvail==='function'&&!voiceAvail()){toast('Voice isn’t available here. Type instead.');el.focus();return}hush();wakePause(true);el.value=typeof pre==='string'?pre:'';AS.listening=true;paintHead();voiceStart(el,b)}
 {const _vs=voiceStart;voiceStart=function(el,btn){wakePause(true);return _vs(el,btn)}}
-{const _vx=voiceStop;voiceStop=function(silent,keep){const c=VC;_vx(silent,keep);if(!c)return;if(c.el&&c.el.id==='asIn'){AS.listening=false;paintHead();const v=c.el.value.trim();if(keep&&v){c.el.value='';run(v,{spoken:true,heard:c.heard})}else wakePause(false)}else wakePause(false)}}
+{const _vx=voiceStop;voiceStop=function(silent,keep){const c=VC;_vx(silent,keep);if(!c||VC===c)return;if(c.el&&c.el.id==='asIn'){AS.listening=false;paintHead();const v=c.el.value.trim();if(keep&&v){c.el.value='';run(v,{spoken:true,heard:c.heard})}else wakePause(false)}else wakePause(false)}}
 
 /* ---------------- wake word (Android) ---------------- */
 function wakePause(p){if(!NA||!NA.wakePause)return;try{NA.wakePause(!!p)}catch(e){}}
 function wakeSync(){if(!NA||!NA.wake)return;const a=aset(),v=vset();try{NA.wake(JSON.stringify({on:!!(a.wake||a.bg),bg:!!a.bg,name:aname(),lang:v.lang||'',cloud:!!v.cloud,quiet:a.quiet!==false,cues:a.cues!==false,cueStart:cueOf('start'),cueDone:cueOf('done')}))}catch(e){}}
 window.__assist=(k,a,b)=>{
- if(k==='tts'){if(window.KOKORO&&KOKORO.tts(a,b))return;if(window.SUPERTONIC&&SUPERTONIC.tts(a,b))return;if(a===SPK&&(b==='done'||b==='err')){SPK=null;spoke()}return}
+ if(k==='tts'){if(WAIT[a]){const w=WAIT[a];delete WAIT[a];w();return}if(window.KOKORO&&KOKORO.tts(a,b))return;if(window.SUPERTONIC&&SUPERTONIC.tts(a,b))return;
+  /* a natural-voice stream that couldn't say anything: the phone's voice says it instead */
+  const s=SQ.ss&&SQ.ss.k==='ns'&&SQ.ss.n.id===a?SQ.ss.n:NSONE[a];delete NSONE[a];if(a===SPK&&b==='err'&&s&&s.all){sysSpeak(a,s.all,+aset().rate||1,+aset().pitch||1,'');return}
+  if(a===SPK&&(b==='done'||b==='err')){SPK=null;spoke()}return}
  if(k==='kokoro'){if(window.KOKORO)KOKORO.ev(a,b);return}
  if(k==='voices'){window.dispatchEvent(new Event('plot-voices'));return}
  /* "Hey Plot" on its own: the page's own mic takes over, with room to pause and think (the wake loop would stop at the first pause) */

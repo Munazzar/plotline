@@ -209,7 +209,9 @@ public class Assist {
     static void speakNow(final Context c, final String id, final String text, final String lang, final double rate) { speakNow(c, id, text, lang, rate, 1, ""); }
 
     /* the voice the user picked (Settings › Voice), by name; "" keeps the engine's default for the language */
-    static void speakNow(final Context c, final String id, final String text, final String lang, final double rate, final double pitch, final String voice) {
+    static void speakNow(final Context c, final String id, final String text, final String lang, final double rate, final double pitch, final String voice) { speakNow(c, id, text, lang, rate, pitch, voice, false); }
+    /* add: queue behind what's being said (1.76.0: an answer's sentences flow on without the engine restarting each time) */
+    static void speakNow(final Context c, final String id, final String text, final String lang, final double rate, final double pitch, final String voice, final boolean add) {
         if (tts == null) {
             queued = new String[]{id, text, lang, String.valueOf(rate), String.valueOf(pitch), voice};
             tts = new TextToSpeech(c, new TextToSpeech.OnInitListener() {
@@ -242,7 +244,7 @@ public class Assist {
             WakeLoop.unmute(); /* never answer into a hushed stream */
             ttsPause = true;
             applyNow(c);
-            if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) { ttsPause = false; applyNow(c); done(id, "err"); }
+            if (tts.speak(text, add ? TextToSpeech.QUEUE_ADD : TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) { ttsPause = false; applyNow(c); done(id, "err"); }
         } catch (Exception e) { ttsPause = false; done(id, "err"); }
     }
 
@@ -388,6 +390,18 @@ public class Assist {
     public void speak2(final String id, final String text, final String lang, final double rate, final double pitch, final String voice) {
         H.post(new Runnable() { public void run() { speakNow(c, id, text == null ? "" : text, lang == null ? "" : lang, rate, pitch, voice == null ? "" : voice); } });
     }
+    @JavascriptInterface
+    public void speak3(final String id, final String text, final String lang, final double rate, final double pitch, final String voice, final boolean add) {
+        H.post(new Runnable() { public void run() { speakNow(c, id, text == null ? "" : text, lang == null ? "" : lang, rate, pitch, voice == null ? "" : voice, add); } });
+    }
+    /* 1.76.0: one answer as one stream with a natural voice (Speech.java): start, add each sentence as it's written
+       (Supertonic: text; Kokoro: phoneme ids per piece as JSON), end when the answer is complete; ('tts', id) at the end */
+    @JavascriptInterface
+    public void speechStart(String id, String engine, String voice, String lang, double rate) { Speech.start(c, id == null ? "" : id, engine == null ? "" : engine, voice == null ? "" : voice, lang == null ? "en" : lang, rate); }
+    @JavascriptInterface
+    public void speechAdd(String id, String text, String json, int gapMs) { Speech.add(id == null ? "" : id, text == null ? "" : text, json == null ? "[]" : json, gapMs); }
+    @JavascriptInterface
+    public void speechEnd(String id) { Speech.end(id == null ? "" : id); }
 
     /* "" until the engine has started; then window.__assist('voices') tells the page to ask again */
     @JavascriptInterface
@@ -411,7 +425,7 @@ public class Assist {
 
     @JavascriptInterface
     public void stopSpeaking() {
-        Kokoro.stop(); Supertonic.stop();
+        Kokoro.stop(); Supertonic.stop(); Speech.stop();
         H.post(new Runnable() { public void run() { try { if (tts != null) tts.stop(); } catch (Exception e) {} ttsPause = false; applyNow(c); } });
     }
 
