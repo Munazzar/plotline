@@ -50,5 +50,25 @@ js 'document.querySelector("#auBody .au-w[data-i=\"1\"]").click();1' >/dev/null;
 B=$(js '[...document.querySelectorAll("#auBody .actions button")].map(b=>b.textContent).join("|")' | tr -d "\"")
 [ "$B" = "Remove this way|Save" ] && ok "editing one way: $B" || bad "edit buttons: $B"
 js 'closeSheet();1' >/dev/null
+
+# 1.73.0: sections, typing into a section with the keyboard, a note, start fresh (real taps where it matters)
+js '(()=>{const P=LISTS_PHOTO;P.fromPhoto(null,P.photoLines("<p>Weekly shop</p><p>Produce:</p><ul><li>Apples</li></ul><p>Dairy:</p><ul><li>Milk</li><li>[x] Yogurt</li></ul>"),null);return 1})()' >/dev/null; sleep 2.5
+SC=$(js 'JSON.stringify({t:S.lists[0].title,s:S.lists[0].secs.map(x=>x.t),h:[...document.querySelectorAll(".ls-sf b")].map(b=>b.textContent)})' | tr -d '\\')
+echo "$SC" | grep -q '"s":\["Produce","Dairy"\],"h":\["Produce","Dairy"\]' && ok "photo headings became sections: $SC" || bad "sections: $SC"
+tapel '.ls-sec:nth-of-type(2) [data-act=lsSecAdd]' || tapel '[data-act=lsSecAdd]' ; sleep 1
+js 'document.querySelector(".ls-sadd [data-act=lsToClear]")?1:0' | grep -q 1 || bad "no add field in the section"
+tapel '.ls-sadd input'; sleep 0.5; adb shell input text Cheese; adb shell input keyevent 66; sleep 1.2
+CH=$(js '(()=>{const L=S.lists[0],i=Object.values(L.items).find(x=>x.t==="Cheese");return i?(L.secs.find(s=>s.id===i.s)||{t:"none"}).t:"missing"})()' | tr -d '"')
+[ "$CH" != missing ] && [ "$CH" != none ] && ok "typed item went into section $CH" || bad "typed into section: $CH"
+[ "$(js 'document.activeElement&&!!document.activeElement.closest(".ls-sadd")')" = true ] && ok "field stays ready for the next item" || bad "focus left the section field"
+kb_hide; tapel '.ls-sadd [data-act=lsToClear]'; sleep 0.8
+js '(()=>{const L=S.lists[0],m=Object.values(L.items).find(x=>x.t==="Milk");ACT.lsItemMenu({id:L.id,i:m.id});return 1})()' >/dev/null; sleep 1
+tapel '#sheet [data-act=lsNote]'; sleep 1; adb shell input text "2%slitres"; kb_hide; tapel '#sheet form[data-form=lsNote] .btn.pri'; sleep 1
+[ "$(js '(Object.values(S.lists[0].items).find(x=>x.t==="Milk")||{}).n||""' | tr -d '"')" = "2 litres" ] && ok "note saved" || bad "note: $(js '(Object.values(S.lists[0].items).find(x=>x.t==="Milk")||{}).n')"
+js 'document.querySelectorAll("#view .rv").forEach(e=>e.classList.add("in"));scrollTo(0,0);1' >/dev/null; sleep 0.8; shot la-sections >/dev/null
+js 'ACT.lsFresh({id:S.lists[0].id});1' >/dev/null; sleep 1; tapel '#sheet [data-act=lsRep][data-v=week]'; sleep 1
+js '(()=>{const L=S.lists[0];L.rst="2026-01-05";render(false);return 1})()' >/dev/null; sleep 1.5
+[ "$(js 'Object.values(S.lists[0].items).filter(i=>!i.del&&i.done).length')" = 0 ] && ok "a new week unticked everything" || bad "fresh start left items ticked"
+shot la-fresh >/dev/null; js 'closeSheet();1' >/dev/null
 log "done, $( [ $FAIL = 0 ] && echo 'no bugs' || echo "bugs in $OUT/lists-auto-bugs.txt")"
 exit $FAIL
