@@ -511,7 +511,7 @@ function sqFeed(raw){if(!SQ.on||SQ.end)return;const v=spText(raw);if(/^\{|^A(?:G
    makes each next sentence while the current one plays. Sentence by sentence, the phone opened and closed an audio stream
    per sentence with a gap to make it: the answer broke up, with a "tub" pop at each sentence end. */
 function sqPump(){if(SQ.busy)return;if(!SQ.q.length){if(SQ.end){SQ.on=false;clearTimeout(SQ.tw);const f=SQ.done;SQ.done=null;if(f)f();else afterSpeak()}return}
- const kk=/^(kokoro|eleven|oss):/.test(aset().voice||'');if(kk&&SQ.n>0&&!SQ.end&&!SQ.go){if(!SQ.tw)SQ.tw=setTimeout(()=>{SQ.tw=0;SQ.go=1;sqPump();SQ.go=0},4000);return}
+ const kk=/^(kokoro|eleven|oss|st):/.test(aset().voice||'');if(kk&&SQ.n>0&&!SQ.end&&!SQ.go){if(!SQ.tw)SQ.tw=setTimeout(()=>{SQ.tw=0;SQ.go=1;sqPump();SQ.go=0},4000);return}
  clearTimeout(SQ.tw);SQ.tw=0;SQ.busy=true;if(SQ.first){const f=SQ.first;SQ.first=null;f()}window.asHum(false);tmMark('say');const t=kk&&SQ.n>0?SQ.q.splice(0).join(' '):SQ.q.shift();SQ.n=(SQ.n||0)+1;speak(t,()=>{SQ.busy=false;sqPump()})}
 /* the answer is complete: speak what's left; false when nothing was streamed (the caller speaks it the usual way) */
 function sqEnd(final){if(!SQ.on||!SQ.said){SQ.on=false;return false}const f=norm(final).replace(/[“”]/g,'"'),s=SQ.said.replace(/[“”]/g,'"');let rem='';
@@ -587,6 +587,9 @@ function speak(text,done,ov){const t=String(text).replace(/[“”]/g,'"').repla
  /* 1.74.1: Your voice server (open-source voices on your computer), same fallbacks */
  if(/^oss:/.test(voice)&&window.VSRV&&VSRV.base()){const ov=voice.slice(4);VSRV.speak(t,{voice:ov,rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},e=>{if(SPK!==id)return;console.warn('[voice] server',e&&e.message);const kv=window.KOKORO&&KOKORO.state().st==='have'&&KOKORO.can(t,vset().lang);if(kv)KOKORO.speak(t,{voice:'af_heart',rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},()=>{if(SPK===id)sysSpeak(id,t,rate,pitch,'')});else sysSpeak(id,t,rate,pitch,'')});return}
  if(/^oss:/.test(voice))voice='';
+ /* 1.75.0: Supertonic on the phone; what it can't say (Chinese, Urdu script) goes to Kokoro or the system voice */
+ if(/^st:/.test(voice)){const sv=voice.slice(3);voice='';if(window.SUPERTONIC&&SUPERTONIC.can(t)){SUPERTONIC.speak(t,{voice:sv,rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},()=>{if(SPK===id)sysSpeak(id,t,rate,pitch,'')});return}
+  if(window.KOKORO&&KOKORO.can(t,vset().lang)){KOKORO.speak(t,{voice:'af_heart',rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},()=>{if(SPK===id)sysSpeak(id,t,rate,pitch,'')});return}}
  if(/^eleven:/.test(voice)&&window.ELEVEN&&ELEVEN.on()){const ev=voice.slice(7);ELEVEN.speak(t,{voice:ev,rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},e=>{if(SPK!==id)return;console.warn('[voice] eleven',e&&e.message);const kv=window.KOKORO&&KOKORO.state().st==='have'&&KOKORO.can(t,vset().lang);if(kv)KOKORO.speak(t,{voice:'af_heart',rate}).then(()=>{if(SPK===id){SPK=null;spoke()}},()=>{if(SPK===id)sysSpeak(id,t,rate,pitch,'')});else sysSpeak(id,t,rate,pitch,'')});return}
  if(/^eleven:/.test(voice))voice='';
  /* a natural (Kokoro) voice speaks English; anything else, or if it fails before a word, the system voice does */
@@ -598,7 +601,7 @@ function sysSpeak(id,t,rate,pitch,voice){
  if(window.speechSynthesis){try{const u=new SpeechSynthesisUtterance(t);if(vset().lang)u.lang=vset().lang;const v=voice&&speechSynthesis.getVoices().find(x=>x.name===voice);if(v){u.voice=v;u.lang=v.lang}u.rate=rate;u.pitch=pitch;u.onend=u.onerror=()=>{if(SPK===id){SPK=null;spoke()}};speechSynthesis.cancel();speechSynthesis.speak(u);return}catch(e){}}
  SPK=null;spoke()}
 function spoke(){const f=SPK_CB;SPK_CB=null;if(f){paintHead();f();return}afterSpeak()}
-function hush(){sqStop();SPK=null;SPK_CB=null;try{if(window.KOKORO)KOKORO.stop()}catch(e){}try{if(window.ELEVEN)ELEVEN.stop()}catch(e){}try{if(NA&&NA.stopSpeaking)NA.stopSpeaking();else if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}paintHead()}
+function hush(){sqStop();SPK=null;SPK_CB=null;try{if(window.KOKORO)KOKORO.stop()}catch(e){}try{if(window.SUPERTONIC)SUPERTONIC.stop()}catch(e){}try{if(window.ELEVEN)ELEVEN.stop()}catch(e){}try{if(NA&&NA.stopSpeaking)NA.stopSpeaking();else if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}paintHead()}
 function afterSpeak(){paintHead();const a=AS.after;AS.after=null;if(AS.q.length&&!AS.busy){const[x,y]=AS.q.shift();setTimeout(()=>run(x,y),250);return}if(a==='listen'&&AS.open)setTimeout(()=>listen(),250);else{wakePause(false);handsOff()}}
 /* woken by "Hey Plot" while Plotlines was closed or the phone locked: once the answer is spoken and nothing follows, step aside again */
 function handsOff(){if(!AS.bg||!NA||!NA.background)return;clearTimeout(AS.bgT);AS.bgT=setTimeout(()=>{if(!AS.bg||AS.busy||AS.listening||AS.await||SPK)return;AS.bg=false;asClose();try{NA.background()}catch(e){}},2500)}
@@ -613,7 +616,7 @@ function listen(pre){if(!(AS.min&&$('#asv')))asOpen();const el=$('#asIn'),b=$('#
 function wakePause(p){if(!NA||!NA.wakePause)return;try{NA.wakePause(!!p)}catch(e){}}
 function wakeSync(){if(!NA||!NA.wake)return;const a=aset(),v=vset();try{NA.wake(JSON.stringify({on:!!(a.wake||a.bg),bg:!!a.bg,name:aname(),lang:v.lang||'',cloud:!!v.cloud,quiet:a.quiet!==false,cues:a.cues!==false,cueStart:cueOf('start'),cueDone:cueOf('done')}))}catch(e){}}
 window.__assist=(k,a,b)=>{
- if(k==='tts'){if(window.KOKORO&&KOKORO.tts(a,b))return;if(a===SPK&&(b==='done'||b==='err')){SPK=null;spoke()}return}
+ if(k==='tts'){if(window.KOKORO&&KOKORO.tts(a,b))return;if(window.SUPERTONIC&&SUPERTONIC.tts(a,b))return;if(a===SPK&&(b==='done'||b==='err')){SPK=null;spoke()}return}
  if(k==='kokoro'){if(window.KOKORO)KOKORO.ev(a,b);return}
  if(k==='voices'){window.dispatchEvent(new Event('plot-voices'));return}
  /* "Hey Plot" on its own: the page's own mic takes over, with room to pause and think (the wake loop would stop at the first pause) */

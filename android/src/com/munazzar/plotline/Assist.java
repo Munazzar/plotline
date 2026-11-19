@@ -411,7 +411,7 @@ public class Assist {
 
     @JavascriptInterface
     public void stopSpeaking() {
-        Kokoro.stop();
+        Kokoro.stop(); Supertonic.stop();
         H.post(new Runnable() { public void run() { try { if (tts != null) tts.stop(); } catch (Exception e) {} ttsPause = false; applyNow(c); } });
     }
 
@@ -455,6 +455,29 @@ public class Assist {
     /* 1.74.0: listening with Whisper on the phone (Whisper.java). whisperListen sends the same window.__voice events,
        plus "ready", "busy" (writing it down) and "partial" with everything written so far. whisperStop finishes and
        writes down what was heard; whisperCancel drops it. */
+    /* 1.75.0: Supertonic 3 voices (Supertonic.java): state, download, remove, and say(id, text, voice F1…M5, lang, speed),
+       which answers ('tts', id, done|err) like kokoroSay */
+    @JavascriptInterface
+    public String supertonic() { return Supertonic.state(c); }
+    @JavascriptInterface
+    public void supertonicGet() { Supertonic.get(c); }
+    @JavascriptInterface
+    public void supertonicFile(final String text, final String voice, final String lang) {
+        /* off the page's thread (a long synth here once froze the page until Android killed the app); the answer comes
+           back as window.__stfile("<path>|<ms>" or "err: …") */
+        new Thread(new Runnable() { public void run() {
+            java.io.File d = c.getExternalFilesDir(null);
+            String r;
+            if (d == null) r = "err: no folder";
+            else { String p = new java.io.File(d, "st-test.wav").getAbsolutePath(); r = Supertonic.file(c, text, voice, lang, p); if (!r.startsWith("err")) r = p + "|" + r; }
+            js("window.__stfile&&window.__stfile(" + JSONObject.quote(r) + ")");
+        } }).start();
+    }
+    @JavascriptInterface
+    public void supertonicRemove() { new Thread(new Runnable() { public void run() { Supertonic.remove(c); } }).start(); }
+    @JavascriptInterface
+    public void supertonicSay(String id, String text, String voice, String lang, double rate) { Supertonic.say(c, id == null ? "" : id, text, voice == null ? "" : voice, lang == null ? "en" : lang, rate); }
+
     @JavascriptInterface
     public String whisperState() { return Whisper.state(c); }
     @JavascriptInterface
