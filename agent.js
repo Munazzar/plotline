@@ -43,8 +43,10 @@ window.connScopes=()=>{const c=cset();return Object.keys(SC).filter(k=>c[k]).map
 const connOn=k=>k==='plot'||(k==='notion'?!!(cset().notion&&notionKey()):k==='web'?cset().web!==false:!!cset()[k]);
 async function googleConsent(){tokDrop();scopeSync();if(NATIVE&&NATIVE.googleToken){S.settings.sync.native=true;return nativeAuth(true)}return webAuth('consent')}
 async function gapi(url,opt={}){let t=tokGet();
- if(!t){if(NATIVE&&S.settings.sync.native)t=await token(false);else throw new Error('Sign in to Google again in Agent › Connections')}
- const r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+t}});
+ if(!t){if((NATIVE&&S.settings.sync.native)||window.PlotlineBg)t=await token(false).catch(()=>null);if(!t)throw new Error('Sign in to Google again in Agent › Connections')}
+ let r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+t}});
+ /* running by itself: a token the phone had cached but Google refused is swapped for a fresh one, once */
+ if(r.status===401&&window.bgTok){tokDrop();const x=bgTok(t);if(x){t=x;r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+t}})}}
  if(r.status===401){tokDrop();try{NATIVE&&NATIVE.invalidateToken&&NATIVE.invalidateToken(t)}catch(e){}throw new Error('Sign in to Google again in Agent › Connections')}
  if(r.status===403){let m='';try{m=(await r.json()).error.message}catch(e){}throw new Error(/not been used|disabled/i.test(m)?'This Google API isn’t turned on for Plotlines’ Google project yet':'Plotlines needs permission for this. Turn the connection off and on again')}
  if(!r.ok)throw new Error('Google said '+r.status);return r.json()}
@@ -175,8 +177,11 @@ const SCHEMA_STEP=names=>({type:'object',properties:{lookups:{type:'array',maxIt
 /* a task can think with "Your AI server" (say, a big model on your PC) while chat uses something else */
 /* what the user tuned over time: the tags they tapped under results, and the task's own More of / Less of */
 const prefTxt=t=>{const m=t.more||[],l=t.less||[];return m.length||l.length?`\nWHAT THEY TUNED OVER TIME (follow it): ${m.length?'more of '+m.join(', '):''}${m.length&&l.length?'; ':''}${l.length?'less of, or skip: '+l.join(', '):''}`:''};
-let ENG='';const engOf=t=>t&&t.ai==='server'&&insSet().url?'api':planEngine();
-async function llm1(msgs,opts){const e=ENG||planEngine();
+/* running by itself, anything but Your AI server thinks with the phone's own model (PlotlineBg.llm) */
+let ENG='';const engOf=t=>{const e=t&&t.ai==='server'&&insSet().url?'api':planEngine();return window.PlotlineBg&&PlotlineBg.llm&&e!=='api'?'native':e};
+async function llm1(msgs,opts){let e=ENG||planEngine();
+ /* 1.74.0: running by itself with Your AI server: if the server can't be reached (the PC is off), think on the phone instead */
+ if(window.PlotlineBg&&e==='api'&&PlotlineBg.llm){let out='';try{await apiChat(msgs,x=>{out+=x},null,opts);return out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').trim()}catch(x){if(x&&x.name==='AbortError')throw x;e='native'}}
  if(window.PlotlineBg&&e!=='api'){if(!PlotlineBg.llm)throw new Error('Update Plotlines to think on this phone in the background');
   const body={messages:msgs,max_tokens:opts.max_tokens||900,temperature:opts.temperature??.3,...(opts.schema?{response_format:{type:'json_schema',json_schema:{name:'out',schema:opts.schema}}}:{})};
   let r={};try{r=JSON.parse(PlotlineBg.llm(JSON.stringify(body),300)||'{}')}catch(x){}if(r.error)throw new Error('On-device AI: '+r.error);
@@ -273,13 +278,19 @@ async function due(){if(BUSY||!ag().on||typeof S==='undefined'||window.PlotlineB
    or the on-device model (PlotlineBg.llm). Android lets that start when exact alarms are allowed or Plotlines may ignore
    battery optimisation; without either the phone just reminds you to open the app. */
 let BGOK=false,BGSIG='';
-const bgTasks=()=>ag().on?ag().tasks.filter(t=>t.on&&!['open','manual'].includes(t.when||'daily')&&['api','native'].includes(engOf(t))):[];
+/* 1.74.0: any on-device model that's downloaded is enough, whatever chat uses (the invisible run thinks with it) */
+const natAny=()=>{try{return typeof natHave==='function'&&typeof LLMS!=='undefined'&&LLMS.some(x=>natHave(x))}catch(e){return false}};
+const bgCan=t=>['api','native'].includes(engOf(t))||natAny();
+const bgTasks=()=>ag().on?ag().tasks.filter(t=>t.on&&!['open','manual'].includes(t.when||'daily')&&bgCan(t)):[];
 /* the on-device model the phone should use for them (the one picked in Settings › AI & voice, if it's downloaded) */
 function bgModelSync(){try{if(!(NA&&NA.bgModel)||typeof llmOf!=='function'||typeof natHave!=='function')return;const m=llmOf(insSet().llm),ok=natHave(m)?m:(typeof LLMS!=='undefined'&&LLMS.find(x=>natHave(x)))||null;
  const k=ok?natFile(ok)+':'+natCtx(ok):'';if(bgModelSync.k===k)return;bgModelSync.k=k;NA.bgModel(ok?natFile(ok):'',ok?natCtx(ok):4096,typeof natThreads==='function'?natThreads():4)}catch(e){}}
-function bgSchedule(n){if(!(NA&&NA.bgAgent))return;bgModelSync();const L=bgTasks().map(t=>({at:t.next&&t.next>n?t.next:nextAt(t,n)})).sort((a,b)=>a.at-b.at).slice(0,8),sig=JSON.stringify(L);
+/* 1.74.0: the next few runs of each task (not just one), and the invisible run books the ones after it itself
+   (PlotlineBg.schedule), so tasks keep running every day without the app being opened in between */
+function bgList(n){const out=[];bgTasks().forEach(t=>{let at=t.next&&t.next>n?t.next:nextAt(t,n);for(let i=0;i<3;i++){out.push({at});at=nextAt(t,at+6e4)}});return out.sort((a,b)=>a.at-b.at).slice(0,8)}
+function bgSchedule(n){if(!(NA&&NA.bgAgent))return;bgModelSync();const L=bgList(n),sig=JSON.stringify(L);
  if(sig===BGSIG)return;BGSIG=sig;try{BGOK=NA.bgAgent(sig)!=='no'}catch(e){BGOK=false}}
-window.agentAlarms=(n,L)=>{try{bgSchedule(n)}catch(e){}if(!ag().on)return;ag().tasks.forEach(t=>{if(!t.on||!['daily','weekdays','weekly'].includes(t.when))return;if(BGOK&&['api','native'].includes(engOf(t)))return;const at=t.next&&t.next>n?t.next:nextAt(t,n);L.push({at,title:'Plot · '+t.title,body:'Open Plotlines and I’ll run it',k:'agent',id:t.id})})};
+window.agentAlarms=(n,L)=>{try{bgSchedule(n)}catch(e){}if(!ag().on)return;ag().tasks.forEach(t=>{if(!t.on||!['daily','weekdays','weekly'].includes(t.when))return;if(BGOK&&bgCan(t))return;const at=t.next&&t.next>n?t.next:nextAt(t,n);L.push({at,title:'Plot · '+t.title,body:'Open Plotlines and I’ll run it',k:'agent',id:t.id})})};
 /* the invisible run: catch up with sync, do every task that's due, tell the phone what each found, sync, stop */
 if(window.PlotlineBg)(async()=>{try{await window.S_LOADED;await new Promise(r=>setTimeout(r,1500));
  if(typeof syncOn==='function'&&syncOn()){try{await syncNow(false)}catch(e){}}
@@ -288,7 +299,7 @@ if(window.PlotlineBg)(async()=>{try{await window.S_LOADED;await new Promise(r=>s
   if(it)PlotlineBg.done('Plot · '+t.title,tr(firstLine(it.summary),200)+(it.sugs.length?` · ${it.sugs.length} suggestion${it.sugs.length===1?'':'s'}${t.mode==='do'?', done':' to tap'}`:''));
   else if(t.err)PlotlineBg.done('Plot · '+t.title,'Couldn’t finish: '+t.err)}
  if(L.length&&typeof syncOn==='function'&&syncOn()){try{await syncNow(false)}catch(e){}}}
- catch(e){}finally{try{PlotlineBg.finish()}catch(e){}}})();
+ catch(e){}finally{try{if(PlotlineBg.schedule)PlotlineBg.schedule(JSON.stringify(bgList(now())))}catch(e){}try{PlotlineBg.finish()}catch(e){}}})();
 setInterval(()=>{if(!document.hidden)due()},60e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(due,2500)});
 window.addEventListener('app-resume',()=>setTimeout(due,2500));

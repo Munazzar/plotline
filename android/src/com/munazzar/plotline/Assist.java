@@ -452,6 +452,34 @@ public class Assist {
     @JavascriptInterface
     public void listenStop() { Listen.stop(); }
 
+    /* 1.74.0: listening with Whisper on the phone (Whisper.java). whisperListen sends the same window.__voice events,
+       plus "ready", "busy" (writing it down) and "partial" with everything written so far. whisperStop finishes and
+       writes down what was heard; whisperCancel drops it. */
+    @JavascriptInterface
+    public String whisperState() { return Whisper.state(c); }
+    @JavascriptInterface
+    public void whisperGet(String name) { Whisper.get(c, name == null ? "" : name); }
+    @JavascriptInterface
+    public void whisperRemove(final String name) { new Thread(new Runnable() { public void run() { Whisper.remove(c, name == null ? "" : name); } }).start(); }
+    @JavascriptInterface
+    public void whisperUse(String name, boolean on) { Whisper.setUse(c, name, on); }
+    @JavascriptInterface
+    public void whisperWarm() { Whisper.warm(c); }
+    @JavascriptInterface
+    public void whisperListen(String id, String lang, int pauseMs, int waitMs) {
+        MainActivity a = own.get();
+        if (a != null) Whisper.listen(a, id == null ? "" : id, lang == null ? "" : lang, pauseMs, waitMs);
+    }
+    @JavascriptInterface
+    public void whisperStop() { Whisper.stop(); }
+    @JavascriptInterface
+    public void whisperFile(String id, String path, String lang) {
+        MainActivity a = own.get();
+        if (a != null && path != null) Whisper.file(a, id == null ? "" : id, path, lang == null ? "" : lang);
+    }
+    @JavascriptInterface
+    public void whisperCancel() { Whisper.cancel(); }
+
     @JavascriptInterface
     public String takePending() {
         SharedPreferences p = prefs(c);

@@ -323,6 +323,8 @@ html .ip-t,html .ip-t:focus,html .ip-t:focus-visible{display:block;width:100%;mi
 .ip-lab{margin:22px 0 0;color:var(--muted)}
 /* (1.71.2: the Journal header's own row is gone: since 1.69 its buttons are one menu, which sits beside the title like every page) */
 .ip-t{min-height:44px}
+/* the mic sits beside the first line of the writing area, not down by the hint */
+html .ip.has-mic>.ip-t{padding-right:44px}.ip.has-mic>.mic{top:4px;bottom:auto;right:0}
 /* Notifications page (sched.js) */
 .nt-seg{margin:0 0 16px}
 .nt-l{padding:4px 16px}
