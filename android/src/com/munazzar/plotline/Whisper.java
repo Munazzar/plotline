@@ -53,13 +53,14 @@ final class Whisper {
 
     /* ---------------- downloads ---------------- */
     static volatile String getting = "", err = "";
-    static volatile long got = 0, total = 0;
+    static volatile long total = 0;
+    static final long[] GOT = {0}; /* bytes so far (shared fetch() writes it; Supertonic has its own) */
 
     static String state(Context c) {
         try {
             JSONObject o = new JSONObject(), h = new JSONObject();
             for (String n : NAMES) h.put(n, have(c, n));
-            o.put("have", h).put("use", use(c)).put("getting", getting).put("err", err).put("got", got).put("total", total)
+            o.put("have", h).put("use", use(c)).put("getting", getting).put("err", err).put("got", GOT[0]).put("total", total)
              .put("loaded", M == null ? "" : M.name).put("on", prefs(c).getBoolean("on", true));
             return o.toString();
         } catch (Exception e) { return "{}"; }
@@ -69,7 +70,7 @@ final class Whisper {
         if (getting.length() > 0) return;
         int k = -1; for (int i = 0; i < NAMES.length; i++) if (NAMES[i].equals(n)) k = i;
         if (k < 0) return;
-        getting = n; err = ""; got = 0; total = BYTES[k];
+        getting = n; err = ""; GOT[0] = 0; total = BYTES[k];
         new Thread(new Getter(c.getApplicationContext(), n)).start();
     }
 
@@ -83,8 +84,8 @@ final class Whisper {
                 long done = 0;
                 for (String[] f : F) {
                     File out = new File(d, f[1]);
-                    if (out.exists()) { done += out.length(); got = done; continue; }
-                    done = fetch(HF + n + "/resolve/main/" + f[0], new File(d, f[1] + ".part"), out, done);
+                    if (out.exists()) { done += out.length(); GOT[0] = done; continue; }
+                    done = fetch(HF + n + "/resolve/main/" + f[0], new File(d, f[1] + ".part"), out, done, GOT);
                 }
                 new FileOutputStream(new File(d, "ready")).close();
                 prefs(c).edit().putString("use", n).apply();
@@ -94,7 +95,7 @@ final class Whisper {
     }
 
     /* resumes a part file after a dropped connection (a 1 GB download on a phone will sometimes drop) */
-    static long fetch(String url, File part, File out, long before) throws Exception {
+    static long fetch(String url, File part, File out, long before, long[] got) throws Exception {
         for (int tries = 0; ; tries++) {
             long have = part.exists() ? part.length() : 0;
             HttpURLConnection h = (HttpURLConnection) new URL(url).openConnection();
@@ -108,7 +109,7 @@ final class Whisper {
                 InputStream in = h.getInputStream();
                 FileOutputStream o = new FileOutputStream(part, have > 0);
                 byte[] b = new byte[1 << 16]; int r; long n = have;
-                try { while ((r = in.read(b)) > 0) { o.write(b, 0, r); n += r; got = before + n; } } finally { o.close(); in.close(); }
+                try { while ((r = in.read(b)) > 0) { o.write(b, 0, r); n += r; got[0] = before + n; } } finally { o.close(); in.close(); }
                 if (!part.renameTo(out)) throw new Exception("Couldn't save the model");
                 return before + out.length();
             } catch (Exception e) {

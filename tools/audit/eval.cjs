@@ -11,7 +11,7 @@ const ev = async x => { const r = await cmd('Runtime.evaluate', { expression: x,
   for (let i = 0; i < 40 && !ws; i++) { try { const L = await (await fetch(`http://127.0.0.1:${PORT}/json`)).json(); const p = L.find(x => x.type === 'page'); if (p) { ws = new WebSocket(p.webSocketDebuggerUrl); break; } } catch (e) { } await sleep(250); }
   if (ws.readyState !== 1) await new Promise(ok => ws.onopen = ok); ws.onmessage = m => { const r = JSON.parse(m.data); const f = wait.get(r.id); if (f) { wait.delete(r.id); f(r); } };
   const phone = +W < 600; await cmd('Emulation.setDeviceMetricsOverride', { width: +W, height: phone ? 844 : 900, deviceScaleFactor: phone ? 2 : 1, mobile: phone });
-  await cmd('Page.navigate', { url: URL }); await sleep(4500);
+  if (process.env.PRE) await cmd('Page.enable'), await cmd('Page.addScriptToEvaluateOnNewDocument', { source: process.env.PRE }); await cmd('Page.navigate', { url: URL }); await sleep(4500);
   await ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms));const ex=[...document.querySelectorAll('button')].find(b=>/Explore with examples/.test(b.textContent));if(ex){ex.click();await w(3000)}if(!S.goals.length)seedDemo();S.settings.name='Sam';${process.env.SETUP||''};save();closeSheet();return 1})()`);
   await ev(`(async()=>{const r=${JSON.stringify(ROUTE)}.replace('{habit}',(S.habits.find(h=>h.kind==='build')||S.habits[0]).id).replace('{goal}',S.goals[0].id);location.hash='#/'+r;await new Promise(r=>setTimeout(r,1800));return 1})()`);
   console.log(JSON.stringify(await ev(`(async()=>{return ${EXPR}})()`), null, 1));
