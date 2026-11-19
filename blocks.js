@@ -260,6 +260,8 @@ window.blkHome=()=>{const c=cfg(),f=focusNow(),on=c.rules.filter(r=>r.on);if(!(t
 try{const T=window.FF_SETS;if(T&&!T.some(x=>x[0]==='blocks'))T.splice(T.findIndex(x=>x[0]==='auto')+1||T.length,0,['blocks','Blocks','App limits, focus, schedules, never-blocked apps'])}catch(e){}
 if(typeof setSecs==='function'){const _ss=setSecs;setSecs=function(){const a=_ss.apply(this,arguments),i=a.findIndex(x=>x.k==='auto');a.splice(i<0?a.length:i+1,0,{k:'blocks',t:'Blocks',ic:'shield',sub:()=>{const c=cfg(),n=c.rules.filter(r=>r.on).length,f=focusNow();return f?'Focus is on':n?`${n} block${n===1?'':'s'} on`:'App limits, focus and schedules'},
  html:()=>{if(ON())state();return`<section class="panel rv"><h3>Blocks</h3><p class="small muted">Limits, focus sessions and schedules that cover an app with a Plotlines screen when it’s blocked.</p><div class="actions left"><a class="btn pri" href="#/blocks">${ic('shield')}Open Blocks</a></div></section>${needHTML()}${allowHTML()}<section class="panel rv"><h3>Focus habit</h3><p class="small muted">A habit that fills in with your focus minutes each day.</p><div class="actions left"><button class="btn sm" data-act="blkHabit">${ic('habit')}Make a focus habit</button></div></section>`}});return a}}
+/* the rules travel with your other synced settings (Drive); a phone that gets new rules hands them to its blocker */
+if(typeof syncPref==='function')syncPref('blk',()=>S.settings.blk||null,v=>{if(!v)return;S.settings.blk=v;try{push(false)}catch(e){}if(cur.p==='blocks')render(false)});
 window.BLOCKS={voice,push,state,cfg,startFocus,endFocus,focusNow,findApps};
 
 const css=document.createElement('style');css.textContent=`
