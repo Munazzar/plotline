@@ -366,11 +366,11 @@ async function scanCode(done){if(!canScan())return toast('This browser can’t s
  catch(e){st&&st.getTracks().forEach(x=>x.stop());toast('Couldn’t open the camera')}}
 /* every item with a rule, with how to check it off */
 function autoItems(){const td=ymd(),L=[];
- S.habits.forEach(h=>{if(h.status==='active'&&h.auto&&APP_T(h.auto.type)&&hDue(h,td))L.push({a:h.auto,o:h,title:h.title,done:()=>hDone(h,td),set:on=>{const was=hDone(h,td);hSetVal(h,td,on?hTarget(h):0);if(typeof ckH==='function')ckH(h,td,was)}})});
- S.goals.forEach(g=>{if(g.status!=='active')return;g.steps.forEach(s=>{if(s.auto&&APP_T(s.auto.type))L.push({a:s.auto,o:s,g,title:s.title,done:()=>!!s.done,set:on=>{if(!!s.done!==on)ACT.toggleStep({g:g.id,s:s.id})}})})});
- S.days.forEach(x=>{if(x.auto&&APP_T(x.auto.type)&&x.date===td)L.push({a:x.auto,o:x,title:x.title,done:()=>!!x.done,set:on=>{x.done=on;x.doneAt=on?Date.now():null}})});
+ S.habits.forEach(h=>{if(h.status==='active'&&hDue(h,td))wRef(h.auto).filter(a=>APP_T(a.type)).forEach(a=>L.push({a,o:h,title:h.title,done:()=>hDone(h,td),set:on=>{const was=hDone(h,td);hSetVal(h,td,on?hTarget(h):0);if(typeof ckH==='function')ckH(h,td,was)}}))});
+ S.goals.forEach(g=>{if(g.status!=='active')return;g.steps.forEach(s=>{wRef(s.auto).filter(a=>APP_T(a.type)).forEach(a=>L.push({a,o:s,g,title:s.title,done:()=>!!s.done,set:on=>{if(!!s.done!==on)ACT.toggleStep({g:g.id,s:s.id})}}))})});
+ S.days.forEach(x=>{if(x.date===td)wRef(x.auto).filter(a=>APP_T(a.type)).forEach(a=>L.push({a,o:x,title:x.title,done:()=>!!x.done,set:on=>{x.done=on;x.doneAt=on?Date.now():null}}))});
  return L}
-const fire=(it,why)=>{const td=ymd();it.a.fired=td;it.o.u=Date.now();if(it.g)it.g.u=Date.now();it.set(true);save();render(false);if(it.a.tell!==false)toast(`⚡ ${esc(it.title)} checked off · ${esc(why)}`,()=>{it.set(false);save();render(false)});return true};
+const fire=(it,why)=>{const td=ymd();it.a.fired=td;it.o.u=Date.now();if(it.g)it.g.u=Date.now();try{VIA={v:'auto',x:autoLabel(wBare(it.a))}}catch(e){}try{it.set(true)}finally{try{VIA=null}catch(e){}}save();render(false);if(it.a.tell!==false)toast(`⚡ ${esc(it.title)} checked off · ${esc(why)}`,()=>{it.set(false);save();render(false)});return true};
 const has=(s,q)=>!q||String(s||'').toLowerCase().includes(String(q).toLowerCase().trim());
 let CALT=0,CALE=null;
 function autoApp(){if(typeof S==='undefined'||!S.habits)return;const td=ymd(),now=Date.now(),day0=new Date(td+'T00:00').getTime();
@@ -396,6 +396,50 @@ addEventListener('hashchange',()=>{const m=/^#\/tap\/([0-9a-f]{12})$/.exec(locat
 if(/^#\/tap\//.test(location.hash))setTimeout(()=>dispatchEvent(new HashChangeEvent('hashchange')),1500);
 {const _sv=save;let AT=0;save=function(){const r=_sv.apply(this,arguments);clearTimeout(AT);AT=setTimeout(autoApp,600);return r}}
 setInterval(autoApp,30000);setTimeout(autoApp,3000);
+
+/* ---------------- several ways to check one thing off (2026-11-18) ----------------
+   o.auto is the first way and o.auto.or the others (each with a short wid, so the phone keeps them apart as their own
+   rules); any one of them checks the item off, once a day. Gym: 20 min at the gym, or 10,000 steps, or a 20-min workout. */
+function wRef(a){return a&&a.type?[a,...(Array.isArray(a.or)?a.or:[])].filter(w=>w&&w.type):[]}
+const wBare=w=>{const{or,...x}=w;return x};
+function wSet(o,W){W=W.filter(w=>w&&w.type).map(wBare);if(!W.length){delete o.auto;return}W.slice(1).forEach(w=>{if(!w.wid)w.wid=Math.random().toString(36).slice(2,8)});o.auto={...W[0]};if(W.length>1)o.auto.or=W.slice(1)}
+{const _l=autoLabel;autoLabel=function(a){const W=wRef(a);return W.length>1?W.map(w=>_l(wBare(w))).join(' or '):_l.apply(this,arguments)}}
+autoBtn=function(k,attrs,o,cls){const a=autoOf(k,o),W=wRef(a),one=W[0]?autoLabel(wBare(W[0])):'';return`<button class="bell auto ${a?'on':''} ${cls||''}" data-act="autoEdit" data-k="${k}" ${attrs} aria-label="Automatic check-off${a?': '+esc(autoLabel(a)):''}">${ic('flame')}${a&&cls!=='ic'?`<span>${esc(one)}${W.length>1?` <em class="au-n">+${W.length-1}</em>`:''}</span>`:''}</button>`};
+function auWaysHTML(o,W){const T=w=>AUTO_T[w.type]||{};
+ return`<p class="small muted au-lead">Any one of these checks it off. You can still tick it yourself.</p><div class="au-ways">${W.map((w,i)=>`<button class="au-w" data-act="auWay" data-i="${i}"><span class="au-we">${T(w).e||'⚡'}</span><span class="au-wt"><b>${esc(T(w).n||'Rule')}</b><small>${esc(autoLabel(wBare(w)))}</small></span>${i?'<em class="au-or">or</em>':''}${ic('next')}</button>`).join('')}</div>
+ <div class="actions"><button class="btn ghost" data-act="auAllOff">Turn all off</button><button class="btn pri" data-act="auWay" data-i="${W.length}">${ic('plus')}Add another way</button></div>`}
+{const _b=autoBody;autoBody=function(){const o=auItem();if(!o||!AU)return _b.apply(this,arguments);const W=wRef(o.auto);
+ if(AU.i==null&&W.length)return auWaysHTML(o,W);const i=AU.i||0,keep=o.auto;
+ /* draw the one way being edited as if it were the only one, so its own Save / Turn off show */
+ if(W[i])o.auto=wBare(W[i]);else delete o.auto;let h;try{h=_b.apply(this,arguments)}finally{if(keep)o.auto=keep;else delete o.auto}
+ if(W.length>1||(W.length&&!W[i]))h=`<button class="link small au-back" data-act="auWays">${ic('back')}All ${W.length+(W[i]?0:1)} ways</button>`+(W[i]?'':'<p class="small muted au-lead">Pick another way it can check itself off. Any one of them does it.</p>')+h;
+ if(W.length>1&&W[i])h=h.replace('>Turn off</button>','>Remove this way</button>');
+ if(!W[i]&&W.length)h=h.replace(/>Turn on<\/button>/,'>Add this way</button>');
+ if(W[i]&&W.length===1&&o.auto&&o.auto.type)h+=`<div class="au-more"><button class="btn ghost sm" data-act="auWay" data-i="1">${ic('plus')}Add another way</button><small>Like steps or a workout as well as time at the gym</small></div>`;
+ return h}}
+{const _e=ACT.autoEdit;ACT.autoEdit=d=>{_e(d);if(!AU)return;const o=auItem();if(!o)return;AU.i=wRef(o.auto).length>1?null:0;autoPaintD()}}
+{const _s=ACT.autoSave;ACT.autoSave=()=>{const o=auItem();if(!o||!AU)return _s();const W=wRef(o.auto).map(wBare),i=AU.i||0;if(W.length<=1&&!i)return _s();
+ const keep=o.auto;if(W[i])o.auto={...W[i]};else delete o.auto;_s();const D=o.auto;if(!D||D===keep){o.auto=keep;return}
+ if(W[i]&&W[i].wid)D.wid=W[i].wid;W[i]=D;wSet(o,W);save();syncNative();render(false)}}
+{const _o=ACT.autoOff;ACT.autoOff=()=>{const o=auItem();if(!o||!AU)return _o();const W=wRef(o.auto),i=AU.i||0;if(W.length<2||!W[i])return _o();
+ const gone=autoLabel(wBare(W[i]));wSet(o,W.filter((_,k)=>k!==i));o.u=Date.now();if(AU.k==='step'){const g=G(AU.g);if(g)g.u=Date.now()}save();syncNative();render(false);
+ AU.i=wRef(o.auto).length>1?null:0;AU.d={...wBare(wRef(o.auto)[0]||{})};AU.pick=AU.d.type||'';autoPaintD();toast(`Removed “${esc(gone)}”`)}}
+Object.assign(ACT,{
+ auWay:d=>{const o=auItem();if(!o)return;const W=wRef(o.auto);AU.i=+d.i||0;const w=W[AU.i];
+  if(w){AU.d={...wBare(w)};AU.pick=w.type}else{const used=new Set(W.map(x=>x.type)),g=autoGuess(o.title);AU.pick=g&&!used.has(g)?g:'';AU.d=AU.pick?{type:AU.pick}:{}}
+  autoPaintD();const sh=document.querySelector('#sheet .sheet-b,#sheet');if(sh&&sh.scrollTo)sh.scrollTo(0,0)},
+ auWays:()=>{AU.i=null;autoPaintD()},
+ auAllOff:()=>{AU.i=0;ACT.autoOff()}});
+const auCss=document.createElement('style');auCss.textContent=`
+.au-lead{margin:0 0 12px}
+.au-ways{display:flex;flex-direction:column;gap:16px}
+.au-w{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--text);font:inherit;text-align:left;cursor:pointer;position:relative}
+.au-w>svg{width:18px;height:18px;color:var(--muted);flex:none}
+.au-we{font-size:22px;line-height:1;flex:none}.au-wt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.au-wt b{font-size:15px}.au-wt small{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.au-or{position:absolute;top:-17px;left:50%;transform:translateX(-50%);padding:0 8px;font:600 11px/18px var(--f-body);font-style:normal;color:var(--muted);background:var(--bg);border-radius:9px;text-transform:uppercase;letter-spacing:.06em}
+.au-back{display:inline-flex;align-items:center;gap:4px;margin:0 0 12px}.au-back svg{width:16px;height:16px}
+.au-more{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.au-more small{color:var(--muted);font-size:12.5px}
+.au-n{font-style:normal;opacity:.75;margin-left:2px}`;document.head.appendChild(auCss);
 
 window.remFind=()=>remSrcs().map(r=>({t:r.title,s:remSub(r)}));
 window.SCHED={make,remind,timer,checkin,fromText,words,occ,upcoming,todayItems};
