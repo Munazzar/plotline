@@ -2,6 +2,7 @@
 <html lang="en" data-theme="halo">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0A0F1F">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3440,8 +3441,11 @@ html .tg-add input,html .tg-add input:focus,html .tg-add input:focus-visible{out
 .ud-r.d .ud-x{color:var(--muted);text-decoration:line-through}
 .hday.ud{padding-bottom:16px}
 .ud-go{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;padding:14px 16px;border:0;border-radius:18px;color:var(--on-accent,#fff);font:700 15px var(--f-body);cursor:pointer;overflow:hidden;
- background:linear-gradient(110deg,var(--accent),color-mix(in srgb,var(--accent) 55%,#ff4d8d),color-mix(in srgb,var(--accent) 60%,#7a5cff),var(--accent));background-size:300% 100%;animation:udFlow 6s linear infinite;
+ background:linear-gradient(110deg,var(--accent),color-mix(in srgb,var(--accent) 55%,#ff4d8d),color-mix(in srgb,var(--accent) 60%,#7a5cff),var(--accent));background-size:300% 100%;isolation:isolate;
  box-shadow:0 12px 26px -14px var(--accent),inset 0 1px 0 rgba(255,255,255,.3);transition:transform .4s var(--spring)}
+/* the colour flow: the same gradient on a layer the GPU slides (moving background-position repainted the button every frame) */
+.ud-go::before{content:'';position:absolute;top:0;bottom:0;left:-300%;width:600%;z-index:-1;background:inherit;background-size:50% 100%;background-repeat:repeat-x;animation:udFlowT 6s linear infinite;will-change:transform}
+@keyframes udFlowT{to{transform:translateX(50%)}}
 .ud-go::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);transform:translateX(-120%);animation:udShine 3.2s ease-in-out infinite}
 .ud-go:active{transform:scale(.97)}.ud-go em{font-style:normal;font:600 12px var(--f-mono);opacity:.85;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.2)}.ud-go svg{width:16px;height:16px}
 html:is([data-theme=halo],[data-theme=halolight]) .ud-go{color:#fff;background:linear-gradient(110deg,var(--halo-a,var(--accent)),var(--halo-b,#ff5fa2),var(--halo-a,var(--accent)));background-size:300% 100%}
@@ -3512,7 +3516,8 @@ const trunc=(s,n)=>s.length>n?s.slice(0,n-1)+'…':s;
 const dnum=s=>{const[y,m,d]=s.split('-').map(Number);return Math.round(Date.UTC(y,m-1,d)/864e5)};
 const fromN=n=>{const d=new Date(n*864e5);return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0')};
 const shiftDate=(s,n)=>s?fromN(dnum(s)+n):s;
-const fmtTime=t=>{if(!t)return'';const[h,m]=t.split(':').map(Number);return new Date(2000,0,1,h,m).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})};
+/* "7:00 AM" never breaks between the time and AM/PM */
+const fmtTime=t=>{if(!t)return'';const[h,m]=t.split(':').map(Number);return new Date(2000,0,1,h,m).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}).replace(/[  ](?=[AaPp].?[Mm])/,' ')};
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const pad2=n=>String(n).padStart(2,'0');
 const NATIVE=!window.PLOT_DEMO&&window.PlotlineNative||null;
@@ -5388,7 +5393,9 @@ document.addEventListener('change',e=>{const t=e.target;if(t.name==='checkin'&&t
 const NAV=[['today','Today','today'],['habits','Habits','habit'],['cal','Calendar','cal'],['goals','Goals','goals'],['vista','Timeline','map'],['journal','Journal','journal'],['ask','Ask','ai']];
 const navHTML=()=>`<div class="navs"><span class="nav-ind"></span>${NAV.map(([k,l,i])=>`<a class="nav" href="#/${k}" data-nav="${k}">${ic(i)}<span>${l}</span></a>`).join('')}</div>`;
 function buildChrome(){$('#rail').innerHTML=`<a href="#/today" aria-label="Plotlines home">${LOGO}</a>${navHTML()}<div class="spacer"></div><div class="navs"><span class="nav-ind"></span><a class="nav" href="#/settings" data-nav="settings">${ic('settings')}<span>Settings</span></a></div>`;$('#tabbar').innerHTML=navHTML()}
-function moveInd(){document.querySelectorAll('.navs').forEach(n=>{const on=n.querySelector('.nav.on'),ind=n.querySelector('.nav-ind');if(!ind)return;if(!on){ind.style.opacity=0;return}ind.style.opacity=1;ind.style.width=on.offsetWidth+'px';ind.style.height=on.offsetHeight+'px';ind.style.transform=`translate(${on.offsetLeft}px,${on.offsetTop}px)`})}
+/* all the measuring first, then all the writing: interleaving them made the browser lay the page out once per bar */
+function moveInd(){const M=[...document.querySelectorAll('.navs')].map(n=>{const on=n.querySelector('.nav.on'),ind=n.querySelector('.nav-ind');return{ind,on,r:on&&ind?[on.offsetWidth,on.offsetHeight,on.offsetLeft,on.offsetTop]:null}});
+ M.forEach(({ind,on,r})=>{if(!ind)return;if(!r){ind.style.opacity=0;return}ind.style.opacity=1;ind.style.width=r[0]+'px';ind.style.height=r[1]+'px';ind.style.transform=`translate(${r[2]}px,${r[3]}px)`})}
 const SEGP={};
 function placeSegs(){document.querySelectorAll('.seg-c[data-seg]').forEach(c=>{const pill=c.querySelector('.pill'),on=c.querySelector('button.on');if(!pill||!on)return;const k=c.dataset.seg,to={x:on.offsetLeft,w:on.offsetWidth};const from=SEGP[k];const set=v=>{pill.style.width=v.w+'px';pill.style.transform=`translateX(${v.x}px)`};pill.style.transition='none';set(from||to);pill.offsetWidth;pill.style.transition='';set(to);SEGP[k]=to})}
 function applyTheme(animate){const st=S.settings;let t=THEME_IDS.includes(st.theme)?st.theme:'night';if(st.matchSystem&&matchMedia('(prefers-color-scheme: light)').matches&&!isLightTheme(t))t=t==='halo'?'halolight':'daylight';const r=document.documentElement;applyFonts();
@@ -5397,7 +5404,8 @@ function applyTheme(animate){const st=S.settings;let t=THEME_IDS.includes(st.the
 let IO;
 function reveal(anim){const els=[...document.querySelectorAll('#view .rv:not(.in)')];if(!anim||reduced()||!('IntersectionObserver'in window)){els.forEach(e=>e.classList.add('in'));return}
  IO&&IO.disconnect();IO=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){const el=en.target;el.classList.add('in');IO.unobserve(el);setTimeout(()=>{el.style.transitionDelay=''},1200)}}),{rootMargin:'0px 0px -5% 0px'});
- let i=0;els.forEach(e=>{if(e.getBoundingClientRect().top<innerHeight)e.style.transitionDelay=Math.min(i++,9)*60+'ms';IO.observe(e)})}
+ /* Snappy: a short cascade, so the last section on screen is in place in about a third of a second */
+ const rich=typeof animRich==='function'&&animRich(),step=rich?60:24,cap=rich?9:6;let i=0;els.forEach(e=>{if(e.getBoundingClientRect().top<innerHeight)e.style.transitionDelay=Math.min(i++,cap)*step+'ms';IO.observe(e)})}
 function fillSpine(anim){document.querySelectorAll('.spine[data-fill]').forEach(sp=>{const f=sp.querySelector('.spine-fill');const done=[...sp.querySelectorAll('.sp-item.done')];const last=done[done.length-1];const h=last?last.offsetTop+last.offsetHeight/2:0;if(!anim){f.style.transition='none';f.style.height=h+'px';f.offsetWidth;f.style.transition=''}else requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.height=h+'px'}))})}
 /* ---- horizontal carousel engine ---- */
 const HSP={};let HSDRAG=0,DR=null;
@@ -5451,9 +5459,12 @@ let RANIM=true;
 let viewSet=(v,h)=>{v.innerHTML=h};
 /* a page that fails to build shows what went wrong instead of leaving the previous page on screen */
 function viewErr(e){console.error(e);return`<header class="ph"><div><h1>Can’t open this</h1><div class="data">Something on this page didn’t load</div></div></header><div class="empty rv in"><p>Plotlines hit a problem building this page. Your data is safe.</p><p class="small muted" style="font-family:var(--f-mono);overflow-wrap:anywhere">${esc(String(e&&e.message||e).slice(0,200))}</p><div class="actions"><button class="btn" onclick="history.back()">Go back</button><a class="btn pri" href="#/today">Home</a></div></div>`}
+let RPOST=0;
 function render(anim=true){RANIM=anim;document.documentElement.dataset.pg=cur.p;const v=$('#view');const y=scrollY;if(cur.p!=='map')MP=null;let h;try{h=VIEWS[cur.p](cur.id)}catch(e){h=viewErr(e)}viewSet(v,h);if(!anim)window.scrollTo(0,y);
  document.querySelectorAll('[data-nav]').forEach(a=>{const on=a.dataset.nav===(({goal:'goals',habit:'habits',road:'vista',map:'vista',ai:'ask',threads:'journal',thread:'journal',activity:'today',day:'cal'})[cur.p]||cur.p);a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
- imgCSS();zfixAll();if(typeof hvInit==='function')hvInit();if(typeof authBanner==='function')authBanner();if(typeof micDecorate==='function')micDecorate($('#view'));moveInd();placeSegs();initHS();reveal(anim);fillSpine(anim);if(S.settings.focus)buildFloater();
+ imgCSS();zfixAll();if(typeof hvInit==='function')hvInit();if(typeof authBanner==='function')authBanner();if(typeof micDecorate==='function')micDecorate($('#view'));
+ /* the steps that measure the new page run together in the next frame, so the page is laid out once, not after every step */
+ if(!anim)reveal(false);cancelAnimationFrame(RPOST);RPOST=requestAnimationFrame(()=>{RPOST=0;moveInd();placeSegs();initHS();if(anim)reveal(true);fillSpine(anim)});if(S.settings.focus)buildFloater();
  if(cur.p==='map')requestAnimationFrame(initMap);
  if(cur.p==='cal')requestAnimationFrame(()=>{fitCal();initDayGrid()});
  if(cur.p==='road'||cur.p==='goal')requestAnimationFrame(()=>{const r=$('#road');if(!r)return;r.style.setProperty('--vw',r.clientWidth+'px');if(cur.p==='road'){r.scrollLeft=RD.scroll!=null?RD.scroll:Math.max(0,RD.todayX-.25*(r.clientWidth-labW(r)));r.addEventListener('scroll',()=>{RD.scroll=r.scrollLeft},{passive:true})}else r.scrollLeft=Math.max(0,GV.x-30)})}

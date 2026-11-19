@@ -1,0 +1,511 @@
+{
+ "res": {
+  "today": {
+   "ms": 5,
+   "dom": 832,
+   "errs": [],
+   "issues": [
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d.now>span.hw-it",
+     "t": "6:00 PM",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d.now>span.hw-it.done",
+     "t": "Drink 8 glasses of water",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d.now>span.hw-it",
+     "t": "45 minutes on the study guide",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "7:00 AM",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "9:00 AM",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "Read 20 pages every night for a week",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "Plan the first trip to the lake",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "Prep lunches for the week",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "Wake 30 minutes earlier for a week",
+     "x": 5
+    },
+    {
+     "k": "text-outside-card",
+     "s": "div#vpg>div.hgrid>div.hcol.hcol-a>section.hday.hto",
+     "t": "Day wrap-up · 💧 Drink water · 📖 Read b",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "div.hcol.hcol-a>section>div.hw-goals>button.hw-g",
+     "t": "Next: Block Saturdays on the shared cale",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "div.hcol.hcol-a>section>div.hw-goals>button.hw-g",
+     "t": "Next: Read 20 pages every night for a we",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "div.hcol.hcol-a>section>div.hw-goals>button.hw-g",
+     "t": "Next: Pick the certification and book an",
+     "x": 0
+    }
+   ]
+  },
+  "habits": {
+   "ms": 2,
+   "dom": 460,
+   "errs": [],
+   "issues": []
+  },
+  "cal": {
+   "ms": 5,
+   "dom": 727,
+   "errs": [],
+   "issues": [
+    {
+     "k": "text-tight-in-card",
+     "s": "section.cal-card>div.cal-body.n>div.cal-m>button.cd",
+     "t": "🙏",
+     "x": 6
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section.cal-card>div.cal-body.n>div.cal-m>button.cd",
+     "t": "☀️",
+     "x": 6
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section.cal-card>div.cal-body.n>div.cal-m>button.cd",
+     "t": "💧",
+     "x": 6
+    },
+    {
+     "k": "text-outside-card",
+     "s": "section.cal-card>div.cal-body.n>div.cal-m>button.cd.late",
+     "t": "Block Saturdays on the shared calendar",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "section.cal-card>div.cal-body.n>div.cal-m>button.cd.now",
+     "t": "Drink 8 glasses of water",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "section.cal-card>div.cal-body.n>div.cal-m>button.cd",
+     "t": "Pay the credit card bill",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "section.cal-card>div.cal-body.n>div.cal-m>button.cd",
+     "t": "Read 20 pages every night for a week",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "section.cal-card>div.cal-body.n>div.cal-m>button.cd",
+     "t": "Plan the first trip to the lake",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "section.cal-card>div.cal-body.n>div.cal-m>button.cd",
+     "t": "Wake 30 minutes earlier for a week",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "section.cal-card>div.cal-body.n>div.cal-m>button.cd",
+     "t": "Pick the certification and book an exam ",
+     "x": 0
+    },
+    {
+     "k": "stuck-invisible",
+     "s": "div#vpg>section.cal-card>div.cal-body.n>section.csum",
+     "t": "November at a glance Activity 1/6 plans ",
+     "x": "0"
+    }
+   ]
+  },
+  "goals": {
+   "ms": 1,
+   "dom": 275,
+   "errs": [],
+   "issues": []
+  },
+  "activity": {
+   "ms": 1,
+   "dom": 75,
+   "errs": [],
+   "issues": []
+  },
+  "blocks": {
+   "ms": 1,
+   "dom": 138,
+   "errs": [],
+   "issues": []
+  },
+  "journal": {
+   "ms": 2,
+   "dom": 225,
+   "errs": [],
+   "issues": []
+  },
+  "vista": {
+   "ms": 0,
+   "dom": 232,
+   "errs": [],
+   "issues": [
+    {
+     "k": "text-tight-in-card",
+     "s": "div#road>div.road-in>div.fl-row>div.fl-chip",
+     "t": "Read 12 books this year",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "div#road>div.road-in>div.fl-row.halo>div.fl-chip",
+     "t": "Build a 3-month emergency fund",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "div#road>div.road-in>div.fl-row.halo>div.fl-chip",
+     "t": "Run a 10K race",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "div#road>div.road-in>div.fl-row>div.fl-chip",
+     "t": "Weekly family adventure day",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "div#road>div.road-in>div.fl-row>div.fl-chip",
+     "t": "Earn a professional certification",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "div#road>div.road-in>div.fl-row>div.fl-chip",
+     "t": "Build a calm morning routine",
+     "x": 5
+    }
+   ]
+  },
+  "ask": {
+   "ms": 4,
+   "dom": 832,
+   "errs": [],
+   "issues": [
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d.now>span.hw-it",
+     "t": "6:00 PM",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d.now>span.hw-it.done",
+     "t": "Drink 8 glasses of water",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d.now>span.hw-it",
+     "t": "45 minutes on the study guide",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "7:00 AM",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "9:00 AM",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "Read 20 pages every night for a week",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "Plan the first trip to the lake",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "Prep lunches for the week",
+     "x": 5
+    },
+    {
+     "k": "text-tight-in-card",
+     "s": "section>div.hw-week>a.hw-d>span.hw-it",
+     "t": "Wake 30 minutes earlier for a week",
+     "x": 5
+    },
+    {
+     "k": "text-outside-card",
+     "s": "div#vpg>div.hgrid>div.hcol.hcol-a>section.hday.hto",
+     "t": "Day wrap-up · 💧 Drink water · 📖 Read b",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "div.hcol.hcol-a>section>div.hw-goals>button.hw-g",
+     "t": "Next: Block Saturdays on the shared cale",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "div.hcol.hcol-a>section>div.hw-goals>button.hw-g",
+     "t": "Next: Read 20 pages every night for a we",
+     "x": 0
+    },
+    {
+     "k": "text-outside-card",
+     "s": "div.hcol.hcol-a>section>div.hw-goals>button.hw-g",
+     "t": "Next: Pick the certification and book an",
+     "x": 0
+    }
+   ]
+  },
+  "threads": {
+   "ms": 0,
+   "dom": 79,
+   "errs": [],
+   "issues": []
+  },
+  "agent": {
+   "ms": 1,
+   "dom": 185,
+   "errs": [],
+   "issues": []
+  },
+  "lists": {
+   "ms": 0,
+   "dom": 60,
+   "errs": [],
+   "issues": []
+  },
+  "bills": {
+   "ms": 0,
+   "dom": 80,
+   "errs": [],
+   "issues": []
+  },
+  "chats": {
+   "ms": 0,
+   "dom": 56,
+   "errs": [],
+   "issues": []
+  },
+  "me": {
+   "ms": 1,
+   "dom": 108,
+   "errs": [],
+   "issues": []
+  },
+  "canvas": {
+   "ms": 0,
+   "dom": 106,
+   "errs": [],
+   "issues": [
+    {
+     "k": "controls-overlap",
+     "s": "textarea#cvsFirst",
+     "t": "What should we build?",
+     "x": "main#view>form.cvs-start>div.field.has-mic>button.mic"
+    }
+   ]
+  },
+  "bench": {
+   "ms": 0,
+   "dom": 81,
+   "errs": [],
+   "issues": []
+  },
+  "notifs": {
+   "ms": 2,
+   "dom": 224,
+   "errs": [],
+   "issues": [
+    {
+     "k": "text-outside-card",
+     "s": "main#view>ul.sc-l.nt-l",
+     "t": "Day wrap-up · 💧 Drink water · 📖 Read b",
+     "x": 0
+    }
+   ]
+  },
+  "howto": {
+   "ms": 1,
+   "dom": 1226,
+   "errs": [],
+   "issues": [
+    {
+     "k": "text-outside-card",
+     "s": "div#hwr>section.hw-sec>div.hw-list>a.hw-r",
+     "t": "Habits, steps and day goals check themse",
+     "x": 0
+    }
+   ]
+  },
+  "goal/patjs43hfz3n": {
+   "ms": 1,
+   "dom": 583,
+   "errs": [],
+   "issues": []
+  },
+  "habit/zy5cman7fz3o": {
+   "ms": 2,
+   "dom": 549,
+   "errs": [],
+   "issues": [
+    {
+     "k": "controls-overlap",
+     "s": "section.ov>details.ov-more>div.hrd>button.hrd-r.ok",
+     "t": "",
+     "x": "section>div.st-h>h3>button.hpin-b"
+    },
+    {
+     "k": "controls-overlap",
+     "s": "section.ov>details.ov-more>div.hrd>button.hrd-r.part",
+     "t": "",
+     "x": "div>section>div.ckl>button.ckl-r.d"
+    }
+   ]
+  },
+  "screen": {
+   "ms": 1,
+   "dom": 83,
+   "errs": [],
+   "issues": []
+  },
+  "moves": {
+   "ms": 1,
+   "dom": 99,
+   "errs": [],
+   "issues": []
+  },
+  "settings": {
+   "ms": 1,
+   "dom": 130,
+   "errs": [],
+   "issues": []
+  },
+  "settings/account": {
+   "ms": 0,
+   "dom": 38,
+   "errs": [],
+   "issues": []
+  },
+  "settings/look": {
+   "ms": 1,
+   "dom": 917,
+   "errs": [],
+   "issues": []
+  },
+  "settings/notif": {
+   "ms": 0,
+   "dom": 80,
+   "errs": [],
+   "issues": []
+  },
+  "settings/privacy": {
+   "ms": 0,
+   "dom": 38,
+   "errs": [],
+   "issues": []
+  },
+  "settings/auto": {
+   "ms": 0,
+   "dom": 16,
+   "errs": [],
+   "issues": []
+  },
+  "settings/blocks": {
+   "ms": 0,
+   "dom": 56,
+   "errs": [],
+   "issues": []
+  },
+  "settings/share": {
+   "ms": 0,
+   "dom": 18,
+   "errs": [],
+   "issues": []
+  },
+  "settings/voice": {
+   "ms": 3,
+   "dom": 315,
+   "errs": [],
+   "issues": []
+  },
+  "settings/agent": {
+   "ms": 0,
+   "dom": 53,
+   "errs": [],
+   "issues": []
+  },
+  "settings/data": {
+   "ms": 0,
+   "dom": 42,
+   "errs": [],
+   "issues": []
+  },
+  "settings/updates": {
+   "ms": 1,
+   "dom": 24,
+   "errs": [],
+   "issues": []
+  }
+ },
+ "logs": []
+}
