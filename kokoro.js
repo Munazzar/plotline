@@ -96,6 +96,9 @@ function play(pcm,tok){return new Promise(ok=>{if(tok!==KS.tok)return ok();const
 /* speak: resolves true when it finished, false when stopped; rejects when nothing could be said (the caller falls back) */
 /* Android: each sentence's phoneme ids go to the phone, which says them; ('tts', id, done|err) comes back → tts() */
 let NID=0;
+/* 1.76.0: one sentence's phoneme ids (cut at commas when long), for the phone's speech stream (Speech.java) */
+async function ids(text,voice){if(!window.Phonemizer)await loadJS('lib/phonemizer/phonemizer.min.js');const v=VOICES.some(x=>x[0]===voice)?voice:'af_heart',out=[];
+ for(const c of chunks(text)){const x=[...await phonemes(c,v[0]!=='b')].map(c=>VOCAB[c]).filter(x=>x!=null).slice(0,510);if(x.length)out.push(x)}return out}
 async function nSpeak(text,o){stop();const tok=KS.tok,voice=VOICES.some(v=>v[0]===o.voice)?o.voice:'af_heart';if(!window.Phonemizer)await loadJS('lib/phonemizer/phonemizer.min.js');
  const ids=[];for(const c of chunks(text)){const x=[...await phonemes(c,voice[0]!=='b')].map(c=>VOCAB[c]).filter(x=>x!=null).slice(0,510);if(x.length)ids.push(x)}
  if(tok!==KS.tok)return false;if(!ids.length)return true;const id='k'+(++NID);
@@ -111,7 +114,7 @@ function stop(){if(NK){KS.tok++;const w=KS.wait;KS.wait={};for(const k in w)w[k]
 /* English text only (Latin letters); other scripts and languages go to the system voice */
 /* a symbol (\u2192, \u2248, \u23F0) no longer sends a whole sentence to the system voice: clean() drops it; only letters of other scripts do */
 const can=(t,lang)=>KS.st==='have'&&(!lang||/^en\b/i.test(lang))&&!/(?=\p{L})[^\u0000-\u024F\u1E00-\u1EFF]/u.test(String(t||''));
-window.KOKORO={VOICES,speak,stop,setup,remove,can,ev,tts,native:!!NK,mb:()=>NK?163:MB,
+window.KOKORO={VOICES,speak,stop,setup,remove,can,ev,tts,ids,native:!!NK,mb:()=>NK?163:MB,
  warm:()=>{if(KS.st!=='have')return;if(NK){try{NK.kokoroWarm()}catch(e){}if(!window.Phonemizer)loadJS('lib/phonemizer/phonemizer.min.js').catch(()=>{})}else engine().catch(()=>{})},
  state:()=>({st:KS.st,p:KS.p,err:KS.err}),voice:v=>VOICES.find(x=>x[0]===v)||null};
 })();

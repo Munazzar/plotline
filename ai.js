@@ -174,10 +174,12 @@ window.ELEVEN=(()=>{const KK='plotline.elkey',VK='plotline.elvoices',API='https:
   const j=await r.json(),L=(j.voices||[]).map(v=>({id:v.voice_id,n:v.name.split(/\s+[-–]\s+/)[0],g:/^f/i.test(v.labels&&v.labels.gender||'')?'f':/^m/i.test(v.labels&&v.labels.gender||'')?'m':'',d:[v.labels&&v.labels.accent,v.labels&&(v.labels.descriptive||v.labels.description)].filter(Boolean).join(' · '),own:v.category!=='premade'}));
   try{localStorage.setItem(VK,JSON.stringify(L))}catch(e){}return L}
  function stop(){tok++;if(A){try{A.pause();A.removeAttribute('src');A.load()}catch(e){}A=null}}
- async function speak(text,o){const k=key();if(!k)throw new Error('No ElevenLabs key');
-  return play(()=>fetch(API+'text-to-speech/'+encodeURIComponent(o.voice)+'/stream?output_format=mp3_44100_128',{method:'POST',headers:{'xi-api-key':k,'Content-Type':'application/json',Accept:'audio/mpeg'},
-   body:JSON.stringify({text,model_id:'eleven_flash_v2_5',voice_settings:{stability:.45,similarity_boost:.8,style:0,use_speaker_boost:true,speed:Math.max(.7,Math.min(1.2,+o.rate||1))}})}),
-   async r=>{let m='';try{m=(await r.json()).detail.message}catch(e){}return m||'ElevenLabs said '+r.status})}
+ const req=(text,o)=>fetch(API+'text-to-speech/'+encodeURIComponent(o.voice)+'/stream?output_format=mp3_44100_128',{method:'POST',headers:{'xi-api-key':key(),'Content-Type':'application/json',Accept:'audio/mpeg'},
+   body:JSON.stringify({text,model_id:'eleven_flash_v2_5',voice_settings:{stability:.45,similarity_boost:.8,style:0,use_speaker_boost:true,speed:Math.max(.7,Math.min(1.2,+o.rate||1))}})});
+ const errOf=async r=>{let m='';try{m=(await r.json()).detail.message}catch(e){}return m||'ElevenLabs said '+r.status};
+ async function speak(text,o){if(!key())throw new Error('No ElevenLabs key');return play(()=>req(text,o),errOf)}
+ /* just the audio, for a streamed answer (assistant.js plays the sentences back to back) */
+ async function fetchSpeech(text,o){const r=await req(text,o);if(!r.ok)throw new Error(await errOf(r));return r}
  /* plays a speech response as it arrives (MP3 through MediaSource; anything else, like WAV, once it's all here).
     Also used by Your voice server (VSRV below) */
  async function play(mk,errOf){stop();const t=++tok,r=await mk();
@@ -189,7 +191,7 @@ window.ELEVEN=(()=>{const KK='plotline.elkey',VK='plotline.elvoices',API='https:
     for(;;){const{done:d,value}=await rd.read();if(t!==tok){try{rd.cancel()}catch(e){}return}if(d)break;sb.appendBuffer(value);await up()}ms.endOfStream()}catch(e){try{ms.endOfStream()}catch(_){}}},{once:true})}
   else a.src=URL.createObjectURL(await r.blob());
   if(t!==tok)return;await a.play();await done;if(A===a)A=null}
- return{key,cached,voices,speak,play,stop,on:()=>!!key(),setKey:k=>{try{k?localStorage.setItem(KK,k):(localStorage.removeItem(KK),localStorage.removeItem(VK))}catch(e){}}}})();
+ return{key,cached,voices,speak,fetchSpeech,play,stop,on:()=>!!key(),setKey:k=>{try{k?localStorage.setItem(KK,k):(localStorage.removeItem(KK),localStorage.removeItem(VK))}catch(e){}}}})();
 if(window.syncPref)syncPref('elkey',()=>ELEVEN.key(),v=>{ELEVEN.setKey(v||'')});
 /* 1.74.1: Your voice server (window.VSRV): open-source voices that sound like ElevenLabs (Chatterbox, Orpheus, Sesame
    CSM, Kokoro-FastAPI…) running on your own computer behind any OpenAI-style /audio/speech address. Your AI server's
@@ -197,9 +199,11 @@ if(window.syncPref)syncPref('elkey',()=>ELEVEN.key(),v=>{ELEVEN.setKey(v||'')});
 window.VSRV=(()=>{const cfg=()=>({url:'',voice:'',model:'',...(S.settings.vsrv||{})});
  const base=()=>String(cfg().url||insSet().url||'').trim().replace(/\/+$/,'').replace(/\/audio\/speech$/,'');
  const hdr=()=>{const h={'Content-Type':'application/json'},k=aiKey();try{if(k&&insSet().url&&new URL(base()).host===new URL(insSet().url).host)h.Authorization='Bearer '+k}catch(e){}return h};
- const speak=(text,o)=>ELEVEN.play(()=>fetch(base()+'/audio/speech',{method:'POST',headers:hdr(),body:JSON.stringify({model:cfg().model||'tts-1',input:text,voice:o.voice,response_format:'mp3',speed:Math.max(.5,Math.min(2,+o.rate||1))})}),
-  async r=>{let m='';try{const j=await r.json();m=j.error&&(j.error.message||j.error)||j.detail||''}catch(e){}return(typeof m==='string'&&m)||'Your voice server said '+r.status});
- return{cfg,base,speak,on:()=>!!(base()&&cfg().voice)}})();
+ const req=(text,o)=>fetch(base()+'/audio/speech',{method:'POST',headers:hdr(),body:JSON.stringify({model:cfg().model||'tts-1',input:text,voice:o.voice,response_format:'mp3',speed:Math.max(.5,Math.min(2,+o.rate||1))})});
+ const errOf=async r=>{let m='';try{const j=await r.json();m=j.error&&(j.error.message||j.error)||j.detail||''}catch(e){}return(typeof m==='string'&&m)||'Your voice server said '+r.status};
+ const speak=(text,o)=>ELEVEN.play(()=>req(text,o),errOf);
+ async function fetchSpeech(text,o){const r=await req(text,o);if(!r.ok)throw new Error(await errOf(r));return r}
+ return{cfg,base,speak,fetchSpeech,on:()=>!!(base()&&cfg().voice)}})();
 /* 1.75.0: Supertonic 3 (Supertonic.java), a small expressive on-phone voice in 31 languages (Hindi, Arabic, Spanish,
    French, German, Russian, Japanese, Korean…), 10 voices, ~401 MB once. Saved as st:<F1…M5>. Phone only. */
 window.SUPERTONIC=(()=>{const N=()=>!window.PLOT_DEMO&&window.PlotlineAssist&&PlotlineAssist.supertonicSay?PlotlineAssist:null;let W={},n=0;
@@ -350,10 +354,14 @@ function liveOpen(first,o){if(LV.open&&LV.min&&!(o&&o.resume)){lvBack();if(first
 function lvGreet(){const h=new Date().getHours(),n=S.settings.name;const g=LV.resumed?'Let’s pick up where we left off. Go ahead.':LV.hist.length?'I’m listening.':`${h<12?'Good morning':h<17?'Hey':'Good evening'}${n?', '+n:''}. What’s on your mind?`;LV.ai=g;lvCap();lvSay(g)}
 function liveClose(){if(!LV.open)return;LV.open=false;LV.min=false;lvMiniPaint();if(window.asHum)asHum(false);LV.gen++;const vno=()=>{if(!LV.open&&document.querySelector('.vdlg')&&ACT.vcNo)ACT.vcNo()};vno();setTimeout(vno,500);setTimeout(vno,1500);try{LV.ctl&&LV.ctl.abort()}catch(e){}if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);if(window.PLOT_ASSIST)PLOT_ASSIST.hush();
  const el=$('#live');document.documentElement.classList.remove('lv-on');if(el){el.classList.remove('on','min');setTimeout(()=>{if(!LV.open)el.remove()},380)}try{NA&&NA.wakePause&&NA.wakePause(false)}catch(e){}}
+/* 1.76.0: Whisper heard the end of what you said and is writing it down: say so, instead of still "Listening…" */
+window.__vBusy=el=>{if(!el||!LV.open||LV.st!=='listen')return;if(el.id==='lvIn'){$('#lvSt').textContent='Got it…';$('#lvHint').textContent='Writing down what you said'}};
 function lvListen(){if(!LV.open||LV.muted)return lvState('idle');if(typeof voiceAvail==='function'&&!voiceAvail()){LV.typing=true;$('.lv-type').hidden=false;lvState('idle','Voice isn’t available here. Type instead.');return}
  if(window.PLOT_ASSIST)PLOT_ASSIST.hush();const i=$('#lvIn');i.value='';LV.you='';lvCap();lvState('listen');if(window.asCue)asCue('start');voiceStart(i,$('#lvOrb'))}
 /* after the voice loop closes: what was said goes to the conversation; nothing heard leaves the orb waiting */
-{const _vx=voiceStop;voiceStop=function(silent,keep){const c=VC;_vx(silent,keep);if(!c||!c.el||c.el.id!=='lvIn')return;try{NA&&NA.wakePause&&NA.wakePause(LV.open)}catch(e){}
+{const _vx=voiceStop;voiceStop=function(silent,keep){const c=VC;_vx(silent,keep);if(!c||!c.el||c.el.id!=='lvIn')return;
+ /* 1.76.0: Whisper is still writing it down (the mic closes when it's done): wait for that, don't call it "nothing heard" */
+ if(VC===c){if(LV.st==='listen'){$('#lvSt').textContent='Got it…';$('#lvHint').textContent='Writing down what you said'}return}try{NA&&NA.wakePause&&NA.wakePause(LV.open)}catch(e){}
  const v=c.el.value.trim();c.el.value='';if(!LV.open)return;if(keep&&v)lvHeard(v);else if(LV.st==='listen'){if(v){LV.retry=v;LV.you=v}lvState('idle',v?'':silent?'':'I didn’t hear anything. Tap the orb to talk.');lvCap()}}}
 /* the words as they're heard */
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='lvIn'&&LV.open){LV.you=e.target.value;const c=$('#lvCap');if(c){let p=c.querySelector('.lv-you');if(!p){c.innerHTML='<p class="lv-you"></p>'}c.querySelector('.lv-you').textContent=LV.you}}});
