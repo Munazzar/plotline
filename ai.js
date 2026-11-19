@@ -157,7 +157,7 @@ function voicePickHTML(){const p=vpick(),lang=(vset().lang||navigator.language||
  return`<section class="panel rv" id="vpPanel"><h3>${esc(nm())}’s voice</h3><p class="small muted">How ${esc(nm())} sounds when it talks back. Tap ${ic('play','ico-s')} to hear one.</p>
  <div class="chips vp-sty">${VSTY.map(([k,n,r,pi])=>`<button class="chip ${sty&&sty[0]===k?'on':''}" data-act="vpStyle" data-r="${r}" data-p="${pi}">${n}</button>`).join('')}</div>
  <div class="chips vp-g" role="group" aria-label="Show voices">${[['','All voices'],['m',`Male${nM?' · '+nM:''}`],['f',`Female${nF?' · '+nF:''}`]].map(([k,n])=>`<button class="chip ${G===k?'on':''}" data-act="vpG" data-g="${k}">${n}</button>`).join('')}</div>
- ${elHTML(p,G)}${kkHTML(p,G)}
+ ${elHTML(p,G)}${vsHTML(p)}${kkHTML(p,G)}
  ${G==='m'&&VL&&!nM?`<div class="vp-none"><p class="small">No male voice is installed for this language yet.${NA&&NA.openTtsSettings?' Tap Get more voices below: in Google’s speech engine, open Install voice data, pick your language and download the voices there (several are male; tap one to hear it). Then come back here.':' Try “Show voices in every language”, or add voices in your system’s speech settings.'} Meanwhile, “Deep” lowers the pitch of the voice you have.</p></div>`:''}
  <div class="two"><div class="field"><label>Speed · <output id="vpR">${p.rate.toFixed(2)}×</output></label><input type="range" class="vp-rng" min="0.6" max="1.6" step="0.05" value="${p.rate}" style="--p:${vpPct(p.rate,.6,1.6)}" data-vp="rate"></div><div class="field"><label>Pitch · <output id="vpP">${p.pitch.toFixed(2)}</output></label><input type="range" class="vp-rng" min="0.6" max="1.5" step="0.05" value="${p.pitch}" style="--p:${vpPct(p.pitch,.6,1.5)}" data-vp="pitch"></div></div>
  ${VL===null?`<p class="small muted">Loading the voices on this ${NATIVE?'phone':'device'}…</p>`:L.length?`<div class="vp-l" role="radiogroup" aria-label="Voice"><label class="vp-r"><input type="radio" name="vpV" value="" ${p.voice?'':'checked'} data-vp="voice"><span><b>Default</b><small>The ${NATIVE?'phone':'browser'}’s usual voice for this language</small></span><button class="ibtn sm" data-act="vpHear" data-v="" aria-label="Hear the default voice">${ic('play')}</button></label>${L.map((v,i)=>`<label class="vp-r"><input type="radio" name="vpV" value="${esc(v.n)}" ${p.voice===v.n?'checked':''} data-vp="voice"><span><b>${esc(vName(v,i))}</b><small>${esc([vGender(v)==='m'?'Male':vGender(v)==='f'?'Female':'',NA?'':lname(v.l),v.net?'Needs internet':'Works offline',v.q>=400?'High quality':''].filter(Boolean).join(' · '))}</small></span><button class="ibtn sm" data-act="vpHear" data-v="${esc(v.n)}" aria-label="Hear this voice">${ic('play')}</button></label>`).join('')}</div>`:`<p class="small muted">${G?'None of the voices here are marked '+(G==='m'?'male':'female')+'.':'No voices found for this language.'}</p>`}
@@ -174,19 +174,44 @@ window.ELEVEN=(()=>{const KK='plotline.elkey',VK='plotline.elvoices',API='https:
   const j=await r.json(),L=(j.voices||[]).map(v=>({id:v.voice_id,n:v.name.split(/\s+[-–]\s+/)[0],g:/^f/i.test(v.labels&&v.labels.gender||'')?'f':/^m/i.test(v.labels&&v.labels.gender||'')?'m':'',d:[v.labels&&v.labels.accent,v.labels&&(v.labels.descriptive||v.labels.description)].filter(Boolean).join(' · '),own:v.category!=='premade'}));
   try{localStorage.setItem(VK,JSON.stringify(L))}catch(e){}return L}
  function stop(){tok++;if(A){try{A.pause();A.removeAttribute('src');A.load()}catch(e){}A=null}}
- async function speak(text,o){stop();const t=++tok,k=key();if(!k)throw new Error('No ElevenLabs key');
-  const r=await fetch(API+'text-to-speech/'+encodeURIComponent(o.voice)+'/stream?output_format=mp3_44100_128',{method:'POST',headers:{'xi-api-key':k,'Content-Type':'application/json',Accept:'audio/mpeg'},
-   body:JSON.stringify({text,model_id:'eleven_flash_v2_5',voice_settings:{stability:.45,similarity_boost:.8,style:0,use_speaker_boost:true,speed:Math.max(.7,Math.min(1.2,+o.rate||1))}})});
-  if(!r.ok){let m='';try{m=(await r.json()).detail.message}catch(e){}throw new Error(m||'ElevenLabs said '+r.status)}
-  if(t!==tok)return;const a=A=new Audio();
+ async function speak(text,o){const k=key();if(!k)throw new Error('No ElevenLabs key');
+  return play(()=>fetch(API+'text-to-speech/'+encodeURIComponent(o.voice)+'/stream?output_format=mp3_44100_128',{method:'POST',headers:{'xi-api-key':k,'Content-Type':'application/json',Accept:'audio/mpeg'},
+   body:JSON.stringify({text,model_id:'eleven_flash_v2_5',voice_settings:{stability:.45,similarity_boost:.8,style:0,use_speaker_boost:true,speed:Math.max(.7,Math.min(1.2,+o.rate||1))}})}),
+   async r=>{let m='';try{m=(await r.json()).detail.message}catch(e){}return m||'ElevenLabs said '+r.status})}
+ /* plays a speech response as it arrives (MP3 through MediaSource; anything else, like WAV, once it's all here).
+    Also used by Your voice server (VSRV below) */
+ async function play(mk,errOf){stop();const t=++tok,r=await mk();
+  if(!r.ok)throw new Error(await errOf(r));
+  if(t!==tok)return;const a=A=new Audio(),mp3=/mpeg|mp3/.test(r.headers.get('content-type')||'audio/mpeg');
   const done=new Promise((res,rej)=>{a.onended=()=>res();a.onerror=()=>rej(new Error('Couldn’t play the voice'))});
-  if(window.MediaSource&&MediaSource.isTypeSupported('audio/mpeg')&&r.body){const ms=new MediaSource();a.src=URL.createObjectURL(ms);
+  if(mp3&&window.MediaSource&&MediaSource.isTypeSupported('audio/mpeg')&&r.body){const ms=new MediaSource();a.src=URL.createObjectURL(ms);
    ms.addEventListener('sourceopen',async()=>{try{const sb=ms.addSourceBuffer('audio/mpeg'),rd=r.body.getReader(),up=()=>new Promise(ok=>sb.addEventListener('updateend',ok,{once:true}));
     for(;;){const{done:d,value}=await rd.read();if(t!==tok){try{rd.cancel()}catch(e){}return}if(d)break;sb.appendBuffer(value);await up()}ms.endOfStream()}catch(e){try{ms.endOfStream()}catch(_){}}},{once:true})}
   else a.src=URL.createObjectURL(await r.blob());
   if(t!==tok)return;await a.play();await done;if(A===a)A=null}
- return{key,cached,voices,speak,stop,on:()=>!!key(),setKey:k=>{try{k?localStorage.setItem(KK,k):(localStorage.removeItem(KK),localStorage.removeItem(VK))}catch(e){}}}})();
+ return{key,cached,voices,speak,play,stop,on:()=>!!key(),setKey:k=>{try{k?localStorage.setItem(KK,k):(localStorage.removeItem(KK),localStorage.removeItem(VK))}catch(e){}}}})();
 if(window.syncPref)syncPref('elkey',()=>ELEVEN.key(),v=>{ELEVEN.setKey(v||'')});
+/* 1.74.1: Your voice server (window.VSRV): open-source voices that sound like ElevenLabs (Chatterbox, Orpheus, Sesame
+   CSM, Kokoro-FastAPI…) running on your own computer behind any OpenAI-style /audio/speech address. Your AI server's
+   address and key are used when it's the same server. Saved as oss:<voice>. */
+window.VSRV=(()=>{const cfg=()=>({url:'',voice:'',model:'',...(S.settings.vsrv||{})});
+ const base=()=>String(cfg().url||insSet().url||'').trim().replace(/\/+$/,'').replace(/\/audio\/speech$/,'');
+ const hdr=()=>{const h={'Content-Type':'application/json'},k=aiKey();try{if(k&&insSet().url&&new URL(base()).host===new URL(insSet().url).host)h.Authorization='Bearer '+k}catch(e){}return h};
+ const speak=(text,o)=>ELEVEN.play(()=>fetch(base()+'/audio/speech',{method:'POST',headers:hdr(),body:JSON.stringify({model:cfg().model||'tts-1',input:text,voice:o.voice,response_format:'mp3',speed:Math.max(.5,Math.min(2,+o.rate||1))})}),
+  async r=>{let m='';try{const j=await r.json();m=j.error&&(j.error.message||j.error)||j.detail||''}catch(e){}return(typeof m==='string'&&m)||'Your voice server said '+r.status});
+ return{cfg,base,speak,on:()=>!!(base()&&cfg().voice)}})();
+const VSV=['tara','leah','jess','leo','dan','mia','zac','zoe','af_heart','am_michael'];
+function vsHTML(p){const c=VSRV.cfg(),on=/^oss:/.test(p.voice);
+ return`<div class="kk"><div class="kk-h"><b>Your voice server</b><span class="kk-tag">Open source · your computer</span></div><p class="small muted">Open-source voices that sound like ElevenLabs, running on your own computer: Chatterbox, Orpheus, Sesame CSM, Kokoro-FastAPI or anything else with an OpenAI-style speech address. Free, private, no account.${insSet().url?' Your AI server’s address is filled in.':''}</p>
+ <form class="vs-f" data-form="vsSave"><div class="field"><label>Address</label><input name="url" value="${esc(c.url||insSet().url||'')}" placeholder="https://my-pc.example/v1" autocomplete="off" spellcheck="false"></div>
+ <div class="two"><div class="field"><label>Voice</label><input name="voice" value="${esc(c.voice)}" list="vsV" placeholder="tara" autocomplete="off" spellcheck="false" required></div><div class="field"><label>Model <small class="muted">(if it asks)</small></label><input name="model" value="${esc(c.model)}" placeholder="tts-1" autocomplete="off" spellcheck="false"></div></div>
+ <datalist id="vsV">${VSV.map(v=>`<option value="${v}">`).join('')}</datalist>
+ <div class="actions left"><button class="btn sm ${on?'':'pri'}">${on?'Save':'Use this voice'}</button>${on?`<span class="kk-tag">Speaking</span><button type="button" class="btn sm ghost" data-act="vsOff">Stop using it</button>`:''}</div></form></div>`}
+Object.assign(FORM,{vsSave:async f=>{const v={url:String(f.url.value||'').trim(),voice:String(f.voice.value||'').trim(),model:String(f.model.value||'').trim()};if(!v.voice)return;
+ const b=f.querySelector('button');b.disabled=true;const old=S.settings.vsrv;S.settings.vsrv=v;
+ try{await VSRV.speak(`Hi, I’m ${nm()}. This is how I sound.`,{voice:v.voice,rate:vpick().rate});save();vpSave({voice:'oss:'+v.voice});toast('Your voice server is speaking for '+nm());render(false)}
+ catch(e){S.settings.vsrv=old;b.disabled=false;toast(esc('Couldn’t reach your voice server: '+(e&&e.message||e)))}}});
+Object.assign(ACT,{vsOff:()=>{vpSave({voice:window.KOKORO&&KOKORO.state().st==='have'?'kokoro:af_heart':''});render(false)}});
 /* the voices people like best first, so connecting picks a great one */
 const ELBEST={f:['Sarah','Jessica','Laura','Alice','Matilda','Lily','Charlotte','Aria'],m:['Brian','Eric','Chris','Will','George','Daniel','Liam','Roger']};
 function elPick(L,g){const ord=g?ELBEST[g]:[...ELBEST.f,...ELBEST.m];for(const n of ord){const v=L.find(x=>x.n===n);if(v)return v}return L.find(v=>!g||v.g===g)||L[0]}
@@ -426,6 +451,7 @@ const css=document.createElement('style');css.textContent=`
 .mm-pr{margin-top:10px}.mm-pr summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:600}
 .kk{margin:14px 0 6px;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:color-mix(in srgb,var(--accent) 6%,transparent)}.kk-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.kk-h b{font-size:15px}.kk-tag{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}.kk p{margin:6px 0}.kk .vp-l{background:var(--card,transparent)}.kk-bar{height:8px;border-radius:99px;background:color-mix(in srgb,var(--text) 10%,transparent);overflow:hidden;margin:8px 0 2px}.kk-bar i{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .3s}.kk-err{color:var(--danger,#d33)}.kk .actions{margin-top:8px}.vp-rng{-webkit-appearance:none;appearance:none;width:100%;height:32px;margin:4px 0;padding:0;background:transparent;border:0;pointer-events:none;touch-action:pan-y}.vp-rng:focus{outline:none}.vp-rng::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:linear-gradient(to right,var(--accent) var(--p,50%),color-mix(in srgb,var(--text) 16%,transparent) var(--p,50%))}.vp-rng::-moz-range-track{height:6px;border-radius:99px;background:linear-gradient(to right,var(--accent) var(--p,50%),color-mix(in srgb,var(--text) 16%,transparent) var(--p,50%))}.vp-rng::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;margin-top:-11px;border-radius:50%;background:var(--accent);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35);pointer-events:auto;cursor:grab}.vp-rng::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35);pointer-events:auto;cursor:grab}.vp-rng:focus-visible::-webkit-slider-thumb{outline:2px solid var(--accent);outline-offset:2px}.vp-sty{margin:10px 0 4px}.vp-g{margin:14px 0 4px}.vp-none{margin:8px 0;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--accent) 9%,transparent)}.vp-none p{margin:0}.vp-l{display:flex;flex-direction:column;gap:2px;margin:10px 0;max-height:360px;overflow:auto;border-radius:14px;border:1px solid var(--line)}
 .vp-r{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer}.vp-r+.vp-r{border-top:1px solid color-mix(in srgb,var(--text) 7%,transparent)}
+.vs-f{margin-top:10px}.vs-f .actions{align-items:center}
 .el-k{display:flex;gap:8px;margin-top:10px}.wh-r .kk-tag{flex:none}.el-k input{flex:1;min-width:0}.wh-r{cursor:default}.wh-r .btn,.wh-r .ibtn{flex:none}
 .vp-r input{accent-color:var(--accent);width:18px;height:18px;flex:none}.vp-r span{flex:1;min-width:0;display:flex;flex-direction:column}.vp-r small{color:var(--muted);font-size:12px}.vp-r:has(input:checked){background:color-mix(in srgb,var(--accent) 10%,transparent)}
 input[data-vp=rate],input[data-vp=pitch]{width:100%;accent-color:var(--accent)}
