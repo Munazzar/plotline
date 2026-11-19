@@ -213,7 +213,11 @@ snap(function(img){var fin=function(L){post({cvsChk:chk,errs:E,txt:t,media:m,are
 const LOCK=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src data: https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src data: blob:; media-src data: blob:; connect-src data: blob: https://cdn.jsdelivr.net; worker-src blob: https://cdn.jsdelivr.net; frame-src 'none'; form-action 'none'; base-uri 'none'">`;
 const usesData=h=>/PLOT_DATA/.test(h);
 function docOf(c,o={}){const h=o.html!=null?o.html:(c.html||''),withData=!!(c.data&&o.data!==false&&usesData(h)),b0=(withData?LOCK:'')+boot(c,withData?(o.D||plotData()):null,!o.file&&!o.chk,o),b=b0.replace('/*LOFF*/0',String((b0.match(/\n/g)||[]).length));
- if(/<head[^>]*>/i.test(h))return h.replace(/<head[^>]*>/i,m=>m+b);if(/<html[^>]*>/i.test(h))return h.replace(/<html[^>]*>/i,m=>m+'<head>'+b+'</head>');return'<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+b+h}
+ let d;if(/<head[^>]*>/i.test(h))d=h.replace(/<head[^>]*>/i,m=>m+b);else if(/<html[^>]*>/i.test(h))d=h.replace(/<html[^>]*>/i,m=>m+'<head>'+b+'</head>');else d='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+b+h;
+ /* the Android app injects its bridges into every frame: take them away before anything on the page can run (even a
+    script placed before <head>), and allow no frames inside, which would get fresh copies */
+ const m=/^s*<!doctype[^>]*>/i.exec(d);return m?m[0]+GUARD+d.slice(m[0].length):GUARD+d}
+const GUARD=`${typeof NATIVE!=='undefined'&&NATIVE?`<meta http-equiv="Content-Security-Policy" content="frame-src 'none'">`:''}<script>(function(){['PlotlineNative','PlotlineAssist','PlotlineBg','PlotTalk'].forEach(function(k){try{Object.defineProperty(window,k,{value:undefined,writable:false,configurable:false})}catch(e){try{delete window[k]}catch(_){}try{window[k]=undefined}catch(_){}}})})()</script>`;
 const SANDBOX='allow-scripts allow-forms allow-modals allow-popups allow-downloads';
 let FR_ERR=null;
 /* Before saying a version is ready, run it once in a hidden frame and see that it loads, doesn't throw, and shows something. */
@@ -581,7 +585,9 @@ function zoneHTML(k){return`<section class="upz" data-slot="${k}" aria-label="Yo
 /* The parts sit beside the page inside #view (#vpg holds the page, #upzH the parts), so a redraw of the page (ticking
    a habit, say) doesn't reload them. The parts are only rebuilt when they, their order or the theme change; when just
    your data changed, a fresh copy of a part loads behind the one showing and takes its place once it's ready. */
-const zoneKey=()=>{const cs=getComputedStyle(document.documentElement);return[cur.p,cs.getPropertyValue('--surface'),cs.getPropertyValue('--accent'),cs.getPropertyValue('--text'),
+/* the theme part of the key comes from the attributes the theme is set with: reading computed colours here forced a
+   full style recalculation on every page draw */
+const zoneKey=()=>{const r=document.documentElement;return[cur.p,r.dataset.theme,r.dataset.mode,r.dataset.cards,r.getAttribute('style')||'',document.body.getAttribute('style')||'',
  ...parts(cur.p).map(c=>[c.id,c.title,c.vi,c.html.length,c.data?1:0].join(':'))].join('|')};
 {const _vs=viewSet;viewSet=function(v,h){const i=typeof h==='string'?h.lastIndexOf('<section class="upz"'):-1;if(i<0)return _vs(v,h);
  let pg=v.querySelector(':scope>#vpg'),z=v.querySelector(':scope>#upzH');
