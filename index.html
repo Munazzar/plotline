@@ -3610,7 +3610,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.71.2';
+const APP_VER='1.72.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -6562,10 +6562,12 @@ function autoLabel(a){if(!a)return'';const p=a.type==='place'?places().find(x=>x
  return a.type==='steps'?`${(+a.n||0).toLocaleString()} steps`:a.type==='workout'?`${a.mins||20} min ${a.kind&&a.kind!=='any'?(EX_TYPES.find(x=>x[0]===a.kind)||[0,'workout'])[1].toLowerCase():'workout'}`:a.type==='sleep'?`${a.hours||7} h sleep`:a.type==='screen'?(a.log?'Logs screen time':`Under ${a.max||60} min`):p?(a.when==='arrive'?'Arrive at ':a.when==='leave'?'Leave ':'At ')+(p.emoji||'')+' '+p.name+(a.mins&&!a.when?` · ${a.mins} min`:''):'Place'}
 function autoBtn(k,attrs,o,cls){const a=autoOf(k,o);return`<button class="bell auto ${a?'on':''} ${cls||''}" data-act="autoEdit" data-k="${k}" ${attrs} aria-label="Automatic check-off${a?': '+esc(autoLabel(a)):''}">${ic('flame')}${a&&cls!=='ic'?`<span>${esc(autoLabel(a))}</span>`:''}</button>`}
 /* rules for the phone */
+function autoWays(a){if(!a||!a.type)return[];const{or,...a0}=a;return[a0,...(Array.isArray(or)?or:[])].filter(w=>w&&w.type)}
+const wKey=w=>w.wid?'~'+w.wid:'';
 function autoRules(){const R=[],td=ymd();
- S.habits.forEach(h=>{const a=h.auto;if(!a||!a.type||h.status!=='active')return;R.push({...a,key:'h:'+h.id,kind:'habit',hid:h.id,hv:hTarget(h),title:`${hIcon(h)} ${h.title}`,m:[0,1,2,3,4,5,6].map(i=>h.freq!=='days'||h.days.includes(i)?'1':'0').join(''),log:a.type==='screen'&&h.kind==='quit'&&h.mode==='limit'})});
- S.goals.forEach(g=>{if(g.status!=='active')return;g.steps.forEach(s=>{const a=s.auto;if(!a||!a.type||s.done)return;R.push({...a,key:'s:'+g.id+'/'+s.id,kind:'step',g:g.id,s:s.id,title:s.title,...(s.due&&s.due>=td?{}:{})})})});
- S.days.forEach(x=>{const a=x.auto;if(!a||!a.type||x.done||x.date<td)return;R.push({...a,key:'d:'+x.id,kind:'day',id:x.id,title:x.title,date:x.date})});
+ S.habits.forEach(h=>{if(h.status!=='active')return;autoWays(h.auto).forEach(a=>R.push({...a,key:'h:'+h.id+wKey(a),kind:'habit',hid:h.id,hv:hTarget(h),title:`${hIcon(h)} ${h.title}`,m:[0,1,2,3,4,5,6].map(i=>h.freq!=='days'||h.days.includes(i)?'1':'0').join(''),log:a.type==='screen'&&h.kind==='quit'&&h.mode==='limit'}))});
+ S.goals.forEach(g=>{if(g.status!=='active')return;g.steps.forEach(s=>{if(s.done)return;autoWays(s.auto).forEach(a=>R.push({...a,key:'s:'+g.id+'/'+s.id+wKey(a),kind:'step',g:g.id,s:s.id,title:s.title}))})});
+ S.days.forEach(x=>{if(x.done||x.date<td)return;autoWays(x.auto).forEach(a=>R.push({...a,key:'d:'+x.id+wKey(a),kind:'day',id:x.id,title:x.title,date:x.date}))});
  return R}
 function autoSync(){if(!NATIVE||!NATIVE.autoSet)return;const R=autoRules(),k=JSON.stringify([R,places()]);if(autoSync.k===k)return;autoSync.k=k;try{NATIVE.autoSet(JSON.stringify({rules:R,places:places()}))}catch(e){}}
 
@@ -6762,7 +6764,7 @@ function ckH(h,ds,was){const now=hDone(h,ds);if(now===was)return;h.ck=h.ck||{};c
 function ckO(o){if(o.done)o.ck=ckNew(o.ck);else{const c=ckDrop(o.ck);if(c)o.ck=c;else delete o.ck}}
 {const _sv=hSetVal;hSetVal=function(h,ds,v){const was=hDone(h,ds);_sv(h,ds,v);ckH(h,ds,was)}}
 function ckVia(a){if(!a||!/^(habit|step|day|hskip)$/.test(a.k))return null;
- if(a.rid){const o=a.k==='habit'?H(a.id):a.k==='day'?S.days.find(y=>y.id===a.id):((G(a.g)||{}).steps||[]).find(y=>y.id===a.s);return{v:'auto',x:o&&o.auto?autoLabel(o.auto):'',t:+a.at||0}}
+ if(a.rid){const o=a.k==='habit'?H(a.id):a.k==='day'?S.days.find(y=>y.id===a.id):((G(a.g)||{}).steps||[]).find(y=>y.id===a.s);const W=o?autoWays(o.auto):[],w=W.find(w=>String(a.rid).endsWith(wKey(w))&&wKey(w))||W[0];return{v:'auto',x:w?autoLabel(w):'',t:+a.at||0}}
  if(a.at)return{v:'widget',t:+a.at};
  const key=a.k==='step'?'s:'+a.g+'/'+a.s:a.k==='day'?'d:'+a.id:'h:'+a.id,e=nhist(key).filter(e=>e&&(e.kind==='done'||/^reply/.test(e.kind))).sort((x,y)=>y.t-x.t)[0],rep=!!e&&/^reply/.test(e.kind);
  return{v:rep?'reply':'notif',t:e&&Date.now()-e.t<864e5?+e.t:0,n:rep?e.text:''}}

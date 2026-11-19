@@ -498,11 +498,11 @@ async function tessRead(src,prog){const L=lang();let sc=1,cv=src;const mx=Math.m
 
 /* ---------------- the review panel: what was read, editable, then inserted ---------------- */
 /* src: {ink:[strokes]} or {canvas, photo}; onInsert(html, keep) */
-function review({src,title,keepLabel,onInsert}){const aiN=window.aiVisionName?aiVisionName():'',hw='createHandwritingRecognizer' in navigator;let ctl=null,usedAI=false;
- const o=overlay('ink-rv',`<div class="ink-top"><button class="ink-ib" data-k="x" aria-label="Close">${ic('inkx')}</button><b class="ink-ttl">${esc(title||'Text from the picture')}</b><span class="ink-sp"></span><button class="btn sm pri" data-k="ins" disabled>Insert</button></div>
+function review({src,title,keepLabel,keepOn,insLabel,onInsert}){const aiN=window.aiVisionName?aiVisionName():'',hw='createHandwritingRecognizer' in navigator;let ctl=null,usedAI=false;
+ const o=overlay('ink-rv',`<div class="ink-top"><button class="ink-ib" data-k="x" aria-label="Close">${ic('inkx')}</button><b class="ink-ttl">${esc(title||'Text from the picture')}</b><span class="ink-sp"></span><button class="btn sm pri" data-k="ins" disabled>${esc(insLabel||'Insert')}</button></div>
  <div class="ink-rvb"><div class="ink-rvh"><span class="ink-st" aria-live="polite">Reading…</span><span class="ink-sp"></span><select class="ink-lang" aria-label="Language">${LANGS.map(([k,n])=>`<option value="${k}" ${lang()[0]===k?'selected':''}>${n}</option>`).join('')}</select>${aiN?`<button class="btn sm ghost" data-k="ai">Read with ${esc(aiN)}</button>`:''}</div>
  <div class="rich ink-rvt" contenteditable="true" spellcheck="true" aria-label="Text found"></div>
- <div class="ink-rvf">${keepLabel?`<label class="sw ink-keep"><span>${esc(keepLabel)}</span><input type="checkbox" data-k="keep" ${src.ink?'':'checked'}><i></i></label>`:''}<span class="ink-sp"></span><button class="btn sm ghost" data-k="copy">Copy</button></div>
+ <div class="ink-rvf">${keepLabel?`<label class="sw ink-keep"><span>${esc(keepLabel)}</span><input type="checkbox" data-k="keep" ${keepOn===false||src.ink?'':'checked'}><i></i></label>`:''}<span class="ink-sp"></span><button class="btn sm ghost" data-k="copy">Copy</button></div>
  ${aiN?'':`<p class="ink-mnote">Read on this device${src.ink&&hw?' with the browser’s handwriting recognizer':''}. For messy handwriting, add an AI key in Workbench › AI and a “Read with …” button appears here; only this picture is sent.</p>`}</div>`,()=>{ctl&&ctl.abort();o.close()});
  const el=o.el,st=el.querySelector('.ink-st'),tx=el.querySelector('.ink-rvt'),ins=el.querySelector('[data-k=ins]');
  const prog=t=>{if(st)st.textContent=t};
@@ -513,7 +513,7 @@ function review({src,title,keepLabel,onInsert}){const aiN=window.aiVisionName?ai
    else html=await ocrCanvas(src.canvas,prog);
    const unsure=!useAI&&html&&OCRCONF<62;
    const ab=el.querySelector('[data-k=ai]');if(ab){ab.classList.toggle('pri',!!unsure);ab.classList.toggle('ghost',!unsure)}
-   if(me!==ctl)return;html=cleanHTML(html);tx.innerHTML=html||'';prog(html?(useAI?`Read by ${aiN}. Check it, edit anything, then Insert.`:unsure?(aiN?`Parts of this may be misread (hard to read on the device). Fix them, or tap Read with ${aiN}.`:(src.ink?'Parts of this may be misread. Fix them, or write a little larger and neater.':'Parts of this may be misread (hard to read on the device). Fix them, or try a closer, evenly lit photo.')):'Check it, edit anything, then Insert.'):'No text found.'+(aiN&&!useAI?` Try Read with ${aiN}.`:' Try a sharper, closer picture.'));ins.disabled=!html}
+   if(me!==ctl)return;html=cleanHTML(html);tx.innerHTML=html||'';prog(html?(useAI?`Read by ${aiN}. Check it, edit anything, then Insert.`:unsure?(aiN?`Parts of this may be misread (hard to read on the device). Fix them, or tap Read with ${aiN}.`:(src.ink?'Parts of this may be misread. Fix them, or write a little larger and neater.':'Parts of this may be misread (hard to read on the device). Fix them, or try a closer, evenly lit photo.')):`Check it, edit anything, then ${insLabel||'Insert'}.`):'No text found.'+(aiN&&!useAI?` Try Read with ${aiN}.`:' Try a sharper, closer picture.'));ins.disabled=!html}
   catch(e){if(e&&e.name==='AbortError')return;prog(String(e&&e.message||e))}tx.classList.remove('busy')}
  el.addEventListener('click',async e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;
   if(k==='x'){ctl&&ctl.abort();o.close()}else if(k==='ai')run(true);
@@ -525,11 +525,11 @@ function scaleTo(c,mx){const f=mx/Math.max(c.width,c.height);if(f>=1)return c;co
 
 /* ================= photo: crop, rotate, then read its text, insert it or draw on it ================= */
 function pickImage(){return new Promise(res=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.style.display='none';i.addEventListener('change',()=>{res(i.files&&i.files[0]||null);i.remove()});document.body.appendChild(i);i.click()})}
-async function scan(T,file,mode){if(!file){file=await pickImage();if(!file)return}let im;const url=URL.createObjectURL(file);try{im=await loadImg(url)}catch(e){toast('Couldn’t read that image');URL.revokeObjectURL(url);return}
+async function scan(T,file,mode,opts){opts=opts||{};if(!file){file=await pickImage();if(!file)return}let im;const url=URL.createObjectURL(file);try{im=await loadImg(url)}catch(e){toast('Couldn’t read that image');URL.revokeObjectURL(url);return}
  const S_={rot:0,cr:{x0:0,y0:0,x1:1,y1:1}};
  const o=overlay('ink-scan',`<div class="ink-top"><button class="ink-ib" data-k="x" aria-label="Close">${ic('inkx')}</button><b class="ink-ttl">Photo</b><span class="ink-sp"></span><button class="ink-ib" data-k="rot" aria-label="Rotate">${ic('inkrot')}</button><button class="btn sm ghost" data-k="full">Whole photo</button></div>
  <div class="ink-sstage"><canvas class="ink-sc"></canvas><div class="ink-crop"><i data-h="nw"></i><i data-h="ne"></i><i data-h="sw"></i><i data-h="se"></i></div></div>
- <div class="ink-sbar"><p class="ink-mnote">Drag the corners to the part you want.</p><div class="ink-sacts"><button class="btn ghost" data-k="img">Insert photo</button><button class="btn ghost" data-k="draw">${ic('inkpen')}Draw on it</button><button class="btn pri" data-k="read">${ic('inktext')}Read the text</button></div></div>`,()=>{URL.revokeObjectURL(url);o.close()});
+ <div class="ink-sbar"><p class="ink-mnote">Drag the corners to the part you want.</p><div class="ink-sacts">${opts.textOnly?'':`<button class="btn ghost" data-k="img">Insert photo</button><button class="btn ghost" data-k="draw">${ic('inkpen')}Draw on it</button>`}<button class="btn pri" data-k="read">${ic('inktext')}Read the text</button></div></div>`,()=>{URL.revokeObjectURL(url);o.close()});
  const el=o.el,cv=el.querySelector('.ink-sc'),crop=el.querySelector('.ink-crop'),stg=el.querySelector('.ink-sstage');let R={x:0,y:0,w:1,h:1};
  const rotated=(mx)=>{const r=S_.rot%2===1,w=r?im.height:im.width,h=r?im.width:im.height,f=Math.min(1,(mx||1e9)/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.round(w*f);c.height=Math.round(h*f);const x=c.getContext('2d');x.imageSmoothingQuality='high';x.translate(c.width/2,c.height/2);x.rotate(S_.rot*Math.PI/2);x.drawImage(im,-im.width*f/2,-im.height*f/2,im.width*f,im.height*f);return c};
  const cropped=mx=>{const c=rotated(mx),{x0,y0,x1,y1}=S_.cr,o2=document.createElement('canvas');o2.width=Math.max(1,Math.round((x1-x0)*c.width));o2.height=Math.max(1,Math.round((y1-y0)*c.height));o2.getContext('2d').drawImage(c,-x0*c.width,-y0*c.height);return o2};
@@ -549,7 +549,7 @@ async function scan(T,file,mode){if(!file){file=await pickImage();if(!file)retur
   else if(k==='full'){S_.cr={x0:0,y0:0,x1:1,y1:1};place()}
   else if(k==='img'){const ph=photoURL();URL.revokeObjectURL(url);o.close();photoSketch(ph).then(sk=>T.sketch(sk))}
   else if(k==='draw'){const ph=photoURL();URL.revokeObjectURL(url);o.close();pad({photo:ph,title:'Draw on the photo',done:sk=>T.sketch(sk),text:(h,sk)=>{if(sk)T.sketch(sk);T.html(h)}})}
-  else if(k==='read'){const c=cropped(3000),ph=photoURL();review({src:{canvas:c},title:'Text from the photo',keepLabel:'Also insert the photo',onInsert:async(html,keep)=>{URL.revokeObjectURL(url);o.close();if(keep)T.sketch(await photoSketch(ph));T.html(html)}})}});
+  else if(k==='read'){const c=cropped(3000),ph=photoURL();review({src:{canvas:c},title:opts.title||'Text from the photo',keepLabel:opts.keep||'Also insert the photo',keepOn:opts.keepOn,insLabel:opts.ins,onInsert:async(html,keep)=>{URL.revokeObjectURL(url);o.close();if(keep)T.sketch(await photoSketch(ph));T.html(html)}})}});
  const ro=new ResizeObserver(draw);ro.observe(stg);const _c=o.close;o.close=()=>{ro.disconnect();_c()};
  if(mode==='read')setTimeout(()=>el.querySelector('[data-k=read]').click(),50)}
 async function photoSketch(ph){const i=await loadImg(ph),h=Math.round(W*i.height/i.width),c=document.createElement('canvas'),f=Math.min(1,1400/W);c.width=Math.round(W*f);c.height=Math.round(h*f);c.getContext('2d').drawImage(i,0,0,c.width,c.height);
@@ -597,5 +597,5 @@ document.addEventListener('dragover',e=>{if(e.target.closest&&e.target.closest('
 document.addEventListener('drop',e=>{const t=e.target.closest&&e.target.closest('#wrEd,textarea[data-fmt]');if(!t)return;const f=imgFile(e.dataTransfer);if(!f)return;e.preventDefault();scan(targetOf(t),f)},true);
 /* editing a note update: its sketches come along in the form's tray */
 {const _u=ACT.thrUpEdit;ACT.thrUpEdit=function(d){const r=_u.apply(this,arguments);const t=TH(d.id),u=t&&t.ups.find(x=>x.id===d.u),f=document.querySelector('#sheet form[data-form=thrUpEdit]');if(f&&u){f._sk=(u.sk||[]).slice();tray(f)}return r}}
-window.inkPad=pad;window.inkScan=scan;window.inkTest={pack,unpack,snapShape,linesToHTML,marks,binarize,ocrCanvas,tessRead,paddleRead,inkCanvas,conf:()=>OCRCONF};
+window.inkPad=pad;window.inkScan=scan;window.inkMarks=marks;window.inkTest={pack,unpack,snapShape,linesToHTML,marks,binarize,ocrCanvas,tessRead,paddleRead,inkCanvas,conf:()=>OCRCONF};
 })();

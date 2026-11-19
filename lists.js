@@ -119,7 +119,7 @@ function body(A,key){const v=lview();if(!A.length)return'';
  return`<section class="lc-grid">${A.map((L,i)=>`<div class="rv">${bigCard(L,i+1)}</div>`).join('')}</section>`}
 function vLists(){const L=lists(),open=L.filter(l=>{const s=stats(l);return!s.n||s.d<s.n}),done=L.filter(l=>{const s=stats(l);return s.n&&s.d===s.n});
  return`<header class="ph"><div><h1>Lists</h1><div class="data">${L.length?`${open.length} open${done.length?` · ${done.length} done`:''}`:'Checklists you can share'}</div></div><div class="ph-r">${L.some(l=>l.cloud&&!l.cloud.gone)?`<span class="live-tag" id="lslive" ${[...W8.values()].some(w=>w.on)?'':'hidden'}><i></i>Live</span>`:''}<button class="ibtn" data-act="lsJoin" aria-label="Open a shared link" title="Open a shared link">${ic('link')}</button><button class="ibtn" data-act="lsNew" data-k="blank" aria-label="New list" title="New list">${ic('plus')}</button>${gear()}</div></header>
- <div class="bar rv"><div class="ls-tpl">${Object.entries(TPL).map(([k,[t,e]])=>`<button class="chip" data-act="lsNew" data-k="${k}">${e} ${k==='blank'?'Blank list':esc(t)}</button>`).join('')}</div>${L.length?iconSeg('lists',[['grid','grid','Grid'],['h','horz','Carousel'],['list','list','List']],lview()):''}</div>
+ <div class="bar rv"><div class="ls-tpl"><button class="chip" data-act="lsPhoto">📷 From a photo</button>${Object.entries(TPL).map(([k,[t,e]])=>`<button class="chip" data-act="lsNew" data-k="${k}">${e} ${k==='blank'?'Blank list':esc(t)}</button>`).join('')}</div>${L.length?iconSeg('lists',[['grid','grid','Grid'],['h','horz','Carousel'],['list','list','List']],lview()):''}</div>
  ${L.length?`${body(open,'open')}${done.length?`<div class="st-h rv" style="margin-top:28px"><h3>Done</h3><span class="data">${done.length}</span></div>${body(done,'done')}`:''}`
  :`<div class="empty rv"><p>No lists yet. Start one above, or open a link someone sent you.</p></div>`}`}
 function itemRow(L,i){const r=ro(L);return`<div class="ls-it${i.done?' done':''}" data-iid="${i.id}"><button class="ls-ck" data-act="lsTog" data-id="${L.id}" data-i="${i.id}" role="checkbox" aria-checked="${!!i.done}" aria-label="${esc(i.t)}" ${r?'disabled':''}>${ic('check')}</button>
@@ -134,9 +134,9 @@ function vList(id){if(id&&id.startsWith('j~')){const[,doc,key]=id.split('~');set
  <section class="ls-hero tint rv" style="${lvar(L)}"><div class="ls-hrow"><button class="ls-emo" data-act="lsEmoji" data-id="${L.id}" aria-label="Change icon" ${r?'disabled':''}>${esc(L.emoji||'📝')}</button><input class="ls-title" value="${esc(L.title)}" data-lstitle="${L.id}" maxlength="80" aria-label="List name" ${r?'readonly':''}></div>
  <div class="ls-meta"><span class="data">${s.n?`${s.d} of ${s.n} done`:'No items yet'}</span>${typeof shareChip==='function'?shareChip('list',L.id):''}${L.cloud?`<span class="ls-st" id="lsst">${L.cloud.gone?'No longer shared':'Shared'}</span>`:''}<button class="ls-dc${dueCl(L.due,s.n&&s.d===s.n)}" data-act="lsDue" data-id="${L.id}" ${r?'disabled':''}>${ic('cal','ico-s')}${L.due?'Due '+esc(dueTxt(L.due)):'Add a deadline'}</button></div>
  <div class="ls-bar"><i style="width:${s.p}%"></i></div>${r?`<button class="btn sm pri" data-act="lsLogin" style="margin-top:14px">${ic('lock')}Sign in to edit</button>`:''}</section>
- ${r?'':`<form class="ls-add rv" data-form="lsAdd" data-id="${L.id}" autocomplete="off"><input name="t" maxlength="200" placeholder="Add an item" aria-label="Add an item" enterkeyhint="done"><button class="btn pri" aria-label="Add">${ic('plus')}</button></form>`}
+ ${r?'':`<form class="ls-add rv" data-form="lsAdd" data-id="${L.id}" autocomplete="off"><input name="t" maxlength="200" placeholder="Add an item" aria-label="Add an item" enterkeyhint="done"><button type="button" class="btn ls-cam" data-act="lsPhoto" data-id="${L.id}" aria-label="Add or update from a photo" title="Add or update from a photo">${ic('camera')}</button><button class="btn pri" aria-label="Add">${ic('plus')}</button></form>`}
  <section class="ls-list rv">${open.map(i=>itemRow(L,i)).join('')||(I.length?'<p class="small muted ls-none">Everything’s done 🎉</p>':'')}</section>
- ${done.length?`<div class="st-h rv ls-dh"><button class="link" data-act="lsDoneT" data-id="${L.id}">${showDone?'Hide':'Show'} done · ${done.length}</button>${r?'':`<button class="link" data-act="lsClear" data-id="${L.id}">Clear done</button>`}</div>${showDone?`<section class="ls-list rv">${done.map(i=>itemRow(L,i)).join('')}</section>`:''}`:''}`}
+ ${done.length?`<div class="st-h rv ls-dh"><button class="link" data-act="lsDoneT" data-id="${L.id}">${showDone?'Hide':'Show'} done · ${done.length}</button>${r?'':`<button class="link" data-act="lsClear" data-id="${L.id}">Clear done</button>`}</div>${showDone?`<section class="ls-list rv">${done.map(i=>itemRow(L,i)).join('')}</section>`:''}`:''}${picsHTML(L)}`}
 VIEWS.lists=vLists;VIEWS.list=vList;
 /* 1.37 selection mode (index.html): remove many items of one list, or many lists, at once. Each returns an undo. */
 window.lsBulk={
@@ -173,6 +173,7 @@ Object.assign(ACT,{
   openSheet(`<div class="data">List</div><h2 style="margin-top:6px">${esc(L.emoji||'')} ${esc(L.title)}</h2>${ro(L)?'':colorRow('list',{...L,area:'personal',color:L.color||''})}<div class="menu">
   ${ro(L)?'':`<label class="mbtn">${ic('camera')}${L.img?'Change cover image':'Add a cover image'}<input type="file" accept="image/*" data-file="lsimg" data-id="${L.id}" hidden></label>${L.img?`<button data-act="lsImgRm" data-id="${L.id}">${ic('trash')}Remove cover image</button>`:''}`}
   <button data-act="lsShare" data-id="${L.id}">${ic('share')}${L.cloud?'Share link':'Share this list'}</button>
+  ${ro(L)?'':`<button data-act="lsPhoto" data-id="${L.id}">${ic('camera')}Add or update from a photo</button>`}
   <button data-act="lsCopyText" data-id="${L.id}">${ic('copy')}Copy as text</button>
   <button data-act="lsDup" data-id="${L.id}">${ic('copy')}Duplicate (fresh, nothing ticked)</button>
   <button class="danger" data-act="lsDelList" data-id="${L.id}">${ic('trash')}Delete${L.cloud?' from this device':''}</button>
@@ -187,6 +188,48 @@ Object.assign(FORM,{
  lsDue:f=>{const L=LBY(f.dataset.id);if(!L)return;L.due=new FormData(f).get('d')||'';L.mu=now();closeSheet();touch(L);render(false)},
  lsItemDue:f=>{const L=LBY(f.dataset.id),i=L&&L.items[f.dataset.i];if(!i)return;i.due=new FormData(f).get('d')||'';i.u=now();closeSheet();touch(L);render(false)},
  lsJoin:f=>{const m=/#\/list\/(j~[^~\s]+~[^\s#]+)/.exec(new FormData(f).get('u')||'');if(!m)return toast('That isn’t a Plotlines list link');closeSheet();go('list/'+m[1])}});
+/* ---------------- lists from a photo (2026-11-18) ----------------
+   The photo reader (ink.js: crop, read on the device or with your AI, check and fix the text) gives the lines in the
+   order they're written. A new list takes them as its items (a first line like "Groceries:" or an unbulleted heading
+   over bullets becomes its name). On an open list it updates: lines already there are matched (small misreads are
+   forgiven) and ticked if the photo shows them ticked, new lines go in where they are on the paper. Optionally the photo
+   is kept at the end of the list (L.pics, on this device and in your sync, not in the shared copy). */
+const BUL=/^\s*(?:\[\s*([xX✓✔])?\s*\]|([☐□☑☒✓✔])|[-*•·●○◦▪■➢➤►‣⁃∙–—+>]+|\(?\d{1,3}[.):]|\(?[a-zA-Z][.)])\s*/u;
+function photoLines(html){const raw=(window.inkMarks?inkMarks(html):String(html||'').replace(/<[^>]+>/g,'\n')).split('\n'),out=[];
+ for(let l of raw){l=l.replace(/\*\*|==|__/g,'').replace(/^\s*\*(?=\S)|(?<=\S)\*\s*$/g,'').trim();if(!l)continue;const m=BUL.exec(l),done=!!(m&&(m[1]||/[☑☒✓✔]/.test(m[2]||'')));
+  const t=(m?l.slice(m[0].length):l).replace(/\s+/g,' ').trim().slice(0,200);if(t&&/[\p{L}\p{N}]/u.test(t))out.push({t,done,bul:!!m})}
+ return out}
+const nrm=t=>String(t).toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu,'');
+/* edits apart, a swap of two letters counting as one */
+function lev(a,b){if(Math.abs(a.length-b.length)>3)return 9;let q=null,p=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++){c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));if(q&&i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])c[j]=Math.min(c[j],q[j-2]+1)}q=p;p=c}return p[b.length]}
+const srt=t=>[...t].sort().join(''),same=(a,b)=>a===b||(Math.min(a.length,b.length)>=5?lev(a,b)<=Math.max(1,Math.floor(Math.min(a.length,b.length)/6)):a.length>=3&&srt(a)===srt(b)&&lev(a,b)===1);
+function newItem(L,t,done,o){const id=uid();L.items[id]={id,t,done:!!done,dt:done?ymd():'',due:'',o,u:now()};return L.items[id]}
+function addPic(L,sk){if(!sk||!sk.img)return;L.pics=(L.pics||[]).concat({id:uid(),img:sk.img,t:now()}).slice(-8)}
+function fromPhoto(L,lines,sk){
+ if(!L){let title='',it=lines;const f=lines[0];
+  if(f&&!f.bul&&lines.length>1&&(/:$/.test(f.t)||lines.slice(1).filter(x=>x.bul).length>=Math.max(1,(lines.length-1)/2))){title=f.t.replace(/:$/,'').trim();it=lines.slice(1)}
+  L={id:uid(),title:(title||'List from a photo').slice(0,80),emoji:'📝',due:'',items:{},u:now(),mu:now(),created:now(),cloud:null};it.forEach((x,i)=>newItem(L,x.t,x.done,i));addPic(L,sk);lists().unshift(L);save();
+  /* the reader's screens each step history back as they close; open the list once they have */
+  let n=0;const open=()=>history.state&&history.state.ink&&n++<30?setTimeout(open,50):go('list/'+L.id);setTimeout(open,30);
+  toast(`${it.length} item${it.length===1?'':'s'}, in the order written`);return}
+ const before=JSON.parse(JSON.stringify(L.items)),pb=L.pics,seq=live(L).slice(),used=new Set();let at=-1,any=false,add=0,tick=0,had=0;
+ const plan=lines.map(x=>{const k=nrm(x.t),m=seq.find(i=>!used.has(i.id)&&same(nrm(i.t),k));if(m){used.add(m.id);any=true}return{x,m}});
+ if(!any)at=seq.length-1;
+ for(const{x,m}of plan){if(m){had++;at=seq.indexOf(m);if(x.done&&!m.done){m.done=true;m.dt=ymd();m.u=now();tick++}continue}
+  const n=newItem(L,x.t,x.done,0);seq.splice(++at,0,n);add++}
+ seq.forEach((i,k)=>{if(i.o!==k){i.o=k;i.u=now()}});addPic(L,sk);if(sk)L.mu=now();touch(L);render(false);
+ toast([add&&`${add} added`,tick&&`${tick} ticked`,had&&`${had} already here`].filter(Boolean).join(' · ')||'Nothing new',()=>{for(const i of Object.values(L.items)){if(before[i.id])Object.assign(i,before[i.id]);else i.del=true;i.u=now()}L.pics=pb;touch(L);render(false)})}
+function picsHTML(L){const P=L.pics||[];if(!P.length)return'';
+ return`<div class="st-h rv ls-dh"><h3>${P.length===1?'Photo':'Photos'}</h3><span class="data">${P.length}</span></div><section class="ls-pics rv">${P.map(p=>`<button class="ls-pic" data-act="lsPic" data-id="${L.id}" data-p="${p.id}" aria-label="Open the photo from ${esc(fmtDate(ymd(new Date(p.t))))}"><img src="${p.img}" alt="" loading="lazy"></button>`).join('')}</section>`}
+Object.assign(ACT,{
+ lsPhoto:d=>{const L=d.id?LBY(d.id):null;if(d.id&&(!L||ro(L)))return;closeSheet();if(!window.inkScan)return toast('The photo reader isn’t loaded yet. Try again in a moment.');
+  let sk=null;inkScan({sketch:x=>{sk=x},html:h=>{const lines=photoLines(h);if(!lines.length)return toast('No list lines found in that text');fromPhoto(L,lines,sk);sk=null}},null,'read',
+   {title:L?'Update “'+trunc(L.title,30)+'” from the photo':'A list from the photo',keep:'Save the photo at the end of the list',keepOn:false,ins:L?'Update list':'Make the list',textOnly:true})},
+ lsPic:d=>{const L=LBY(d.id),p=L&&(L.pics||[]).find(x=>x.id===d.p);if(!p)return;
+  openSheet(`<div class="data">${esc(L.title)}</div><h2 style="margin-top:6px">Photo · ${esc(fmtDate(ymd(new Date(p.t))))}</h2><img class="ls-pfull" src="${p.img}" alt="The photo the list was read from"><div class="actions">${ro(L)?'':`<button class="btn danger" data-act="lsPicRm" data-id="${L.id}" data-p="${p.id}">${ic('trash')}Remove photo</button>`}<button class="btn pri" data-act="close">Done</button></div>`)},
+ lsPicRm:d=>{const L=LBY(d.id);if(!L)return;const P=L.pics||[],i=P.findIndex(x=>x.id===d.p);if(i<0)return;const[p]=P.splice(i,1);save();closeSheet();render(false);toast('Photo removed',()=>{P.splice(i,0,p);L.pics=P;save();render(false)})}});
+window.LISTS_PHOTO={photoLines,fromPhoto};
+
 /* typing in an item or the title saves as you go (and syncs a moment later) */
 document.addEventListener('input',e=>{const t=e.target;if(!t||!t.dataset)return;
  if(t.dataset.lsedit){const L=LBY(cur.id),i=L&&L.items[t.dataset.lsedit];if(!i||ro(L))return;i.t=t.value.slice(0,200);i.u=now();L.u=now();clearTimeout(st(L).sv);st(L).sv=setTimeout(()=>{save();if(L.cloud)pushSoon(L)},500)}
@@ -306,7 +349,9 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .ls-dc{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:500 13px var(--f-body);color:var(--text);cursor:pointer}
 .ls-dc svg{width:14px;height:14px}
 .ls-bar{height:6px;border-radius:6px;background:var(--line);margin-top:16px;overflow:hidden}.ls-bar i{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .6s var(--spring)}
-.ls-add{display:flex;gap:10px;margin:16px 0 6px}.ls-add input{flex:1;min-width:0;height:52px;border-radius:16px;font-size:16px}.ls-add .btn{height:52px;width:52px;padding:0;justify-content:center;border-radius:16px}
+.ls-add{display:flex;gap:10px;margin:16px 0 6px}.ls-add input{flex:1;min-width:0;height:52px;border-radius:16px;font-size:16px}.ls-add .btn{height:52px;width:52px;padding:0;justify-content:center;border-radius:16px}.ls-add .ls-cam{flex:none;color:var(--muted)}.ls-add .ls-cam svg{width:21px;height:21px}
+.ls-pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin:4px 0 8px}.ls-pic{padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);aspect-ratio:3/4;cursor:pointer}.ls-pic img{width:100%;height:100%;object-fit:cover;display:block}
+.ls-pfull{display:block;width:100%;max-height:62vh;object-fit:contain;border-radius:14px;background:var(--surface-2,var(--surface));margin-top:12px}
 .ls-list{display:grid;gap:2px;margin-top:8px}
 .ls-it{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 8px;border-radius:16px;transition:background .2s,opacity .35s}
 .ls-it:hover{background:var(--surface)}
