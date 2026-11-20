@@ -533,7 +533,12 @@ const css=document.createElement('style');css.textContent=`
 .vp-r{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer}.vp-r+.vp-r{border-top:1px solid color-mix(in srgb,var(--text) 7%,transparent)}
 .vs-f{margin-top:10px}.vs-f .actions{align-items:center}.dl-r{cursor:default}.dl-r .btn,.dl-r .kk-tag{flex:none}
 .el-k{display:flex;gap:8px;margin-top:10px}.wh-r .kk-tag{flex:none}.el-k input{flex:1;min-width:0}.wh-r{cursor:default}.wh-r .btn,.wh-r .ibtn{flex:none}
-.vp-r input{accent-color:var(--accent);width:18px;height:18px;flex:none}.vp-r span{flex:1;min-width:0;display:flex;flex-direction:column}.vp-r small{color:var(--muted);font-size:12px}.vp-r:has(input:checked){background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.vp-r input{accent-color:var(--accent);width:18px;height:18px;flex:none}
+/* 1.78.1: the app-wide field style (padding, fill, rounded box) reached these radios, so the chosen voice showed an empty oval */
+.vp-r input[type=radio]{-webkit-appearance:none;appearance:none;width:22px;height:22px;min-width:22px;padding:0;margin:0;border-radius:50%;border:2px solid color-mix(in srgb,var(--text) 32%,transparent);background:transparent;box-shadow:none;cursor:pointer;transition:border-color .2s,background .2s}
+.vp-r input[type=radio]:checked{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 0 5px,transparent 5.6px)}
+.vp-r input[type=radio]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.kk .actions{flex-wrap:wrap}.kk .actions .btn{max-width:100%;white-space:normal;height:auto;min-height:40px;line-height:1.3;text-align:center}.vp-r span{flex:1;min-width:0;display:flex;flex-direction:column}.vp-r small{color:var(--muted);font-size:12px}.vp-r:has(input:checked){background:color-mix(in srgb,var(--accent) 10%,transparent)}
 input[data-vp=rate],input[data-vp=pitch]{width:100%;accent-color:var(--accent)}
 .lv-home{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 12px;padding:14px 16px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 16%,var(--surface)),var(--surface));color:var(--text);text-align:left;cursor:pointer;font:inherit}
 .lv-home>span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}.lv-home small{color:var(--muted);font-size:12.5px;margin-top:2px}.lv-home>svg{width:22px;height:22px;color:var(--accent);flex:none}
