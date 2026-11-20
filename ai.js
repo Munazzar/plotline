@@ -320,13 +320,19 @@ Object.assign(ACT,{qsHear:()=>hear(vpick().voice),qsAll:()=>{if(LV.open)lvMin();
 {const _b=window.__back;window.__back=()=>{if(document.documentElement.classList.contains('qs-on')&&$('#sheet').classList.contains('on')){closeSheet();return true}return _b?_b():false}}
 
 /* ---------------- Live: a voice conversation ---------------- */
-const LV={open:false,st:'idle',hist:[],pend:[],muted:false,gen:0,ctl:null,you:'',ai:'',typing:false};
-const LV_SYS=()=>{const s=insSet(),pr=s.profile&&s.profile.text,name=S.settings.name;return`You are ${nm()}, ${name?name+'’s':'the user’s'} friendly, curious companion inside Plotlines, their app for goals, habits, routines, a journal, lists and notes. You are in a live voice conversation, so talk like a real person: warm, natural, one to three short sentences, no lists, no markdown, no emojis. Ask a short follow-up question when it keeps the conversation going, and give people room to think. Talk about anything they bring up: their day, feelings, ideas, plans, questions about the world, advice. Answer exactly what they asked, about whatever they asked. Their app data comes with each message as reference only. When the question is about their own goals, habits, plans, schedule, notes, journal, lists, activity or day, use it. Otherwise answer the question itself, and bring in something from their data only where it clearly connects to what they asked and helps, kept short: for example, asked about the weather with a run or a trip planned, say whether the weather suits it; asked for a recipe while they're cutting sugar, suggest a swap. Mention only the things that closely relate; if many do, pick the most important. If they ask for more, follow the conversation and give more of them. If nothing closely relates, which is common, say nothing about their data: no forced links like a fun fact tied to a habit. Never list or summarise their goals or habits when they didn't ask, and leave out anything that doesn't fit the question. Never invent facts about them.${pr?`\n\nWHAT YOU KNOW ABOUT THEM\n${pr}`:''}\n\n${ACT_SYS} When you offer something on your own, ask in your spoken sentence, like "Want me to make that a habit?". When they ask you to make something, it's already been done for them.${window.AGENT?'\n\n'+AGENT.sys():''}\n\n${aiSafety()}`};
+const LV={open:false,st:'idle',hist:[],pend:[],muted:false,gen:0,ctl:null,you:'',ai:'',typing:false,quiet:0};
+/* 1.78.0: how long answers are, from the talk screen's quick settings: 0 short, 1 balanced, 2 detailed */
+const LEN=()=>{const n=+(S.settings.assist||{}).len;return n===0||n===2?n:1};
+const LENS=[['Short','One or two sentences, straight to the point.'],['Balanced','A few sentences, like a normal chat.'],['Detailed','A full answer with the specifics, reasons and examples.']];
+const LENSYS=()=>['one or two short sentences, straight to the point, nothing extra','one to three short sentences','a detailed answer of up to about eight sentences with the specifics, reasons and examples that matter, still spoken naturally'][LEN()];
+const LENTOK=(api,plain)=>(plain?(api?[300,600,1000]:[180,360,600]):(api?[200,400,900]:[140,260,520]))[LEN()];
+const LV_SYS=()=>{const s=insSet(),pr=s.profile&&s.profile.text,name=S.settings.name;return`You are ${nm()}, ${name?name+'’s':'the user’s'} friendly, curious companion inside Plotlines, their app for goals, habits, routines, a journal, lists and notes. You are in a live voice conversation, so talk like a real person: warm, natural, ${LENSYS()}, no lists, no markdown, no emojis. Ask a short follow-up question when it keeps the conversation going, and give people room to think. Talk about anything they bring up: their day, feelings, ideas, plans, questions about the world, advice. Answer exactly what they asked, about whatever they asked. Their app data comes with each message as reference only. When the question is about their own goals, habits, plans, schedule, notes, journal, lists, activity or day, use it. Otherwise answer the question itself, and bring in something from their data only where it clearly connects to what they asked and helps, kept short: for example, asked about the weather with a run or a trip planned, say whether the weather suits it; asked for a recipe while they're cutting sugar, suggest a swap. Mention only the things that closely relate; if many do, pick the most important. If they ask for more, follow the conversation and give more of them. If nothing closely relates, which is common, say nothing about their data: no forced links like a fun fact tied to a habit. Never list or summarise their goals or habits when they didn't ask, and leave out anything that doesn't fit the question. Never invent facts about them.${pr?`\n\nWHAT YOU KNOW ABOUT THEM\n${pr}`:''}\n\n${ACT_SYS} When you offer something on your own, ask in your spoken sentence, like "Want me to make that a habit?". When they ask you to make something, it's already been done for them.${window.AGENT?'\n\n'+AGENT.sys():''}\n\n${aiSafety()}`};
 const BYE=/^(?:ok(?:ay)?\s*,?\s*)?(?:bye|goodbye|good bye|see you|see ya|talk (?:to you )?later|that'?s all|that'?s it|i'?m done|we'?re done|end (?:the )?(?:conversation|chat|call)|stop (?:talking|listening|the conversation)|goodnight|good night)\b/i;
 const YES=/^(?:yes|yeah|yep|yup|sure|ok(?:ay)?|please|please do|do it|go ahead|add (?:it|them|that|those|both)|sounds good|let'?s do it|absolutely|of course|definitely)\b/i;
 const NO=/^(?:no|nope|nah|not now|no thanks|don'?t|skip it|never ?mind)\b/i;
 function lvEl(){let el=$('#live');if(el)return el;el=document.createElement('div');el.id='live';el.className='lv';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Talk with '+nm());
- el.innerHTML=`<div class="lv-glow" aria-hidden="true"></div><header class="lv-h"><span class="lv-nm"><b></b><small id="lvSt"></small></span><button class="ibtn" data-act="lvChat" aria-label="Open as chat" title="Open as chat">${ic('chat')}</button><button class="ibtn" data-act="asSet" aria-label="Settings" title="Settings">${ic('settings')}</button><button class="ibtn" data-act="lvMin" aria-label="Minimize" title="Minimize">${ic('minz')}</button><button class="ibtn" data-act="lvEnd" aria-label="End conversation" title="End">✕</button></header>
+ el.innerHTML=`<div class="lv-glow" aria-hidden="true"></div><header class="lv-h"><span class="lv-nm"><b></b><small id="lvSt"></small></span><button class="ibtn" data-act="lvChat" aria-label="Open as chat" title="Open as chat">${ic('chat')}</button><button class="ibtn" data-act="lvQs" id="lvQsB" aria-label="Voice and answer length" aria-expanded="false" title="Voice and answers">${ic('tune')}</button><button class="ibtn" data-act="lvMin" aria-label="Minimize" title="Minimize">${ic('minz')}</button><button class="ibtn" data-act="lvEnd" aria-label="End conversation" title="End">✕</button></header>
+ <div class="lv-qs" id="lvQs" role="dialog" aria-label="Voice and answers" hidden></div>
  <div class="lv-mid"><button class="lv-orb" id="lvOrb" data-act="lvOrb" aria-label="Talk"><span class="lv-o2"></span><span class="lv-o1"><span class="lv-o3"></span></span></button><p class="lv-hint" id="lvHint"></p><button class="lv-tag" id="lvTag" data-act="lvTag"></button></div>
  <div class="lv-cap" id="lvCap" aria-live="polite"></div>
  <form class="lv-type" data-form="lvSend" autocomplete="off" hidden><input id="lvTxt" maxlength="600" placeholder="Type instead…" enterkeyhint="send"><button class="btn pri sm">Send</button></form>
@@ -343,7 +349,31 @@ function lvMiniPaint(){if(window.aiMini)aiMini('lvMini',LV.open&&LV.min?{open:'l
 function lvMin(){const el=$('#live');if(!el||!LV.open)return;LV.min=true;document.activeElement?.blur?.();el.classList.remove('on');el.classList.add('min');document.documentElement.classList.remove('lv-on');lvMiniPaint()}
 function lvBack(){const el=$('#live');if(!el||!LV.open)return;LV.min=false;el.classList.remove('min');document.documentElement.classList.add('lv-on');requestAnimationFrame(()=>el.classList.add('on'));lvMiniPaint()}
 function lvCap(){const c=$('#lvCap');if(!c)return;const ready=aiReady()&&!MM.busy;
- c.innerHTML=`${LV.you?`<p class="lv-you">${esc(LV.you)}</p>`:''}${LV.retry&&LV.st==='idle'?`<button class="btn sm pri lv-retry" data-act="lvRetry">Send “${esc(LV.retry.length>40?LV.retry.slice(0,40)+'…':LV.retry)}” again</button>`:''}${LV.ai?`<p class="lv-ai">${esc(LV.ai)}</p>`:''}${actChips(LV.pend,'lvAct')}${ready||LV.you||LV.ai?'':modelCard('live')||''}`;c.scrollTop=c.scrollHeight}
+ c.innerHTML=`${LV.you?`<p class="lv-you">${esc(LV.you)}</p>`:''}${LV.retry&&LV.st==='idle'?`<button class="btn sm pri lv-retry" data-act="lvRetry">Send “${esc(LV.retry.length>40?LV.retry.slice(0,40)+'…':LV.retry)}” again</button>`:''}${LV.ai?`<p class="lv-ai">${esc(LV.ai)}</p>`:''}${actChips(LV.pend,'lvAct')}${ready||LV.you||LV.ai?'':modelCard('live')||''}`;lvRd(true)}
+/* 1.78.0: a long answer gets room to be read: the orb steps back to the top, the answer takes the space in calm, left-aligned
+   text that starts at its first line (it used to jump to the bottom and get cut off), and a fade shows there is more below */
+function lvRd(top){const c=$('#lvCap'),el=$('#live');if(!c||!el)return;const rd=(LV.ai||'').length>150;el.classList.toggle('rd',rd);
+ const a=c.querySelector('.lv-ai');if(top)c.scrollTop=rd&&a?Math.max(0,a.offsetTop-c.offsetTop-6):c.scrollHeight;lvOv()}
+function lvOv(){const c=$('#lvCap');if(c)c.classList.toggle('ov',c.scrollHeight-c.scrollTop-c.clientHeight>4)}
+/* the streamed answer, word by word: short ones stay pinned to the newest words, long ones keep their start in view */
+function lvAiText(v){LV.ai=v;const c=$('#lvCap'),p=c&&c.querySelector('.lv-ai');if(!p)return lvCap();const was=$('#live').classList.contains('rd');p.textContent=v;
+ if(!was&&v.length>150)lvRd(true);else{if(v.length<=150)c.scrollTop=c.scrollHeight;lvOv()}}
+document.addEventListener('scroll',e=>{if(e.target&&e.target.id==='lvCap')lvOv()},true);
+/* quick settings on the talk screen: speed, pitch and answer length, saved for every voice chat */
+const lvNet=()=>/^(eleven|oss):/.test(vpick().voice);
+function lvQsHTML(){const p=vpick(),n=LEN(),net=lvNet();
+ const rng=(k,min,max,step,v)=>`<input type="range" class="vp-rng" min="${min}" max="${max}" step="${step}" value="${v}" style="--p:${vpPct(v,min,max)}" data-lq="${k}" aria-label="${{rate:'Speed',pitch:'Pitch',len:'Answer length'}[k]}"${k==='pitch'&&net?' disabled':''}>`;
+ return`<div class="lv-qs-r"><label>Speed<output id="lvqR">${p.rate.toFixed(2)}×</output></label>${rng('rate',.6,1.6,.05,p.rate)}</div>
+ <div class="lv-qs-r${net?' off':''}"><label>Pitch<output id="lvqP">${net?'Not for this voice':p.pitch.toFixed(2)}</output></label>${rng('pitch',.6,1.5,.05,p.pitch)}</div>
+ <div class="lv-qs-r"><label>Answers<output id="lvqL">${LENS[n][0]}</output></label>${rng('len',0,2,1,n)}<div class="lv-qs-t" aria-hidden="true"><span>Short</span><span>Balanced</span><span>Detailed</span></div><small id="lvqD">${LENS[n][1]}</small></div>
+ <div class="lv-qs-a"><button type="button" class="link" data-act="lvQsTest">${ic('play')}Hear it</button><button type="button" class="link" data-act="lvQsAll">All settings</button></div>`}
+function lvQs(open){const q=$('#lvQs'),b=$('#lvQsB');if(!q)return;if(open==null)open=q.hidden;if(open)q.innerHTML=lvQsHTML();q.hidden=!open;if(b){b.setAttribute('aria-expanded',String(open));b.classList.toggle('on',open)}}
+document.addEventListener('input',e=>{const t=e.target;if(!t.dataset||!t.dataset.lq)return;const k=t.dataset.lq,v=+t.value;t.style.setProperty('--p',vpPct(v,+t.min,+t.max));
+ if(k==='len'){$('#lvqL').textContent=LENS[v][0];$('#lvqD').textContent=LENS[v][1];vpSave({len:v});return}
+ vpSave({[k]:v});if(k==='rate')$('#lvqR').textContent=v.toFixed(2)+'×';else $('#lvqP').textContent=v.toFixed(2);
+ /* while Plot is speaking, the voice changes right away */
+ const p=vpick();try{window.PLOT_ASSIST&&PLOT_ASSIST.tune&&PLOT_ASSIST.tune(p.rate,p.pitch)}catch(x){}});
+document.addEventListener('click',e=>{const q=$('#lvQs');if(!q||q.hidden)return;if(e.target.closest&&e.target.closest('#lvQs,#lvQsB'))return;lvQs(false)},true);
 function liveOpen(first,o){if(LV.open&&LV.min&&!(o&&o.resume)){lvBack();if(first)setTimeout(()=>lvHeard(first),350);return}if(window.PLOT_ASSIST&&PLOT_ASSIST.close)PLOT_ASSIST.close();
  /* talk mode is one conversation in Conversations: it carries on the one just used (or a resumed one), else starts fresh */
  if(o&&o.resume&&window.PLOT_ASSIST&&PLOT_ASSIST.resume)PLOT_ASSIST.resume(o.resume);LV.resumed=!!(o&&o.resume);
@@ -369,13 +399,13 @@ function lvSay(text,then){const t=String(text||'').trim();if(!t||!LV.open)return
  if(window.PLOT_ASSIST&&PLOT_ASSIST.say)PLOT_ASSIST.say(t,()=>{if(!LV.open)return;if(LV.st==='speak')(then||lvListen)()});else(then||lvListen)()}
 async function lvHeard(text){const g=++LV.gen,t=String(text).trim(),PA=window.PLOT_ASSIST||{},SP=PA.stream;if(!t)return lvListen();LV.you=t;LV.retry='';LV.ai='';lvCap();lvState('think');
  const done=(say,acts,extra,full)=>{if(g!==LV.gen||!LV.open)return;LV.ai=say;if(acts)LV.pend=keepActs(acts);lvCap();{const pl=!!LV.plainTurn;LV.plainTurn=0;LV.hist.push({role:'user',content:t,plain:pl},{role:'assistant',content:full||say,plain:pl})}LV.hist=LV.hist.slice(-12);
-  try{PLOT_ASSIST.addTurn(t,full||say)}catch(e){}if(extra==='bye'){lvSay(say,()=>liveClose());return}if(extra==='retry'){lvSay(say,()=>{lvState('idle','');lvCap()});return}if(SP&&SP.end(say))return;lvSay(say)};
+  try{PLOT_ASSIST.addTurn(t,full||say)}catch(e){}if(extra==='bye'){lvSay(say,()=>liveClose());return}if(extra==='retry'){lvSay(say,()=>{lvState('idle','');lvCap()});return}if(LV.quiet===g){LV.quiet=0;return}if(SP&&SP.end(say))return;lvSay(say)};
  if(BYE.test(t))return done(['Bye for now.','Talk soon.','Okay, bye!'][Math.floor(Math.random()*3)],[],'bye');
  const blocked=aiBlock(t);if(blocked)return done(blocked,[]);
  /* Plain AI: just the model, no app data, commands, agent or things to add */
  if(PLAIN()){if(!aiReady())return done('Plain AI needs a model. Pick one and download it once, then it works offline.',[]);const ctl=LV.ctl=new AbortController();let out='';
   try{if(SP)SP.start({first:()=>{if(g===LV.gen&&LV.open)lvState('speak')},done:()=>{if(LV.open&&g===LV.gen&&LV.st==='speak')lvListen()}});
-   await aiChat([{role:'system',content:PLAIN_SYS()+' Your answer is read aloud: short, natural sentences, no lists or markdown. Give the most important steps first.'},...LV.hist.filter(m=>m.plain).slice(-8).map(m=>({role:m.role,content:m.content})),{role:'user',content:t}],x=>{if(g!==LV.gen)return;out+=x;if(SP)SP.feed(out);const v=out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'');if(v){LV.ai=v;const c=$('#lvCap');const p=c&&c.querySelector('.lv-ai');if(p)p.textContent=v;else lvCap()}},{ctl,max_tokens:planEngine()==='api'?600:360,temperature:.6,reading:'Thinking…',onP:x=>{if(x&&g===LV.gen)lvState('think',x)},reset:()=>{out=''}})}
+   await aiChat([{role:'system',content:PLAIN_SYS()+' Your answer is read aloud: short, natural sentences, no lists or markdown. Give the most important steps first. Length: '+LENSYS()+'.'},...LV.hist.filter(m=>m.plain).slice(-8).map(m=>({role:m.role,content:m.content})),{role:'user',content:t}],x=>{if(g!==LV.gen)return;out+=x;if(SP)SP.feed(out);const v=out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'');if(v){lvAiText(v)}},{ctl,max_tokens:LENTOK(planEngine()==='api',1),temperature:.6,reading:'Thinking…',onP:x=>{if(x&&g===LV.gen)lvState('think',x)},reset:()=>{out=''}})}
   catch(e){if(g!==LV.gen)return;if(e&&e.name==='AbortError')return;LV.retry=t;return done('Sorry, I couldn’t think that through: '+(e&&e.message||e),[],'retry')}
   if(g!==LV.gen)return;LV.plainTurn=1;return done(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/[*#_`]/g,'').trim()||'Hmm, I’m not sure. Can you say that another way?',[])}
  /* "yes" to what was offered */
@@ -396,7 +426,7 @@ async function lvHeard(text){const g=++LV.gen,t=String(text).trim(),PA=window.PL
  if(!out) try{const q=t;let ctx='';try{const r=(await rp)||await ragRetrieve(q,{win:0,goal:'',broad:insFocus(q).broad},null);ctx=PLOT_ASSIST.ctx(q,r,'',planEngine()==='api',PA.fast&&PA.fast()&&planEngine()!=='api')}catch(e){ctx='QUESTION\n'+q}
   const msgs=[{role:'system',content:LV_SYS()},...LV.hist.slice(-8),{role:'user',content:(window.PLOT_ASSIST&&PLOT_ASSIST.askMsg?PLOT_ASSIST.askMsg(q,ctx):`WHAT I JUST SAID\n${q}`)}];
   if(SP)SP.start({first:()=>{if(g===LV.gen&&LV.open)lvState('speak')},done:()=>{if(LV.open&&g===LV.gen&&LV.st==='speak')lvListen()}});
-  await aiChat(msgs,x=>{if(g!==LV.gen)return;out+=x;if(SP)SP.feed(out);let v=hideActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,''));if(/^\W*AG?E?N?T?$|AGENT\s*:/.test(v))v='';if(v){LV.ai=v;const c=$('#lvCap');const p=c&&c.querySelector('.lv-ai');if(p)p.textContent=v;else lvCap()}},{ctl,max_tokens:planEngine()==='api'?400:260,temperature:.7,reading:'Thinking…',onP:x=>{if(x&&g===LV.gen)lvState('think',x)},reset:()=>{out=''}})}
+  await aiChat(msgs,x=>{if(g!==LV.gen)return;out+=x;if(SP)SP.feed(out);let v=hideActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,''));if(/^\W*AG?E?N?T?$|AGENT\s*:/.test(v))v='';if(v){lvAiText(v)}},{ctl,max_tokens:LENTOK(planEngine()==='api',0),temperature:.7,reading:'Thinking…',onP:x=>{if(x&&g===LV.gen)lvState('think',x)},reset:()=>{out=''}})}
  catch(e){if(g!==LV.gen)return;if(e&&e.name==='AbortError')return;LV.retry=t;return done('Sorry, I couldn’t think that through: '+(e&&e.message||e),[],'retry')}
  if(g!==LV.gen)return;
  /* the AI asked for the agent: it reads email, calendar, Drive or Notion, and the takeaway is said out loud */
@@ -406,8 +436,11 @@ async function lvHeard(text){const g=++LV.gen,t=String(text).trim(),PA=window.PL
  const P=parseActs(out.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/[*#_`]/g,''));let say=P.clean.replace(/\s*\[\d+(?:,\s*\d+)*\]/g,'').trim()||'Hmm, I’m not sure. Can you say that another way?';const care=aiCare(t,say);if(care)say+=' '+care;done(say,P.acts)}
 Object.assign(ACT,{
  liveOpen:()=>liveOpen(),lvEnd:()=>liveClose(),lvMin:()=>lvMin(),lvBack:()=>lvBack(),
- lvOrb:()=>{if(LV.st==='listen'){if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(false,true);return}if(LV.st==='speak'){if(window.PLOT_ASSIST)PLOT_ASSIST.hush();lvListen();return}if(LV.st==='think'){lvState('think','Still working on it. Tap Processing below to cancel.');return}if(LV.muted){LV.muted=false}lvListen()},
- lvTag:()=>{if(LV.st==='think'){LV.gen++;try{LV.ctl&&LV.ctl.abort()}catch(e){}LV.retry=LV.you;lvState('idle','Cancelled.');lvCap();return}if(LV.st==='listen'){if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(false,true);return}if(LV.st==='speak'){if(window.PLOT_ASSIST)PLOT_ASSIST.hush();lvState('idle','');return}LV.muted=false;lvListen()},
+ lvOrb:()=>{lvQs(false);if(LV.st==='listen'){if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(false,true);return}if(LV.st==='speak'){LV.quiet=LV.gen;if(window.PLOT_ASSIST)PLOT_ASSIST.hush();lvListen();return}if(LV.st==='think'){lvState('think','Still working on it. Tap Processing below to cancel.');return}if(LV.muted){LV.muted=false}lvListen()},
+ lvTag:()=>{if(LV.st==='think'){LV.gen++;try{LV.ctl&&LV.ctl.abort()}catch(e){}LV.retry=LV.you;lvState('idle','Cancelled.');lvCap();return}if(LV.st==='listen'){if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(false,true);return}if(LV.st==='speak'){LV.quiet=LV.gen;if(window.PLOT_ASSIST)PLOT_ASSIST.hush();lvState('idle','');return}LV.muted=false;lvListen()},
+ /* 1.78.0: speed, pitch and answer length, right on the talk screen */
+ lvQs:()=>lvQs(),lvQsAll:()=>{lvQs(false);if(ACT.asSet)ACT.asSet()},
+ lvQsTest:()=>{if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);if(window.PLOT_ASSIST)PLOT_ASSIST.hush();LV.quiet=LV.gen;lvState('speak','');const n=LEN();PLOT_ASSIST.say(['Here’s a short answer.','This is how I sound with these settings.','This is how I sound with these settings, and how a longer answer will feel.'][n],()=>{if(LV.open&&LV.st==='speak')lvState('idle','')})},
  lvRetry:()=>{const t=LV.retry;LV.retry='';if(t)lvHeard(t)},
  lvMute:()=>{LV.muted=!LV.muted;if(LV.muted&&VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);lvState(LV.st==='listen'?'idle':LV.st);if(!LV.muted&&LV.st==='idle')lvListen()},
  lvType:()=>{const f=$('.lv-type');if(!f)return;f.hidden=!f.hidden;if(!f.hidden){LV.muted=true;if(VC&&VC.el&&VC.el.id==='lvIn')voiceStop(true);lvState('idle','');setTimeout(()=>$('#lvTxt').focus(),50)}},
@@ -538,6 +571,26 @@ html.qs-on #scrim{z-index:130}html.qs-on #sheet{z-index:131}
 .lv-b.off{background:color-mix(in srgb,var(--danger,#e66) 18%,var(--surface));color:var(--danger,#e66)}
 .lv-end{width:auto;padding:0 26px;border-radius:28px;background:var(--danger,#e5484d);border-color:transparent;color:#fff}
 .lv-note{position:relative;margin-top:12px}.lv-hid{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.lv-nm{min-width:0}.lv-nm small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lv-orb{transition:width .45s var(--ease,ease)}.lv-mid{transition:padding .45s var(--ease,ease)}
+#live.rd .lv-mid{flex:none;min-height:0;padding:4px 0 0}
+#live.rd .lv-orb{width:min(24vw,92px)}
+#live.rd .lv-hint{margin-top:10px}#live.rd .lv-tag{margin-top:6px}
+#live.rd .lv-cap{flex:1 1 auto;min-height:0;max-height:none;width:min(100%,680px);align-self:center;margin-top:10px;padding:2px 4px 10px;text-align:left}
+#live.rd .lv-ai{font:500 17.5px/1.62 var(--f-body);letter-spacing:0}
+#live.rd .lv-you{font-size:14.5px;line-height:1.45;margin-bottom:12px}
+#live.rd .lv-cap .ai-acts{justify-content:flex-start}
+.lv-cap.ov{-webkit-mask-image:linear-gradient(#000 calc(100% - 40px),transparent);mask-image:linear-gradient(#000 calc(100% - 40px),transparent)}
+#lvQsB.on{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+.lv-qs{position:absolute;z-index:4;top:calc(max(14px,env(safe-area-inset-top)) + 60px);left:14px;right:14px;max-width:400px;margin-left:auto;padding:14px 16px 8px;border-radius:24px;border:1px solid var(--line-2,var(--line));background:var(--bg-2,var(--surface));box-shadow:0 26px 60px -22px rgba(0,0,0,.65);transform-origin:calc(100% - 120px) 0;transition:opacity .2s ease,transform .3s var(--ease,ease),visibility 0s}
+.lv-qs[hidden]{display:block;visibility:hidden;opacity:0;transform:translateY(-6px) scale(.97);pointer-events:none;transition:opacity .16s ease,transform .2s ease,visibility 0s .2s}
+.lv-qs-r{margin:0 0 12px}.lv-qs-r label{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font:600 14px var(--f-body)}
+.lv-qs-r output{color:var(--muted);font:600 13px var(--f-body);font-variant-numeric:tabular-nums}
+.lv-qs-r.off .vp-rng{opacity:.35}
+.lv-qs-t{display:flex;justify-content:space-between;margin-top:-4px;font-size:11.5px;color:var(--muted)}
+.lv-qs-r small{display:block;margin-top:6px;color:var(--muted);font-size:12.5px;line-height:1.4}
+.lv-qs-a{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:2px;padding-top:4px;border-top:1px solid var(--line)}
+.lv-qs-a .link{display:inline-flex;align-items:center;gap:6px;min-height:42px}.lv-qs-a .link svg{width:16px;height:16px}
 .ai-sg{margin-top:10px;width:100%}.ai-sgh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.ai-sgh span{font:700 11px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .ai-sg.cmp .ai-sgl{display:flex;flex-wrap:wrap;gap:6px}.ai-sg.cmp .ai-sgi{padding:7px 12px;border-radius:999px;font-size:13px}.ai-sg.cmp .ai-sgi svg{display:none}
 .ai-sgr.spin svg{animation:mmSpin 1s linear infinite}

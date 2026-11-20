@@ -22,20 +22,33 @@ final class Speech {
         final Context c; final String id, engine, voice, lang; final float speed;
         final LinkedBlockingQueue<Object> in = new LinkedBlockingQueue<Object>(), out = new LinkedBlockingQueue<Object>();
         volatile boolean stopped; volatile AudioTrack track;
+        /* 1.78.0: pitch for the natural voices, and speed/pitch changed live from the talk screen (tune), both on the track */
+        volatile float pitch = 1f, tempo = 1f; volatile boolean tuned;
         Run(Context c, String id, String engine, String voice, String lang, double rate) {
             this.c = c; this.id = id; this.engine = engine; this.voice = voice; this.lang = lang;
             this.speed = (float) Math.max(0.5, Math.min(2, rate > 0 ? rate : 1));
         }
     }
 
-    static void start(Context c, String id, String engine, String voice, String lang, double rate) {
+    static void start(Context c, String id, String engine, String voice, String lang, double rate) { start(c, id, engine, voice, lang, rate, 1); }
+    static void start(Context c, String id, String engine, String voice, String lang, double rate, double pitch) {
         stop(); Kokoro.stop(); Supertonic.stop();
         final Run r = new Run(c.getApplicationContext(), id, engine, voice, lang, rate);
+        r.pitch = (float) Math.max(0.5, Math.min(2, pitch > 0 ? pitch : 1));
         cur = r;
         new Thread(new Maker(r)).start();
         new Thread(new Player(r)).start();
     }
     static void add(String id, String text, String json, int gap) { Run r = cur; if (r != null && r.id.equals(id) && !r.stopped) r.in.add(new Item(text, json, gap)); }
+    static void tune(String id, double tempo, double pitch) {
+        Run r = cur; if (r == null || !r.id.equals(id)) return;
+        r.tempo = (float) Math.max(0.5, Math.min(2, tempo > 0 ? tempo : 1)); r.pitch = (float) Math.max(0.5, Math.min(2, pitch > 0 ? pitch : 1)); apply(r);
+    }
+    static void apply(Run r) {
+        AudioTrack t = r.track; if (t == null || android.os.Build.VERSION.SDK_INT < 23) return;
+        if (r.pitch == 1f && r.tempo == 1f && !r.tuned) return;
+        try { t.setPlaybackParams(new android.media.PlaybackParams().setSpeed(r.tempo).setPitch(r.pitch)); r.tuned = true; } catch (Exception e) { }
+    }
     static void end(String id) { Run r = cur; if (r != null && r.id.equals(id)) r.in.add(END); }
     static void stop() {
         Run r = cur; cur = null;
@@ -91,7 +104,7 @@ final class Speech {
                     if (o instanceof Throwable) { if (!said) throw (Throwable) o; break; }
                     float[][] x = (float[][]) o; float[] pcm = x[0]; int gap = (int) x[1][0], sr = (int) x[1][1];
                     if (t == null) {
-                        rate = sr; t = Supertonic.track(sr); r.track = t;
+                        rate = sr; t = Supertonic.track(sr); r.track = t; apply(r);
                         Assist.H.post(new Runnable() { public void run() { WakeLoop.unmute(); Assist.ttsPause = true; Assist.applyNow(r.c); } });
                         /* a moment of silence first, so the track is running before the voice starts (no clipped first word) */
                         float[] lead = new float[sr / 20]; t.write(lead, 0, lead.length, AudioTrack.WRITE_BLOCKING); frames += lead.length;
@@ -102,7 +115,7 @@ final class Speech {
                     if (gap > 0 && !r.stopped) { float[] z = new float[sr * gap / 1000]; t.write(z, 0, z.length, AudioTrack.WRITE_BLOCKING); frames += z.length; }
                 }
                 if (t != null && !r.stopped) {
-                    long until = System.currentTimeMillis() + frames * 1000 / rate + 1500;
+                    long until = System.currentTimeMillis() + (long) (frames * 1000 / rate / Math.min(1f, r.tempo)) + 1500;
                     while (!r.stopped && (t.getPlaybackHeadPosition() & 0xFFFFFFFFL) < frames && System.currentTimeMillis() < until) Thread.sleep(15);
                 }
                 /* how it went, for tests (adb logcat -s PlotSpeech): pieces, audio length, and how often the speaker ran dry */

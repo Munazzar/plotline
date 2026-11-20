@@ -518,7 +518,9 @@ function nsOpen(v,first,rate){const e=vEng(v);if(!NS()||(e!=='kokoro'&&e!=='st')
  if(e==='kokoro'&&!(window.KOKORO&&KOKORO.ids&&KOKORO.state().st==='have'&&KOKORO.can(first,vset().lang)))return null;
  if(e==='st'&&!(window.SUPERTONIC&&SUPERTONIC.can(first)))return null;
  const s={id:'q'+uid(),e,v:v.slice(e==='st'?3:7),chain:Promise.resolve(),all:''};
- try{NS().speechStart(s.id,e,s.v,e==='st'?SUPERTONIC.lang(first):'en',rate)}catch(x){return null}return s}
+ s.rate=rate||1;const P=+aset().pitch||1,L=e==='st'?SUPERTONIC.lang(first):'en';try{if(NS().speechStart2)NS().speechStart2(s.id,e,s.v,L,rate,P);else NS().speechStart(s.id,e,s.v,L,rate)}catch(x){return null}NSCUR=s;return s}
+/* 1.78.0: the talk screen's sliders move the voice while it speaks: speed as a stretch of what is already made, and pitch */
+let NSCUR=null;function nsTune(r,p){const s=NSCUR;if(!s||!NS()||!NS().speechTune)return;try{NS().speechTune(s.id,(+r||1)/(s.rate||1),+p||1)}catch(e){}}
 function nsAdd(s,t){t=spClean(t);if(!t)return;s.all+=(s.all?' ':'')+t;const g=gapOf(t);
  if(s.e==='st'){try{NS().speechAdd(s.id,t,'',g)}catch(x){}return}
  s.chain=s.chain.then(async()=>{const ids=await KOKORO.ids(t,s.v);if(ids.length)NS().speechAdd(s.id,'',JSON.stringify(ids),g)}).catch(()=>{})}
@@ -877,7 +879,7 @@ window.PLOT_ASSIST={quickHTML,run,asCtx,askMsg,parse,parseWhen,localAsk,aname,ct
  doItems:items=>doItems(items),
  /* streamed speech for Live: start({first,done}), feed(text so far), end(final) → false when nothing was streamed */
  needsDecide:t=>needsDecide(t),
- stream:{start:o=>{if(fastOn())sqStart(o)},feed:t=>sqFeed(t),end:t=>sqEnd(t),stop:()=>sqStop()},fast:()=>fastOn(),warm:()=>asWarm(),
+ tune:(r,p)=>nsTune(r,p),stream:{start:o=>{if(fastOn())sqStart(o)},feed:t=>sqFeed(t),end:t=>sqEnd(t),stop:()=>sqStop()},fast:()=>fastOn(),warm:()=>asWarm(),
  dropTurn:tid=>{AS.turns=AS.turns.filter(t=>t.id!==tid);delete AS.undo[tid];if(AS.open)paint()},
  /* an agent result continued in chat (Agent page › Continue in chat) */
  inject:(q,a,chips)=>{if(!(AS.turns.length&&AS.last&&Date.now()-AS.last<CV_GAP))convFresh('chat');AS.turns.push({q,a,chips:(chips||[]).map(c=>({t:c.t,fn:agentChip(c.fn)})),t:Date.now(),id:uid()});AS.turns=AS.turns.slice(-30);asOpen();paint(true);setTimeout(()=>$('#asIn')?.focus(),300)}};
