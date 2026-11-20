@@ -26,9 +26,13 @@ const FR=[['hard','Can’t skip','Close the app is the only way'],['once','5 mor
 const DAYS=['S','M','T','W','T','F','S'],DAYN=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 /* ---------------- the phone ---------------- */
-let APPS=null,ST={};
-function apps(){if(APPS)return APPS;APPS=[];
- if(NA&&NA.blockApps){try{APPS=JSON.parse(NA.blockApps()).map(a=>({pk:a.p,name:a.l,icon:a.i||'',cat:a.cat,sys:a.sys}))}catch(e){APPS=[]}}
+/* the phone builds its app list in the background (1.77.1): the first time it answers with nothing yet, so the page
+   draws letters for icons, asks again at most every 1.5 s (AAT), and redraws once the list arrives (appsWait) */
+let APPS=null,ST={},AAT=0,AWT=0;
+function appsWait(){if(AWT||!(NA&&NA.blockApps))return;let n=0;AWT=setInterval(()=>{AAT=0;const L=apps();if((L.length&&APPS)||++n>20){clearInterval(AWT);AWT=0;if(APPS&&APPS.length&&cur.p==='blocks')render(false)}},1500)}
+function apps(){if(APPS)return APPS;
+ if(NA&&NA.blockApps&&Date.now()-AAT<1500)return[];APPS=[];
+ if(NA&&NA.blockApps){AAT=Date.now();try{APPS=JSON.parse(NA.blockApps()).map(a=>({pk:a.p,name:a.l,icon:a.i||'',cat:a.cat,sys:a.sys}))}catch(e){APPS=[]}if(!APPS.length){APPS=null;appsWait();return[]}}
  else if((typeof NATIVE!=="undefined"&&NATIVE)&&NATIVE.autoApps){try{APPS=JSON.parse(NATIVE.autoApps()).map(a=>({pk:a.pk,name:a.name,cat:a.cat}))}catch(e){APPS=[]}}
  /* no phone list (the web, or an older app): the apps Screen time has seen. Not kept, so a later list replaces it */
  if(!APPS.length){const L=(S.settings.act&&S.settings.act.scx&&S.settings.act.scx.lab)||{};const A=Object.keys(L).filter(k=>!k.startsWith('n:')).map(k=>({pk:k,name:L[k]}));APPS=null;return A}
@@ -36,7 +40,10 @@ function apps(){if(APPS)return APPS;APPS=[];
 const appOf=pk=>apps().find(a=>a.pk===pk);
 const lab=pk=>{const a=appOf(pk);if(a)return a.name;try{if(window.SCREEN)return SCREEN.lab(pk)}catch(e){}return pk.split('.').pop().replace(/^\w/,c=>c.toUpperCase())};
 const icoHTML=(pk,cls='')=>{const a=appOf(pk);return a&&a.icon?`<img class="blk-ai ${cls}" src="data:image/png;base64,${a.icon}" alt="">`:`<span class="blk-ai blk-al ${cls}" aria-hidden="true">${esc((lab(pk)[0]||'?').toUpperCase())}</span>`};
-function state(){if(!ON())return ST={};try{ST=JSON.parse(NA.blockState())||{}}catch(e){ST={}}return ST}
+/* today's minutes come from reading Android's usage history, slow on a full day: read at most every 10 s while the
+   page is redrawn, and fresh whenever the app comes back to the front (a permission may have just been given) */
+let STAT=0;addEventListener('visibilitychange',()=>{STAT=0});
+function state(force){if(!ON())return ST={};if(!force&&Date.now()-STAT<10000)return ST;try{ST=JSON.parse(NA.blockState())||{}}catch(e){ST={}}STAT=Date.now();return ST}
 let PUSHED='';
 /* a locked focus can't be loosened: no new Never blocked apps until it ends (1.77.0). The phone checks Never blocked
    first, so while it runs the phone only gets the apps that were on the list when it started, even if another device

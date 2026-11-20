@@ -490,11 +490,38 @@ public class Blocker extends Service {
         return o.toString();
     }
 
-    /* launcher apps with their names and small icons, for the app's picker */
-    static String appsJson;
-    static long appsAt;
-    static synchronized String apps(Context c) {
-        if (appsJson != null && System.currentTimeMillis() - appsAt < 600000) return appsJson;
+    /* launcher apps with their names and small icons, for the app's picker. Drawing 100+ icons took seconds and the page
+       waited for it (1.77.1), so the list is built on a background thread and kept in files/blkapps.json: the page gets the
+       last list at once (an empty one the very first time, and asks again), and a list older than 10 minutes is rebuilt. */
+    static volatile String appsJson;
+    static volatile long appsAt;
+    static volatile boolean appsBusy;
+    static String apps(Context c) {
+        Context a = c.getApplicationContext();
+        if (appsJson == null) {
+            try {
+                java.io.File fl = new java.io.File(a.getFilesDir(), "blkapps.json");
+                if (fl.exists()) {
+                    byte[] d = new byte[(int) fl.length()]; java.io.FileInputStream in = new java.io.FileInputStream(fl); int o = 0;
+                    while (o < d.length) { int n = in.read(d, o, d.length - o); if (n < 0) break; o += n; }
+                    in.close(); appsJson = new String(d, 0, o, "UTF-8"); appsAt = fl.lastModified();
+                }
+            } catch (Exception e) { }
+        }
+        if ((appsJson == null || System.currentTimeMillis() - appsAt > 600000) && !appsBusy) { appsBusy = true; new Thread(new AppsJob(a)).start(); }
+        return appsJson != null ? appsJson : "[]";
+    }
+    static final class AppsJob implements Runnable {
+        final Context c; AppsJob(Context c) { this.c = c; }
+        public void run() {
+            try {
+                String j = buildApps(c); appsJson = j; appsAt = System.currentTimeMillis();
+                java.io.File t = new java.io.File(c.getFilesDir(), "blkapps.tmp"); java.io.FileOutputStream o = new java.io.FileOutputStream(t);
+                o.write(j.getBytes("UTF-8")); o.close(); t.renameTo(new java.io.File(c.getFilesDir(), "blkapps.json"));
+            } catch (Exception e) { } finally { appsBusy = false; }
+        }
+    }
+    static String buildApps(Context c) {
         JSONArray a = new JSONArray();
         try {
             PackageManager pm = c.getPackageManager();
@@ -516,8 +543,7 @@ public class Blocker extends Service {
                 a.put(x);
             }
         } catch (Exception e) { }
-        appsJson = a.toString(); appsAt = System.currentTimeMillis();
-        return appsJson;
+        return a.toString();
     }
     static String icon(Drawable d, int px) {
         Bitmap b = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888);
