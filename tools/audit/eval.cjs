@@ -1,7 +1,7 @@
 // node tools/audit/eval.cjs <route> "<js expression>" [width=390] [shot.png] : open a page on the example data in headless Chrome and print the expression's value (and save a screenshot)
 const fs = require('fs'), path = require('path'), { spawn } = require('child_process'), os = require('os');
 const [ROUTE = 'today', EXPR = '1', W = '390', SHOT = ''] = process.argv.slice(2);
-const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe', URL = 'http://localhost:8765/', sleep = ms => new Promise(r => setTimeout(r, ms));
+const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe', URL = process.env.URL || 'http://localhost:8765/', sleep = ms => new Promise(r => setTimeout(r, ms));
 const PORT = 9700 + Math.floor(Math.random() * 90), prof = fs.mkdtempSync(path.join(os.tmpdir(), 'plev-'));
 const ch = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${prof}`, '--no-first-run', '--autoplay-policy=no-user-gesture-required', 'about:blank'], { stdio: 'ignore' });
 let ws, seq = 0; const wait = new Map();

@@ -38,8 +38,12 @@ const lab=pk=>{const a=appOf(pk);if(a)return a.name;try{if(window.SCREEN)return 
 const icoHTML=(pk,cls='')=>{const a=appOf(pk);return a&&a.icon?`<img class="blk-ai ${cls}" src="data:image/png;base64,${a.icon}" alt="">`:`<span class="blk-ai blk-al ${cls}" aria-hidden="true">${esc((lab(pk)[0]||'?').toUpperCase())}</span>`};
 function state(){if(!ON())return ST={};try{ST=JSON.parse(NA.blockState())||{}}catch(e){ST={}}return ST}
 let PUSHED='';
+/* a locked focus can't be loosened: no new Never blocked apps until it ends (1.77.0). The phone checks Never blocked
+   first, so while it runs the phone only gets the apps that were on the list when it started, even if another device
+   or an older copy adds some. */
+const lockedNow=()=>{const f=LS('plotline.focus');return!!(f&&f.lock&&f.until>Date.now())};
 function push(force){if(!ON())return;const c=cfg(),f=LS('plotline.focus');
- const o={rules:c.rules.map(r=>({...r,apps:r.apps||[],days:r.days||[]})),focus:f&&f.until>Date.now()?f:null,allow:c.allow};
+ const o={rules:c.rules.map(r=>({...r,apps:r.apps||[],days:r.days||[]})),focus:f&&f.until>Date.now()?f:null,allow:lockedNow()?c.allow.filter(p=>(f.allow||[]).includes(p)):c.allow};
  const k=JSON.stringify(o);if(!force&&k===PUSHED)return;PUSHED=k;try{ST=JSON.parse(NA.blockSet(k))||{}}catch(e){}}
 const usedMin=pk=>+((ST.used||{})[pk])||0;
 const usedOf=list=>(list||[]).reduce((a,pk)=>a+usedMin(pk),0);
@@ -180,7 +184,7 @@ Object.assign(ACT,{
   toast(isNew?`Added “${esc(title(r))}”`:'Saved')},
  blkDel:()=>{const c=cfg(),id=ED.r.id,i=c.rules.findIndex(x=>x.id===id);if(i<0)return;const r=c.rules[i];askConfirm('Delete this block?',`“${esc(title(r))}” stops blocking right away.`,'Delete',()=>{c.rules.splice(i,1);ED=null;closeSheet();saveAll();toast('Block deleted',()=>{c.rules.splice(Math.min(i,c.rules.length),0,r);saveAll()})})},
  blkPick:d=>{const c=cfg();if(d.for==='distract')pickOpen(c.distract,L=>{c.distract=L;save();render(false)},'Apps focus blocks');
-  else if(d.for==='allow')pickOpen(c.allow,L=>{c.allow=L;saveAll();if($('#sheet.on h2')&&/Settings/.test($('#sheet h2').textContent))setSheet()},'Never block these');
+  else if(d.for==='allow'){if(lockedNow())return toast('Focus is locked. You can add apps to Never blocked when it ends.');pickOpen(c.allow,L=>{if(lockedNow())L=L.filter(p=>c.allow.includes(p));c.allow=L;saveAll();if($('#sheet.on h2')&&/Settings/.test($('#sheet h2').textContent))setSheet()},'Never block these')}
   else if(d.for==='except')pickOpen(ED.r.allow||[],L=>{ED.r.allow=L;edPaint()},'Keep these open');
   else pickOpen(ED.r.apps,L=>{ED.r.apps=L;edPaint()},'Choose apps')},
  blkAllowDel:d=>{const c=cfg(),i=c.allow.indexOf(d.k);if(i<0)return;c.allow.splice(i,1);saveAll();if($('#sheet.on h2')&&/Settings/.test($('#sheet h2').textContent))setSheet();toast(`${esc(lab(d.k))} can be blocked again`,()=>{c.allow.splice(i,0,d.k);saveAll()})},

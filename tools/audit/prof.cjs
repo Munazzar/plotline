@@ -1,7 +1,7 @@
 // node tools/audit/prof.cjs "<js that does the action>" [label] : CPU profile of one action at phone size, 4x slower CPU
 const fs = require('fs'), path = require('path'), { spawn } = require('child_process'), os = require('os');
 const [ACTION = "location.hash='#/cal'", LABEL = 'action', SETUP = ''] = process.argv.slice(2);
-const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe', URL = 'http://localhost:8765/';
+const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe', URL = process.env.URL || 'http://localhost:8765/';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const PORT = 9900 + Math.floor(Math.random() * 90), prof = fs.mkdtempSync(path.join(os.tmpdir(), 'plprof-'));
 const ch = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${prof}`, '--no-first-run', 'about:blank'], { stdio: 'ignore' });
@@ -12,7 +12,7 @@ const ev = async x => { const r = await cmd('Runtime.evaluate', { expression: x,
   for (let i = 0; i < 40 && !ws; i++) { try { const L = await (await fetch(`http://127.0.0.1:${PORT}/json`)).json(); const p = L.find(x => x.type === 'page'); if (p) { ws = new WebSocket(p.webSocketDebuggerUrl); break; } } catch (e) { } await sleep(250); }
   if (ws.readyState !== 1) await new Promise(ok => ws.onopen = ok); ws.onmessage = m => { const r = JSON.parse(m.data); const f = wait.get(r.id); if (f) { wait.delete(r.id); f(r); } };
   await cmd('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
-  await cmd('Page.navigate', { url: URL }); await sleep(5000);
+  await cmd("Page.navigate", { url: URL }); for (let i = 0; i < 80; i++) { await sleep(250); try { if (await ev("!!(window.S&&S.goals&&window.seedDemo)")) break; } catch (e) { } } await sleep(800);
   await ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms));const ex=[...document.querySelectorAll('button')].find(b=>/Explore with examples/.test(b.textContent));if(ex){ex.click();await w(3000)}if(!S.goals.length)seedDemo();S.settings.name='Sam';save();closeSheet();${SETUP};return 1})()`); await sleep(2500);
   await cmd('Emulation.setCPUThrottlingRate', { rate: 4 });
   await cmd('Profiler.enable'); await cmd('Profiler.setSamplingInterval', { interval: 200 }); await cmd('Profiler.start');
