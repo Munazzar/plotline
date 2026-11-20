@@ -8,7 +8,7 @@ export async function switches(routes) {
     const t0 = performance.now(); location.hash = '#/' + r;
     await new Promise(ok => { const h0 = document.querySelector('#view').innerHTML.length, tEnd = performance.now() + 4000; const c = () => ((document.documentElement.dataset.pg === r.split('/')[0] || performance.now() > tEnd) ? ok() : setTimeout(c, 5)); c(); });
     const t1 = performance.now(); await frames(); const t2 = performance.now(); await sleep(700); po.disconnect();
-    out[r] = { route: Math.round(t1 - t0), paint: Math.round(t2 - t0), longTasks: lt.map(Math.round) };
+    (out[r] = out[r] || []).push({ route: Math.round(t1 - t0), paint: Math.round(t2 - t0), busy: Math.round(lt.reduce((a, b) => a + b, 0)) });
   }
   return out;
 }

@@ -2523,7 +2523,7 @@ html.pg-top .sbar,html.aov-on .sbar{opacity:0}
 .lk-p .btn.ghost{margin-top:10px}
 @media(max-width:560px){.tgrid{grid-template-columns:repeat(3,1fr);gap:9px}.tcard{padding:6px 6px 9px;border-radius:16px}.tprev{height:62px;border-radius:11px;margin-bottom:7px}.tcard .n{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 /* snappy: short, transform-free reveals */
-html[data-anim=snappy] .rv{transition:opacity .22s ease-out,transform .3s var(--ease);transform:translateY(8px)}
+html[data-anim=snappy] .rv{transition:opacity .14s ease-out,transform .2s var(--ease);transform:translateY(6px)}
 html[data-anim=snappy] .sp-item.l.rv,html[data-anim=snappy] .sp-item.r.rv{transform:none}
 html[data-anim=snappy] .rv.in{transform:none}
 .lk-anim{display:inline-flex}
@@ -3611,7 +3611,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.76.0';
+const APP_VER='1.77.0';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -3977,7 +3977,7 @@ function calDay(){const n=dnum(CAL.d),tn=dnum(ymd()),M=calItems(n-3,n+3),it=M[n]
 const TGS={};
 function initDayGrid(){const g=$('#dgrid');if(!g)return;const day=g.dataset.day,ppm=calPpm();
  if(TGS[day]!=null)g.scrollTop=TGS[day];else{const tn=day===ymd(),first=g.querySelector('.tev');const m=tn?new Date().getHours()*60+new Date().getMinutes()-90:first?parseFloat(first.style.top.match(/calc\((\d+)/)[1])-45:7.5*60;g.scrollTop=Math.max(0,m*ppm)}
- g.addEventListener('scroll',()=>{TGS[day]=g.scrollTop},{passive:true});
+ if(g._lg)return;g._lg=1;g.addEventListener('scroll',()=>{TGS[day]=g.scrollTop},{passive:true});
  const gh=$('#tghost'),body=g.querySelector('.tg-body');
  body.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||e.target.closest('.tev')){gh.style.display='none';return}const r=body.getBoundingClientRect(),p=calPpm(),m=Math.floor((e.clientY-r.top)/p/30)*30;gh.style.display='block';gh.style.top=`calc(${m} * var(--ppm))`;gh.style.height='calc(30 * var(--ppm))'});
  body.addEventListener('pointerleave',()=>{gh.style.display='none'})}
@@ -4514,7 +4514,7 @@ function syncPanel(){const sy=S.settings.sync,c=cfg();const conn=syncOn();
 
 /* ================= overlays ================= */
 let SHEET_LOCK=false,CONF=null,UNDO=null,TT,PHOTO=null;
-function openSheet(html,lock=false){SHEET_LOCK=lock;const sh=$('#sheet');sh.classList.remove('wide');sh.innerHTML=`<div class="grab"></div>`+html;setTimeout(()=>{if(typeof micDecorate==='function')micDecorate(sh)},0);sh.scrollTop=0;sh.style.transform='';sh.classList.add('on');$('#scrim').classList.add('on');document.documentElement.style.overflow='hidden';if(matchMedia('(min-width:821px)').matches)setTimeout(()=>sh.querySelector('input:not([type=hidden]):not([type=file]):not([type=checkbox]):not([type=radio]),textarea')?.focus({preventScroll:true}),350)}
+function openSheet(html,lock=false){SHEET_LOCK=lock;const sh=$('#sheet');sh.scrollTop=0;sh.classList.remove('wide');sh.innerHTML=`<div class="grab"></div>`+html;setTimeout(()=>{if(typeof micDecorate==='function')micDecorate(sh)},0);sh.style.transform='';sh.classList.add('on');$('#scrim').classList.add('on');document.documentElement.style.overflow='hidden';if(matchMedia('(min-width:821px)').matches)setTimeout(()=>sh.querySelector('input:not([type=hidden]):not([type=file]):not([type=checkbox]):not([type=radio]),textarea')?.focus({preventScroll:true}),350)}
 function closeSheet(){if(WR){wrSave();WR=null;$('#sheet').classList.remove('wsheet','wfull');setTimeout(()=>{if(cur.p==='journal'||cur.p==='goal')render(false)},380)}$('#sheet').classList.remove('on');$('#scrim').classList.remove('on');SHEET_LOCK=false;PHOTO=null;document.documentElement.style.overflow=''}
 $('#scrim').addEventListener('click',()=>{if(!SHEET_LOCK)closeSheet()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!SHEET_LOCK)closeSheet();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role=button][data-act]')){e.preventDefault();e.target.click()}});
@@ -5412,8 +5412,9 @@ function applyTheme(animate){const st=S.settings;let t=THEME_IDS.includes(st.the
 let IO;
 function reveal(anim){const els=[...document.querySelectorAll('#view .rv:not(.in)')];if(!anim||reduced()||!('IntersectionObserver'in window)){els.forEach(e=>e.classList.add('in'));return}
  IO&&IO.disconnect();IO=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){const el=en.target;el.classList.add('in');IO.unobserve(el);setTimeout(()=>{el.style.transitionDelay=''},1200)}}),{rootMargin:'0px 0px -5% 0px'});
- /* Snappy: a short cascade, so the last section on screen is in place in about a third of a second */
- const rich=typeof animRich==='function'&&animRich(),step=rich?60:24,cap=rich?9:6;let i=0;els.forEach(e=>{if(e.getBoundingClientRect().top<innerHeight)e.style.transitionDelay=Math.min(i++,cap)*step+'ms';IO.observe(e)})}
+ /* Snappy: a very short cascade, so everything on screen is in place in about a fifth of a second (1.77.0: was a third,
+    plus a frame waiting for the observer). What is on screen starts at once; the observer handles the rest on scroll. */
+ const rich=typeof animRich==='function'&&animRich(),step=rich?60:14,cap=rich?9:4;let i=0;els.forEach(e=>{if(e.getBoundingClientRect().top<innerHeight){e.style.transitionDelay=Math.min(i++,cap)*step+'ms';e.classList.add('in');setTimeout(()=>{e.style.transitionDelay=''},1200)}else IO.observe(e)})}
 function fillSpine(anim){document.querySelectorAll('.spine[data-fill]').forEach(sp=>{const f=sp.querySelector('.spine-fill');const done=[...sp.querySelectorAll('.sp-item.done')];const last=done[done.length-1];const h=last?last.offsetTop+last.offsetHeight/2:0;if(!anim){f.style.transition='none';f.style.height=h+'px';f.offsetWidth;f.style.transition=''}else requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.height=h+'px'}))})}
 /* ---- horizontal carousel engine ---- */
 const HSP={};let HSDRAG=0,DR=null;
@@ -5464,11 +5465,77 @@ function route(){let[p,id]=(location.hash.slice(2)||'today').split('/');if(p==='
  if(booted&&document.startViewTransition&&!reduced()&&!TOURING&&!(typeof navFast==='function'&&navFast(p))){const vt=document.startViewTransition(doit);vt.ready.catch(()=>{});if(vt.updateCallbackDone)vt.updateCallbackDone.catch(()=>{});vt.finished.catch(()=>{}).finally(()=>document.querySelectorAll('[data-vt]').forEach(x=>x.style.viewTransitionName=''))}else doit();booted=true}
 let RANIM=true;
 /* the live home keeps its room in #stuHost and swaps only #vin (see LIVE HOME: STUDIO) */
-let viewSet=(v,h)=>{v.innerHTML=h};
+let viewSet=(v,h)=>vPut(v,h);
+/* 1.77.0: a redraw of the page already on screen (a tick, a toggle, a save) changes only the parts whose HTML changed.
+   Before, every tap rebuilt the whole page, and the phone restyled and laid out ~1,000 elements before showing the tick.
+   Three-way: L is the live page, P the HTML as it was last drawn (kept aside), N the new HTML. A part is kept when P and
+   N are equal and no script touched it since (vDirty: a MutationObserver marks what scripts changed, and fields the user
+   typed into count as touched). A part whose element got attributes of its own from a script (a "bound" flag that owns
+   its listeners) is redrawn whole, as before. MORPH is on only for redraws of the same page (see the render wrapper). */
+let MORPH=0,VMO=null,VFILL=0,VCUT=0,VFORCE=0,VBUDGET=300,VHC={};
+/* the first visit to a page was 2–3× slower than the next: the phone compiles that page's code and shapes its text the
+   first time. Once the app has sat idle for a moment after starting, each main page is built once out of sight (no
+   pictures, frames or media) and thrown away, one page per idle moment, never while the user is touching the screen */
+function vWarm(){let L=null,i=0,h='';
+ const next=()=>setTimeout(()=>window.requestIdleCallback?requestIdleCallback(step,{timeout:4000}):step(),300),
+  busy=()=>!booted||TOURING||document.hidden||Date.now()-(window.LASTACT||0)<3000||document.querySelector('#sheet.on')||!S||!S.habits,
+  /* two short steps per page (build its HTML, then lay it out), so a tap never waits behind a whole page */
+  step=()=>{if(busy())return next();
+   if(h){const t=document.createElement('template');t.innerHTML=h;h='';t.content.querySelectorAll('img,video,audio,iframe,source,canvas,object,embed').forEach(e=>e.remove());
+    const d=document.createElement('div');d.inert=true;d.setAttribute('aria-hidden','true');d.style.cssText=`position:absolute;left:-10000px;top:0;width:${innerWidth}px;visibility:hidden;contain:layout paint;pointer-events:none`;
+    /* inside #view, so the page's own styles apply; it is gone again before any other script runs */
+    d.append(t.content);(document.getElementById('view')||document.body).appendChild(d);d.offsetHeight;d.remove();return next()}
+   if(!L)L=['habits','cal','goals','journal',S.habits[0]&&'habit/'+S.habits[0].id].filter(Boolean);if(i>=L.length)return;
+   const [p,id]=L[i++].split('/');if((p===cur.p&&!id)||!VIEWS[p])return next();const c={p:cur.p,id:cur.id};
+   try{cur.p=p;cur.id=id;h=VIEWS[p](id)||''}catch(e){h=''}finally{cur.p=c.p;cur.id=c.id}
+   next()};
+ next()}
+addEventListener('load',()=>setTimeout(vWarm,2000));
+/* leaves out what comes after the first `b` elements. Parts with an id (scripts look them up) always stay; charts,
+   tables and forms are never split */
+function vCut(el,b,d){for(const c of [...el.children]){if(b<=0){if(!(c.id||c.querySelector('[id]'))){c.remove();VCUT=1}continue}
+  const n=c.getElementsByTagName('*').length+1;
+  if(n<=b||d>6||!/^(DIV|SECTION|MAIN|UL|OL|NAV|ARTICLE)$/.test(c.tagName)){b-=n;continue}
+  b=vCut(c,b-1,d+1)}
+ return b}
+function vMark(t,v){if(!t)return;t._dk=1;for(t=t.parentNode;t&&t!==v&&!t._dd;t=t.parentNode)t._dd=1}
+function vDirty(R){const v=document.getElementById('view');for(const r of R)vMark(r.type==='characterData'?r.target.parentNode:r.target,v)}
+function vAttrs(l,p,n){for(const a of l.attributes)if(!p.hasAttribute(a.name))return false;
+ for(const a of p.attributes)if(!n.hasAttribute(a.name))l.removeAttribute(a.name);
+ for(const a of n.attributes){const pv=p.getAttribute(a.name);if(pv===a.value)continue;
+  /* classes a script added (a reveal's "in", a carousel's "on") stay; only what the HTML changed is applied */
+  if(a.name==='class'&&pv!=null){const pt=pv.split(/\s+/),nt=a.value.split(/\s+/);pt.forEach(c=>{if(c&&!nt.includes(c))l.classList.remove(c)});nt.forEach(c=>{if(c)l.classList.add(c)})}
+  else l.setAttribute(a.name,a.value)}
+ return true}
+function vMorph(L,P,N,d){const ln=[...L.childNodes],pn=P.childNodes,nn=[...N.childNodes];
+ if(ln.length!==pn.length){L.replaceChildren(...nn);return}
+ /* items added at the end (or the rest of a page drawn in two steps, see vCut) are appended; extra ones removed */
+ for(let i=nn.length;i<ln.length;i++)ln[i].remove();if(nn.length>pn.length)L.append(...nn.slice(pn.length));
+ for(let i=0;i<Math.min(nn.length,pn.length);i++){const l=ln[i],p=pn[i],n=nn[i];
+  if(!l._dk&&!l._dd&&p.isEqualNode(n))continue;
+  if(l.nodeType===3&&p.nodeType===3&&n.nodeType===3){if(l.data!==n.data)l.data=n.data;continue}
+  if(l.nodeType===1&&p.nodeType===1&&n.nodeType===1&&!l._dk&&d<14&&l.tagName===n.tagName&&p.tagName===n.tagName&&!/^(INPUT|TEXTAREA|SELECT|IFRAME|CANVAS|SVG|svg)$/.test(n.tagName)&&vAttrs(l,p,n)){l._dd=0;vMorph(l,p,n,d+1);continue}
+  l.replaceWith(n)}}
+function vPut(L,h){const v=document.getElementById('view');
+ if(!VMO&&v){VMO=new MutationObserver(vDirty);VMO.observe(v,{childList:true,subtree:true,characterData:true})}
+ const t=document.createElement('template');t.innerHTML=h;VFILL++;
+ /* a big page opens with its first screenful (~VBUDGET elements) and the rest follows right after the first paint:
+    vCut leaves out what comes after, and a same-page redraw (vMorph) appends it */
+ const all=t.content.querySelectorAll('*').length;
+ if(!MORPH&&!VFORCE&&all>VBUDGET*1.5){VCUT=0;vCut(t.content,VBUDGET,0);const cut=all-t.content.querySelectorAll('*').length;
+  /* only worth a second step when a good part of the page waits for it */
+  if(VCUT&&cut>=Math.max(150,all*.3)){const n=VFILL;requestAnimationFrame(()=>setTimeout(()=>{if(n===VFILL&&L.isConnected){VFORCE=1;try{render(false)}catch(e){}finally{VFORCE=0}}},0))}
+  else if(VCUT)t.innerHTML=h;VCUT=0}
+ const pv=t.content.cloneNode(true);
+ if((MORPH||VFORCE)&&L._pv&&VMO){vDirty(VMO.takeRecords());
+  L.querySelectorAll('input,textarea,select').forEach(e=>{if(e.type==='checkbox'||e.type==='radio'?e.checked!==e.defaultChecked:e.tagName==='SELECT'?[...e.options].some(o=>o.selected!==o.defaultSelected):e.value!==e.defaultValue)vMark(e,v)});
+  vMorph(L,L._pv,t.content,0)}
+ else L.replaceChildren(t.content);
+ L._pv=pv;if(VMO)VMO.takeRecords()}
 /* a page that fails to build shows what went wrong instead of leaving the previous page on screen */
 function viewErr(e){console.error(e);return`<header class="ph"><div><h1>Can’t open this</h1><div class="data">Something on this page didn’t load</div></div></header><div class="empty rv in"><p>Plotlines hit a problem building this page. Your data is safe.</p><p class="small muted" style="font-family:var(--f-mono);overflow-wrap:anywhere">${esc(String(e&&e.message||e).slice(0,200))}</p><div class="actions"><button class="btn" onclick="history.back()">Go back</button><a class="btn pri" href="#/today">Home</a></div></div>`}
 let RPOST=0;
-function render(anim=true){RANIM=anim;document.documentElement.dataset.pg=cur.p;const v=$('#view');const y=scrollY;if(cur.p!=='map')MP=null;let h;try{h=VIEWS[cur.p](cur.id)}catch(e){h=viewErr(e)}viewSet(v,h);if(!anim)window.scrollTo(0,y);
+function render(anim=true){RANIM=anim;document.documentElement.dataset.pg=cur.p;const v=$('#view');const y=scrollY;if(cur.p!=='map')MP=null;let h;const hk=cur.p+'/'+(cur.id||'');try{h=VFORCE&&VHC.k===hk?VHC.h:VIEWS[cur.p](cur.id)}catch(e){h=viewErr(e)}VHC={k:hk,h};viewSet(v,h);if(!anim)window.scrollTo(0,y);
  document.querySelectorAll('[data-nav]').forEach(a=>{const on=a.dataset.nav===(({goal:'goals',habit:'habits',road:'vista',map:'vista',ai:'ask',threads:'journal',thread:'journal',activity:'today',day:'cal'})[cur.p]||cur.p);a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
  imgCSS();zfixAll();if(typeof hvInit==='function')hvInit();if(typeof authBanner==='function')authBanner();if(typeof micDecorate==='function')micDecorate($('#view'));
  /* the steps that measure the new page run together in the next frame, so the page is laid out once, not after every step */
@@ -7620,7 +7687,7 @@ document.addEventListener('visibilitychange',()=>{if(!$('#studio'))return;if(doc
    board notes, the bench tray and the journal from a light version, so taps keep their target, the board keeps
    its scroll, the cat keeps walking, and nothing heavy is parsed or re-styled. */
 viewSet=function(v,h){const want=cur.p==='today'&&studioOn(),R=document.documentElement;
- if(!want){v.innerHTML=h;R.classList.remove('stu-on');return}
+ if(!want){vPut(v,h);R.classList.remove('stu-on');return}
  let host=document.getElementById('stuHost'),vin=document.getElementById('vin');
  if(!host||!vin||host.parentNode!==v){v.innerHTML='<div id="stuHost"></div><div id="vin"></div>';host=v.firstElementChild;vin=v.lastElementChild}
  const narrow=innerWidth<640,sc=host.firstElementChild;
@@ -7629,7 +7696,7 @@ viewSet=function(v,h){const want=cur.p==='today'&&studioOn(),R=document.document
   const ns=sc.querySelector('.st-notes'),sy=ns?ns.scrollTop:0;
   ['.st-hello','.st-notes','.st-tray','.st-book'].forEach(q=>{const o=sc.querySelector(q),n=t.querySelector(q);if(o&&n&&o.innerHTML!==n.innerHTML)o.innerHTML=n.innerHTML});
   if(ns)ns.scrollTop=sy}
- vin.innerHTML=h;R.classList.add('stu-on')};
+ vPut(vin,h);R.classList.add('stu-on')};
 {const _r=render;render=function(a){_r(a);studioMount()}}
 const _vToday=vToday;vToday=function(){let o=_vToday();const on=studioOn(),i=o.indexOf('<header class="ph">');if(i<0)return o;
  const j=o.indexOf('<div class="ph-r">',i);if(j>0)o=o.slice(0,j+18)+`<button class="ibtn${on?' on':''}" data-act="homeStyle" data-k="${on?'classic':'studio'}" aria-label="${on?'Switch to the classic cards view':'Switch to the Studio room'}" title="${on?'Classic cards view':'Studio room'}">${ic(on?'cards':'room')}</button>`+o.slice(j+18);
@@ -7745,7 +7812,7 @@ ACT.thrGrid=()=>{S.settings.layout.thr='grid';save();render(false)};
 let THF='open';
 function vThreads(){const all=threads().slice().sort((a,b)=>thrLast(b)-thrLast(a)),open=all.filter(t=>t.status!=='done'),L=THF==='done'?all.filter(t=>t.status==='done'):THF==='all'?all:open;
  const head=`<header class="ph"><div><h1>Journal</h1></div><div class="ph-r"><button class="btn pri" data-act="thrNew" aria-label="New note">${ic('plus')}<span>New note</span></button>${gear()}</div></header>`;
- const chips=all.length?`<div class="jchips rv">${segHTML('thf','thrFilt',[['open',`Active · ${open.length}`],['done','Done'],['all','All']],THF)}<button class="chip thr-sel" data-act="smStart" data-k="thread" aria-label="Select notes to delete">${ic('check')}<span>Select</span></button></div>`:'';
+ const chips=all.length?`<div class="jchips rv">${segHTML('thf','thrFilt',[['open',`Active · ${open.length}`],['done','Done'],['all','All']],THF)}<button class="chip thr-sel" data-act="smStart" data-k="note" aria-label="Select notes to delete">${ic('check')}<span>Select</span></button></div>`:'';
  const H0=S.settings.layout.journal==='h';
  const LV=S.settings.layout.journal==='list';
  /* list view: one compact row per note, latest update clipped to two lines with "more" */
@@ -7943,11 +8010,12 @@ Object.assign(FORM,{dySlip:f=>{const h=H(f.dataset.id);if(!h)return;const[hh,mm]
 /* page titles shrink to fit next to the buttons instead of breaking words */
 /* Page titles never break inside a word: shrink to fit; if the title would get too small beside the action
    buttons, the buttons move to their own row above it (large-title layout) and the title gets the full width. */
-function fitH1(){document.querySelectorAll('#view .ph h1').forEach(h=>{const ph=h.closest('.ph');if(ph)ph.classList.remove('ph-stack');h.style.fontSize='';if(!h.offsetParent)return;h.style.overflowWrap='normal';
+/* a title kept by a redraw (vMorph) was already fitted at this width and text size: measuring it again cost several layouts per tap */
+function fitH1(force){const K=innerWidth+'|'+S.settings.tsz+'|'+JSON.stringify(S.settings.font||'');document.querySelectorAll('#view .ph h1').forEach(h=>{const k=K+h.textContent;if(!force&&h._fk===k)return;h._fk=k;const ph=h.closest('.ph');if(ph)ph.classList.remove('ph-stack');h.style.fontSize='';if(!h.offsetParent)return;h.style.overflowWrap='normal';
  const fit=min=>{let s=parseFloat(getComputedStyle(h).fontSize);if(h.scrollWidth<=h.clientWidth+1)return true;let lo=min,hi=s;for(let n=0;n<6;n++){const m=(lo+hi)/2;h.style.fontSize=m+'px';if(h.scrollWidth>h.clientWidth+1)hi=m;else lo=m}h.style.fontSize=Math.floor(lo)+'px';return h.scrollWidth<=h.clientWidth+1};
  if(!fit(30)&&ph&&ph.querySelector(':scope>.ph-r')){h.style.fontSize='';ph.classList.add('ph-stack');fit(22)}h.style.overflowWrap=''})}
-if(document.fonts)document.fonts.ready.then(()=>{try{fitH1()}catch(e){}});
-{const _r=render;render=function(a){_r(a);fitH1()}}addEventListener('resize',()=>fitH1(),{passive:true});
+if(document.fonts)document.fonts.ready.then(()=>{try{fitH1(1)}catch(e){}});
+{const _r=render;render=function(a){_r(a);fitH1()}}addEventListener('resize',()=>fitH1(1),{passive:true});
 {const _nh=nhist;nhist=function(k){let r;try{r=_nh(k)}catch(e){r=[]}return Array.isArray(r)?r:[]}}
 /* card titles shrink to fit their card (long words, long titles) instead of spilling over the edge */
 function fitCards(root){(root||document).querySelectorAll('#view .fc-t, #view .sc-t, #view .jb-big, #view .jt-big').forEach(el=>{const face=el.closest('.fc-face,.sc-face,.jb,.jf-face');if(!face||!face.offsetParent)return;el.style.removeProperty('font-size');el.style.overflowWrap='normal';
@@ -8314,7 +8382,8 @@ lookApply();
    Settings > Look & feel > Animations can switch back to the expressive style. */
 const NAV_TOP=new Set(['today','habits','cal','goals','road','map','vista','journal','threads','ask','settings','activity']);
 function animRich(){return S.settings.anim==='rich'}
-function navFast(p){return !animRich()&&NAV_TOP.has(p)&&NAV_TOP.has(cur.p)}
+/* 1.77.0: Snappy opens every page at once. A view transition waits a frame, photographs both pages and ignores taps while it plays; Expressive keeps them */
+function navFast(p){return !animRich()}
 {const _rv=reveal;reveal=function(anim){_rv(anim);if(animRich()||!anim)return;const H=innerHeight;document.querySelectorAll('#view .rv:not(.in)').forEach(e=>{if(e.getBoundingClientRect().top<H){e.style.transitionDelay='0ms';e.classList.add('in')}})}}
 function animApply(){document.documentElement.dataset.anim=animRich()?'rich':'snappy'}
 {const _at=applyTheme;applyTheme=function(a){_at(a);animApply()}}animApply();
@@ -8356,7 +8425,7 @@ function scrollBack(L){if(!L.length)return;const v=$('#view'),cnt={},want={};L.f
 function settle(){const v=$('#view');if(!v||!v.getAnimations)return;try{v.getAnimations({subtree:true}).forEach(a=>{const t=a.effect&&a.effect.getTiming&&a.effect.getTiming();if(t&&t.iterations!==Infinity)a.finish()})}catch(e){}}
 let RN=0,INR=0;
 {const _r=render;render=function(a){const key=cur.p+'/'+(cur.id||'');const same=key===LASTR&&booted;LASTR=key;RN++;INR++;
- try{if(same){const sn=scrollSnap();_r(false);document.querySelectorAll('#view .rv:not(.in)').forEach(e=>{e.style.transitionDelay='';e.classList.add('in')});scrollBack(sn);settle()}else _r(a)}finally{INR--}
+ try{if(same){const sn=scrollSnap();MORPH=1;try{_r(false)}finally{MORPH=0}document.querySelectorAll('#view .rv:not(.in)').forEach(e=>{e.style.transitionDelay='';e.classList.add('in')});scrollBack(sn);settle()}else _r(a)}finally{INR--}
  tabMark()}}
 /* any saved change shows right away, even where a handler forgot to repaint */
 {const _s=save;save=function(){_s.apply(this,arguments);if(INR||TOURING)return;const n=RN;setTimeout(()=>{if(RN!==n||INR)return;const ae=document.activeElement;if(ae&&ae.closest&&ae.closest('#view')&&/INPUT|TEXTAREA|SELECT/.test(ae.tagName))return;if(cur.p==='map'||PTR||DR||CDR||PZ)return;if(document.querySelector('.lock'))return;try{render(false)}catch(e){}},30)}}
@@ -8621,6 +8690,7 @@ function homeOrder(html){const t=document.createElement('template');t.innerHTML=
  const L=N.map((n,i)=>({n,i,k:homeKey(n)})).filter(x=>HOME_FIXED.includes(x.k)||!C.off.includes(x.k)).map(x=>({...x,r:x.k==='head'?-2:x.k==='demo'||x.k==='share'?-1:C.order.indexOf(x.k)}));L.sort((a,b)=>a.r-b.r||a.i-b.i);
  const hid=C.off.filter(k=>HOME_NAME[k]).length;
  return L.map(x=>x.n.outerHTML).join('')+`<div class="hcust rv"><button class="link" data-act="homeCust">${ic('tune')}Customize Home${hid?` · ${hid} hidden`:''}</button></div>`}
+{const _ho=homeOrder;let K='',O='';homeOrder=function(html){const k=html+'\u0001'+JSON.stringify(homeCfg());if(k===K)return O;O=_ho(html);K=k;return O}}
 function homeCustHTML(){pinSync();const C=homeCfg(),ks=C.order.filter(k=>HOME_NAME[k]);
  return`<div class="data">Home</div><h2 style="margin-top:6px">Customize Home</h2><p class="small muted">Pick what Home shows and in what order. To add a section from any page, tap the pin next to its heading. Saved on this device only.</p><div class="hc-l">${ks.map((k,i)=>`<div class="hc-r${C.off.includes(k)?' off':''}"><label class="sw hc-sw"><input type="checkbox" data-hc="${k}" ${C.off.includes(k)?'':'checked'} aria-label="Show ${HOME_NAME[k][0]}"><i></i></label><span><b>${HOME_NAME[k][0]}</b><small>${HOME_NAME[k][1]}</small></span><button class="ibtn sm" data-act="homeMv" data-k="${k}" data-d="-1" aria-label="Move ${HOME_NAME[k][0]} up" ${i?'':'disabled'}>${ic('up')}</button><button class="ibtn sm" data-act="homeMv" data-k="${k}" data-d="1" aria-label="Move ${HOME_NAME[k][0]} down" ${i<ks.length-1?'':'disabled'}>${ic('down')}</button>${k.startsWith('pin:')?`<button class="ibtn sm" data-act="homeUnpin" data-k="${k}" aria-label="Remove ${HOME_NAME[k][0]} from Home">${ic('trash')}</button>`:''}</div>`).join('')}</div>
  <div class="actions"><button class="btn ghost" data-act="homeReset">Reset</button><button class="btn pri" data-act="close">Done</button></div>`}

@@ -131,11 +131,12 @@ function deckHTML(){const nx=active().map(g=>({g,s:nextStep(g)})).filter(x=>x.s)
  return`<div class="now udk" style="--n:${n}"><div class="udk-t" tabindex="0" aria-roledescription="carousel" aria-label="Up next. Swipe for more">${nx.map(({g,s},i)=>deckCard(g,s,i,n)).join('')}</div>
  <div class="udk-f">${n>1?`<button class="ibtn sm udk-a" data-act="udkGo" data-d="-1" aria-label="Previous">${ic('back')}</button><div class="udk-dots">${nx.map((x,i)=>`<button class="${i===UDI?'on':''}" data-act="udkGo" data-i="${i}" aria-label="Card ${i+1} of ${n}" style="--c:${colOf(x.g)}"></button>`).join('')}</div><button class="ibtn sm udk-a" data-act="udkGo" data-d="1" aria-label="Next">${ic('next')}</button>`:''}
  <span class="udk-l"><button class="link" data-act="weekly">Weekly review</button><a class="link" href="#/goals">All goals</a></span></div></div>`}
-{const _vt=vToday;vToday=function(){const o=_vt.apply(this,arguments),t=document.createElement('template');t.innerHTML=o;const C=t.content;
+/* 1.77.0: a tap often redraws twice in a row with the same Home; the second time reuses the first result (K/O) */
+{const _vt=vToday;let K='',O='';vToday=function(){const o=_vt.apply(this,arguments),dk=deckHTML();if(o+dk===K)return O;const t=document.createElement('template');t.innerHTML=o;const C=t.content;
  const now=[...C.children].find(n=>n.querySelector(':scope>article.now'));
  const com=[...C.children].find(n=>n.tagName==='SECTION'&&((n.querySelector(':scope>.st-h h3')||{}).textContent||'').trim().toLowerCase().startsWith('coming up'));
- if(now){const d=deckHTML();if(d)now.innerHTML=d;if(com)com.remove()}else if(com){const d=deckHTML();if(d)com.innerHTML=d}
- return t.innerHTML};VIEWS.today=vToday}
+ if(now){const d=dk;if(d)now.innerHTML=d;if(com)com.remove()}else if(com){const d=dk;if(d)com.innerHTML=d}
+ K=o+dk;O=t.innerHTML;return O};VIEWS.today=vToday}
 function udkTo(t,i,smooth){const cs=t.querySelectorAll('.udk-c');if(!cs.length)return;i=Math.max(0,Math.min(cs.length-1,i));dkSet(t,i);const c=cs[i];
  t.scrollTo({left:c.offsetLeft-(t.clientWidth-c.offsetWidth)/2,behavior:smooth&&!reduced()?'smooth':'auto'})}
 function udkPaint(t){const cs=[...t.querySelectorAll('.udk-c')],mid=t.scrollLeft+t.clientWidth/2;let best=0,bd=1e9;
