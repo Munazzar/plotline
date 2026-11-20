@@ -399,6 +399,10 @@ public class Assist {
     @JavascriptInterface
     public void speechStart(String id, String engine, String voice, String lang, double rate) { Speech.start(c, id == null ? "" : id, engine == null ? "" : engine, voice == null ? "" : voice, lang == null ? "en" : lang, rate); }
     @JavascriptInterface
+    public void speechStart2(String id, String engine, String voice, String lang, double rate, double pitch) { Speech.start(c, id == null ? "" : id, engine == null ? "" : engine, voice == null ? "" : voice, lang == null ? "en" : lang, rate, pitch); }
+    @JavascriptInterface
+    public void speechTune(String id, double tempo, double pitch) { Speech.tune(id == null ? "" : id, tempo, pitch); }
+    @JavascriptInterface
     public void speechAdd(String id, String text, String json, int gapMs) { Speech.add(id == null ? "" : id, text == null ? "" : text, json == null ? "[]" : json, gapMs); }
     @JavascriptInterface
     public void speechEnd(String id) { Speech.end(id == null ? "" : id); }
