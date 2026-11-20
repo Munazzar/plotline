@@ -19,11 +19,13 @@ function wmOpen(m){if(OPEN&&OPEN!==m)wmShut(true);clearTimeout(SHUT);const p=m.q
  {const l=p.getBoundingClientRect().left;if(l<12)p.style.right=(l-12)+'px'}
  const pr=p.getBoundingClientRect(),br=b.getBoundingClientRect(),ox=br.left+br.width/2-pr.left,oy=br.top+br.height/2-pr.top,X=[...p.querySelectorAll('.wm-x')];
  p.style.setProperty('--ox',ox+'px');p.style.setProperty('--oy',oy+'px');p.style.setProperty('--n',X.length);
+ /* the open circle reaches just past the far corner, so closing shrinks the panel from the first frame, together with its items */
+ p.style.setProperty('--R',Math.ceil(Math.hypot(Math.max(ox,pr.width-ox),Math.max(oy,pr.height-oy)))+2+'px');
  /* offsets, not rects: an item's rect would include the transform it is parked with */
  X.forEach((x,i)=>{x.style.setProperty('--i',i);x.style.setProperty('--dx',Math.round(ox-x.offsetLeft-x.offsetWidth/2)+'px');x.style.setProperty('--dy',Math.round(oy-x.offsetTop-x.offsetHeight/2)+'px')});
  /* read the parked state first, or a panel that was just display:none has nothing to transition from */
  p.querySelectorAll('.wm-x,.wm-r,.wm-h>:first-child').forEach(n=>getComputedStyle(n).transform);m.classList.add('on');b.setAttribute('aria-expanded','true');OPEN=m}
-function wmShut(now){const m=OPEN;if(!m)return false;OPEN=null;clearTimeout(SHUT);m.classList.remove('on');const p=m.querySelector('.wm-p'),b=m.querySelector('.wm-b');b.setAttribute('aria-expanded','false');if(now)p.hidden=true;else SHUT=setTimeout(()=>{if(!m.classList.contains('on'))p.hidden=true},620);return true}
+function wmShut(now){const m=OPEN;if(!m)return false;OPEN=null;clearTimeout(SHUT);m.classList.remove('on');const p=m.querySelector('.wm-p'),b=m.querySelector('.wm-b');b.setAttribute('aria-expanded','false');if(now)p.hidden=true;else SHUT=setTimeout(()=>{if(!m.classList.contains('on'))p.hidden=true},400);return true}
 ACT.wmTog=(d,b)=>{const m=b.closest('.wm');if(OPEN===m)wmShut();else wmOpen(m)};
 document.addEventListener('click',e=>{if(!OPEN)return;const m=e.target.closest&&e.target.closest('.wm');if(m!==OPEN)wmShut();else if(e.target.closest('[data-wm-c]'))setTimeout(wmShut,0)},true);
 {const _b=window.__back;window.__back=function(){return wmShut()||_b.apply(this,arguments)}}
@@ -178,13 +180,13 @@ html #sheet.wc .wc-scroll>textarea{flex:1 1 0;min-height:120px}
 .wm.on .wm-b i:nth-child(2){transform:scaleX(0);opacity:0}
 .wm.on .wm-b i:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
 /* the panel opens as a circle from the button; each option travels out of the button, its icon rolling as it goes */
-.wm-p{position:absolute;top:calc(100% + 10px);right:0;width:min(350px,calc(100vw - 28px));max-height:calc(var(--vvh,100dvh) - var(--sat,0px) - 96px);overflow:hidden auto;scrollbar-width:none;padding:10px;display:flex;flex-direction:column;gap:2px;border-radius:24px;border:1px solid var(--line-2);background:var(--bg-2);box-shadow:0 30px 70px -22px rgba(0,0,0,.6);clip-path:circle(0 at var(--ox,100%) var(--oy,0));transition:clip-path .5s cubic-bezier(.55,0,.75,.2) .06s}
+.wm-p{position:absolute;top:calc(100% + 10px);right:0;width:min(350px,calc(100vw - 28px));max-height:calc(var(--vvh,100dvh) - var(--sat,0px) - 96px);overflow:hidden auto;scrollbar-width:none;padding:10px;display:flex;flex-direction:column;gap:2px;border-radius:24px;border:1px solid var(--line-2);background:var(--bg-2);box-shadow:0 30px 70px -22px rgba(0,0,0,.6);clip-path:circle(0 at var(--ox,100%) var(--oy,0));transition:clip-path .34s cubic-bezier(.4,0,.6,1)}
 .wm-p::-webkit-scrollbar{display:none}
 .wm-p[hidden]{display:none}
-.wm.on .wm-p{clip-path:circle(150vmax at var(--ox,100%) var(--oy,0));transition:clip-path .9s var(--ease)}
-.wm-x{position:relative;flex:none;opacity:0;transform:translate(var(--dx,0),var(--dy,0)) scale(.3);transition:transform .42s cubic-bezier(.5,0,.8,.3) calc((var(--n,1) - var(--i,0))*14ms),opacity .3s var(--ease) calc((var(--n,1) - var(--i,0))*14ms)}
+.wm.on .wm-p{clip-path:circle(var(--R,150vmax) at var(--ox,100%) var(--oy,0));transition:clip-path .5s var(--ease)}
+.wm-x{position:relative;flex:none;opacity:0;transform:translate(var(--dx,0),var(--dy,0)) scale(.3);transition:transform .34s cubic-bezier(.4,0,.6,1),opacity .16s linear .18s}
 .wm.on .wm-x{opacity:1;transform:none;transition:transform .78s var(--spring) calc(var(--i,0)*44ms + 70ms),opacity .36s var(--ease) calc(var(--i,0)*44ms + 70ms)}
-.wm-r{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--surface-2);transform:rotate(-320deg);transition:transform .46s cubic-bezier(.5,0,.8,.3) calc((var(--n,1) - var(--i,0))*14ms)}
+.wm-r{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--surface-2);transform:rotate(-320deg);transition:transform .34s cubic-bezier(.4,0,.6,1)}
 .wm.on .wm-r{transform:none;transition:transform .92s var(--ease) calc(var(--i,0)*44ms + 70ms)}
 .wm-r svg{width:16px;height:16px}
 .wm-i{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:6px 8px;border:0;border-radius:14px;background:none;color:var(--text);font:600 14.5px var(--f-body);text-align:left;text-decoration:none;cursor:pointer;transition:background-color .2s}
@@ -216,7 +218,7 @@ html #sheet.wc .wc-scroll>textarea{flex:1 1 0;min-height:120px}
 #view .wm-p .wm-h::after{content:attr(data-wl)}
 #view .wm-p .btn.wm-h>span{display:none}
 #view .wm-p .wm-h>svg{flex:none;width:18px;height:18px;margin:0}
-.wm-h>:first-child{transform:rotate(-320deg);transition:transform .46s cubic-bezier(.5,0,.8,.3) calc((var(--n,1) - var(--i,0))*14ms)}
+.wm-h>:first-child{transform:rotate(-320deg);transition:transform .34s cubic-bezier(.4,0,.6,1)}
 .wm.on .wm-h>:first-child{transform:none;transition:transform .92s var(--ease) calc(var(--i,0)*44ms + 70ms)}
 @media(max-width:820px){#view .wm-x:has(>[data-act=focusMode]){display:none}}
 @media(prefers-reduced-motion:reduce){#sheet.wc.on{animation:none}.wm-b,.wm-b i,.wm-p,.wm.on .wm-p,.wm-x,.wm.on .wm-x,.wm-r,.wm.on .wm-r,.wm-h>:first-child,.wm.on .wm-h>:first-child{transition-duration:.01s!important;transition-delay:0s!important}}
