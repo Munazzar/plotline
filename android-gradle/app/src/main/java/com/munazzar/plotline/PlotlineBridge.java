@@ -368,7 +368,7 @@ public class PlotlineBridge {
     @JavascriptInterface public void llmDelete(String file) {}
     @JavascriptInterface public void setReplyModel(String file) {}
     @JavascriptInterface public void setScopes(String scopes) { prefs.edit().putString("scopes", scopes).apply(); }
-    @JavascriptInterface public void googleToken(String id, boolean interactive) { evalJs("window.__gtok && window.__gtok(" + JSONObject.quote(id) + ",'','Use browser sign-in in Gradle preview')"); }
+    @JavascriptInterface public void googleToken(boolean interactive) { evalJs("window.__gauth && window.__gauth({err:'use_browser'})"); }
     @JavascriptInterface public void googleSignOut() {}
     @JavascriptInterface public void invalidateToken(String tok) {}
     @JavascriptInterface public void liveShare(String json) {}

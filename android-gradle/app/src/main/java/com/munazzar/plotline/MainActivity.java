@@ -31,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
     private PlotlineBridge bridge;
     private ValueCallback<Uri[]> fileCallback;
     private String pendingPermId = "";
+    private String pendingAuthJson = null;
+    private boolean pageReady = false;
     private int satPx = 0, sabPx = 0;
 
     private final ActivityResultLauncher<Intent> filePicker =
@@ -95,7 +97,13 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                pageReady = true;
                 injectSafeArea();
+                if (pendingAuthJson != null) {
+                    String json = pendingAuthJson;
+                    pendingAuthJson = null;
+                    deliverAuth(json);
+                }
             }
         });
 
@@ -186,8 +194,36 @@ public class MainActivity extends AppCompatActivity {
     private void handleAuthIntent(Intent intent) {
         if (intent == null || intent.getData() == null) return;
         Uri u = intent.getData();
-        if ("plotline".equals(u.getScheme()) && "auth".equals(u.getHost()) && u.getFragment() != null) {
-            web.loadUrl(APP_ORIGIN + "/index.html#" + u.getFragment());
+        if ("plotline".equals(u.getScheme()) && "auth".equals(u.getHost())) {
+            String raw = u.getFragment();
+            if (raw == null || raw.isEmpty()) raw = u.getQuery();
+            if (raw == null || raw.isEmpty()) return;
+            try {
+                Uri parsed = Uri.parse("https://local/?" + raw);
+                String tok = parsed.getQueryParameter("access_token");
+                String expStr = parsed.getQueryParameter("expires_in");
+                String err = parsed.getQueryParameter("error");
+                JSONObject o = new JSONObject();
+                if (tok != null && !tok.isEmpty()) {
+                    o.put("token", tok);
+                    int exp = 3600;
+                    try { if (expStr != null) exp = Integer.parseInt(expStr); } catch (Exception ignored) {}
+                    o.put("exp", exp);
+                    o.put("native", false);
+                } else {
+                    o.put("err", (err != null && !err.isEmpty()) ? err : "Sign-in cancelled");
+                }
+                deliverAuth(o.toString());
+            } catch (Exception ignored) {
+            }
         }
+    }
+
+    private void deliverAuth(String json) {
+        if (web == null || !pageReady) {
+            pendingAuthJson = json;
+            return;
+        }
+        web.post(() -> web.evaluateJavascript("window.__gauth && window.__gauth(" + JSONObject.quote(json) + ")", null));
     }
 }
