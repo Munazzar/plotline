@@ -30,8 +30,8 @@ android {
         applicationId 'com.munazzar.plotline'
         minSdk 29
         targetSdk 34
-        versionCode 204
-        versionName '1.78.5-gradle.3'
+        versionCode 205
+        versionName '1.78.5-gradle.4'
     }
 
     flavorDimensions 'dist'
@@ -56,13 +56,27 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            def ks = System.getenv('PLOTLINE_KEYSTORE')
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('PLOTLINE_STORE_PASS') ?: ''
+                keyAlias System.getenv('PLOTLINE_KEY_ALIAS') ?: 'upload'
+                keyPassword System.getenv('PLOTLINE_KEY_PASS') ?: (System.getenv('PLOTLINE_STORE_PASS') ?: '')
+            }
+        }
+    }
+
     buildTypes {
         debug {
             debuggable true
         }
         release {
-            minifyEnabled false
-            signingConfig signingConfigs.debug
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig System.getenv('PLOTLINE_KEYSTORE') ? signingConfigs.release : signingConfigs.debug
         }
     }
 

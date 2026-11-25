@@ -34,7 +34,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                 context, nid, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder b = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                .setSmallIcon(R.drawable.ic_notif)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setAutoCancel(true)
