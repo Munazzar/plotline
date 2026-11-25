@@ -3611,7 +3611,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.78.4';
+const APP_VER='1.78.5';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -4503,7 +4503,28 @@ function setSecs(){const st=S.settings;const np=('Notification'in window)?Notifi
  {k:'auto',t:'Automations',ic:'flame',sub:()=>autoSub(),html:()=>autoHTML()},
  {k:'share',t:'Sharing',ic:'habit',sub:()=>shareSub(),html:()=>shareHTML()},
  {k:'voice',t:'AI & voice',ic:'ai',sub:()=>voiceSub(),html:()=>voiceHTML()},
+ {k:'features',t:'Features & customization',ic:'tune',sub:()=>'Every feature active · quick setup & shortcuts',html:()=>featuresHubHTML()},
  {k:'data',t:'Your data',ic:'archive',sub:()=>'Backup, import, sample data',html:()=>` <section class="panel rv"><h3>Your data</h3><p class="small muted">Everything is stored on this device, and in your own Google Drive when sync is on. Without sync, export a backup before switching devices or browsers.</p><div class="actions left">${demoCount()?`<button class="btn" data-act="demoRemove">${ic('trash')}Remove sample data</button>`:''}<button class="btn" data-act="exportData">Export backup</button><label class="btn">Import backup<input type="file" accept="application/json,.json" data-file="backup" hidden></label><label class="btn">Import MQC journal<input type="file" accept="application/json,.json" data-file="mqc" hidden></label><button class="btn danger" data-act="wipe">Erase everything</button></div></section> <section class="panel rv"><h3>App log</h3><p class="small muted">Errors, failed connections and page moves from the last while, kept on this device to find what went wrong. It holds no notes, journal or chat text. Download it to send with a bug report.</p><div class="actions left"><button class="btn" data-act="logDl">${ic('down')}Download app log</button><button class="btn" data-act="logClear">Clear log</button></div></section>`}]}
+function featuresHubHTML(){const st=S.settings,s=insSet(),aiOk=s.engine==='local'||(s.engine==='api'&&!!s.url&&(!isFreeCloudUrl(s.url)||!!aiKey())),notifOk=NATIVE?(NATIVE.notificationsGranted&&NATIVE.notificationsGranted()):('Notification'in window&&Notification.permission==='granted');
+ const groups=[
+  ['Core planner',[
+   ['Home & Today','Customize cards, order, themes & pins','Active','#/today','Customize Home','homeCust'],
+   ['Habits & routines','Daily check-offs, streaks, quit trackers & timers','Active','#/habits'],
+   ['Calendar & Timeline','Day grid, week, month, road & life map','Active','#/cal'],
+   ['Goals & steps','Milestones, sub-goals, links & flip cards','Active','#/goals'],
+   ['Lists & Bills','Checklists, photo-to-list & receipt OCR','Active','#/lists']]],
+  ['AI, Voice & Automation',[
+   ['AI Assistant & Live voice',aiOk?askEngineLabel():'Pick a free cloud or on-device AI',aiOk?'Active':'Set up','#/settings/voice'],
+   ['Agent & background tasks','Scheduled briefs, Calendar, Gmail, Drive & Notion','Active','#/agent'],
+   ['AI Canvas & Workbench','Build mini-apps on your pages & visual boards','Active','#/canvas'],
+   ['Picture of me & Conversations','AI life profile & saved chat history','Active','#/me']]],
+  ['Capture, Focus & Sync',[
+   ['Journal, Book & Notes','Full-screen writer, paper book & quick notes','Active','#/journal'],
+   ['App Blocks & Screen time','Focus sessions, app limits & hourly breakdown','Active','#/blocks'],
+   ['Google Drive sync',syncOn()?'Syncing across devices':'Optional private Drive sync',syncOn()?'Active':'Set up','#/settings/account'],
+   ['Reminders & notifications',notifOk?'Allowed':'Allow for on-time reminders',notifOk?'Active':'Set up','#/settings/notif']]]];
+ return`<section class="panel wide rv"><h3>All features</h3><p class="small muted">Every feature in Plotlines stays active by default. Open any area below, or tap Customize Home / Bottom bar to arrange your workspace.</p><div class="actions left" style="margin:10px 0 0"><button class="btn sm" data-act="homeCust">${ic('tune')}Customize Home</button><button class="btn sm" data-act="navMore">${ic('pin')}Customize bottom bar</button><a class="btn sm" href="#/settings/look">${ic('tune')}Themes &amp; fonts</a></div></section>`
+  +groups.map(([g,rows])=>`<section class="panel wide rv"><h3>${esc(g)}</h3><div style="display:grid;gap:8px;margin-top:8px">${rows.map(([t,d,stx,href,actLbl,act])=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--text) 5%,transparent)"><div style="flex:1;min-width:0"><div style="font:600 14px var(--f-body)">${esc(t)} <span class="kk-tag" style="margin-left:6px;${stx==='Active'?'':'opacity:.85'}">${esc(stx)}</span></div><div class="small muted">${esc(d)}</div></div>${act?`<button class="btn sm" data-act="${act}">${esc(actLbl)}</button>`:`<a class="btn sm" href="${href}">${stx==='Set up'?'Set up':'Open'}</a>`}</div>`).join('')}</div></section>`).join('')}
 function vSettings(id){const S2=setSecs(),sec=S2.find(x=>x.k===id);
  if(!sec)return`<header class="ph"><div><h1>Settings</h1><div class="data">With sync on, these follow you to your other devices. Looks, lock and notifications stay on each device</div></div></header><nav class="shub rv">${S2.map(x=>`<a class="shub-r${x.warn&&x.warn()?' warn':''}" href="#/settings/${x.k}"><span class="shub-i">${ic(x.ic)}</span><span class="shub-t"><b>${x.t}</b><small>${esc(x.sub())}</small></span>${ic('next','ico-s')}</a>`).join('')}</nav><div class="shub-f2"><div class="shub-fl"><a href="#/howto">How-to guides</a><button data-act="setupOpen">Guided setup</button><button data-act="tourGo">Take the tour</button><a href="${NATIVE?esc(cfg().webUrl||PLOTLINE_CFG.webUrl)+'privacy.html':'privacy.html'}" target="_blank" rel="noopener">Privacy policy</a></div><p class="data">Plotlines ${APP_VER}</p></div>`;
  return`<div class="crumb"><a href="#/settings" class="ibtn" data-act="navBack" aria-label="Back">${ic('back')}</a></div><header class="ph" style="margin-top:4px"><div><h1>${sec.t}</h1><div class="data">${esc(sec.sub())}</div></div></header><div class="set">${sec.html()}</div>`}
@@ -5622,8 +5643,15 @@ try{if(localStorage.getItem('plotline.mini')==='1')LLMS.push(MINI);const c=+loca
 const GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/openai';
 const GEMINI_FALLBACK=[['gemini-2.5-flash','Gemini 2.5 Flash','free'],['gemini-2.5-flash-lite','Gemini 2.5 Flash-Lite','free'],['gemini-2.0-flash','Gemini 2.0 Flash','free'],['gemma-3-27b-it','Gemma 3 27B','free']];
 const isGeminiUrl=u=>/(^|\/\/)generativelanguage\.googleapis\.com/i.test(u||'');
-window.isGeminiUrl=isGeminiUrl;
-const API_PRE=[['Gemini (Free)',GEMINI_URL,'gemini-2.5-flash'],['Ollama','http://localhost:11434/v1','llama3.2'],['LM Studio','http://localhost:1234/v1','local-model'],['OpenRouter','https://openrouter.ai/api/v1','meta-llama/llama-3.3-70b-instruct']];
+const FREE_PROVS=[
+ {match:/api\.groq\.com/i,name:'Groq',keyUrl:'https://console.groq.com/keys',note:'Ultra-fast free tier (no credit card). Great fallback if Gemini is busy.'},
+ {match:/openrouter\.ai/i,name:'OpenRouter',keyUrl:'https://openrouter.ai/keys',note:'Free community models via openrouter/free (no credit card).'},
+ {match:/api\.cerebras\.ai/i,name:'Cerebras',keyUrl:'https://cloud.cerebras.ai/',note:'Instant-speed free tier inference (no credit card).'}
+];
+const freeProvOf=u=>FREE_PROVS.find(p=>p.match.test(u||''))||null;
+const isFreeCloudUrl=u=>isGeminiUrl(u)||!!freeProvOf(u);
+window.isGeminiUrl=isGeminiUrl;window.isFreeCloudUrl=isFreeCloudUrl;
+const API_PRE=[['Gemini (Free)',GEMINI_URL,'gemini-2.5-flash'],['Groq (Free)','https://api.groq.com/openai/v1','llama-3.3-70b-versatile'],['OpenRouter (Free)','https://openrouter.ai/api/v1','openrouter/free'],['Cerebras (Free)','https://api.cerebras.ai/v1','llama-3.3-70b'],['Ollama (Local)','http://localhost:11434/v1','llama3.2'],['LM Studio (Local)','http://localhost:1234/v1','local-model']];
 /* Google Gemini live model discovery + per-model Pacific-Time usage tracker (1.78.4) */
 let GEM_ST={busy:false,err:'',t:0,keyH:'',list:[]};
 try{const c=JSON.parse(localStorage.getItem('plotline.gemModels')||'null');if(c&&Array.isArray(c.list))Object.assign(GEM_ST,c,{busy:false,err:''})}catch(e){}
@@ -5843,20 +5871,33 @@ function gemPrepMsgs(msgs,model){if(!/^gemma/i.test(model||''))return msgs;const
  msgs.forEach(m=>{if(m.role==='system')sys.push(typeof m.content==='string'?m.content:'');else out.push({...m})});
  if(sys.length){const pre=sys.filter(Boolean).join('\n\n')+'\n\n';const u=out.find(m=>m.role==='user');if(u){if(typeof u.content==='string')u.content=pre+u.content;else if(Array.isArray(u.content))u.content=[{type:'text',text:pre},...u.content]}else out.unshift({role:'user',content:pre})}
  return out}
-async function apiChat(msgs,onTok,signal,opts={}){const s=insSet(),key=aiKey(),gem=isGeminiUrl(s.url),isGemma=gem&&/^gemma/i.test(s.model||'');if(!s.url)throw new Error('Add your AI server address first');
+let GEM_ALT_T=0;
+function gemNextAlt(curM,tried){const pool=(GEM_ST.list.length?GEM_ST.list:GEMINI_FALLBACK).filter(x=>x[2]!=='pro').map(x=>x[0]);
+ for(const id of pool)if(id!==curM&&!tried.includes(id))return id;return null}
+async function apiChat(msgs,onTok,signal,opts={}){const s=insSet(),key=aiKey(),gem=isGeminiUrl(s.url),curM=opts._model||s.model,isGemma=gem&&/^gemma/i.test(curM||'');if(!s.url)throw new Error('Add your AI server address first');
  if(gem&&!key)throw new Error('Add your free Google Gemini API key first (Settings › AI & voice)');
- if(gem&&!opts._again)gemRecReq(s.model);
- const sendMsgs=th=>gem?gemPrepMsgs(msgs,s.model):(th?thinkMsgs(msgs,s,opts):msgs);
- const call=(th,noFmt)=>fetch(s.url.replace(/\/+$/,'')+'/chat/completions',{method:'POST',signal,headers:{'Content-Type':'application/json',...(key?{Authorization:'Bearer '+key}:{})},body:JSON.stringify({model:s.model,messages:sendMsgs(th),stream:true,...(gem?{stream_options:{include_usage:true}}:{}),temperature:opts.temperature??.4,...(opts.max_tokens?{max_tokens:opts.max_tokens}:{}),...(opts.schema&&!isGemma&&!noFmt?{response_format:{type:'json_object'}}:{}),...(th||{})})});
- const th=thinkOpts(s,opts);let r=await call(th,false);
- if(th&&(r.status===400||r.status===422)){THINK_BAD.add(thinkKey(s));if(!gem)try{toast('Your AI server doesn’t accept the thinking switch, so it uses the model’s default')}catch(e){}r=await call(null,false)}
+ if(gem&&!opts._again&&!opts._r503)gemRecReq(curM);
+ const sendMsgs=th=>gem?gemPrepMsgs(msgs,curM):(th?thinkMsgs(msgs,s,opts):msgs);
+ const sEff={...s,model:curM};
+ const call=(th,noFmt)=>fetch(s.url.replace(/\/+$/,'')+'/chat/completions',{method:'POST',signal,headers:{'Content-Type':'application/json',...(key?{Authorization:'Bearer '+key}:{})},body:JSON.stringify({model:curM,messages:sendMsgs(th),stream:true,...(gem?{stream_options:{include_usage:true}}:{}),temperature:opts.temperature??.4,...(opts.max_tokens?{max_tokens:opts.max_tokens}:{}),...(opts.schema&&!isGemma&&!noFmt?{response_format:{type:'json_object'}}:{}),...(th||{})})});
+ const th=thinkOpts(sEff,opts);let r=await call(th,false);
+ if(th&&(r.status===400||r.status===422)){THINK_BAD.add(thinkKey(sEff));if(!gem)try{toast('Your AI server doesn’t accept the thinking switch, so it uses the model’s default')}catch(e){}r=await call(null,false)}
  if(gem&&opts.schema&&!isGemma&&(r.status===400||r.status===422))r=await call(null,true);
- if(!r.ok){if(gem){if(r.status===429){gemRec429(s.model);throw new Error(`Gemini free-tier rate limit reached for ${s.model}. Wait a moment or pick another model in Settings › AI & voice.`)}if(r.status===404)throw new Error(`Model “${s.model}” isn’t available on your Gemini key. Pick another model from the dropdown in Settings › AI & voice.`);if(r.status===401||r.status===403)throw new Error('Gemini rejected the API key. Check your key from Google AI Studio.')}throw new Error(`The server said ${r.status}. ${(await r.text().catch(()=>'')).slice(0,160)}`)}
+ /* 1.78.5: Gemini 503 (overloaded) retries once after 1 s, then auto-falls back to the next free-tier Gemini model */
+ if(gem&&(r.status===503||r.status===502||r.status===504||r.status===429)){
+  if(r.status===429)gemRec429(curM);
+  if(r.status===503&&!opts._r503&&!(signal&&signal.aborted)){await new Promise(ok=>setTimeout(ok,1000));if(!(signal&&signal.aborted))return apiChat(msgs,onTok,signal,{...opts,_model:curM,_r503:1})}
+  const tried=[...(opts._tried||[]),curM];
+  if(tried.length<3&&!(signal&&signal.aborted)){const alt=gemNextAlt(curM,tried);
+   if(alt){if(Date.now()-GEM_ALT_T>6e4){GEM_ALT_T=Date.now();try{toast(`${curM} is busy (${r.status}), using ${alt}`)}catch(e){}}
+    return apiChat(msgs,onTok,signal,{...opts,_model:alt,_tried:tried,_r503:0})}}
+ }
+ if(!r.ok){if(gem){if(r.status===503||r.status===502||r.status===504)throw new Error('Google Gemini free tier is temporarily overloaded (503). Try again in a moment, or switch to Groq (Free), OpenRouter (Free) or On-device AI in Settings › AI & voice.');if(r.status===429){gemRec429(curM);throw new Error(`Gemini free-tier rate limit reached for ${curM}. Wait a moment or pick another model in Settings › AI & voice.`)}if(r.status===404)throw new Error(`Model “${curM}” isn’t available on your Gemini key. Pick another model from the dropdown in Settings › AI & voice.`);if(r.status===401||r.status===403)throw new Error('Gemini rejected the API key. Check your key from Google AI Studio.')}throw new Error(`The server said ${r.status}. ${(await r.text().catch(()=>'')).slice(0,160)}`)}
  /* 2026-11-04: a reply that spent its whole token limit thinking and wrote no answer is asked again once with thinking off */
- let said=false,thought=false;const again=()=>!said&&(thought||gem)&&!opts._again&&!(signal&&signal.aborted)?apiChat(msgs,onTok,signal,{...opts,think:'off',max_tokens:opts.max_tokens?Math.max(opts.max_tokens,1024):undefined,_again:1}):undefined;
- if(!r.body||!(r.headers.get('content-type')||'').includes('event-stream')){const j=await r.json(),m=j.choices?.[0]?.message||{};if(gem&&j.usage&&j.usage.total_tokens)gemRecTok(s.model,j.usage.total_tokens);if(m.content){said=true;onTok(m.content)}else thought=!!(m.reasoning_content||m.reasoning);return again()}
+ let said=false,thought=false;const again=()=>!said&&(thought||gem)&&!opts._again&&!(signal&&signal.aborted)?apiChat(msgs,onTok,signal,{...opts,_model:curM,think:'off',max_tokens:opts.max_tokens?Math.max(opts.max_tokens,1024):undefined,_again:1}):undefined;
+ if(!r.body||!(r.headers.get('content-type')||'').includes('event-stream')){const j=await r.json(),m=j.choices?.[0]?.message||{};if(gem&&j.usage&&j.usage.total_tokens)gemRecTok(curM,j.usage.total_tokens);if(m.content){said=true;onTok(m.content)}else thought=!!(m.reasoning_content||m.reasoning);return again()}
  const rd=r.body.getReader(),dec=new TextDecoder();let buf='';rd:for(;;){const{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
-  while((i=buf.indexOf('\n'))>=0){const ln=buf.slice(0,i).trim();buf=buf.slice(i+1);if(!ln.startsWith('data:'))continue;const d=ln.slice(5).trim();if(d==='[DONE]')break rd;try{const pj=JSON.parse(d);if(gem&&pj.usage&&pj.usage.total_tokens)gemRecTok(s.model,pj.usage.total_tokens);const dl=pj.choices?.[0]?.delta||{},t=dl.content;if(t){said=true;onTok(t)}else if(dl.reasoning_content||dl.reasoning){thought=true;if(opts.onThink)opts.onThink(dl.reasoning_content||dl.reasoning)}}catch(e){}}}
+  while((i=buf.indexOf('\n'))>=0){const ln=buf.slice(0,i).trim();buf=buf.slice(i+1);if(!ln.startsWith('data:'))continue;const d=ln.slice(5).trim();if(d==='[DONE]')break rd;try{const pj=JSON.parse(d);if(gem&&pj.usage&&pj.usage.total_tokens)gemRecTok(curM,pj.usage.total_tokens);const dl=pj.choices?.[0]?.delta||{},t=dl.content;if(t){said=true;onTok(t)}else if(dl.reasoning_content||dl.reasoning){thought=true;if(opts.onThink)opts.onThink(dl.reasoning_content||dl.reasoning)}}catch(e){}}}
  return again()}
 /* 1.63.4: your AI server, with the downloaded on-device model behind it. When the server can't be reached or errors before
    saying anything, the same request goes to the model on this device, with a quiet note (at most once a minute). Every
@@ -5993,7 +6034,7 @@ const INS_PRE=[{k:'week',n:'Weekly reflection',d:'What went well, what slipped',
 const INS_WIN=[[7,'7 days'],[30,'30 days'],[90,'90 days'],[0,'All time']];
 const ENG_N={local:'On this device',api:'Your AI server',copy:'Copy to any AI'};
 const insPage=()=>cur.p==='ask';
-function askEngineLabel(){const s=insSet();if(s.engine==='local')return llmOf(s.llm)[1].split(' · ')[0]+(NAT_OK()?' · on this phone':' · on this device');if(s.engine==='api')return(isGeminiUrl(s.url)?'Gemini':'Your AI server')+(s.model?' · '+s.model:'');return'Prompt to copy into any AI'}
+function askEngineLabel(){const s=insSet();if(s.engine==='local')return llmOf(s.llm)[1].split(' · ')[0]+(NAT_OK()?' · on this phone':' · on this device');if(s.engine==='api'){const fp=freeProvOf(s.url);return(isGeminiUrl(s.url)?'Gemini':fp?fp.name:'Your AI server')+(s.model?' · '+s.model:'')}return'Prompt to copy into any AI'}
 /* questions written from the plan itself */
 function askIdeas(){const out=[],td=ymd();
  const stale=S.goals.filter(g=>g.status==='active'&&g.steps.some(x=>!x.done)&&Math.max(g.createdAt||0,...g.steps.map(x=>x.doneAt||0))<Date.now()-21*864e5)[0];if(stale)out.push(`Why have I stalled on “${trunc(stale.title,40)}”?`);
@@ -6064,20 +6105,24 @@ function geminiBoxHTML(){const s=insSet();if(!isGeminiUrl(s.url))return'';
   </div>
   <p class="small muted" style="margin:0">Free-tier prompts use Google AI Studio’s unpaid terms (Google may use them to improve its models; adding billing switches to private terms).</p></div>`}
 window.geminiBoxHTML=geminiBoxHTML;
-function insEngineHTML(){const s=insSet(),gem=isGeminiUrl(s.url);return`<div class="ins-eng" id="askSet">
+function freeProvBoxHTML(){const s=insSet(),fp=freeProvOf(s.url);if(!fp)return'';const key=aiKey();
+ return`<div class="mm" style="margin:10px 0 12px"><div class="mm-h"><span class="mm-ic">${ic('ai')}</span><span class="mm-t"><b>${esc(fp.name)} · free tier</b><small>${esc(fp.note)}</small></span></div>
+  <div class="actions left" style="margin:10px 0 0"><a class="btn sm pri" href="${fp.keyUrl}" target="_blank" rel="noopener">1. Get free key</a><button type="button" class="btn sm" data-act="insKeyPaste">${key?'2. Paste new key':'2. Paste key &amp; connect'}</button></div></div>`}
+window.freeProvBoxHTML=freeProvBoxHTML;
+function insEngineHTML(){const s=insSet(),gem=isGeminiUrl(s.url),fp=freeProvOf(s.url);return`<div class="ins-eng" id="askSet">
  <p class="small muted">Plotlines builds a short overview of your plan and finds the notes that match your question on this device. Only that goes to the engine you pick.</p>
  <div class="field"><label>Answer engine</label><div class="radios sm wrap">${Object.entries(ENG_N).map(([k,n])=>`<label><input type="radio" name="insE" data-ins="engine" value="${k}" ${s.engine===k?'checked':''}><span>${n}</span></label>`).join('')}</div></div>
  ${s.engine==='local'?`<p class="small muted">An open-source model runs ${NAT_OK()?'natively on this phone with llama.cpp':'inside '+(NATIVE?'the app':'this browser')+' with llama.cpp (wllama)'}. It downloads once, then works offline. Nothing leaves this device. Smaller models answer faster; bigger ones understand more.</p><div class="field"><label>Model</label><select data-ins="llm">${LLMS.map(([k,n])=>`<option value="${k}" ${llmOf(s.llm)[0]===k?'selected':''}>${n}${llmHere(llmOf(k))?' · downloaded':''}${isLrtM(llmOf(k))&&!NAT_OK()&&LRT_OK===false?' · needs a GPU':''}</option>`).join('')}</select></div>${isLrtM(llmOf(s.llm))?`<p class="small muted">${lrtOn()?'Gemma 4 runs on this device’s GPU with Google’s LiteRT-LM, the fastest way to run it.':'Gemma 4 runs on this phone’s CPU with llama.cpp.'}</p>${NAT_OK()&&LRT_OK?`<label class="sw"><span>Run Gemma on the GPU<small>Much faster answers with Google’s LiteRT-LM. Turn it off if answers come out garbled or the phone stutters.</small></span><input type="checkbox" data-ins="lgpu" ${s.lgpu?'checked':''}><i></i></label>`:''}`:''}${window.AIX?AIX.modelCard('set'):''}`:''}
  ${s.engine==='copy'?`<p class="small muted">You copy a ready-made prompt into Claude, ChatGPT, Gemini or any assistant. Plotlines itself sends nothing.</p>`:''}
- ${s.engine==='api'?`<p class="small muted">Use Google Gemini’s free tier in the cloud, or any OpenAI-compatible server (Ollama or LM Studio on your own computer keep everything at home). Your key stays on this device and, with sync on, in your own Drive’s hidden app folder so your other devices can use it. It’s never put in backups.</p>
+ ${s.engine==='api'?`<p class="small muted">Pick any free cloud AI (Gemini, Groq, OpenRouter, Cerebras) or your own local server (Ollama, LM Studio). Your key stays on this device and, with sync on, in your own Drive’s hidden app folder. Never put in backups.</p>
   <div class="chips" style="margin:10px 0">${API_PRE.map(([n,u,m])=>`<button class="chip ${s.url===u?'on':''}" data-act="insApiPre" data-u="${u}" data-m="${m}">${n}</button>`).join('')}</div>
-  ${geminiBoxHTML()}
+  ${geminiBoxHTML()}${freeProvBoxHTML()}
   ${gem?'':`<div class="field"><label for="insUrl">Server address</label><input id="insUrl" data-ins="url" value="${esc(s.url)}" placeholder="http://localhost:11434/v1" autocomplete="off" spellcheck="false"></div>
   <div class="field"><label for="insModel">Model</label><input id="insModel" data-ins="model" value="${esc(s.model)}" placeholder="llama3.2" autocomplete="off" spellcheck="false"></div>`}
-  <div class="field"><label for="insKey">API key <small class="muted">${gem?'(required for Gemini — free from Google AI Studio)':'(not needed for Ollama)'}</small></label><input id="insKey" data-ins="key" type="password" value="${esc(aiKey())}" autocomplete="off"></div>
+  <div class="field"><label for="insKey">API key <small class="muted">${gem?'(required for Gemini — free from Google AI Studio)':fp?`(required for ${fp.name} — free tier)`:'(not needed for Ollama)'}</small></label><input id="insKey" data-ins="key" type="password" value="${esc(aiKey())}" autocomplete="off"></div>
   <div class="field"><label>Thinking</label><div class="radios sm wrap">${[['','Model default'],['off','Off · faster'],['on','On · deeper']].map(([k,n])=>`<label><input type="radio" name="insT" data-ins="think" value="${k}" ${(s.think||'')===k?'checked':''}><span>${n}</span></label>`).join('')}</div><small class="muted">For models that think before answering (Gemini, Qwen3, DeepSeek R1 and others). Off answers much sooner; On takes longer but reasons more.</small></div>
-  ${gem?'':`<p class="small muted">For Ollama on your computer, start it with <code>OLLAMA_ORIGINS=${esc(NATIVE?'https://appassets.androidplatform.net':location.origin)}</code>. The phone app needs an https address (for example through Tailscale).</p>`}
-  <div class="actions left"><button class="btn sm" data-act="insTest">Test connection</button>${gem?`<a class="btn sm ghost" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get free API key</a>`:''}</div>`:''}
+  ${gem||fp?'':`<p class="small muted">For Ollama on your computer, start it with <code>OLLAMA_ORIGINS=${esc(NATIVE?'https://appassets.androidplatform.net':location.origin)}</code>. The phone app needs an https address (for example through Tailscale).</p>`}
+  <div class="actions left"><button class="btn sm" data-act="insTest">Test connection</button>${gem?`<a class="btn sm ghost" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get free API key</a>`:fp?`<a class="btn sm ghost" href="${fp.keyUrl}" target="_blank" rel="noopener">Get free ${esc(fp.name)} key</a>`:''}</div>`:''}
  ${s.engine==='local'&&!NAT_OK()?`<label class="sw"><span>Use the GPU<small>Faster on laptops. Off on phones by default, where it can freeze the device or garble answers.</small></span><input type="checkbox" data-ins="gpu" ${useGPU()?'checked':''}><i></i></label>`:''}
  <label class="sw"><span>Smart search<small>Finds notes by meaning, not just words. Downloads a 23 MB open-source model (all-MiniLM-L6-v2) once.</small></span><input type="checkbox" data-ins="smart" ${s.smart?'checked':''}><i></i></label>
  <label class="sw"><span>Include private entries<small>Off by default. Private journal entries stay out of every search and prompt.</small></span><input type="checkbox" data-ins="priv" ${s.priv?'checked':''}><i></i></label>
@@ -6149,6 +6194,11 @@ Object.assign(ACT,{
   const s=insSet();s.engine='api';s.url=GEMINI_URL;(window.saveQuiet||save)();
   const inp=document.querySelector('#insKey,#wzKey');if(inp)inp.value=txt;
   await ACT.insTest()},
+ insKeyPaste:async()=>{let txt='';try{txt=(await navigator.clipboard.readText()||'').trim()}catch(e){}
+  if(!txt){const inp=document.querySelector('#insKey,#wzKey');if(inp){inp.focus();toast('Long-press the API key box and tap Paste')}return}
+  if(txt.length<12||/\s/.test(txt))return toast('Clipboard doesn’t look like an API key');
+  try{localStorage.setItem('plotline.aikey',txt)}catch(_){}
+  (window.saveQuiet||save)();const inp=document.querySelector('#insKey,#wzKey');if(inp)inp.value=txt;await ACT.insTest()},
  insTest:async()=>{const s=insSet(),gem=isGeminiUrl(s.url);if(gem&&!aiKey())return toast('Paste your free Gemini API key from Google AI Studio first');
   if(gem){const L=await gemLoadModels(true);if(!L.length)return toast(GEM_ST.err||'Couldn’t reach Gemini. Check your internet connection and API key');
    const m=insSet().model;
@@ -6592,7 +6642,7 @@ const WH=()=>!window.PLOT_DEMO&&NATIVE&&window.PlotlineAssist&&PlotlineAssist.wh
 function whSt(){try{return JSON.parse(WH().whisperState())||{}}catch(e){return{}}}
 let WHBAD=false;const whOn=()=>{if(!WH()||WHBAD)return false;const s=whSt();return!!s.use&&s.on!==false};
 function voiceAvail(){if(whOn())return true;const v=vstate();return NATIVE?!!(v.onDevice||v.any):!!v.web}
-function voiceSub(){const s=insSet(),v=vset(),st=vstate();const ai=s.engine==='local'?'On-device AI':s.engine==='api'?(isGeminiUrl(s.url)?'Gemini':'Your AI server'):'Copy prompt';return ai+' · voice '+(!v.on?'off':NATIVE?(st.onDevice?'on this phone':v.cloud?'online speech':'needs your OK'):(st.web?(v.cloud?'browser speech':'needs your OK'):'not in this browser'))}
+function voiceSub(){const s=insSet(),v=vset(),st=vstate();const fp=freeProvOf(s.url);const ai=s.engine==='local'?'On-device AI':s.engine==='api'?(isGeminiUrl(s.url)?'Gemini':fp?fp.name:'Your AI server'):'Copy prompt';return ai+' · voice '+(!v.on?'off':NATIVE?(st.onDevice?'on this phone':v.cloud?'online speech':'needs your OK'):(st.web?(v.cloud?'browser speech':'needs your OK'):'not in this browser'))}
 function voiceHTML(){const v=vset(),st=vstate();
  return`<section class="panel wide rv"><h3>Assistant</h3>${insEngineHTML()}</section>
  <section class="panel rv" id="voicePanel"><h3>Voice</h3><p class="small muted">${NATIVE?(st.onDevice?'This phone turns speech into text on the device, so your voice never leaves it.':'This phone has no on-device speech recognition. Its regular speech service (usually Google’s) sends audio online to turn it into text.'):'Your browser’s speech service usually sends audio online to turn it into text.'}</p>
@@ -9387,8 +9437,15 @@ window.smStop=stop;
 <script src="blocks.js"></script>
 <script src="moves.js"></script>
 <script src="sched.js"></script>
-<script src="guides.js"></script>
-<script src="howto.js"></script>
+<script>
+/* 1.78.5 P1 speed: lazy-load guides.js + howto.js (128 KB) right after first paint, or immediately on-demand */
+(()=>{let P=null;const add=s=>new Promise((ok,no)=>{const e=document.createElement('script');e.src=s;e.onload=ok;e.onerror=no;document.body.appendChild(e)});
+ window.loadHowto=()=>P||(P=add('guides.js').then(()=>add('howto.js')).then(()=>{if(cur.p==='howto')render(false);const r=$('#fndr');if(r&&$('#fndq'))r.innerHTML=findRes($('#fndq').value)}).catch(()=>{P=null}));
+ VIEWS.howto=id=>{loadHowto();return`<header class="ph"><div><h1>How-to</h1><div class="data">Loading guides…</div></div></header>`};
+ const idle=()=>window.requestIdleCallback?requestIdleCallback(()=>loadHowto(),{timeout:3000}):setTimeout(()=>loadHowto(),1200);
+ if(document.readyState==='complete')setTimeout(idle,800);else addEventListener('load',()=>setTimeout(idle,800));
+ const _fo=ACT.findOpen;if(_fo)ACT.findOpen=function(){loadHowto();return _fo.apply(this,arguments)}})();
+</script>
 <script src="setup.js"></script>
 <script src="notes.js"></script>
 <script src="bills.js"></script>
