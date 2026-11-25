@@ -352,3 +352,8 @@ ul.sc-l.nt-l.panel{padding:6px 18px!important;margin:0;list-style:none}
    switches (Blocks, Moves) shrink their padding before they run out of room */
 .sc-top{flex-wrap:wrap}.sc-seg{max-width:100%}.sc-seg button{padding:7px clamp(9px,3.2vw,14px)}
 .blk-seg{max-width:100%}.blk-seg button{min-width:0;padding:7px clamp(9px,3vw,14px);overflow:hidden;text-overflow:ellipsis}
+
+/* ---- 1.78.2 speed: layout/style containment on self-contained repeating rows & cards ---- */
+.hrow,.ag,.cd,.hw-r,.ckl-r,.thr-c,.ls-i{contain:layout style}
+.agenda>.ag,.hheat,.csum{content-visibility:auto;contain-intrinsic-size:auto 140px}
+

@@ -3611,7 +3611,7 @@ const LOGO=`<svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><rect width
 const DB=window.PLOT_DEMO?(()=>{const M=new Map(),cp=v=>v===undefined?v:structuredClone(v);return{open:async()=>null,get:async k=>cp(M.get(k)),set:async(k,v)=>{M.set(k,cp(v))}}})():{_p:null,open(){return this._p||(this._p=new Promise((res,rej)=>{try{const r=indexedDB.open('waypoints',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}))},
  async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
  async set(k,v){if(k==='state'&&v===S&&stOther())await stPull();const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>{if(k==='state')try{localStorage.setItem('plotline.stAt',JSON.stringify({id:ME,t:Date.now()}))}catch(e){}res()};tx.onerror=()=>rej(tx.error)})}};
-const APP_VER='1.78.1';
+const APP_VER='1.78.2';
 const CLRN={health:'Mint',career:'Blue',family:'Coral',faith:'Gold',finance:'Lime',learning:'Violet',personal:'Pink'};
 function colorRow(k,o){return`<div class="clr-row" role="radiogroup" aria-label="Card colour"><span class="data">Card colour</span><div>${['',...AREA_IDS].map(c=>`<button class="clr${(o.color||'')===c?' on':''}" role="radio" aria-checked="${(o.color||'')===c}" data-act="setColor" data-k="${k}" data-id="${o.id}" data-v="${c}" style="--sw:var(--c-${c||areaOf(o.area).k})" aria-label="${c?CLRN[c]:'Same as its life area'}" title="${c?CLRN[c]:'Same as its life area'}">${c?'':'A'}</button>`).join('')}</div></div>`}
 const DEF_SET={name:'',theme:'halo',matchSystem:false,motion:'full',onboarded:false,pinHash:'',timer:null,areaPos:{},mapSpace:1,jSteps:false,cards:'solid',layout:{goals:'grid',journal:'h',goal:'cards',cal:'month'},cardBg:'plain',cardImg:'',halo:'high',haloBright:false,haloPulse:false};
@@ -4014,7 +4014,7 @@ function vCal(){const v=S.settings.layout.cal||'month',n=dnum(CAL.d),dd=dUTC(n);
  <section class="rv"><div class="st-h"><h3>${v==='day'?'Plan for the day':v==='week'?'This week':'This month'}</h3><button class="link" data-act="addDay" data-d="${CAL.d}">Add for ${esc(dayName(CAL.d))}</button></div>${calList()}</section>`}
 let CSW=null;
 document.addEventListener('touchstart',e=>{const c=e.target.closest&&e.target.closest('.cal-card');CSW=c&&e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY}:null},{passive:true});
-document.addEventListener('touchend',e=>{if(!CSW)return;const t=e.changedTouches[0],dx=t.clientX-CSW.x,dy=t.clientY-CSW.y;CSW=null;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.6)ACT.calStep({d:dx<0?'1':'-1'})},{passive:true});
+document.addEventListener('touchend',e=>{if(!CSW)return;const t=e.changedTouches[0],dx=t.clientX-CSW.x,dy=t.clientY-CSW.y;CSW=null;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.6){CDRAG=Date.now();ACT.calStep({d:dx<0?'1':'-1'})}},{passive:true});
 
 /* ================= GOALS ================= */
 let F={v:'active',area:'all',q:'',search:false};
@@ -4679,13 +4679,13 @@ const ACT={navBack:()=>{if(!navBack())go("today")},
  calView:d=>{S.settings.layout.cal=d.v;save();render(false)},
  calToday:()=>{const t=ymd();CAL.dir=t<CAL.d?-1:t>CAL.d?1:0;CAL.d=t;render(false)},
  calStep:d=>{const k=+d.d,n=dnum(CAL.d),v=S.settings.layout.cal;if(v==='day')CAL.d=fromN(n+k);else if(v==='week')CAL.d=fromN(n+7*k);else{const dd=dUTC(n),f=Math.round(Date.UTC(dd.getUTCFullYear(),dd.getUTCMonth()+k,1)/864e5),[,l]=monthOf(f),tn=dnum(ymd());CAL.d=fromN(tn>=f&&tn<=l?tn:f)}CAL.dir=k;render(false)},
- calPick:d=>{const v=S.settings.layout.cal;if(d.d===CAL.d&&v!=='day'){S.settings.layout.cal='day';save();render(false);return}CAL.d=d.d;render(false);if(v==='month'){const g=document.getElementById('cdp');if(g){const r=g.getBoundingClientRect();if(r.top>innerHeight-140)g.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'nearest'})}}},
+ calPick:d=>{const v=S.settings.layout.cal;if(d.d===CAL.d&&v!=='day'){S.settings.layout.cal='day';save();render(false);return}CAL.d=d.d;render(false);if(v==='month'){const g=document.getElementById('cdp')||document.getElementById('cpeek');if(g){const r=g.getBoundingClientRect();if(r.top>innerHeight-140)g.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'nearest'})}}},
  toggleStep:d=>{const g=G(d.g),s=g&&g.steps.find(x=>x.id===d.s);if(!s)return;s.done=!s.done;s.doneAt=s.done?Date.now():null;
   if(s.done&&s.repeat&&!g.steps.some(x=>x.from===s.id)){const base=s.due&&daysUntil(s.due)>=0?s.due:ymd();const[y,m,dd]=base.split('-').map(Number);const nx=new Date(y,m-1,dd);if(s.repeat==='daily')nx.setDate(nx.getDate()+1);else if(s.repeat==='weekly')nx.setDate(nx.getDate()+7);else nx.setMonth(nx.getMonth()+1);g.steps.splice(g.steps.indexOf(s)+1,0,{id:uid(),from:s.id,title:s.title,due:ymd(nx),time:s.time||'',remind:s.remind??'',reminded:false,note:s.note||'',repeat:s.repeat,done:false,doneAt:null});toast(`Done. Next one is ${dueShort({due:ymd(nx)}).toLowerCase()}`)}
   if(s.done){log('step',g.id,s.title,Date.now(),s.id);vib();if(g.status==='active'&&prog(g)>=1)completeGoal(g)}
   else{S.entries=S.entries.filter(e=>!(e.type==='step'&&e.sid===s.id));if(g.status==='done'){g.status='active';g.completedAt=null;S.entries=S.entries.filter(e=>!(e.type==='goal-done'&&e.goalId===g.id))}}
   save();render(false)},
- pin:(d,el)=>{const g=G(d.id);g.pinned=!g.pinned;save();if(cur.p==='goals'&&!el.closest('#sheet')){el.classList.toggle('on',g.pinned)}else{closeSheet();render(false)}toast(g.pinned?'Pinned to Today':'Unpinned')},
+ pin:(d,el)=>{const g=G(d.id);g.pinned=!g.pinned;if(cur.p==='goals'&&!el.closest('#sheet')){saveQuiet();el.classList.toggle('on',g.pinned)}else{save();closeSheet();render(false)}toast(g.pinned?'Pinned to Today':'Unpinned')},
  toggleSearch:()=>{F.search=!F.search;if(!F.search)F.q='';render(false);if(F.search)setTimeout(()=>$('[data-q]')?.focus(),30)},
  filt:d=>{F.v=d.v;render(false)},
  gvMode:d=>{S.settings.layout.goal=d.v;save();render(false)},
@@ -4909,7 +4909,8 @@ function qcard(h){const now=Date.now(),td=ymd();
  <div class="hq-clock" data-since="${since}">${clockHTML(now-since)}</div><div class="pbar"><i style="width:${(f*100).toFixed(1)}%"></i></div><div class="data">Next milestone: ${mileName(nx)}${sv.money>=.5?' · '+money(h,sv.money)+' saved':sv.mins>=30?' · '+hrs(sv.mins)+' back':''}</div>
  <div class="hq-a"><button class="btn ink sm" data-act="urge" data-id="${h.id}">${ic('wave')}I have an urge</button><button class="btn inkline sm" data-act="slip" data-id="${h.id}">Log a slip</button></div></article>`}
 function todayHabits(){const td=ymd();return S.habits.filter(h=>h.status==='active'&&h.kind!=='quit'&&hDue(h,td)).sort((a,b)=>(a.time||'99')<(b.time||'99')?-1:(a.time||'99')>(b.time||'99')?1:(a.createdAt||0)-(b.createdAt||0))}
-function dayRatio(ds){let due=0,dn=0;S.habits.forEach(h=>{if(h.kind==='quit'||h.status==='archived'||!hDue(h,ds)||h.skip[ds])return;const d=hDone(h,ds);if(h.freq==='times'&&!d&&(ds!==ymd()||!hCounts(h,ds)))return;due++;if(d)dn++});return{due,dn}}
+let DR_RN=-1,DR_C=new Map();
+function dayRatio(ds){const rn=window.__RN||0;if(DR_RN!==rn){DR_RN=rn;DR_C.clear()}const c=DR_C.get(ds);if(c)return c;let due=0,dn=0;S.habits.forEach(h=>{if(h.kind==='quit'||h.status==='archived'||!hDue(h,ds)||h.skip[ds])return;const d=hDone(h,ds);if(h.freq==='times'&&!d&&(ds!==ymd()||!hCounts(h,ds)))return;due++;if(d)dn++});const r={due,dn};DR_C.set(ds,r);return r}
 function perfectRun(){const tn=dnum(ymd()),ms=Math.min(tn,...S.habits.map(h=>dnum(h.startDate)));let n=0;for(let k=tn;k>=ms&&k>tn-800;k--){const r=dayRatio(fromN(k));if(!r.due)continue;if(r.dn>=r.due)n++;else if(k===tn)continue;else break}return n}
 function hSummary(){const tn=dnum(ymd()),t=dayRatio(ymd()),f=t.due?t.dn/t.due:0;let bars='';
  for(let k=tn-6;k<=tn;k++){const r=dayRatio(fromN(k)),p=r.due?r.dn/r.due:0;bars+=`<button class="hb-d${k===tn?' hb-now':''}" data-act="dyOpen" data-d="${fromN(k)}" aria-label="${esc(dayName(fromN(k)))}: ${r.due?r.dn+' of '+r.due+' done':'nothing due'}. Open the day"><i class="${p?'':'z'}" style="height:${Math.max(6,p*100)}%"></i><span>${DAYS[dUTC(k).getUTCDay()][0]}</span></button>`}
@@ -5411,7 +5412,7 @@ function applyTheme(animate){const st=S.settings;let t=THEME_IDS.includes(st.the
  setTimeout(()=>{const bg=getComputedStyle(r).getPropertyValue('--bg').trim();document.querySelector('meta[name=theme-color]').content=bg;if(NATIVE)try{NATIVE.setBars(bg,isLightTheme(t))}catch(e){}},60)}
 let IO;
 function reveal(anim){const els=[...document.querySelectorAll('#view .rv:not(.in)')];if(!anim||reduced()||!('IntersectionObserver'in window)){els.forEach(e=>e.classList.add('in'));return}
- IO&&IO.disconnect();IO=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){const el=en.target;el.classList.add('in');IO.unobserve(el);setTimeout(()=>{el.style.transitionDelay=''},1200)}}),{rootMargin:'0px 0px -5% 0px'});
+ IO&&IO.disconnect();IO=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){const el=en.target;el.classList.add('in');IO.unobserve(el);setTimeout(()=>{el.style.transitionDelay=''},1200)}}),{rootMargin:'120px 0px 120px 0px'});
  /* Snappy: a very short cascade, so everything on screen is in place in about a fifth of a second (1.77.0: was a third,
     plus a frame waiting for the observer). What is on screen starts at once; the observer handles the rest on scroll. */
  const rich=typeof animRich==='function'&&animRich(),step=rich?60:14,cap=rich?9:4;let i=0;els.forEach(e=>{if(e.getBoundingClientRect().top<innerHeight){e.style.transitionDelay=Math.min(i++,cap)*step+'ms';e.classList.add('in');setTimeout(()=>{e.style.transitionDelay=''},1200)}else IO.observe(e)})}
@@ -5518,28 +5519,34 @@ function vMorph(L,P,N,d){const ln=[...L.childNodes],pn=P.childNodes,nn=[...N.chi
   l.replaceWith(n)}}
 function vPut(L,h){const v=document.getElementById('view');
  if(!VMO&&v){VMO=new MutationObserver(vDirty);VMO.observe(v,{childList:true,subtree:true,characterData:true})}
+ if((MORPH||VFORCE)&&L._pvh===h&&VMO){const recs=VMO.takeRecords();if(!recs.length)return;vDirty(recs)}
  const t=document.createElement('template');t.innerHTML=h;VFILL++;
  /* a big page opens with its first screenful (~VBUDGET elements) and the rest follows right after the first paint:
     vCut leaves out what comes after, and a same-page redraw (vMorph) appends it */
- const all=t.content.querySelectorAll('*').length;
- if(!MORPH&&!VFORCE&&all>VBUDGET*1.5){VCUT=0;vCut(t.content,VBUDGET,0);const cut=all-t.content.querySelectorAll('*').length;
-  /* only worth a second step when a good part of the page waits for it */
-  if(VCUT&&cut>=Math.max(150,all*.3)){const n=VFILL;requestAnimationFrame(()=>setTimeout(()=>{if(n===VFILL&&L.isConnected){VFORCE=1;try{render(false)}catch(e){}finally{VFORCE=0}}},0))}
-  else if(VCUT)t.innerHTML=h;VCUT=0}
- const pv=t.content.cloneNode(true);
- if((MORPH||VFORCE)&&L._pv&&VMO){vDirty(VMO.takeRecords());
+ let didCut=0;
+ if(!MORPH&&!VFORCE&&h.length>16000){const all=t.content.querySelectorAll('*').length;
+  if(all>VBUDGET*1.5){VCUT=0;vCut(t.content,VBUDGET,0);const cut=all-t.content.querySelectorAll('*').length;
+   /* only worth a second step when a good part of the page waits for it */
+   if(VCUT&&cut>=Math.max(150,all*.3)){didCut=1;const n=VFILL;requestAnimationFrame(()=>setTimeout(()=>{if(n===VFILL&&L.isConnected){VFORCE=1;try{render(false)}catch(e){}finally{VFORCE=0}}},0))}
+   else if(VCUT)t.innerHTML=h;VCUT=0}}
+ const pv=(didCut||MORPH||VFORCE)?t.content.cloneNode(true):null;
+ if((MORPH||VFORCE)&&(L._pv||L._pvh)&&VMO){vDirty(VMO.takeRecords());
+  if(!L._pv&&L._pvh){const pt=document.createElement('template');pt.innerHTML=L._pvh;L._pv=pt.content}
   L.querySelectorAll('input,textarea,select').forEach(e=>{if(e.type==='checkbox'||e.type==='radio'?e.checked!==e.defaultChecked:e.tagName==='SELECT'?[...e.options].some(o=>o.selected!==o.defaultSelected):e.value!==e.defaultValue)vMark(e,v)});
   vMorph(L,L._pv,t.content,0)}
  else L.replaceChildren(t.content);
- L._pv=pv;if(VMO)VMO.takeRecords()}
+ if(typeof window.foldSettings==='function'&&cur.p==='settings'&&cur.id)window.foldSettings();
+ if(typeof window.pinBtns==='function')window.pinBtns();
+ if(typeof window.rollHeads==='function')window.rollHeads();
+ L._pv=pv;L._pvh=didCut?'':h;if(VMO)VMO.takeRecords()}
 /* a page that fails to build shows what went wrong instead of leaving the previous page on screen */
 function viewErr(e){console.error(e);return`<header class="ph"><div><h1>Can’t open this</h1><div class="data">Something on this page didn’t load</div></div></header><div class="empty rv in"><p>Plotlines hit a problem building this page. Your data is safe.</p><p class="small muted" style="font-family:var(--f-mono);overflow-wrap:anywhere">${esc(String(e&&e.message||e).slice(0,200))}</p><div class="actions"><button class="btn" onclick="history.back()">Go back</button><a class="btn pri" href="#/today">Home</a></div></div>`}
 let RPOST=0;
-function render(anim=true){RANIM=anim;document.documentElement.dataset.pg=cur.p;const v=$('#view');const y=scrollY;if(cur.p!=='map')MP=null;let h;const hk=cur.p+'/'+(cur.id||'');try{h=VFORCE&&VHC.k===hk?VHC.h:VIEWS[cur.p](cur.id)}catch(e){h=viewErr(e)}VHC={k:hk,h};viewSet(v,h);if(!anim)window.scrollTo(0,y);
+function render(anim=true){RANIM=anim;document.documentElement.dataset.pg=cur.p;const v=$('#view');const y=MORPH?0:scrollY;if(cur.p!=='map')MP=null;let h;const hk=cur.p+'/'+(cur.id||'');try{h=VFORCE&&VHC.k===hk?VHC.h:VIEWS[cur.p](cur.id)}catch(e){h=viewErr(e)}VHC={k:hk,h};viewSet(v,h);if(!anim&&!MORPH&&y)window.scrollTo(0,y);
  document.querySelectorAll('[data-nav]').forEach(a=>{const on=a.dataset.nav===(({goal:'goals',habit:'habits',road:'vista',map:'vista',ai:'ask',threads:'journal',thread:'journal',activity:'today',day:'cal'})[cur.p]||cur.p);a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
- imgCSS();zfixAll();if(typeof hvInit==='function')hvInit();if(typeof authBanner==='function')authBanner();if(typeof micDecorate==='function')micDecorate($('#view'));
+ imgCSS();zfixAll();if(typeof hvInit==='function')hvInit();if(typeof authBanner==='function')authBanner();
  /* the steps that measure the new page run together in the next frame, so the page is laid out once, not after every step */
- if(!anim)reveal(false);cancelAnimationFrame(RPOST);RPOST=requestAnimationFrame(()=>{RPOST=0;moveInd();placeSegs();initHS();if(anim)reveal(true);fillSpine(anim)});if(S.settings.focus)buildFloater();
+ if(!anim)reveal(false);cancelAnimationFrame(RPOST);RPOST=requestAnimationFrame(()=>{RPOST=0;if(typeof sbarTop==='function')sbarTop();if(typeof micDecorate==='function')micDecorate($('#view'));moveInd();placeSegs();initHS();if(typeof window.udkInit==='function')window.udkInit();if(typeof fitH1==='function')fitH1();if(typeof fitCards==='function')fitCards();if(typeof crumbFit==='function')crumbFit();if(anim)reveal(true);fillSpine(anim)});if(S.settings.focus)buildFloater();
  if(cur.p==='map')requestAnimationFrame(initMap);
  if(cur.p==='cal')requestAnimationFrame(()=>{fitCal();initDayGrid()});
  if(cur.p==='road'||cur.p==='goal')requestAnimationFrame(()=>{const r=$('#road');if(!r)return;r.style.setProperty('--vw',r.clientWidth+'px');if(cur.p==='road'){r.scrollLeft=RD.scroll!=null?RD.scroll:Math.max(0,RD.todayX-.25*(r.clientWidth-labW(r)));r.addEventListener('scroll',()=>{RD.scroll=r.scrollLeft},{passive:true})}else r.scrollLeft=Math.max(0,GV.x-30)})}
@@ -8015,12 +8022,12 @@ function fitH1(force){const K=innerWidth+'|'+S.settings.tsz+'|'+JSON.stringify(S
  const fit=min=>{let s=parseFloat(getComputedStyle(h).fontSize);if(h.scrollWidth<=h.clientWidth+1)return true;let lo=min,hi=s;for(let n=0;n<6;n++){const m=(lo+hi)/2;h.style.fontSize=m+'px';if(h.scrollWidth>h.clientWidth+1)hi=m;else lo=m}h.style.fontSize=Math.floor(lo)+'px';return h.scrollWidth<=h.clientWidth+1};
  if(!fit(30)&&ph&&ph.querySelector(':scope>.ph-r')){h.style.fontSize='';ph.classList.add('ph-stack');fit(22)}h.style.overflowWrap=''})}
 if(document.fonts)document.fonts.ready.then(()=>{try{fitH1(1)}catch(e){}});
-{const _r=render;render=function(a){_r(a);fitH1()}}addEventListener('resize',()=>fitH1(1),{passive:true});
+addEventListener('resize',()=>fitH1(1),{passive:true});
 {const _nh=nhist;nhist=function(k){let r;try{r=_nh(k)}catch(e){r=[]}return Array.isArray(r)?r:[]}}
 /* card titles shrink to fit their card (long words, long titles) instead of spilling over the edge */
-function fitCards(root){(root||document).querySelectorAll('#view .fc-t, #view .sc-t, #view .jb-big, #view .jt-big').forEach(el=>{const face=el.closest('.fc-face,.sc-face,.jb,.jf-face');if(!face||!face.offsetParent)return;el.style.removeProperty('font-size');el.style.overflowWrap='normal';
+function fitCards(root,force){const K=innerWidth+'|'+S.settings.tsz+'|'+JSON.stringify(S.settings.font||'');(root||document).querySelectorAll('#view .fc-t, #view .sc-t, #view .jb-big, #view .jt-big').forEach(el=>{const k=K+el.textContent;if(!force&&el._fk===k)return;const face=el.closest('.fc-face,.sc-face,.jb,.jf-face');if(!face||!face.offsetParent)return;el._fk=k;el.style.removeProperty('font-size');el.style.overflowWrap='normal';
  let s=parseFloat(getComputedStyle(el).fontSize),n=0;const ft=[...face.children].find(c=>c!==el&&c.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_PRECEDING),box=el.closest('.hs-card')||face,over=()=>el.scrollWidth>el.clientWidth+1||el.scrollHeight>el.clientHeight+s*.35||face.scrollHeight>face.clientHeight+1||(ft&&el.getBoundingClientRect().bottom>ft.getBoundingClientRect().top-2);if(over()){let lo=14,hi=s;for(n=0;n<5;n++){const m=(lo+hi)/2;el.style.setProperty('font-size',m+'px','important');if(over())hi=m;else lo=m}el.style.setProperty('font-size',Math.floor(lo)+'px','important')}el.style.overflowWrap=''})}
-{const _r=render;render=function(a){_r(a);fitCards();if(document.fonts&&document.fonts.status!=='loaded')document.fonts.ready.then(()=>fitCards())}}addEventListener('resize',()=>fitCards(),{passive:true});
+if(document.fonts&&document.fonts.status!=='loaded')document.fonts.ready.then(()=>fitCards(null,1));addEventListener('resize',()=>fitCards(null,1),{passive:true});
 /* the small habit sheets (Habit Vista, habit grid) can open the whole day */
 {const _h=ACT.hDaySheet;ACT.hDaySheet=d=>{_h(d);const a=$('#sheet .actions');const b=`<button class="btn" data-act="dyOpen" data-d="${d.d}">Everything on this day</button>`;if(a)a.insertAdjacentHTML('afterbegin',b);else $('#sheet').insertAdjacentHTML('beforeend',`<div class="actions">${b}</div>`)}}
 
@@ -8038,8 +8045,8 @@ function hWeekStrip(){const t=dnum(ymd()),days=[];for(let k=t-6;k<=t;k++)days.pu
  return`<section class="rv hh-wk"><div class="hh-row">${days.map(ds=>{const r=dayRatio(ds),p=r.due?r.dn/r.due:0;return`<button class="hh-d${p>=1?' full':p>0?' part':r.due&&ds<ymd()?' miss':''}${ds===ymd()?' today':''}" data-act="dyOpen" data-d="${ds}" style="--p:${Math.round(p*100)}" aria-label="${esc(dayName(ds))}: open the day"><span>${new Date(ds+'T12:00').toLocaleDateString(undefined,{weekday:'narrow'})}</span><i><b>${+ds.slice(8)}</b></i><small>${r.due?r.dn+'/'+r.due:'–'}</small></button>`}).join('')}</div>
  <button class="hcal-t" data-act="hcalT" aria-expanded="${on}">${ic('cal','ico-s')}<span>${on?'Hide calendar':'Show the month'}</span>${ic('chev','ico-s hcal-chev')}</button><div class="hcal${on?' on':''}" id="hcal">${on?hCal():''}</div></section>`}
 Object.assign(ACT,{
- hcalT:()=>{const on=!hcalOn();S.settings.layout.hcal=on;save();if(HV!=='today'){HV='today';render(false);return}const c=$('#hcal'),b=document.querySelector('.hcal-t');if(!c){render(false);return}
-  if(on){c.innerHTML=hCal();requestAnimationFrame(()=>c.classList.add('on'))}else{c.classList.remove('on');setTimeout(()=>{if(!hcalOn())c.innerHTML=''},380)}
+ hcalT:()=>{const on=!hcalOn();S.settings.layout.hcal=on;if(HV!=='today'){save();HV='today';render(false);return}const c=$('#hcal'),b=document.querySelector('.hcal-t');if(!c){save();render(false);return}
+  saveQuiet();if(on){c.innerHTML=hCal();requestAnimationFrame(()=>c.classList.add('on'))}else{c.classList.remove('on');setTimeout(()=>{if(!hcalOn())c.innerHTML=''},380)}
   if(b){b.setAttribute('aria-expanded',on);b.querySelector('span').textContent=on?'Hide calendar':'Show the month'}document.querySelectorAll('[data-act=hcalT].ibtn').forEach(x=>x.classList.toggle('on',on))},
  hhMon:d=>{const[y,m]=HH.m.split('-').map(Number),x=new Date(y,m-1+ +d.d,1),k=x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0');if(k>ymd().slice(0,7))return;HH.m=k;const c=$('#hcal')||$('#view .hcal-p');if(c)c.innerHTML=hCal()}});
 {const _vH=vHabits;vHabits=function(){let o=_vH();const i=o.indexOf('<div class="ph-r">');if(i>0&&S.habits.length)o=o.slice(0,i+18)+`<button class="ibtn${hcalOn()?' on':''}" data-act="hcalT" aria-label="Calendar" title="Calendar">${ic('cal')}</button>`+o.slice(i+18);return o};VIEWS.habits=vHabits}
@@ -8316,24 +8323,26 @@ function foldSettings(){if(cur.p!=='settings'||!cur.id)return;const P=[...docume
  P.forEach((sec,i)=>{if(sec.classList.contains('fold'))return;const h=sec.firstElementChild,key=cur.id+':'+h.textContent.trim().slice(0,40);const open=window.__allOpen||(key in F?F[key]:i===0);
   const body=document.createElement('div');body.className='fold-b';const inner=document.createElement('div');while(h.nextSibling)inner.appendChild(h.nextSibling);body.appendChild(inner);sec.appendChild(body);
   sec.classList.add('fold');sec.classList.toggle('open',open);sec.dataset.fk=key;h.setAttribute('role','button');h.setAttribute('tabindex','0');h.setAttribute('aria-expanded',open);h.insertAdjacentHTML('beforeend',ic('chev','fold-c'))})}
-function foldToggle(h){const sec=h.closest('.fold');if(!sec)return;const o=!sec.classList.contains('open');sec.classList.toggle('open',o);h.setAttribute('aria-expanded',o);foldSet()[sec.dataset.fk]=o;save()}
+window.foldSettings=foldSettings;
+function foldToggle(h){const sec=h.closest('.fold');if(!sec)return;const o=!sec.classList.contains('open');sec.classList.toggle('open',o);h.setAttribute('aria-expanded',o);foldSet()[sec.dataset.fk]=o;saveQuiet()}
 document.addEventListener('click',e=>{const h=e.target.closest&&e.target.closest('.fold > h3');if(h)foldToggle(h)});
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.fold > h3')){e.preventDefault();foldToggle(e.target)}});
-/* a quiet re-render (render(false)) keeps the page where it was: the folds go back on after it, so put the scroll back after them too */
-{const _r=render;render=function(a){const y=scrollY;_r(a);foldSettings();if(a===false&&cur.p==='settings')window.scrollTo(0,y)}}
+/* a quiet re-render (render(false)) keeps the page where it was */
+{const _r=render;render=function(a){const y=(a===false&&cur.p==='settings'&&!MORPH)?scrollY:0;_r(a);if(a===false&&cur.p==='settings'&&!MORPH&&y)window.scrollTo(0,y)}}
 
 /* ================= dropdowns on phones open an in-app picker, not Android's system list ================= */
 const SELP_ON=()=>IS_PHONE||matchMedia('(pointer:coarse)').matches;
 function selLabel(sel){const id=sel.id&&document.querySelector(`label[for="${sel.id}"]`);const f=sel.closest('.field');const l=id||(f&&f.querySelector('label'));return(sel.getAttribute('aria-label')||(l&&l.textContent)||'Choose').trim()}
-function selOpen(sel){if(sel.disabled)return;const opt=o=>`<button class="selp-o${o.value===sel.value?' on':''}" data-v="${esc(o.value)}" ${o.disabled?'disabled':''}><span>${esc(o.textContent.trim())}</span>${o.value===sel.value?ic('check','ico-s'):''}</button>`;
+function selOpen(sel){if(sel.disabled||document.querySelector('.selp.on'))return;const opt=o=>`<button class="selp-o${o.value===sel.value?' on':''}" data-v="${esc(o.value)}" ${o.disabled?'disabled':''}><span>${esc(o.textContent.trim())}</span>${o.value===sel.value?ic('check','ico-s'):''}</button>`;
  let body='';[...sel.children].forEach(c=>{if(c.tagName==='OPTGROUP')body+=`<div class="selp-g data">${esc(c.label)}</div>`+[...c.children].map(opt).join('');else if(c.tagName==='OPTION')body+=opt(c)});
  const el=document.createElement('div');el.className='selp';el.innerHTML=`<div class="selp-dim"></div><section class="selp-s" role="dialog" aria-modal="true" aria-label="${esc(selLabel(sel))}"><span class="selp-grab" aria-hidden="true"></span><div class="selp-h"><b>${esc(selLabel(sel))}</b><button class="ibtn sm" aria-label="Close">✕</button></div><div class="selp-l">${body}</div></section>`;
  document.body.appendChild(el);requestAnimationFrame(()=>{el.classList.add('on');const on=el.querySelector('.selp-o.on');if(on)on.scrollIntoView({block:'center'})});
  const close=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),300)};
  el.addEventListener('click',e=>{const b=e.target.closest('.selp-o');if(b){if(sel.value!==b.dataset.v){sel.value=b.dataset.v;sel.dispatchEvent(new Event('input',{bubbles:true}));sel.dispatchEvent(new Event('change',{bubbles:true}))}close();return}if(e.target.closest('.selp-dim,.selp-h .ibtn'))close()})}
+let SELP_TT=0;
 {let T=null;document.addEventListener('touchstart',e=>{const s=e.target.closest&&e.target.closest('select');if(!s||s.multiple||s.disabled||!SELP_ON())return;e.preventDefault();T={s,x:e.touches[0].clientX,y:e.touches[0].clientY}},{capture:true,passive:false});
- document.addEventListener('touchend',e=>{if(!T)return;const t=e.changedTouches[0],s=T.s,m=Math.hypot(t.clientX-T.x,t.clientY-T.y);T=null;if(m<12){e.preventDefault();selOpen(s)}},{capture:true,passive:false})}
-document.addEventListener('mousedown',e=>{const s=e.target.closest&&e.target.closest('select');if(!s||s.multiple||!SELP_ON())return;e.preventDefault();s.blur();selOpen(s)},true);
+ document.addEventListener('touchend',e=>{if(!T)return;const t=e.changedTouches[0],s=T.s,m=Math.hypot(t.clientX-T.x,t.clientY-T.y);T=null;if(m<12){SELP_TT=Date.now();e.preventDefault();selOpen(s)}},{capture:true,passive:false})}
+document.addEventListener('mousedown',e=>{if(Date.now()-SELP_TT<500)return;const s=e.target.closest&&e.target.closest('select');if(!s||s.multiple||!SELP_ON())return;e.preventDefault();s.blur();selOpen(s)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const p=document.querySelector('.selp.on');if(p){p.classList.remove('on');setTimeout(()=>p.remove(),300)}}});
 
 /* ================= wiring ================= */
@@ -8341,9 +8350,10 @@ function todayExtras(){if(nat())actLoad(false);return actCardHTML()+thrToday()}
 VIEWS.journal=vJournalW;VIEWS.threads=vThreads;VIEWS.thread=vThread;VIEWS.day=vDay;VIEWS.activity=vActivity;
 /* 1.13: crumb action rows that don't fit scroll, starting at the right (gear visible) */
 function crumbFit(){document.querySelectorAll('#view .crumb>.ph-r').forEach(r=>{const o=r.scrollWidth>r.clientWidth+2;r.classList.toggle('ovf',o);if(o)r.scrollLeft=r.scrollWidth})}
-{const _r=render;render=function(a){_r(a);crumbFit()}}addEventListener('resize',()=>crumbFit(),{passive:true});
-function sbarTop(){document.documentElement.classList.toggle('pg-top',scrollY<6)}
-addEventListener('scroll',sbarTop,{passive:true});{const _r=render;render=function(a){_r(a);sbarTop()}}
+addEventListener('resize',()=>crumbFit(),{passive:true});
+let SBAR_TOP=null;
+function sbarTop(){const t=scrollY<6;if(t!==SBAR_TOP){SBAR_TOP=t;document.documentElement.classList.toggle('pg-top',t)}}
+addEventListener('scroll',sbarTop,{passive:true});
 /* 1.13: pull-to-refresh must never start inside the Ask overlay, pickers or banners (it hijacked their scrolling) */
 document.addEventListener('touchstart',e=>{const t=e.target;if(document.documentElement.classList.contains('aov-on')||(t&&t.closest&&t.closest('#aov,.selp,.rxb,#sheet,.ovl,[data-noptr]')))PTR=null},{passive:true});
 /* ===== 1.13: Colours & background (accent, wallpaper, strength, frost, motion) ===== */
@@ -8419,16 +8429,18 @@ function edgeFade(){document.querySelectorAll('#view .jchips,#view .seg-c,#view 
 (()=>{
 const today=()=>ymd();
 /* ---------- no flicker on same-page re-render ---------- */
-let LASTR='';
-function scrollSnap(){const v=$('#view'),out=[];if(!v)return out;const cnt={};v.querySelectorAll('*').forEach(el=>{if(el.id==='dgrid'||el.classList.contains('hs'))return;const k=el.tagName+'.'+(el.getAttribute('class')||'');const n=cnt[k]=(cnt[k]||0)+1;if(el.scrollLeft>0||el.scrollTop>0)out.push([k,n,el.scrollLeft,el.scrollTop])});return out}
-function scrollBack(L){if(!L.length)return;const v=$('#view'),cnt={},want={};L.forEach(x=>{want[x[0]+'|'+x[1]]=x});v.querySelectorAll('*').forEach(el=>{const k=el.tagName+'.'+(el.getAttribute('class')||'');const n=cnt[k]=(cnt[k]||0)+1;const w=want[k+'|'+n];if(w){el.scrollLeft=w[2];el.scrollTop=w[3]}})}
-function settle(){const v=$('#view');if(!v||!v.getAnimations)return;try{v.getAnimations({subtree:true}).forEach(a=>{const t=a.effect&&a.effect.getTiming&&a.effect.getTiming();if(t&&t.iterations!==Infinity)a.finish()})}catch(e){}}
-let RN=0,INR=0;
-{const _r=render;render=function(a){const key=cur.p+'/'+(cur.id||'');const same=key===LASTR&&booted;LASTR=key;RN++;INR++;
+let LASTR='',OPEN_T=0;
+const SCR_SEL='.hstrip,.hscroll,.udk-t,.road,.hv-sc,.cal-w,.bl-tw,.md-tw,.hheat,.wc-scroll,.wb-list,[data-scroll]';
+function scrollSnap(){const v=$('#view'),out=[];if(!v)return out;const cnt={};v.querySelectorAll(SCR_SEL).forEach(el=>{const k=el.tagName+'.'+(el.getAttribute('class')||'');const n=cnt[k]=(cnt[k]||0)+1;if(el.scrollLeft>0||el.scrollTop>0)out.push([k,n,el.scrollLeft,el.scrollTop])});return out}
+function scrollBack(L){if(!L.length)return;const v=$('#view'),cnt={},want={};L.forEach(x=>{want[x[0]+'|'+x[1]]=x});v.querySelectorAll(SCR_SEL).forEach(el=>{const k=el.tagName+'.'+(el.getAttribute('class')||'');const n=cnt[k]=(cnt[k]||0)+1;const w=want[k+'|'+n];if(w){el.scrollLeft=w[2];el.scrollTop=w[3]}})}
+function settle(){if(Date.now()-OPEN_T>700)return;const v=$('#view');if(!v||!v.getAnimations)return;try{v.getAnimations({subtree:true}).forEach(a=>{const t=a.effect&&a.effect.getTiming&&a.effect.getTiming();if(t&&t.iterations!==Infinity)a.finish()})}catch(e){}}
+let RN=0,INR=0;window.__RN=0;
+{const _r=render;render=function(a){const key=cur.p+'/'+(cur.id||'');const same=key===LASTR&&booted;LASTR=key;if(!same)OPEN_T=Date.now();window.__RN=++RN;INR++;
  try{if(same){const sn=scrollSnap();MORPH=1;try{_r(false)}finally{MORPH=0}document.querySelectorAll('#view .rv:not(.in)').forEach(e=>{e.style.transitionDelay='';e.classList.add('in')});scrollBack(sn);settle()}else _r(a)}finally{INR--}
  tabMark()}}
 /* any saved change shows right away, even where a handler forgot to repaint */
 {const _s=save;save=function(){_s.apply(this,arguments);if(INR||TOURING)return;const n=RN;setTimeout(()=>{if(RN!==n||INR)return;const ae=document.activeElement;if(ae&&ae.closest&&ae.closest('#view')&&/INPUT|TEXTAREA|SELECT/.test(ae.tagName))return;if(cur.p==='map'||PTR||DR||CDR||PZ)return;if(document.querySelector('.lock'))return;try{render(false)}catch(e){}},30)}}
+window.saveQuiet=()=>{INR++;try{save()}finally{INR--}};
 /* carousel cards: the card in the middle is drawn at exactly 1:1 so its text stays sharp */
 {const _f=hsFx;hsFx=function(sh){_f(sh);if(!sh)return;const hs=sh.querySelector('.hs');if(!hs)return;const r=hs.getBoundingClientRect(),cx=r.left+r.width/2;sh.querySelectorAll('.hs-item').forEach(it=>{const b=it.getBoundingClientRect();const d=(b.left+b.width/2-cx)/(b.width||1);if(Math.abs(d)<.04){const c=it.querySelector('.hs-card');if(c){c.style.transform='none';c.style.opacity='1'}}})}}
 
@@ -8443,7 +8455,7 @@ const PAGES=[['today','Home','today','Your day, insights and what’s next'],['h
 const tabs=()=>{const t=(S.settings.tabs||['today','habits','cal','goals']).filter(k=>PAGES.some(p=>p[0]===k));return t.length?t.slice(0,4):['today','habits','cal','goals']};
 const pg=k=>PAGES.find(p=>p[0]===k);
 function tabbarHTML(){return`<div class="navs"><span class="nav-ind"></span>${tabs().map(k=>{const p=pg(k);return`<a class="nav" href="#/${k}" data-nav="${k}">${ic(p[2])}<span>${p[1]}</span></a>`}).join('')}<button class="nav" data-act="navMore" data-nav="more" aria-label="More pages and search">${ic('menu')}<span>More</span></button></div>`}
-function tabMark(){const tb=$('#tabbar');if(!tb)return;const m=tb.querySelector('[data-nav=more]');if(!m)return;const on=!tb.querySelector('.nav.on:not([data-nav=more])');m.classList.toggle('on',on);if(on)m.setAttribute('aria-current','page');else m.removeAttribute('aria-current');moveInd()}
+function tabMark(){const tb=$('#tabbar');if(!tb)return;const m=tb.querySelector('[data-nav=more]');if(!m)return;const on=!tb.querySelector('.nav.on:not([data-nav=more])');m.classList.toggle('on',on);if(on)m.setAttribute('aria-current','page');else m.removeAttribute('aria-current');if(!RPOST)requestAnimationFrame(moveInd)}
 {const _b=buildChrome;buildChrome=function(){_b();$('#tabbar').innerHTML=tabbarHTML();tabMark()}}
 function moreHTML(){const t=tabs();return`<div class="data">Plotlines</div><h2 style="margin-top:6px">Go anywhere</h2>
  <button class="fnd-in" data-act="findOpen" style="width:100%;cursor:text;text-align:left">${ic('search')}<span class="muted" style="padding:14px 0;font-size:16px">Find a goal, habit, step, entry or setting</span></button>
@@ -8723,10 +8735,10 @@ window.pinsHTML=()=>{pinSync();return pinsOf().map(p=>{let html='';const hv=HV;H
 const pinName=()=>{const P=(window.FF_PAGES||[]).find(x=>x[0]===cur.p);if(P)return P[1];const t=$('#view h1');return t?t.textContent.trim().slice(0,40):cur.p};
 function pinBtns(){if(cur.p==='today')return;const P=pinsOf();const h1=$('#view h1');document.querySelectorAll('#view h1,#view .st-h>h3,#view .sc-cht>b').forEach(h=>{if(h.querySelector('.hpin-b')||h.closest('.hpinned,#sheet')||(h.tagName==='H1'&&h!==h1))return;const t=h.tagName==='H1'?'':headOf(h);if(!t&&h.tagName!=='H1')return;
  const on=P.some(p=>p.r===cur.p&&(p.i||'')===(cur.id||'')&&p.h===t);h.insertAdjacentHTML('beforeend',`<button class="hpin-b${on?' on':''}" data-act="homePin" aria-pressed="${on}" aria-label="${on?'Remove from Home':'Show on Home'}: ${esc(t||pinName())}" title="${on?'On Home · tap to remove':'Show on Home'}">${ic('pin')}</button>`)})}
-new MutationObserver(()=>pinBtns()).observe($('#view'),{childList:true});
+window.pinBtns=pinBtns;
 Object.assign(ACT,{homePin:(d,el)=>{const h=el.closest('h1,h3,b');if(!h)return;const t=h.tagName==='H1'?'':headOf(h),P=pinsOf(),i=P.findIndex(p=>p.r===cur.p&&(p.i||'')===(cur.id||'')&&p.h===t);
-  if(i>=0){const was=P.splice(i,1)[0];save();el.classList.remove('on');el.setAttribute('aria-pressed','false');toast(`Removed “${esc(t||was.pn)}” from Home`,()=>{pinsOf().splice(i,0,was);save();el.classList.add('on')})}
-  else{const p={id:uid(),r:cur.p,i:cur.id||'',h:t,pn:pinName()};P.push(p);save();el.classList.add('on');el.setAttribute('aria-pressed','true');toast(`“${esc(t||p.pn)}” is on Home now`,()=>{const k=pinsOf().indexOf(p);if(k>=0)pinsOf().splice(k,1);save();el.classList.remove('on')})}},
+  if(i>=0){const was=P.splice(i,1)[0];saveQuiet();el.classList.remove('on');el.setAttribute('aria-pressed','false');toast(`Removed “${esc(t||was.pn)}” from Home`,()=>{pinsOf().splice(i,0,was);saveQuiet();el.classList.add('on')})}
+  else{const p={id:uid(),r:cur.p,i:cur.id||'',h:t,pn:pinName()};P.push(p);saveQuiet();el.classList.add('on');el.setAttribute('aria-pressed','true');toast(`“${esc(t||p.pn)}” is on Home now`,()=>{const k=pinsOf().indexOf(p);if(k>=0)pinsOf().splice(k,1);saveQuiet();el.classList.remove('on')})}},
  homeUnpin:d=>{const P=pinsOf(),i=P.findIndex(p=>pinK(p)===d.k);if(i<0)return;const was=P.splice(i,1)[0],re=()=>$('#sheet .hc-l')?homeCustPaint():cur.p==='today'&&render(false);save();re();toast(`Removed “${esc(was.h||was.pn)}” from Home`,()=>{pinsOf().splice(i,0,was);save();re()})}});
 /* a pinned section's own header buttons (All, New…) belong to its page: open the page, then do it there */
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#view .hpinned .st-h button[data-act]:not(.hpin-b)');if(!b)return;const p=pinsOf().find(x=>pinK(x)===b.closest('.hpinned').dataset.hk);if(!p)return;

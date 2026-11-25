@@ -89,21 +89,21 @@ Object.assign(ACT,{
  bgPick:d=>{if(d.k==='image'&&(!BGIMG||d.new))return bgFile();const b=bgSet();S.settings.bg={...b,k:d.k,s:b.k==='none'&&d.k!=='none'?(d.k==='image'?40:50):b.s};save();applyBg();render(false)},
  bgImgDel:()=>{BGIMG=null;DB.set('bgimg','').catch(()=>{});if(bgSet().k==='image')S.settings.bg={...bgSet(),k:'none'};save();applyBg();render(false)}});
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='bgS'){const v=+e.target.value;S.settings.bg={...bgSet(),s:v};R.style.setProperty('--bgs',(v/100).toFixed(2));const l=$('#bgSv');if(l)l.textContent=v+'%'}});
-document.addEventListener('change',e=>{if(e.target&&e.target.id==='bgS')save()});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='bgS')(window.saveQuiet||save)()});
 
 /* ---------- calendar ---------- */
 /* the same thing twice on one day (a step and a day goal with the same title, or a copied step) shows once */
-{const _ci=calItems;calItems=function(a,b){const M=_ci(a,b),nk=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
+{const _ci=calItems;let CI_RN=-1,CI_C=new Map();calItems=function(a,b){const rn=window.__RN||0;if(CI_RN!==rn){CI_RN=rn;CI_C.clear()}const ck=a+'|'+b,hit=CI_C.get(ck);if(hit)return hit;const M=_ci(a,b),nk=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
  for(const k in M){const seen=new Map(),out=[];M[k].forEach(x=>{if(x.k==='target'){out.push(x);return}const key=nk(x.t);const j=seen.get(key);
-   if(j==null){seen.set(key,out.length);out.push(x)}else if(out[j].done&&!x.done)out[j]=x});M[k]=out}return M}}
+   if(j==null){seen.set(key,out.length);out.push(x)}else if(out[j].done&&!x.done)out[j]=x});M[k]=out}CI_C.set(ck,M);return M}}
 /* habit icons on each day: full when done, faded when partly done */
-function dayHabits(ds){if(ds>td())return[];return S.habits.filter(h=>h.kind!=='quit'&&h.status!=='archived'&&ds>=(h.startDate||'')).map(h=>{const v=hVal(h,ds),n=hTarget(h);return v>=n?{h,f:1}:v>0?{h,f:0}:null}).filter(Boolean).sort((x,y)=>y.f-x.f)}
-const hIcons=(ds,max)=>{const L=dayHabits(ds);if(!L.length)return'';const sh=L.slice(0,max);
+function dayHabits(ds,pool){if(ds>td())return[];const H=pool||S.habits.filter(h=>h.kind!=='quit'&&h.status!=='archived');const out=[];for(let i=0;i<H.length;i++){const h=H[i];if(ds<(h.startDate||''))continue;const v=hVal(h,ds),n=hTarget(h);if(v>=n)out.push({h,f:1});else if(v>0)out.push({h,f:0})}return out.sort((x,y)=>y.f-x.f)}
+const hIcons=(ds,max,pool)=>{const L=dayHabits(ds,pool);if(!L.length)return'';const sh=L.slice(0,max);
  return`<span class="cd-hi" aria-hidden="true">${sh.map(x=>`<i class="${x.f?'':'pt'}" title="${esc(x.h.title)}${x.f?'':' (partly)'}">${esc(hIcon(x.h))}</i>`).join('')}${L.length>max?`<i class="mo">+${L.length-max}</i>`:''}</span>`};
-{const _cm=calMonth;calMonth=function(){const o=_cm(),t=document.createElement('template');t.innerHTML=o;const ph=matchMedia('(max-width:820px)').matches;
- t.content.querySelectorAll('.cd[data-d]').forEach(c=>{const h=hIcons(c.dataset.d,ph?3:4),top=c.querySelector('.cd-top');if(!h)return;if(!ph&&top)top.insertAdjacentHTML('beforeend',h);else c.insertAdjacentHTML('beforeend',h)});return t.innerHTML}}
-{const _cw=calWeek;calWeek=function(){const o=_cw(),t=document.createElement('template');t.innerHTML=o;
- t.content.querySelectorAll('.cw-h[data-d]').forEach(c=>{const h=hIcons(c.dataset.d,6);if(h)c.insertAdjacentHTML('beforeend',h)});return t.innerHTML}}
+{const _cm=calMonth;calMonth=function(){const o=_cm(),pool=S.habits.filter(h=>h.kind!=='quit'&&h.status!=='archived');if(!pool.length)return o;const t=document.createElement('template');t.innerHTML=o;const ph=matchMedia('(max-width:820px)').matches;
+ t.content.querySelectorAll('.cd[data-d]').forEach(c=>{const h=hIcons(c.dataset.d,ph?3:4,pool),top=c.querySelector('.cd-top');if(!h)return;if(!ph&&top)top.insertAdjacentHTML('beforeend',h);else c.insertAdjacentHTML('beforeend',h)});return t.innerHTML}}
+{const _cw=calWeek;calWeek=function(){const o=_cw(),pool=S.habits.filter(h=>h.kind!=='quit'&&h.status!=='archived');if(!pool.length)return o;const t=document.createElement('template');t.innerHTML=o;
+ t.content.querySelectorAll('.cw-h[data-d]').forEach(c=>{const h=hIcons(c.dataset.d,6,pool);if(h)c.insertAdjacentHTML('beforeend',h)});return t.innerHTML}}
 
 /* ---------- habits: today, skip and a comment from the habit itself ---------- */
 const BUB='chat';
@@ -111,6 +111,7 @@ const BUB='chat';
 function noteBtn(h,cls){const t=cls==='big'&&typeof hPageDay==='function'?hPageDay(h):td(),c=((h.ck||{})[t]||{}),dn=hDone(h,t);
  return`<button class="hnote${cls?' '+cls:''}${c.n?' on':''}" data-act="hDaySheet" data-id="${h.id}" data-d="${t}">${ic(BUB)}<span>${c.n?esc(c.n.length>70?c.n.slice(0,68)+'…':c.n):dn?'How did it go?':'Add a note'}</span></button>`}
 {const _hr=hrow;hrow=function(h){const o=_hr(h);if(h.status!=='active'||h.kind==='quit')return o;
+ const idx=o.indexOf('</div></div><div class="hside">');if(idx>=0)return o.slice(0,idx+6)+noteBtn(h)+o.slice(idx+6);
  const tp=document.createElement('template');tp.innerHTML=o;const m=tp.content.querySelector('.hb>.s');if(!m)return o;m.insertAdjacentHTML('afterend',noteBtn(h));return tp.innerHTML}}
 {const _vh=vHabit;vHabit=function(id){const o=_vh(id),h=H(id);if(!h||h.status!=='active'||h.kind==='quit')return o;
  const i=o.indexOf('class="hero tint hhero"'),j=i<0?-1:o.indexOf('</section>',i);return j<0?o:o.slice(0,j)+noteBtn(h,'big')+o.slice(j)};VIEWS.habit=vHabit}
@@ -222,18 +223,16 @@ const GEARS={habits:['notif','Reminders'],habit:['notif','Reminders'],day:['noti
  journal:['privacy','Privacy'],threads:['data','Your data'],thread:['data','Your data'],activity:['auto','Automations'],lists:['share','Sharing'],list:['share','Sharing'],
  ask:['voice','Assistant'],ai:['voice','Assistant'],chats:['voice','Assistant'],me:['voice','Assistant'],agent:['agent','Connections'],bench:['look','Theme'],road:['look','Theme'],map:['look','Theme']};
 let GEAR_H='';
-document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('#view a.gearb,#view a[href="#/settings"]'),m=a&&GEARS[cur.p];if(!m)return;e.preventDefault();e.stopPropagation();GEAR_H=m[1];go('settings/'+m[0])},true);
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('#view a.gearb,#view a[href="#/settings"]'),m=a&&GEARS[cur.p];if(!m)return;if(window.wmShut)window.wmShut(true);e.preventDefault();e.stopPropagation();GEAR_H=m[1];go('settings/'+m[0])},true);
 function gearScroll(){if(!GEAR_H||cur.p!=='settings')return;const h=[...document.querySelectorAll('#view h3')].find(x=>x.textContent.trim()===GEAR_H);GEAR_H='';if(!h)return;const p=h.closest('section,.panel')||h;
  /* after the router has put the page back at the top */
  setTimeout(()=>{window.scrollTo({top:Math.max(0,p.getBoundingClientRect().top+scrollY-90),behavior:reduced()?'auto':'smooth'});p.classList.add('gear-hl');setTimeout(()=>p.classList.remove('gear-hl'),2000)},450)}
 
 /* ---------- after each page paint ---------- */
-let MO=null;
-/* titles fit again once this layer has added its header buttons (index.html fits them before), so none is cut off on a phone */
-function afterPaint(){canvasMark();udkInit();gearScroll();if(typeof fitH1==='function')fitH1()}
-/* Home with the studio on draws into #vin inside #view, which the observer below never saw: run after every draw too */
+window.udkInit=udkInit;
+function afterPaint(){canvasMark();gearScroll()}
 {const _vs=viewSet;viewSet=function(v,h){const r=_vs.apply(this,arguments);try{afterPaint()}catch(e){}return r}}
-function boot(){const v=$('#view');if(v&&!MO){MO=new MutationObserver(()=>afterPaint());MO.observe(v,{childList:true})}afterPaint();
+function boot(){afterPaint();
  try{applyTheme()}catch(e){}
  if(document.querySelector('#rail .nav')){buildChrome();if(typeof navMark==='function')navMark()}}
 addEventListener('hashchange',()=>setTimeout(canvasMark,0));
