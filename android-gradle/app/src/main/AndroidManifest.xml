@@ -20,6 +20,7 @@
 
         <activity
             android:name=".MainActivity"
+            android:theme="@style/Theme.Plotlines.Splash"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|uiMode"
             android:exported="true"
             android:launchMode="singleTask"

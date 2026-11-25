@@ -1,0 +1,70 @@
+name: Android Gradle CI
+
+on:
+  push:
+    branches: [main, 'feat/android-gradle']
+    paths:
+      - 'android-gradle/**'
+      - 'index.html'
+      - '*.js'
+      - 'polish.css'
+      - 'privacy.html'
+  pull_request:
+    paths:
+      - 'android-gradle/**'
+      - 'index.html'
+      - '*.js'
+      - 'polish.css'
+
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify index.html JS syntax & zero missing SVG icons
+        run: |
+          node -e "
+          const fs = require('fs'), path = require('path');
+          const h = fs.readFileSync('index.html', 'utf8');
+          const scripts = h.match(/<script>([\s\S]*?)<\/script>/g) || [];
+          scripts.forEach(s => new Function(s.replace(/^<script>|<\/script>$/g, '')));
+          console.log('Syntax OK:', scripts.length, 'inline scripts');
+          const files = ['index.html', ...fs.readdirSync('.').filter(f => f.endsWith('.js'))];
+          const defined = new Set();
+          const icBlock = h.split('\n').slice(3583, 3608).join('\n');
+          for (const m of icBlock.matchAll(/([a-zA-Z0-9_-]+)\s*:\s*['\"]<|['\"]([a-zA-Z0-9_-]+)['\"]\s*:\s*['\"]</g)) defined.add(m[1] || m[2]);
+          for (const f of files) {
+            const txt = fs.readFileSync(f, 'utf8');
+            for (const m of txt.matchAll(/\bIC\.([a-zA-Z0-9_-]+)\s*=/g)) defined.add(m[1]);
+            for (const m of txt.matchAll(/Object\.assign\(\s*IC\s*,\s*\{([\s\S]*?)\}\s*\)/g)) {
+              for (const k of m[1].matchAll(/([a-zA-Z0-9_-]+)\s*:\s*['\"<]/g)) defined.add(k[1]);
+            }
+          }
+          const missing = [];
+          for (const f of files) {
+            const txt = fs.readFileSync(f, 'utf8');
+            for (const m of txt.matchAll(/\bic\(\s*['\"]([a-zA-Z0-9_-]+)['\"]|\bic\s*:\s*['\"]([a-zA-Z0-9_-]+)['\"]/g)) {
+              const k = m[1] || m[2];
+              if (!defined.has(k)) missing.push(k + ' (' + f + ')');
+            }
+          }
+          if (missing.length) { console.error('Missing icons:', missing); process.exit(1); }
+          console.log('Icons OK:', defined.size, 'defined, 0 missing');
+          "
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Preview APK and R8 Play Bundle
+        working-directory: android-gradle
+        run: ./gradlew assemblePreviewDebug bundlePlayRelease --no-daemon
