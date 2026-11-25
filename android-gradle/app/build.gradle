@@ -30,8 +30,8 @@ android {
         applicationId 'com.munazzar.plotline'
         minSdk 29
         targetSdk 34
-        versionCode 203
-        versionName '1.78.5-gradle.2'
+        versionCode 204
+        versionName '1.78.5-gradle.3'
     }
 
     flavorDimensions 'dist'

@@ -439,8 +439,20 @@ public class PlotlineBridge {
 
     @JavascriptInterface public String notifState() { return "{\"muteUntil\":" + prefs.getLong("muteUntil", 0) + ",\"snoozes\":[]}"; }
     @JavascriptInterface public void notifMute(long untilMs) { prefs.edit().putLong("muteUntil", untilMs).apply(); }
-    @JavascriptInterface public String notifLog(String key) { return "[]"; }
-    @JavascriptInterface public void notifCancelSnooze(int nid) {}
+    @JavascriptInterface public String notifLog(String key) { return prefs.getString("notif_log", "[]"); }
+    @JavascriptInterface public void notifCancelSnooze(int nid) {
+        try {
+            NotificationManagerCompat.from(act).cancel(nid);
+            AlarmManager am = (AlarmManager) act.getSystemService(Context.ALARM_SERVICE);
+            if (am != null) {
+                Intent intent = new Intent(act, AlarmReceiver.class);
+                PendingIntent pi = PendingIntent.getBroadcast(
+                        act, nid, intent, PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE);
+                if (pi != null) am.cancel(pi);
+            }
+        } catch (Exception ignored) {
+        }
+    }
 
     // Advanced native modules (safe stubs in standalone Gradle preview; ready to wire existing android/src/ classes)
     @JavascriptInterface public String llmStatus() { return "{\"ok\":false,\"have\":[],\"busy\":false}"; }
@@ -454,9 +466,9 @@ public class PlotlineBridge {
     @JavascriptInterface public void googleToken(boolean interactive) { evalJs("window.__gauth && window.__gauth({err:'use_browser'})"); }
     @JavascriptInterface public void googleSignOut() {}
     @JavascriptInterface public void invalidateToken(String tok) {}
-    @JavascriptInterface public void liveShare(String json) {}
-    @JavascriptInterface public boolean liveShareOn() { return false; }
-    @JavascriptInterface public void shareCfg(String json) {}
+    @JavascriptInterface public void liveShare(String json) { prefs.edit().putString("live_share", json == null ? "" : json).apply(); }
+    @JavascriptInterface public boolean liveShareOn() { String s = prefs.getString("live_share", ""); return s != null && !s.isEmpty() && !s.equals("{}") && !s.equals("null"); }
+    @JavascriptInterface public void shareCfg(String json) { prefs.edit().putString("share_cfg", json == null ? "" : json).apply(); }
     @JavascriptInterface
     public void shareImage(String title, String dataUrl) {
         if (dataUrl == null || dataUrl.isEmpty()) return;
@@ -481,7 +493,7 @@ public class PlotlineBridge {
             }
         });
     }
-    @JavascriptInterface public void widget(String json) {}
+    @JavascriptInterface public void widget(String json) { prefs.edit().putString("widget_state", json == null ? "" : json).apply(); }
     @JavascriptInterface public String widgetQueue() { return "[]"; }
     @JavascriptInterface public String activityLoad(int days) { return "{}"; }
     @JavascriptInterface public String screenNow() { return "{}"; }

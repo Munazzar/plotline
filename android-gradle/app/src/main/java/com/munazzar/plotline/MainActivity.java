@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (web != null) {
+        if (web != null && pageReady) {
             web.evaluateJavascript("window.dispatchEvent(new Event('app-resume'))", null);
         }
     }
@@ -200,6 +200,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        setIntent(intent);
         handleAuthIntent(intent);
     }
 

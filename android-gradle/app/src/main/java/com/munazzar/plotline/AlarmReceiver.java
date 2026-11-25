@@ -43,7 +43,17 @@ public class AlarmReceiver extends BroadcastReceiver {
 
         try {
             nm.notify(nid, b.build());
-        } catch (SecurityException ignored) {
+            android.content.SharedPreferences p = context.getSharedPreferences("plotline_native", Context.MODE_PRIVATE);
+            org.json.JSONArray arr = new org.json.JSONArray(p.getString("notif_log", "[]"));
+            org.json.JSONObject row = new org.json.JSONObject();
+            row.put("nid", nid);
+            row.put("title", title);
+            row.put("body", body);
+            row.put("t", System.currentTimeMillis());
+            arr.put(row);
+            while (arr.length() > 50) arr.remove(0);
+            p.edit().putString("notif_log", arr.toString()).apply();
+        } catch (Exception ignored) {
         }
     }
 }
