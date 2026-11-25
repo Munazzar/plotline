@@ -1,0 +1,30 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check JS syntax
+        run: |
+          for f in *.js; do
+            echo "Checking $f"
+            node --check "$f"
+          done
+      - name: Verify APP_VER matches sw.js CACHE
+        run: |
+          node -e "
+            const fs = require('fs');
+            const v = fs.readFileSync('index.html', 'utf8').match(/const APP_VER='([^']+)'/)?.[1];
+            const c = fs.readFileSync('sw.js', 'utf8').match(/const CACHE = 'plotline-v([^']+)'/)?.[1];
+            console.log('APP_VER:', v, 'sw.js CACHE:', c);
+            if (!v || v !== c) { console.error('Version mismatch!'); process.exit(1); }
+          "
