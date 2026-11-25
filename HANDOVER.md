@@ -81,9 +81,13 @@ In the repo (`android/src/com/munazzar/plotline/`): `Assist*`, `WakeLoop` (wake 
 `OrbWidget`, `ThreadsWidget`, `Cards*` (Cards widget), `RepAlarm` (repeating reminders), `Kokoro` (natural voice).
 The JS bridge is `window.PlotlineAssist` (plus `window.PlotlineNative` from MainActivity).
 
-**Not in the repo:** `MainActivity`, `LocalLlm`, `Voice`, `W`, `Notify`, `AlarmReceiver` and other wrapper classes
-exist only as compiled code in `classes.dex` inside the released APK. There is no Gradle project. That is why every
+**Not in the repo (legacy APK flow):** `MainActivity`, `LocalLlm`, `Voice`, `W`, `Notify`, `AlarmReceiver` and other wrapper classes
+exist only as compiled code in `classes.dex` inside the released APK. That is why the legacy `Plotline.apk`
 build starts from the previous APK (section 4).
+
+**Standalone Gradle project (`android-gradle/`, branch `feat/android-gradle`):** A clean, Play-Store-ready Android Gradle project (AGP 8.6.1, Gradle 8.9, `compileSdk 34`, `targetSdk 34`, `minSdk 29`) that auto-syncs the repo's web assets via `syncWebAssets`, serves them over `WebViewAssetLoader` (`https://appassets.androidplatform.net/`), exposes all 49 `PlotlineNative` JS bridge methods, and strips Play-Store-restricted permissions. Two flavors:
+- `preview` (`com.munazzar.plotline.preview`, "Plotlines Preview") — installs **side-by-side** alongside the existing `com.munazzar.plotline` without disturbing phone data: `./gradlew assemblePreviewDebug`
+- `play` (`com.munazzar.plotline`, "Plotlines") — builds the Google Play `.aab`: `./gradlew bundlePlayRelease`
 
 ## 2a. What syncs (1.53) and how to add more
 

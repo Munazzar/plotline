@@ -1,0 +1,84 @@
+plugins {
+    id 'com.android.application'
+}
+
+def repoRoot = rootProject.file('..')
+def wwwDir = file("$buildDir/generated/assets/www")
+
+// Sync web files from the repo root automatically on every build (no manual APK zip patching!)
+tasks.register('syncWebAssets', Sync) {
+    from(repoRoot) {
+        include 'index.html'
+        include '*.js'
+        include 'polish.css'
+        include 'privacy.html'
+        include 'manifest.webmanifest'
+        include 'icon-192.png'
+        include 'icon-512.png'
+        include 'fonts/**'
+        include 'lib/**'
+        include 'ocr/**'
+    }
+    into(wwwDir)
+}
+
+android {
+    namespace 'com.munazzar.plotline'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.munazzar.plotline'
+        minSdk 29
+        targetSdk 34
+        versionCode 202
+        versionName '1.78.5-gradle'
+    }
+
+    flavorDimensions 'dist'
+    productFlavors {
+        // Installs side-by-side next to the existing Plotline.apk without disturbing phone data
+        preview {
+            dimension 'dist'
+            applicationIdSuffix '.preview'
+            versionNameSuffix '-preview'
+            resValue 'string', 'app_name', 'Plotlines Preview'
+        }
+        // Production Play Store flavor (.aab / .apk)
+        play {
+            dimension 'dist'
+            resValue 'string', 'app_name', 'Plotlines'
+        }
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += "$buildDir/generated/assets"
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+preBuild.dependsOn(tasks.named('syncWebAssets'))
+
+dependencies {
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.22')
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'androidx.biometric:biometric:1.1.0'
+    implementation 'androidx.browser:browser:1.8.0'
+}
