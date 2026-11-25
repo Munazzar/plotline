@@ -6,6 +6,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -63,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
         final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/", new WebViewAssetLoader.AssetsPathHandler(this))
@@ -119,6 +121,16 @@ public class MainActivity extends AppCompatActivity {
                     fileCallback = null;
                     return false;
                 }
+            }
+
+            @Override
+            public void onPermissionRequest(PermissionRequest request) {
+                Uri origin = request.getOrigin();
+                if (origin == null || !"appassets.androidplatform.net".equals(origin.getHost())) {
+                    request.deny();
+                    return;
+                }
+                runOnUiThread(() -> request.grant(request.getResources()));
             }
         });
 

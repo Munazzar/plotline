@@ -14,9 +14,12 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.util.Base64;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -36,8 +39,13 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.concurrent.Executor;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
 
 /**
  * Clean, Play-Store-safe PlotlineNative JavaScript bridge.
@@ -68,6 +76,81 @@ public class PlotlineBridge {
             ClipboardManager cm = (ClipboardManager) act.getSystemService(Context.CLIPBOARD_SERVICE);
             if (cm != null) cm.setPrimaryClip(ClipData.newPlainText("Plotlines", text == null ? "" : text));
         });
+    }
+
+    @JavascriptInterface
+    public String readClipboard() {
+        try {
+            ClipboardManager cm = (ClipboardManager) act.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cm == null || !cm.hasPrimaryClip()) return "";
+            ClipData cd = cm.getPrimaryClip();
+            if (cd == null || cd.getItemCount() == 0) return "";
+            CharSequence cs = cd.getItemAt(0).coerceToText(act);
+            return cs != null ? cs.toString() : "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private static final String KS_ALIAS = "plotline_secret_v1";
+
+    private SecretKey getOrCreateSecretKey() throws Exception {
+        KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+        ks.load(null);
+        if (ks.containsAlias(KS_ALIAS)) {
+            return ((KeyStore.SecretKeyEntry) ks.getEntry(KS_ALIAS, null)).getSecretKey();
+        }
+        KeyGenerator kg = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
+        kg.init(new KeyGenParameterSpec.Builder(
+                KS_ALIAS, KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(256)
+                .build());
+        return kg.generateKey();
+    }
+
+    @JavascriptInterface
+    public boolean secretSet(String key, String value) {
+        if (key == null || key.isEmpty()) return false;
+        if (value == null || value.isEmpty()) {
+            secretDel(key);
+            return true;
+        }
+        try {
+            Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+            c.init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey());
+            byte[] iv = c.getIV();
+            byte[] enc = c.doFinal(value.getBytes(StandardCharsets.UTF_8));
+            String packed = Base64.encodeToString(iv, Base64.NO_WRAP) + ":" + Base64.encodeToString(enc, Base64.NO_WRAP);
+            prefs.edit().putString("sec_" + key, packed).apply();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @JavascriptInterface
+    public String secretGet(String key) {
+        if (key == null || key.isEmpty()) return "";
+        String packed = prefs.getString("sec_" + key, "");
+        if (packed == null || packed.isEmpty()) return "";
+        try {
+            String[] parts = packed.split(":", 2);
+            if (parts.length != 2) return "";
+            byte[] iv = Base64.decode(parts[0], Base64.NO_WRAP);
+            byte[] enc = Base64.decode(parts[1], Base64.NO_WRAP);
+            Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+            c.init(Cipher.DECRYPT_MODE, getOrCreateSecretKey(), new GCMParameterSpec(128, iv));
+            return new String(c.doFinal(enc), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    @JavascriptInterface
+    public void secretDel(String key) {
+        if (key != null && !key.isEmpty()) prefs.edit().remove("sec_" + key).apply();
     }
 
     @JavascriptInterface
@@ -374,7 +457,30 @@ public class PlotlineBridge {
     @JavascriptInterface public void liveShare(String json) {}
     @JavascriptInterface public boolean liveShareOn() { return false; }
     @JavascriptInterface public void shareCfg(String json) {}
-    @JavascriptInterface public void shareImage(String title, String dataUrl) {}
+    @JavascriptInterface
+    public void shareImage(String title, String dataUrl) {
+        if (dataUrl == null || dataUrl.isEmpty()) return;
+        act.runOnUiThread(() -> {
+            try {
+                String b64 = dataUrl;
+                int comma = b64.indexOf(',');
+                if (comma >= 0) b64 = b64.substring(comma + 1);
+                byte[] bytes = Base64.decode(b64, Base64.DEFAULT);
+                File f = new File(act.getCacheDir(), "plotlines_share.png");
+                try (FileOutputStream fos = new FileOutputStream(f)) {
+                    fos.write(bytes);
+                }
+                Uri uri = FileProvider.getUriForFile(act, act.getPackageName() + ".fileprovider", f);
+                Intent i = new Intent(Intent.ACTION_SEND);
+                i.setType("image/png");
+                if (title != null && !title.isEmpty()) i.putExtra(Intent.EXTRA_SUBJECT, title);
+                i.putExtra(Intent.EXTRA_STREAM, uri);
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                act.startActivity(Intent.createChooser(i, title != null && !title.isEmpty() ? title : "Share image"));
+            } catch (Exception ignored) {
+            }
+        });
+    }
     @JavascriptInterface public void widget(String json) {}
     @JavascriptInterface public String widgetQueue() { return "[]"; }
     @JavascriptInterface public String activityLoad(int days) { return "{}"; }

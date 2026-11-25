@@ -3692,7 +3692,7 @@ SYNCX.prefs={
 ['name','act','share','shPeople','places','aiInsAuto'].forEach(k=>syncPref(k,()=>S.settings[k],v=>{S.settings[k]=v}));
 /* your AI server travels with you: set it on the phone and the web uses it too (which on-device model doesn't) */
 syncPref('ai',()=>{const s=insSet();return{engine:s.engine,url:s.url,model:s.model,smart:!!s.smart,priv:!!s.priv}},v=>{if(v)Object.assign(insSet(),v)},()=>({engine:'local',url:API_PRE[0][1],model:API_PRE[0][2],smart:false,priv:false}));
-syncPref('aikey',()=>aiKey(),v=>{try{v?localStorage.setItem('plotline.aikey',v):localStorage.removeItem('plotline.aikey')}catch(e){}});
+syncPref('aikey',()=>aiKey(),v=>{aiKeySet(v)});
 const docOf=x=>({app:'plotline',v:1,act:actTrim(x.act||(x.settings&&x.settings.actLog)),goals:x.goals,entries:x.entries,days:x.days||[],habits:x.habits||[],chapters:x.chapters||[],shares:x.shares||[],lists:x.lists||[],threads:x.threads||[],benches:x.benches||[],me:x.me||null,ident:x.ident||null,dead:x.dead||{},...xsOf(k=>x[k])});
 const sameDoc=(a,b)=>JSON.stringify(xsOf(k=>a[k]??null))===JSON.stringify(xsOf(k=>b[k]??null))&&JSON.stringify([a.act||{},a.lists||[],a.goals,a.entries,a.days||[],a.habits||[],a.chapters||[],a.shares||[],a.threads||[],a.benches||[],a.me||null,a.ident||null,a.dead])===JSON.stringify([b.act||{},b.lists||[],b.goals,b.entries,b.days||[],b.habits||[],b.chapters||[],b.shares||[],b.threads||[],b.benches||[],b.me||null,b.ident||null,b.dead]);
 
@@ -4523,7 +4523,7 @@ function featuresHubHTML(){const st=S.settings,s=insSet(),aiOk=s.engine==='local
    ['App Blocks & Screen time','Focus sessions, app limits & hourly breakdown','Active','#/blocks'],
    ['Google Drive sync',syncOn()?'Syncing across devices':'Optional private Drive sync',syncOn()?'Active':'Set up','#/settings/account'],
    ['Reminders & notifications',notifOk?'Allowed':'Allow for on-time reminders',notifOk?'Active':'Set up','#/settings/notif']]]];
- return`<section class="panel wide rv"><h3>All features</h3><p class="small muted">Every feature in Plotlines stays active by default. Open any area below, or tap Customize Home / Bottom bar to arrange your workspace.</p><div class="actions left" style="margin:10px 0 0"><button class="btn sm" data-act="homeCust">${ic('tune')}Customize Home</button><button class="btn sm" data-act="navMore">${ic('pin')}Customize bottom bar</button><a class="btn sm" href="#/settings/look">${ic('tune')}Themes &amp; fonts</a></div></section>`
+ return`<section class="panel wide rv"><h3>All features</h3><p class="small muted">Every feature in Plotlines stays active by default. Open any area below, or tap Customize Home / Bottom bar to arrange your workspace.${NATIVE&&NATIVE.secretGet?' API keys are encrypted on-device in Android Keystore.':''}</p><div class="actions left" style="margin:10px 0 0"><button class="btn sm" data-act="homeCust">${ic('tune')}Customize Home</button><button class="btn sm" data-act="navMore">${ic('pin')}Customize bottom bar</button><a class="btn sm" href="#/settings/look">${ic('tune')}Themes &amp; fonts</a><button class="btn sm" data-act="exportData">${ic('down')}Export backup</button></div></section>`
   +groups.map(([g,rows])=>`<section class="panel wide rv"><h3>${esc(g)}</h3><div style="display:grid;gap:8px;margin-top:8px">${rows.map(([t,d,stx,href,actLbl,act])=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--text) 5%,transparent)"><div style="flex:1;min-width:0"><div style="font:600 14px var(--f-body)">${esc(t)} <span class="kk-tag" style="margin-left:6px;${stx==='Active'?'':'opacity:.85'}">${esc(stx)}</span></div><div class="small muted">${esc(d)}</div></div>${act?`<button class="btn sm" data-act="${act}">${esc(actLbl)}</button>`:`<a class="btn sm" href="${href}">${stx==='Set up'?'Set up':'Open'}</a>`}</div>`).join('')}</div></section>`).join('')}
 function vSettings(id){const S2=setSecs(),sec=S2.find(x=>x.k===id);
  if(!sec)return`<header class="ph"><div><h1>Settings</h1><div class="data">With sync on, these follow you to your other devices. Looks, lock and notifications stay on each device</div></div></header><nav class="shub rv">${S2.map(x=>`<a class="shub-r${x.warn&&x.warn()?' warn':''}" href="#/settings/${x.k}"><span class="shub-i">${ic(x.ic)}</span><span class="shub-t"><b>${x.t}</b><small>${esc(x.sub())}</small></span>${ic('next','ico-s')}</a>`).join('')}</nav><div class="shub-f2"><div class="shub-fl"><a href="#/howto">How-to guides</a><button data-act="setupOpen">Guided setup</button><button data-act="tourGo">Take the tour</button><a href="${NATIVE?esc(cfg().webUrl||PLOTLINE_CFG.webUrl)+'privacy.html':'privacy.html'}" target="_blank" rel="noopener">Privacy policy</a></div><p class="data">Plotlines ${APP_VER}</p></div>`;
@@ -5691,7 +5691,9 @@ async function gemLoadModels(force){const key=aiKey(),kh=gemKeyH(key);if(!key)re
  catch(e){GEM_ST.busy=false;GEM_ST.err=e&&e.message||'Could not load models';paint();return[]}}
 window.gemLoadModels=gemLoadModels;
 function insSet(){const d={engine:'local',smart:false,priv:false,url:API_PRE[0][1],model:API_PRE[0][2],llm:LLMS[0][0]};const o=S.settings.ins={...d,...(S.settings.ins||{})};if(!o.nat){o.nat=1;o.phi=1;if(NAT_OK()||!o.llm||o.llm==='phi4-mini')o.llm='llama3.2-1b'}return o}
-const aiKey=()=>{try{return localStorage.getItem('plotline.aikey')||''}catch(e){return''}};
+const aiKeySet=v=>{v=(v||'').trim();try{if(NATIVE&&NATIVE.secretSet){if(v){NATIVE.secretSet('aikey',v);localStorage.removeItem('plotline.aikey')}else{NATIVE.secretDel&&NATIVE.secretDel('aikey');localStorage.removeItem('plotline.aikey')}return}}catch(e){}try{v?localStorage.setItem('plotline.aikey',v):localStorage.removeItem('plotline.aikey')}catch(e){}};
+const aiKey=()=>{try{if(NATIVE&&NATIVE.secretGet){const s=NATIVE.secretGet('aikey')||'';if(s)return s;const leg=localStorage.getItem('plotline.aikey')||'';if(leg){aiKeySet(leg);return leg}return''}}catch(e){}try{return localStorage.getItem('plotline.aikey')||''}catch(e){return''}};
+const readClip=async()=>{try{if(NATIVE&&NATIVE.readClipboard){const s=(NATIVE.readClipboard()||'').trim();if(s)return s}}catch(e){}try{return(await navigator.clipboard.readText()||'').trim()}catch(e){return''}};
 const MOODN=Object.fromEntries(MOODS.map(([m,n])=>[m,n]));const MOOD_POS=new Set(['Calm','Energized','Grateful']),MOOD_NEG=new Set(['Low','Anxious','Frustrated','Tired']);
 let IN={q:'',pre:'',win:0,goal:'',busy:false,prog:'',res:null,ctl:null,paste:'',fq:''},VEC=null,EMB=null,EMB_P=null,LLM=null,LLM_ID='';
 const fnv=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36)+s.length.toString(36)};
@@ -6187,17 +6189,17 @@ Object.assign(ACT,{
  insApiPre:d=>{const s=insSet();s.url=d.u;s.model=d.m;save();askSetRefresh();if(cur.p==='settings')render(false);if(isGeminiUrl(d.u)&&aiKey())gemLoadModels(false)},
  insGemModel:d=>{const s=insSet();s.model=d.m;save();askSetRefresh();if(cur.p==='settings')render(false)},
  insGemRefresh:async()=>{if(!aiKey())return toast('Paste your free Gemini API key first');const L=await gemLoadModels(true);if(L.length)toast(`Loaded ${L.length} Gemini models`);else if(GEM_ST.err)toast(GEM_ST.err)},
- insGemPaste:async()=>{let txt='';try{txt=(await navigator.clipboard.readText()||'').trim()}catch(e){}
+ insGemPaste:async()=>{const txt=await readClip();
   if(!txt){const inp=document.querySelector('#insKey,#wzKey');if(inp){inp.focus();toast('Long-press the API key box and tap Paste')}else toast('Copy your key from Google AI Studio, then paste it into API key');return}
   if(txt.length<20||/\s/.test(txt))return toast('Clipboard doesn’t look like a Gemini API key — copy the key from Google AI Studio first');
-  try{localStorage.setItem('plotline.aikey',txt)}catch(_){}
+  aiKeySet(txt);
   const s=insSet();s.engine='api';s.url=GEMINI_URL;(window.saveQuiet||save)();
   const inp=document.querySelector('#insKey,#wzKey');if(inp)inp.value=txt;
   await ACT.insTest()},
- insKeyPaste:async()=>{let txt='';try{txt=(await navigator.clipboard.readText()||'').trim()}catch(e){}
+ insKeyPaste:async()=>{const txt=await readClip();
   if(!txt){const inp=document.querySelector('#insKey,#wzKey');if(inp){inp.focus();toast('Long-press the API key box and tap Paste')}return}
   if(txt.length<12||/\s/.test(txt))return toast('Clipboard doesn’t look like an API key');
-  try{localStorage.setItem('plotline.aikey',txt)}catch(_){}
+  aiKeySet(txt);
   (window.saveQuiet||save)();const inp=document.querySelector('#insKey,#wzKey');if(inp)inp.value=txt;await ACT.insTest()},
  insTest:async()=>{const s=insSet(),gem=isGeminiUrl(s.url);if(gem&&!aiKey())return toast('Paste your free Gemini API key from Google AI Studio first');
   if(gem){const L=await gemLoadModels(true);if(!L.length)return toast(GEM_ST.err||'Couldn’t reach Gemini. Check your internet connection and API key');
@@ -6209,7 +6211,7 @@ Object.assign(ACT,{
 });
 let GEM_KT=0;
 document.addEventListener('input',e=>{const t=e.target;if(t.id==='askIn'){IN.q=t.value;t.style.height='auto';t.style.height=Math.min(160,t.scrollHeight)+'px'}else if(t.id==='insPaste')IN.paste=t.value;
- else if(t.dataset&&(t.dataset.ins==='url'||t.dataset.ins==='model')){insSet()[t.dataset.ins]=t.value.trim();save()}else if(t.dataset&&t.dataset.ins==='key'){const v=t.value.trim();try{v?localStorage.setItem('plotline.aikey',v):localStorage.removeItem('plotline.aikey')}catch(_){}(window.saveQuiet||save)();if(isGeminiUrl(insSet().url)&&v.length>=20){clearTimeout(GEM_KT);GEM_KT=setTimeout(()=>gemLoadModels(true),550)}}});
+ else if(t.dataset&&(t.dataset.ins==='url'||t.dataset.ins==='model')){insSet()[t.dataset.ins]=t.value.trim();save()}else if(t.dataset&&t.dataset.ins==='key'){const v=t.value.trim();aiKeySet(v);(window.saveQuiet||save)();if(isGeminiUrl(insSet().url)&&v.length>=20){clearTimeout(GEM_KT);GEM_KT=setTimeout(()=>gemLoadModels(true),550)}}});
 document.addEventListener('keydown',e=>{if(e.target&&e.target.id==='askIn'&&e.key==='Enter'&&!e.shiftKey&&(!IS_PHONE||e.ctrlKey||e.metaKey)){e.preventDefault();ACT.askSend()}});
 document.addEventListener('change',e=>{const t=e.target,k=t.dataset&&t.dataset.ins;if(!k||k==='url'||k==='model'||k==='key')return;const s=insSet();
  if(k==='win'){IN.win=+t.value;if(insPage())render(false);return}if(k==='goal'){IN.goal=t.value;if(insPage())render(false);return}
