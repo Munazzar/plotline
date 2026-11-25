@@ -35,17 +35,18 @@ const STEPS=[
   main:()=>notifOn()?null:['Allow and continue',async()=>{askNotif();await sleep(900);next()}]},
 
  {k:'ai',ic:'ai',t:'Your AI',lead:`${pname()} can answer questions about your plan, write ideas, run the agent and talk with you. Pick where its AI runs.`,
-  done:()=>{const e=insSet().engine;return e==='api'?!!insSet().url:e==='local'&&aiHave()},
-  sum:()=>{const s=insSet();return s.engine==='api'?'Your AI server · '+esc(s.model||''):s.engine==='copy'?'Not picked yet · copy prompts to any AI':esc(aiName())+(aiBusy()?' · setting up now':aiHave()?' · ready on this '+dev():' · not downloaded yet')},
-  body:()=>{const s=insSet(),e=s.engine;
+  done:()=>{const s=insSet(),e=s.engine;return e==='api'?!!s.url&&(!(window.isGeminiUrl&&isGeminiUrl(s.url))||!!aiKey()):e==='local'&&aiHave()},
+  sum:()=>{const s=insSet();return s.engine==='api'?(window.isGeminiUrl&&isGeminiUrl(s.url)?'Google Gemini':'Your AI server')+' · '+esc(s.model||''):s.engine==='copy'?'Not picked yet · copy prompts to any AI':esc(aiName())+(aiBusy()?' · setting up now':aiHave()?' · ready on this '+dev():' · not downloaded yet')},
+  body:()=>{const s=insSet(),e=s.engine,gem=window.isGeminiUrl&&isGeminiUrl(s.url);
    const card=(k,t,x,rec)=>`<button type="button" class="wz-c${e===k?' on':''}" data-act="wzEng" data-k="${k}" aria-pressed="${e===k}"><span class="wz-rd"></span><span><b>${t}${rec?' <em>Recommended</em>':''}</b><small>${x}</small></span></button>`;
-   let h=`<div class="wz-cs" role="radiogroup" aria-label="Where the AI runs">${card('local','On this '+dev(),'Private and free. A model downloads once, then works offline. Nothing you say leaves the '+dev()+'.',1)}${card('api','Your own AI server','Ollama or LM Studio on your computer, or any OpenAI-compatible service.')}${card('copy','Decide later','Copy ready-made prompts into any AI app for now.')}</div>`;
+   let h=`<div class="wz-cs" role="radiogroup" aria-label="Where the AI runs">${card('local','On this '+dev(),'Private and free. A model downloads once, then works offline. Nothing you say leaves the '+dev()+'.',1)}${card('api','Google Gemini (free) or your AI server','Fast cloud AI with a free Google AI Studio key, or Ollama / LM Studio on your computer.')}${card('copy','Decide later','Copy ready-made prompts into any AI app for now.')}</div>`;
    if(e==='local')h+=`<div class="field" style="margin-top:14px"><label>Model</label><select data-ins="llm">${LLMS.map(([k,n])=>`<option value="${k}" ${llmOf(s.llm)[0]===k?'selected':''}>${n}${k===LLMS[0][0]?' · recommended':''}</option>`).join('')}</select><small class="muted">The recommended one answers quickly on most ${NATIVE?'phones':'devices'}. Bigger ones understand more but take longer. You can switch any time.</small></div>${window.AIX?AIX.modelCard('wz'):''}`;
    if(e==='api')h+=`<div class="chips" style="margin:14px 0 4px">${API_PRE.map(([n,u,m])=>`<button class="chip ${s.url===u?'on':''}" data-act="insApiPre" data-u="${u}" data-m="${m}">${n}</button>`).join('')}</div>
+    ${window.geminiBoxHTML?geminiBoxHTML():''}
     <div class="field"><label for="wzUrl">Server address</label><input id="wzUrl" data-ins="url" value="${esc(s.url)}" placeholder="http://localhost:11434/v1" autocomplete="off" spellcheck="false"></div>
     <div class="field"><label for="wzModel">Model</label><input id="wzModel" data-ins="model" value="${esc(s.model)}" placeholder="llama3.2" autocomplete="off" spellcheck="false"></div>
-    <div class="field"><label for="wzKey">API key <small class="muted">(not needed for Ollama)</small></label><input id="wzKey" data-ins="key" type="password" value="${esc(aiKey())}" autocomplete="off"><small class="muted">It stays on this ${dev()} and is never synced or backed up.</small></div>
-    <div class="actions left"><button class="btn sm" data-act="insTest">Test connection</button></div>`;
+    <div class="field"><label for="wzKey">API key <small class="muted">${gem?'(required for Gemini — free from Google AI Studio)':'(not needed for Ollama)'}</small></label><input id="wzKey" data-ins="key" type="password" value="${esc(aiKey())}" autocomplete="off"><small class="muted">Stays on this ${dev()} (and in your own Google Drive app folder if sync is on). Never put in backups.</small></div>
+    <div class="actions left"><button class="btn sm" data-act="insTest">Test connection</button>${gem?`<a class="btn sm ghost" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get free API key</a>`:''}</div>`;
    return h},
   main:()=>{const s=insSet();if(s.engine!=='local'||aiBusy()||!window.AIX)return null;
    if(!aiHave())return['Download and continue',()=>{AIX.setup({quiet:1});toast(`${esc(aiName())} is downloading. Keep going, it carries on in the background`);next()}];
