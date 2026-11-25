@@ -24,10 +24,12 @@ function wmOpen(m){if(OPEN&&OPEN!==m)wmShut(true);clearTimeout(SHUT);const p=m.q
  /* offsets, not rects: an item's rect would include the transform it is parked with */
  X.forEach((x,i)=>{x.style.setProperty('--i',i);x.style.setProperty('--dx',Math.round(ox-x.offsetLeft-x.offsetWidth/2)+'px');x.style.setProperty('--dy',Math.round(oy-x.offsetTop-x.offsetHeight/2)+'px')});
  /* read the parked state first, or a panel that was just display:none has nothing to transition from */
- p.querySelectorAll('.wm-x,.wm-r,.wm-h>:first-child').forEach(n=>getComputedStyle(n).transform);m.classList.add('on');b.setAttribute('aria-expanded','true');OPEN=m}
-function wmShut(now){const m=OPEN;if(!m)return false;OPEN=null;clearTimeout(SHUT);m.classList.remove('on');const p=m.querySelector('.wm-p'),b=m.querySelector('.wm-b');b.setAttribute('aria-expanded','false');if(now)p.hidden=true;else SHUT=setTimeout(()=>{if(!m.classList.contains('on'))p.hidden=true},400);return true}
-ACT.wmTog=(d,b)=>{const m=b.closest('.wm');if(OPEN===m)wmShut();else wmOpen(m)};
-document.addEventListener('click',e=>{if(!OPEN)return;const m=e.target.closest&&e.target.closest('.wm');if(m!==OPEN)wmShut();else if(e.target.closest('[data-wm-c]'))setTimeout(wmShut,0)},true);
+ void p.offsetWidth;m.classList.add('on');b.setAttribute('aria-expanded','true');OPEN=m}
+function wmShut(now){const m=OPEN;if(!m)return false;OPEN=null;clearTimeout(SHUT);m.classList.remove('on');const p=m.querySelector('.wm-p'),b=m.querySelector('.wm-b');if(b)b.setAttribute('aria-expanded','false');if(p){if(now)p.hidden=true;else SHUT=setTimeout(()=>{if(!m.classList.contains('on'))p.hidden=true},400)}return true}
+window.wmShut=wmShut;
+ACT.wmTog=(d,b)=>{if(OPEN&&!OPEN.isConnected)OPEN=null;const m=b.closest('.wm');if(OPEN===m)wmShut();else wmOpen(m)};
+document.addEventListener('click',e=>{if(!OPEN)return;if(!OPEN.isConnected){OPEN=null;return}const m=e.target.closest&&e.target.closest('.wm');if(m!==OPEN)wmShut();else if(e.target.closest('[data-wm-c]'))setTimeout(wmShut,0)},true);
+addEventListener('hashchange',()=>wmShut(true));
 {const _b=window.__back;window.__back=function(){return wmShut()||_b.apply(this,arguments)}}
 
 /* ---------------- the page ---------------- */
@@ -38,7 +40,7 @@ function pageOn(note){clearTimeout(OFF);wmShut(true);sh.classList.add('wc');sh.c
 function pageOff(){root.classList.remove('wc-on','wc-typing','wc-full');sh.classList.remove('wc','wc-note')}
 addEventListener('resize',()=>{if(open())place()});
 ACT.wcBack=()=>closeSheet();
-ACT.wcFull=(d,b)=>{S.settings.wcFull=!fullOn();save();place();if(b){const r=el('x',fullRow()).firstChild;b.innerHTML=r.innerHTML}};
+ACT.wcFull=(d,b)=>{S.settings.wcFull=!fullOn();(window.saveQuiet||save)();place();if(b){const r=el('x',fullRow()).firstChild;b.innerHTML=r.innerHTML}};
 const row=(act,icon,text,cls='')=>`<button type="button" class="wm-i ${cls}" data-act="${act}" data-wm-c="1"><span class="wm-r">${ic(icon)}</span><span>${text}</span></button>`;
 const sec=(label,node)=>{const d=el('wm-x wm-s',label?`<div class="wm-l">${label}</div>`:'');d.append(node);return d};
 const bar=(crumb,stat,done)=>{const b=el('wc-bar',`<button type="button" class="ibtn sm wc-back" data-act="wcBack" aria-label="Back" title="Back">${ic('back')}</button><div class="wc-c"><b>${crumb}</b></div>${burger()}`);if(stat)b.querySelector('.wc-c').append(stat);b.append(done);return b};
@@ -103,20 +105,20 @@ document.addEventListener('submit',e=>{const f=e.target;if(f.closest&&f.closest(
 /* any other sheet opened from here is an ordinary sheet */
 {const _o=openSheet;openSheet=function(){if(sh.classList.contains('wc')){clearTimeout(OFF);pageOff()}return _o.apply(this,arguments)}}
 /* the sidebar and bottom bar still work: save and close first, then go */
-document.addEventListener('click',e=>{if(GO||!open())return;const a=e.target.closest&&e.target.closest('#rail a,#rail button,#tabbar a,#tabbar button');if(!a)return;e.preventDefault();e.stopImmediatePropagation();closeSheet();setTimeout(()=>{GO=1;a.click();GO=0},240)},true);
+document.addEventListener('click',e=>{if(GO||!open())return;const a=e.target.closest&&e.target.closest('#rail a,#rail button,#tabbar a,#tabbar button');if(!a)return;e.preventDefault();e.stopImmediatePropagation();closeSheet();setTimeout(()=>{GO=1;a.click();GO=0},40)},true);
 /* the bottom bar makes way for the keyboard */
 const typing=t=>t&&t.matches&&t.matches('textarea,[contenteditable=true],input:not([type=checkbox]):not([type=file])');
 sh.addEventListener('focusin',e=>{if(open()&&typing(e.target))root.classList.add('wc-typing')});
 sh.addEventListener('focusout',()=>setTimeout(()=>{if(!typing(document.activeElement))root.classList.remove('wc-typing')},60));
 
 /* ---------------- every page's header: its buttons go in the menu ----------------
-   Each button stays the same element (its act, its icon, whatever updates it later), only moved. Runs from a
-   MutationObserver because some buttons are added after the page is drawn (print, pin, the gear); the observer fires
-   before the browser paints, so the row of buttons never shows. */
+   Each button stays the same element (its act, its icon, whatever updates it later), only moved. Runs directly
+   inside vPut (before VMO.takeRecords so vMorph doesn't mark .ph-r dirty), plus a lightweight observer for late arrivals. */
 function rollHeads(){document.querySelectorAll('#view .ph>.ph-r,#view .crumb>.ph-r').forEach(r=>{let m=r.querySelector(':scope>.wm');const had=!!m,L=[...r.children].filter(c=>c!==m);if(!L.length||(!m&&L.length<2))return;
  if(!m){r.insertAdjacentHTML('beforeend',burger());m=r.lastElementChild;r.classList.add('wm-host')}
  const P=m.querySelector('.wm-p');L.forEach(c=>{c.classList.add('wm-h');c.dataset.wl=c.getAttribute('aria-label')||c.title||c.textContent.trim();c.dataset.wmC=1;const x=el('wm-x');x.append(c);if(had)P.prepend(x);else P.append(x)})})}
-new MutationObserver(rollHeads).observe($('#view'),{childList:true,subtree:true});rollHeads();
+window.rollHeads=rollHeads;
+new MutationObserver(rs=>{for(const r of rs){const t=r.target;if(t.nodeType===1&&(t.id==='view'||t.id==='vpg'||t.id==='vin'||t.classList.contains('ph-r'))){rollHeads();return}}}).observe($('#view'),{childList:true,subtree:true});rollHeads();
 /* a note's page: writing opens the page */
 {const _vt=vThread;vThread=function(id){const o=_vt(id),t=TH(id);if(!t)return o;const tp=document.createElement('template');tp.innerHTML=o;
  const ed=tp.content.querySelector('form.thr-ed');if(ed){const b=document.createElement('button');b.type='button';b.className='wc-write rv';b.dataset.act='thrAddSheet';b.dataset.id=id;b.innerHTML=`${ic('edit')}<span>Write an update…</span>`;ed.replaceWith(b)}
